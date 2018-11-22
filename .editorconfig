@@ -1,0 +1,21 @@
+# editorconfig.org 编辑器代码风格控制配置
+# 参考https://www.cnblogs.com/xiaohuochai/p/7160067.html
+
+root = true
+
+[*]
+charset = utf-8
+indent_size = 4
+indent_style = space
+insert_final_newline = true #设为true表示使文件以一个空白行结尾
+trim_trailing_whitespace = true #设为true表示会去除换行行首的任意空白字符。
+
+
+[*.{md,l,y}]
+indent_size = 2
+indent_style = space
+trim_trailing_whitespace = false #设为true表示会去除换行行首的任意空白字符。
+
+[src/Makefile]
+indent_size = 4
+indent_style = tab   # Makefile 要识别 tab 符

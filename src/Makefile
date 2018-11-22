@@ -23,13 +23,13 @@ all : $(PROGRAM)
 
 parser.o: parser.y
 	@mkdir -p bin
-	$(YACC) -v --defines=include/token.hh config/parser.y 
+	$(YACC) -v --defines=include/token.hh config/parser.y
 	mv y.tab.c $(SRCDIRS)/parser.cc
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -DYYDEBUG -c -g $(SRCDIRS)/parser.cc -o $(OUTDIRS)/parser.o
 lexer.o:  lexer.l
 	@echo SOURCES$(TAB)= ${SOURCES}
 	@echo OBJS$(TAB)= ${OBJS}
-	$(LEX) config/lexer.l 
+	$(LEX) config/lexer.l
 	mv lex.yy.c src/lexer.cc
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -g -c src/lexer.cc -o bin/lexer.o
 
@@ -52,6 +52,6 @@ endif
 
 clean :
 	@$(RM) src/lexer.cc include/token.hh src/parser.cc y.tab.[ch] y.output *.o  bin/* *.d *.out
-count : 
+count :
 	make clean
 	find . -maxdepth 2  -name "*[.l|.y|.c|.cc|.cpp|.h|Makefile]"  | xargs cat | wc -l

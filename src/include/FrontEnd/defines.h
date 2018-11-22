@@ -7,7 +7,7 @@
 
 typedef int Bool;
 typedef void Generic;
-typedef void **GenericREF; 
+typedef void **GenericREF;
 
 #define TRUE 1
 #define FALSE 0
