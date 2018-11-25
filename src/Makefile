@@ -2,8 +2,8 @@ CC      = gcc
 CXX		= g++
 YACC    = bison -y
 LEX     = flex
-CFLAGS  = -I include
-CXXFLAGS  = -I include
+CFLAGS  = -I include/FrontEnd
+CXXFLAGS  = -I include/FrontEnd
 
 TAB = '	'
 VPATH = .:bin:config
@@ -23,15 +23,16 @@ all : $(PROGRAM)
 
 parser.o: parser.y
 	@mkdir -p bin
-	$(YACC) -v --defines=include/token.hh config/parser.y
-	mv y.tab.c $(SRCDIRS)/parser.cc
-	$(CXX) $(CPPFLAGS) $(CFLAGS) -DYYDEBUG -c -g $(SRCDIRS)/parser.cc -o $(OUTDIRS)/parser.o
+	$(YACC) -v --defines=include/FrontEnd/token.hh config/parser.y
+	mv y.tab.c $(SRCDIRS)/FrontEnd/parser.cc
+	mv y.output config/y.output
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -DYYDEBUG -c -g $(SRCDIRS)/FrontEnd/parser.cc -o $(OUTDIRS)/parser.o
 lexer.o:  lexer.l
 	@echo SOURCES$(TAB)= ${SOURCES}
 	@echo OBJS$(TAB)= ${OBJS}
 	$(LEX) config/lexer.l
-	mv lex.yy.c src/lexer.cc
-	$(CXX) $(CPPFLAGS) $(CFLAGS) -g -c src/lexer.cc -o bin/lexer.o
+	mv lex.yy.c src/FrontEnd/lexer.cc
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -g -c src/FrontEnd/lexer.cc -o bin/lexer.o
 
 
 objs : $(OBJS)
@@ -51,7 +52,7 @@ endif
 
 
 clean :
-	@$(RM) src/lexer.cc include/token.hh src/parser.cc y.tab.[ch] y.output *.o  bin/* *.d *.out
+	@$(RM) src/*/lexer.cc include/*/token.hh src/*/parser.cc y.tab.[ch] config/*.output *.o  bin/* *.d *.out
 count :
 	make clean
 	find . -maxdepth 2  -name "*[.l|.y|.c|.cc|.cpp|.h|Makefile]"  | xargs cat | wc -l
