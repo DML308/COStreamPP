@@ -1,10 +1,10 @@
 # COStreamPP
 重构 COStream 的前端, C => C++
 
-- [] 词法分析, 传递`数字 | 字符串 | 特殊符号`
- - [ ] 占位符1
+- [ ] 词法分析, 传递`数字 | 字符串 | 特殊符号`
+    - [ ]  第一个能用的版本,但 yylineno 在 repl 模式下不好用?
 - [ ] 语法分析
 
 
 效果:
-![](https://camo.githubusercontent.com/e0599038015b8a9e0500eb51f9e49f49a237c2e5/68747470733a2f2f692e6c6f6c692e6e65742f323031382f31302f33302f356264376636633638383064652e706e67)
+![yylineo](https://i.loli.net/2018/11/26/5bfacb1ca90cc.png)
