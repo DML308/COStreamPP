@@ -29,8 +29,8 @@ hex_constant ("0"[xX][0-9a-fA-F]+)
 /* 字符串: 考虑到可能会有这样的字符串 "123 \n \" " ,不合规的字符串有很多,放到后续语义分析再处理 */
 string_constant ('[^\n]*'|\"[^\n]*\")
 
-/*空白字符的代码意义不明,应修改.*/
-any_white ([ \011\013\014\015])
+/*空白字符的代码只保留 空格 tab 和 \n.*/
+any_white ([ \t \n])
 
 Annotations      \/\*(\/\/|[^(\*\/)]|\n)*\*\/
 Annotation       \/\/[^\n]*\n
@@ -38,6 +38,7 @@ Annotation       \/\/[^\n]*\n
 %option noyywrap
 %option yylineno
 %%
+{any_white}             
 {Annotation}            {debug("单行注释\n");}
 {Annotations}           {debug("多行注释\n");}
 {decimal_constant}      {
@@ -49,4 +50,6 @@ Annotation       \/\/[^\n]*\n
                           yylval.str = new string(str.substr(1,str.size()-2));
                           return stringConstant;
                         }
+
+.
 %%
