@@ -1,7 +1,7 @@
 %{
-    #include "token.hh"
     #define DEBUG
     #include "defines.h"
+    #include "token.hh"
     int yycolumn = 1;
     #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
         yylloc.first_column = yycolumn; \
@@ -16,30 +16,21 @@ identifier ([a-zA-Z_][0-9a-zA-Z_]*)
 exponent_part ([eE][-+]?[0-9]+)
 /*小数部分,例如123.456 或123.或.123 注意 '123.'和'.123'这两种写法是符合标准的,但是看起来很奇怪所以不推荐后来这样写,建议替换为为'123.0'和'0.123'*/
 fractional_constant ([0-9]*"."[0-9]+)|([0-9]+".")
-/* 整型后缀 * /
-integer_suffix_opt  ([uU]?[lL]?[lL]?)|([lL][lL][uU])
 /*浮点字面值可以用十进制或科学计数法（指数用E或e）表示，默认为double，在数值后加F或f表示单精度，加L或l表示扩展精度*/
-floating_constant ((({fractional_constant}{exponent_part}?)|([0-9]+{exponent_part}))[FfLl]?)
+floating_constant ((({fractional_constant}{exponent_part}?)|([0-9]+{exponent_part})))
 
 /*10进制数字,例如123456 */
 decimal_constant ([1-9][0-9]*)
 /* 8进制数字 */
-octal_constant ("0"[0-7]*{integer_suffix_opt}) 
+octal_constant ("0"[0-7]*) 
 /* 16进制数字 */
-hex_constant ("0"[xX][0-9a-fA-F]+{integer_suffix_opt})
+hex_constant ("0"[xX][0-9a-fA-F]+)
 
+/* 字符串: 考虑到可能会有这样的字符串 "123 \n \" " ,不合规的字符串有很多,放到后续语义分析再处理 */
+string_constant ('[^\n]*'|\"[^\n]*\")
 
-/*  对转义字符的处理*/
-simple_escape       ([abfnrtv'"?\\])
-octal_escape        ([0-7][^'\n]*)
-hex_escape          ("x"[^'\n]*)
-bad_escape          ([\\][^abfnrtv'"?\\x0-7\n ])
-escape_sequence     ([\\]({simple_escape}|{octal_escape}|{hex_escape}))
-c_char              ([^'\\\n]|{escape_sequence})
-s_char              ([^"\\\n]|{escape_sequence})
-
-/*空白字符的代码意义不明,应修改.*/
-any_white ([ \011\013\014\015])
+/*空白字符的代码只保留 空格 tab 和 \n.*/
+any_white ([ \t \n])
 
 Annotations      \/\*(\/\/|[^(\*\/)]|\n)*\*\/
 Annotation       \/\/[^\n]*\n
@@ -47,10 +38,109 @@ Annotation       \/\/[^\n]*\n
 %option noyywrap
 %option yylineno
 %%
+{any_white}             
 {Annotation}            {debug("单行注释\n");}
 {Annotations}           {debug("多行注释\n");}
-{decimal_constant}      {
-                            yylval.num = atoi (yytext);
-                            return intConstant;
+{decimal_constant}|{hex_constant}|{octal_constant}  {
+                                                      yylval.num = stoll(yytext,0,0);
+                                                      return intConstant;
+                                                    }
+{string_constant}       {
+                          string str = string(yytext);
+                          yylval.str = new string(str.substr(1,str.size()-2));
+                          return stringConstant;
                         }
+
+string      { return STRING; }
+int         { return INT; }
+double      { return DOUBLE; } 
+long        { return LONG; }
+const       { return CONST; }
+define      { return DEFINE; }
+
+while       { return WHILE; }                                  
+for         { return FOR; }
+break       { return BREAK; }
+continue    { return CONTINUE; }
+switch      { return SWITCH; }              
+case        { return CASE; }
+default     { return DEFAULT; }               
+if          { return IF; }
+else        { return ELSE; }  
+
+composite   { return COMPOSITE; }
+input       { return INPUT; }
+output      { return OUTPUT; }
+stream      { return STREAM; }
+FileReader  { return FILEREADER; }
+FileWriter  { return FILEWRITER; }
+add         { return ADD; }
+
+param        { return PARAM; }
+init         { return INIT; }
+work         { return WORK; }
+window       { return WINDOW; }
+tumbling     { return TUMBLING; }
+sliding      { return SLIDING; }
+
+splitjoin    { return SPLITJOIN; }
+pipeline     { return PIPELINE; }
+split        { return SPLIT; }
+join         { return JOIN; }
+duplicate    { return DUPLICATE; }
+roundrobin   { return ROUNDROBIN; }
+
+"("          { return *yytext; }
+")"          { return *yytext; }
+"["          { return *yytext; }
+"]"          { return *yytext; }
+"{"          { return *yytext; }
+"}"          { return *yytext; }
+","          { return *yytext; }
+"#"          { return *yytext; }
+
+"."          { return '.'; }
+"&"          { return '&'; }
+"|"          { return '|'; }
+"^"          { return '^'; }
+"+"          { return '+'; }
+"-"          { return '-'; }
+"*"          { return '*'; }
+"/"          { return '/'; }
+"%"          { return '%'; }
+"<"          { return '<'; }
+">"          { return '>'; }
+"~"          { return '~'; }
+"!"          { return '!'; }
+"?"          { return '?'; }
+":"          { return ':'; }
+";"          { return ';'; }
+"="          { return '='; }
+
+"##"         { return POUNDPOUND; }
+"++"         { return ICR; }
+"--"         { return DECR; }
+"<<"         { return LS; }
+">>"         { return RS; }
+"<="         { return LE; }
+">="         { return GE; }
+"=="         { return EQ; }
+"!="         { return NE; }
+"&&"         { return ANDAND; }
+"||"         { return OROR; }
+"*="         { return MULTassign; }
+"/="         { return DIVassign; }
+"+="         { return PLUSassign; }
+"-="         { return MINUSassign; }
+"<<="        { return LSassign; }
+">>="        { return RSassign; }
+"&="         { return ANDassign; }
+"^="         { return ERassign; }
+"|="         { return ORassign; }
+
+.* {
+  yylval.str = new string(yytext);
+  return err_tok;
+}
+                        
 %%
