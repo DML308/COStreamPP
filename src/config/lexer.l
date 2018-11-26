@@ -51,8 +51,96 @@ Annotation       \/\/[^\n]*\n
                           return stringConstant;
                         }
 
-.*                      {
-                          yylval.str = new string(yytext);
-                          return err_tok;
-                        }
+string      { return STRING; }
+int         { return INT; }
+double      { return DOUBLE; } 
+long        { return LONG; }
+const       { return CONST; }
+define      { return DEFINE; }
+
+while       { return WHILE; }                                  
+for         { return FOR; }
+break       { return BREAK; }
+continue    { return CONTINUE; }
+switch      { return SWITCH; }              
+case        { return CASE; }
+default     { return DEFAULT; }               
+if          { return IF; }
+else        { return ELSE; }  
+
+composite   { return COMPOSITE; }
+input       { return INPUT; }
+output      { return OUTPUT; }
+stream      { return STREAM; }
+FileReader  { return FILEREADER; }
+FileWriter  { return FILEWRITER; }
+add         { return ADD; }
+
+param        { return PARAM; }
+init         { return INIT; }
+work         { return WORK; }
+window       { return WINDOW; }
+tumbling     { return TUMBLING; }
+sliding      { return SLIDING; }
+
+splitjoin    { return SPLITJOIN; }
+pipeline     { return PIPELINE; }
+split        { return SPLIT; }
+join         { return JOIN; }
+duplicate    { return DUPLICATE; }
+roundrobin   { return ROUNDROBIN; }
+
+"("          { return *yytext; }
+")"          { return *yytext; }
+"["          { return *yytext; }
+"]"          { return *yytext; }
+"{"          { return *yytext; }
+"}"          { return *yytext; }
+","          { return *yytext; }
+"#"          { return *yytext; }
+
+"."          { return '.'; }
+"&"          { return '&'; }
+"|"          { return '|'; }
+"^"          { return '^'; }
+"+"          { return '+'; }
+"-"          { return '-'; }
+"*"          { return '*'; }
+"/"          { return '/'; }
+"%"          { return '%'; }
+"<"          { return '<'; }
+">"          { return '>'; }
+"~"          { return '~'; }
+"!"          { return '!'; }
+"?"          { return '?'; }
+":"          { return ':'; }
+";"          { return ';'; }
+"="          { return '='; }
+
+"##"         { return POUNDPOUND; }
+"++"         { return ICR; }
+"--"         { return DECR; }
+"<<"         { return LS; }
+">>"         { return RS; }
+"<="         { return LE; }
+">="         { return GE; }
+"=="         { return EQ; }
+"!="         { return NE; }
+"&&"         { return ANDAND; }
+"||"         { return OROR; }
+"*="         { return MULTassign; }
+"/="         { return DIVassign; }
+"+="         { return PLUSassign; }
+"-="         { return MINUSassign; }
+"<<="        { return LSassign; }
+">>="        { return RSassign; }
+"&="         { return ANDassign; }
+"^="         { return ERassign; }
+"|="         { return ORassign; }
+
+.* {
+  yylval.str = new string(yytext);
+  return err_tok;
+}
+                        
 %%
