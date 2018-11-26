@@ -2,17 +2,6 @@
 #ifndef _DEFINES_H
 #define _DEFINES_H
 
-#define GLOBAL
-#define PRIVATE static
-
-typedef int Bool;
-typedef void Generic;
-typedef void **GenericREF;
-
-#define TRUE 1
-#define FALSE 0
-#define TAB_WIDTH  8
-
 /*pretty-debug*/
 // debug info is in blue
 //#define DEBUG
@@ -34,6 +23,9 @@ typedef void **GenericREF;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include <iostream>
+using namespace std;
 #undef assert
 #define assert(x) ((x) ? (void)0 : (void)Fail(__FILE__, __LINE__, #x))
 
