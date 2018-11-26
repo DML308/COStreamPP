@@ -10,10 +10,10 @@ extern void yyerror (const char *msg);
     int num;
     std::string *str;
 }
-%token intConstant stringConstant
+%token intConstant stringConstant err_tok
 
 %type<num> expression.constant intConstant
-%type<str> stringConstant
+%type<str> stringConstant err_tok
 /*优先级标记*/
 %left '='
 
@@ -29,6 +29,9 @@ prog.start: translation.unit ;
 translation.unit:              
           expression.constant
         | translation.unit expression.constant
+        | translation.unit err_tok  {
+                                      error("Line:%-3d Unexpected character: %s \n",@2.first_line, $2->c_str());  
+                                    } 
         ;
 
 expression.constant: 
@@ -37,11 +40,11 @@ expression.constant:
                         debug ("expression.constant ::= intConstant | value:=%d\n",$1);
                         $$ = $1;
                     } 
-        | stringConstant {
+        | stringConstant  {
                             line("Line:%-3d",@1.first_line);
                             debug ("expression.constant ::= stringConstant | value:=%s\n",$1->c_str());
                             $$ = $$;
-                        } 
+                          } 
         ;
 
 

@@ -51,5 +51,8 @@ Annotation       \/\/[^\n]*\n
                           return stringConstant;
                         }
 
-.
+.*                      {
+                          yylval.str = new string(yytext);
+                          return err_tok;
+                        }
 %%
