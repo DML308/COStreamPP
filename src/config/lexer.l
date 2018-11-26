@@ -12,11 +12,12 @@
 
 /*标识符(变量名) 以字母开头,后面跟着字母或数字或下划线*/
 identifier ([a-zA-Z_][0-9a-zA-Z_]*)   
-
 /*指数部分,例如 e3 或 E-3*/
 exponent_part ([eE][-+]?[0-9]+)
 /*小数部分,例如123.456 或123.或.123 注意 '123.'和'.123'这两种写法是符合标准的,但是看起来很奇怪所以不推荐后来这样写,建议替换为为'123.0'和'0.123'*/
 fractional_constant ([0-9]*"."[0-9]+)|([0-9]+".")
+/* 整型后缀 * /
+integer_suffix_opt  ([uU]?[lL]?[lL]?)|([lL][lL][uU])
 /*浮点字面值可以用十进制或科学计数法（指数用E或e）表示，默认为double，在数值后加F或f表示单精度，加L或l表示扩展精度*/
 floating_constant ((({fractional_constant}{exponent_part}?)|([0-9]+{exponent_part}))[FfLl]?)
 
@@ -27,8 +28,15 @@ octal_constant ("0"[0-7]*{integer_suffix_opt})
 /* 16进制数字 */
 hex_constant ("0"[xX][0-9a-fA-F]+{integer_suffix_opt})
 
-c_char ([^'\\\n]|{escape_sequence})
-s_char ([^"\\\n]|{escape_sequence})
+
+/*  对转义字符的处理*/
+simple_escape       ([abfnrtv'"?\\])
+octal_escape        ([0-7][^'\n]*)
+hex_escape          ("x"[^'\n]*)
+bad_escape          ([\\][^abfnrtv'"?\\x0-7\n ])
+escape_sequence     ([\\]({simple_escape}|{octal_escape}|{hex_escape}))
+c_char              ([^'\\\n]|{escape_sequence})
+s_char              ([^"\\\n]|{escape_sequence})
 
 /*空白字符的代码意义不明,应修改.*/
 any_white ([ \011\013\014\015])
