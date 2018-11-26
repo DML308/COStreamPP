@@ -7,7 +7,7 @@ extern void yyerror (const char *msg);
 
 /*在 union 里声明 %token 可能有的类型*/
 %union{
-    int num;
+    long long  num;
     std::string *str;
 }
 /* 1. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
@@ -53,7 +53,7 @@ translation.unit:
 expression.constant: 
           intConstant {
                         line("Line:%-3d",@1.first_line);
-                        debug ("expression.constant ::= intConstant | value:=%d\n",$1);
+                        debug ("expression.constant ::= intConstant | value:=%lld\n",$1);
                         $$ = $1;
                     } 
         | stringConstant  {

@@ -41,10 +41,10 @@ Annotation       \/\/[^\n]*\n
 {any_white}             
 {Annotation}            {debug("单行注释\n");}
 {Annotations}           {debug("多行注释\n");}
-{decimal_constant}      {
-                          yylval.num = atoi (yytext);
-                          return intConstant;
-                        }
+{decimal_constant}|{hex_constant}|{octal_constant}  {
+                                                      yylval.num = stoll(yytext,0,0);
+                                                      return intConstant;
+                                                    }
 {string_constant}       {
                           string str = string(yytext);
                           yylval.str = new string(str.substr(1,str.size()-2));
