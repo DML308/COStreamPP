@@ -9,7 +9,7 @@ src/COStreamC
 *~
 *.bak
 src/bin
-src/include/FrontEnd/token.hh
-src/src/FrontEnd/parser.cc
-src/src/FrontEnd/lexer.cc
+src/include/FrontEnd/token.h
+src/src/FrontEnd/parser.cpp
+src/src/FrontEnd/lexer.cpp
 src/a
