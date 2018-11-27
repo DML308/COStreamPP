@@ -9,6 +9,7 @@ extern void yyerror (const char *msg);
 %union{
     long long  num;
     std::string *str;
+    Node * node;
 }
 /* 1. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
 %token intConstant      stringConstant      err_tok
@@ -27,7 +28,8 @@ extern void yyerror (const char *msg);
 %type<num> intConstant
 %type<str> err_tok stringConstant
 /* 2.2 语法分析器自己的结构 */
-%type<num> expression.constant
+%type<num>  expression.constant
+%type<node> prog.start translation.unit external.definition declaration
 
 /* 3. 优先级标记,从上至下优先级从低到高排列 */
 %left '='
@@ -37,19 +39,47 @@ extern void yyerror (const char *msg);
 %locations
 
 %% 
-/********************************************************************************
-*                            顶级    节点                                        *
-********************************************************************************/
+/*************************************************************************/
+/*               1. 文法一级入口,由下面三种文法组成                           */
+/*                  1.1. decalration 声明                                 */
+/*                  1.2. function.definition 函数声明                      */
+/*                  1.3. composite.definition 数据流计算单元声明             */
+/*************************************************************************/
 prog.start: translation.unit ;
 
 translation.unit:              
-          expression.constant
-        | translation.unit expression.constant
-        | translation.unit err_tok  {
-                                      error("Line:%-3d Unexpected character: %s \n",@2.first_line, $2->c_str());  
-                                    } 
+          external.definition 
+        | translation.unit external.definition
         ;
-
+external.definition:           
+          declaration
+        //| function.definition
+	      //| composite.definition
+	      ;
+/*************************************************************************/
+/*               1.1 decalration 由下面三种文法组成                         */
+/*                  1.1.1 declaring.list                                 */
+/*                  1.1.2 default.declaring.list                         */
+/*************************************************************************/
+declaration:
+		  declaring.list ';'
+		| default.declaring.list ';'
+		;
+declaring.list: 
+          declaration.specifier 	declarator attributes.opt  initializer.opt
+		    | type.specifier 			declarator attributes.opt initializer.opt  
+		    | declaring.list 	',' 	declarator  attributes.opt initializer.opt
+        ;
+default.declaring.list:  
+          declaration.qualifier.list identifier.declarator attributes.opt initializer.opt 
+	      | stream.type.specifier identifier.declarator 
+        | type.qualifier.list identifier.declarator ttributes.opt initializer.opt
+        | default.declaring.list ',' identifier.declarator attributes.opt initializer.opt
+        ;
+        
+/*************************************************************************/
+/*               2. expression 计算表达式节点,自底向上接入头部文法结构          */
+/*************************************************************************/
 expression.constant: 
           intConstant {
                         line("Line:%-3d",@1.first_line);
