@@ -1,5 +1,4 @@
-CC      = gcc
-CXX		= g++
+CXX		= g++ -std=c++11 -w
 YACC    = bison -y
 LEX     = flex
 CPPFLAGS  = -I include/FrontEnd -I include/BackEnd
@@ -43,7 +42,7 @@ $(PROGRAM) : $(OBJS)
 
 
 clean :
-	@$(RM) src/*/lexer.cc include/*/token.h src/*/parser.cc y.tab.[ch] config/*.output *.o  bin/* *.d *.out
+	@$(RM) src/*/lexer.c include/*/token.h src/*/parser.c y.tab.[ch] config/*.output *.o  bin/* *.d *.out
 count :
 	make clean
 	find . -maxdepth 2  -name "*[.l|.y|.c|.cc|.cpp|.h|Makefile]"  | xargs cat | wc -l
