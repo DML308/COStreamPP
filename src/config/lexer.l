@@ -54,6 +54,7 @@ Annotation       \/\/[^\n]*\n
 string      { return STRING; }
 int         { return INT; }
 double      { return DOUBLE; } 
+float       { return FLOAT; }
 long        { return LONG; }
 const       { return CONST; }
 define      { return DEFINE; }

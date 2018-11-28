@@ -13,7 +13,7 @@ extern void yyerror (const char *msg);
 }
 /* 1. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
 %token intConstant      stringConstant      err_tok
-%token STRING     INT   DOUBLE  LONG        CONST   DEFINE
+%token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE  
 %token WHILE      FOR   BREAK   CONTINUE    SWITCH  CASE DEFAULT IF ELSE
 %token POUNDPOUND ICR   DECR    ANDAND      OROR    LS  RS LE GE EQ NE
 %token MULTassign DIVassign     PLUSassign  MINUSassign 
@@ -66,7 +66,6 @@ declaration:
 		| default.declaring.list ';'
 		;
 declaring.list: 
-          declaration.specifier 	declarator attributes.opt  initializer.opt
 		    | type.specifier 			declarator attributes.opt initializer.opt  
 		    | declaring.list 	',' 	declarator  attributes.opt initializer.opt
         ;
@@ -76,7 +75,8 @@ default.declaring.list:
         | type.qualifier.list identifier.declarator ttributes.opt initializer.opt
         | default.declaring.list ',' identifier.declarator attributes.opt initializer.opt
         ;
-        
+      
+
 /*************************************************************************/
 /*               2. expression 计算表达式节点,自底向上接入头部文法结构          */
 /*************************************************************************/
@@ -92,8 +92,21 @@ expression.constant:
                             $$ = $$;
                           } 
         ;
-
-
+/*************************************************************************/
+/*               3. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构*/
+/*************************************************************************/
+type.specifier:
+          basic.type.name
+        | CONST basic.type.name
+        ;  
+basic.type.name:
+          INT
+        | LONG 
+        | LONG LONG
+        | FLOAT
+        | DOUBLE
+        | STRING
+        ;
 %%
 /* ----语法树结束----*/
 void yyerror (const char *msg)

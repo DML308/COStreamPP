@@ -6,7 +6,7 @@ composite B(output stream<int x>Out,input stream<int x>In)
 		int size1,int size2;
 	Out = A(In)
 	{
-		
+
 		work
 		{
 			int i,j;
@@ -24,7 +24,7 @@ composite B(output stream<int x>Out,input stream<int x>In)
 
 composite Main(){
 	int N;
-	stream<int x>S,P;
+	stream<int x,double y>S,P;
 	S=Source(){
 		int i;
 		init{
