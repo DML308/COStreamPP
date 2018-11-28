@@ -43,7 +43,7 @@ Annotation       \/\/[^\n]*\n
 {Annotations}           {debug("多行注释\n");}
 {decimal_constant}|{hex_constant}|{octal_constant}  {
                                                       yylval.num = stoll(yytext,0,0);
-                                                      return intConstant;
+                                                      return integerConstant;
                                                     }
 {string_constant}       {
                           string str = string(yytext);
@@ -54,6 +54,7 @@ Annotation       \/\/[^\n]*\n
 string      { return STRING; }
 int         { return INT; }
 double      { return DOUBLE; } 
+float       { return FLOAT; }
 long        { return LONG; }
 const       { return CONST; }
 define      { return DEFINE; }
