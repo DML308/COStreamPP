@@ -43,7 +43,7 @@ Annotation       \/\/[^\n]*\n
 {Annotations}           {debug("多行注释\n");}
 {decimal_constant}|{hex_constant}|{octal_constant}  {
                                                       yylval.num = stoll(yytext,0,0);
-                                                      return intConstant;
+                                                      return integerConstant;
                                                     }
 {string_constant}       {
                           string str = string(yytext);
