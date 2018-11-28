@@ -150,11 +150,63 @@ function.body:
         ;
 
 /*************************************************************************/
-/*              1.3 composite.definition 数据流计算单元声明                 */
+/*              1.3 composite.definition 数据流计算单元声明                */
+/*                      1.3.1 composite.head                             */
+/*                      1.3.2 composite.body                             */
+/*************************************************************************/
+composite.definition:
+		  composite.head composite.body.no.new.scope
+		;
+composite.head:							
+		  COMPOSITE IDENTIFIER '(' composite.head.inout ')'  
+		;
+composite.head.inout:					
+		  /*empty*/             { $$ = NULL; }
+    | INPUT composite.head.inout.member.list
+		| INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list
+		| OUTPUT composite.head.inout.member.list
+		| OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list
+		;
+composite.head.inout.member.list:		
+		  composite.head.inout.member
+    | composite.head.inout.member.list ',' composite.head.inout.member
+		;
+composite.head.inout.member:			
+		  stream.type.specifier IDENTIFIER
+		;
+/*************************************************************************/
+/*                      1.3.2 composite.body                             */
+/*                            1.3.2.1 composite.body.param.opt           */
+/*                            1.3.2.2 composite.body.declaration.list     */
+/*                            1.3.2.3 composite.body.statement.list       */
+/*************************************************************************/
+composite.body.no.new.scope:						
+			 '{' composite.body.param.opt composite.body.statement.list '}'
+		|  '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'
+		;
+composite.body.param.opt:		
+		  /*empty*/               { $$ = NULL; }
+		| PARAM parameter.list ';'
+		;
+composite.declaration.list:              
+          declaration                  
+        | composite.declaration.list declaration  
+        ;
+composite.body.statement.list:
+		      costream.composite.statement
+		    | composite.body.statement.list costream.composite.statement
+		    ;
+costream.composite.statement: 
+          composite.body.operator
+	      | statement
+		    ;
+/*************************************************************************/
+/*        2. statement 花括号内以';'结尾的结构是statement                  */
 /*************************************************************************/
 
+
 /*************************************************************************/
-/*        2. assignment.expression 计算表达式头节点                         */
+/*        3. assignment.expression 计算表达式头节点                         */
 /*************************************************************************/
 expression.constant: 
           intConstant {
@@ -169,7 +221,7 @@ expression.constant:
                           } 
         ;
 /*************************************************************************/
-/*        3. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
+/*        4. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
 constant: 
           doubleConstant     { $$ = $$; }
