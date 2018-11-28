@@ -57,7 +57,11 @@ translation.unit:
         ;
 external.definition:           
           declaration
-        //| function.definition
+        | function.definition   {
+                                      line("Line:%-3d",@1.first_line);
+                                      debug ("external.definition ::= function.definition\n");
+                                      $$ = NULL;
+                                }
 	      //| composite.definition
 	      ;
 /*************************************************************************/
