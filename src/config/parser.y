@@ -72,8 +72,10 @@ declaration:
     | stream.declaring.list ';'
 		;
 declaring.list: 
-		    | type.specifier 			  IDENTIFIER postfixing.abstract.declarator initializer.opt  
-		    | declaring.list 	',' 	IDENTIFIER postfixing.abstract.declarator initializer.opt
+		      type.specifier 			  IDENTIFIER initializer.opt 
+        | type.specifier 			  IDENTIFIER array.declarator initializer.opt  
+		    | declaring.list 	',' 	IDENTIFIER initializer.opt 
+		    | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt
         ;
 stream.declaring.list:      
           stream.type.specifier IDENTIFIER
@@ -84,23 +86,19 @@ stream.type.specifier:
 		    ;
 stream.declaration.list:
 		      type.specifier IDENTIFIER 
-		    | type.specifier IDENTIFIER postfixing.abstract.declarator
+		    | type.specifier IDENTIFIER array.declarator
 		    | stream.declaration.list ',' type.specifier IDENTIFIER
-		    | stream.declaration.list ',' type.specifier IDENTIFIER postfixing.abstract.declarator
+		    | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator
 		    ;
-postfixing.abstract.declarator:
-         /* nothing */
-        | array.abstract.declarator
-        ;
 
 /*************************************************************************/
 /*                      1.1.3 array ( int a[] )                          */
 /*************************************************************************/
-array.abstract.declarator:
+array.declarator:
           '[' ']'               
         | '[' constant.expression ']'
-        | array.abstract.declarator '[' constant.expression ']'      
-        | array.abstract.declarator '[' ']' { 
+        | array.declarator '[' constant.expression ']'      
+        | array.declarator '[' ']' { 
                                               line("Line:%-3d",@1.first_line);
                                               error ("array declaration with illegal empty dimension\n");
                                               exit(0);
@@ -125,34 +123,30 @@ initializer.list: /
 /*************************************************************************/
 /*              1.2 function.definition 函数声明                          */
 /*                      1.2.1 parameter.list                             */
-/*                      1.2.1 compound.statement.no.new.scope {函数体}    */
+/*                      1.2.1 function.body {函数体}                      */
 /*************************************************************************/
 function.definition:
-          type.specifier IDENTIFIER '(' ')' compound.statement.no.new.scope
-        | type.specifier IDENTIFIER '(' parameter.list ')' compound.statement.no.new.scope
+          type.specifier IDENTIFIER '(' ')' function.body
+        | type.specifier IDENTIFIER '(' parameter.list ')' function.body
         ;
 parameter.list: 
           parameter.declaration
         | parameter.list ',' parameter.declaration      /* 含有多个参数 */
-
-        /******** ERROR PRODUCTIONS (EAB) ********/
-        | parameter.declaration '=' initializer         /* 默任初始化 */
-            { 
-	          SyntaxErrorCoord($1->coord, "formals cannot have initializers");
-              $$ = MakeNewList($1); 
-            }
-        | parameter.list ',' error
-            { $$ = $1; }
+        | parameter.declaration '=' initializer         { 
+                                                          //函数参数里不支持初始化
+                                                          line("Line:%-3d",@1.first_line);
+                                                          error( "parameter.list in function definations cannot have initializers");
+                                                          exit(121);
+                                                        }
+        | parameter.list ',' err_tok
         ;
-compound.statement.no.new.scope:             
+parameter.declaration: 
+		      type.specifier IDENTIFIER 
+        | type.specifier IDENTIFIER array.declarator
+        ;
+function.body:             
           '{' '}'
-            { $$ = MakeBlockCoord(PrimVoid, NULL, NULL, $1, $2); }
-        | '{' declaration.list '}'
-            { $$ = MakeBlockCoord(PrimVoid, GrabPragmas($2), NULL, $1, $3); }
         | '{' statement.list '}'
-            { $$ = MakeBlockCoord(PrimVoid, NULL, GrabPragmas($2), $1, $3); }
-        | '{' declaration.list statement.list '}'
-            { $$ = MakeBlockCoord(PrimVoid, $2, GrabPragmas($3), $1, $4); }
         ;
 
 /*************************************************************************/
@@ -175,7 +169,7 @@ expression.constant:
                           } 
         ;
 /*************************************************************************/
-/*        3. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构        */
+/*        3. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
 constant: 
           doubleConstant     { $$ = $$; }
