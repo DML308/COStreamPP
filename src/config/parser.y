@@ -44,10 +44,10 @@ extern void yyerror (const char *msg);
 
 %% 
 /*************************************************************************/
-/*               1. 文法一级入口,由下面三种文法组成                           */
-/*                  1.1. decalration 声明                                 */
-/*                  1.2. function.definition 函数声明                      */
-/*                  1.3. composite.definition 数据流计算单元声明             */
+/*        1. 文法一级入口,由下面三种文法组成                                  */
+/*              1.1. decalration 声明                                    */
+/*              1.2. function.definition 函数声明                         */
+/*              1.3. composite.definition 数据流计算单元声明                */
 /*************************************************************************/
 prog.start: translation.unit ;
 
@@ -61,11 +61,11 @@ external.definition:
 	      //| composite.definition
 	      ;
 /*************************************************************************/
-/*               1.1 decalration 由下面2种文法+2个基础组件组成                         */
-/*                  1.1.1 declaring.list                                 */
-/*                  1.1.2 stream.declaring.list                                 */
-/*                  1.1.3 array                                 */
-/*                  1.1.4 initializer                                 */
+/*              1.1 decalration 由下面2种文法+2个基础组件组成                */
+/*                      1.1.1 declaring.list                             */
+/*                      1.1.2 stream.declaring.list                      */
+/*                      1.1.3 array                                      */
+/*                      1.1.4 initializer                                */
 /*************************************************************************/
 declaration:
 		  declaring.list ';'
@@ -94,7 +94,7 @@ postfixing.abstract.declarator:
         ;
 
 /*************************************************************************/
-/*                  1.1.3 array ( int a[] )                               */
+/*                      1.1.3 array ( int a[] )                          */
 /*************************************************************************/
 array.abstract.declarator:
           '[' ']'               
@@ -107,7 +107,7 @@ array.abstract.declarator:
                                             }
         ;
 /*************************************************************************/
-/*                  1.1.4 initializer                                   */
+/*                      1.1.4 initializer                                */
 /*************************************************************************/
 initializer.opt:
           /* nothing */                  { $$ = NULL; }
@@ -123,9 +123,9 @@ initializer.list: /
         | initializer.list ',' initializer  { $$ =NULL; }
         ;
 /*************************************************************************/
-/*               1.2 function 由下面2组成                         */
-/*                1.2.1 parameter.list                         */
-/*                1.2.1 compound.statement.no.new.scope {函数体}             */
+/*              1.2 function.definition 函数声明                          */
+/*                      1.2.1 parameter.list                             */
+/*                      1.2.1 compound.statement.no.new.scope {函数体}    */
 /*************************************************************************/
 function.definition:
           type.specifier IDENTIFIER '(' ')' compound.statement.no.new.scope
@@ -156,11 +156,11 @@ compound.statement.no.new.scope:
         ;
 
 /*************************************************************************/
-/*               1.3 composite.definition 数据流计算单元声明             */
+/*              1.3 composite.definition 数据流计算单元声明                 */
 /*************************************************************************/
 
 /*************************************************************************/
-/*               2. assignment.expression 计算表达式头节点                  */
+/*        2. assignment.expression 计算表达式头节点                         */
 /*************************************************************************/
 expression.constant: 
           intConstant {
@@ -175,7 +175,7 @@ expression.constant:
                           } 
         ;
 /*************************************************************************/
-/*               3. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构*/
+/*        3. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构        */
 /*************************************************************************/
 constant: 
           doubleConstant     { $$ = $$; }
