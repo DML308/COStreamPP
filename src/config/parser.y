@@ -14,21 +14,21 @@ extern void yyerror (const char *msg);
 }
 /* A. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
 %token intConstant      stringConstant      err_tok
-%token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE  
+%token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE
 %token WHILE      FOR   BREAK   CONTINUE    SWITCH  CASE DEFAULT IF ELSE
 %token POUNDPOUND ICR   DECR    ANDAND      OROR    LS  RS LE GE EQ NE
-%token MULTassign DIVassign     PLUSassign  MINUSassign 
+%token MULTassign DIVassign     PLUSassign  MINUSassign
 %token LSassign   RSassign ANDassign ERassign ORassign
     /* A.1 ----------------- COStream 特有关键字 ---------------*/
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
-%token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING 
+%token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
 
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
 %type<num>  expression.constant
-%type<node> prog.start translation.unit external.definition 
+%type<node> prog.start translation.unit external.definition
 %type<node> declaration function.definition composite.definition
 /* 语法分析器自己的结构 1.1.declaration */
 %type<node> declaring.list  stream.declaring.list stream.type.specifier stream.declaration.list
@@ -47,7 +47,7 @@ extern void yyerror (const char *msg);
 /* 语法分析器自己的结构 4.basic 从词法TOKEN直接归约得到的节点 */
 %type<node>constant type.specifier basic.type.name
 %type<num> integerConstant
-%type<doubleNum> doubleConstant 
+%type<doubleNum> doubleConstant
 %type<str> err_tok stringConstant
 
 
@@ -59,7 +59,7 @@ extern void yyerror (const char *msg);
 %start prog.start
 %locations
 
-%% 
+%%
 /************************************************************************/
 /*              1. 文法一级入口,由下面三种文法组成                           */
 /*                 1.1. decalration 声明                                 */
@@ -68,7 +68,7 @@ extern void yyerror (const char *msg);
 /************************************************************************ /
 prog.start: translation.unit ;
 
-translation.unit:              
+translation.unit:
           external.definition   {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("translation.unit ::= external.definition\n");
@@ -76,7 +76,7 @@ translation.unit:
                                 }
         | translation.unit external.definition
         ;
-external.definition:           
+external.definition:
           declaration           {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= declaration\n");
@@ -106,10 +106,10 @@ declaration:
                                       line("Line:%-3d",@1.first_line);
                                       debug ("declaration ::= stream.declaring.list ';' \n");
                                       $$ = NULL;
-                                
+
                                 }
     ;
-declaring.list: 
+declaring.list:
           type.specifier 			  IDENTIFIER initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier IDENTIFIER initializer.opt \n");
@@ -119,7 +119,7 @@ declaring.list:
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier IDENTIFIER array.declarator initializer.opt \n");
               $$ = NULL;
-        } 
+        }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	IDENTIFIER initializer.opt \n");
@@ -131,7 +131,7 @@ declaring.list:
               $$ = NULL;
         }
         ;
-stream.declaring.list:      
+stream.declaring.list:
           stream.type.specifier IDENTIFIER    {
                                                   line("Line:%-3d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier IDENTIFIER \n");
@@ -181,7 +181,7 @@ array.declarator:
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= '[' ']' \n");
                             $$ = NULL;
-                    }            
+                    }
         | '[' constant.expression ']' {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= '[' constant.expression ']' \n");
@@ -191,8 +191,8 @@ array.declarator:
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= array.declarator '[' constant.expression ']' \n");
                             $$ = NULL;
-                    }     
-        | array.declarator '[' ']'  { 
+                    }
+        | array.declarator '[' ']'  {
                             line("Line:%-3d",@1.first_line);
                             error ("array declaration with illegal empty dimension\n");
                             exit(113);
@@ -202,49 +202,49 @@ array.declarator:
 /*                      1.1.4 initializer                                */
 /*************************************************************************/
 initializer.opt:
-          /* nothing */         { 
+          /* nothing */         {
                                     //line("Line:%-3d",@1.first_line);
                                     debug ("initializer.opt ::= nothing \n");
-                                    $$ = NULL; 
+                                    $$ = NULL;
                                 }
-        | '=' initializer       {   
+        | '=' initializer       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("initializer.opt ::= '=' initializer \n");
-                                    $$ = $2; 
+                                    $$ = $2;
                                 }
         ;
-initializer: 
-          '{' initializer.list '}'      { 
+initializer:
+          '{' initializer.list '}'      {
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list '}' \n");
-                                            $$ = $2; 
-                                            //$$->coord = $1; 
+                                            $$ = $2;
+                                            //$$->coord = $1;
                                         }
-        | '{' initializer.list ',' '}'  {   
+        | '{' initializer.list ',' '}'  {
                                             /* 本条规约规则有用吗？有用!现在js支持列表最后多个逗号 */
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list ',' '}' \n");
-                                            $$ = $2; 
-                                            //$$->coord = $1; 
-                                        }   
-        | assignment.expression         {   
-                                         
+                                            $$ = $2;
+                                            //$$->coord = $1;
+                                        }
+        | assignment.expression         {
+
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= assignment.expression \n");
                                             $$ = $1;
-                                        }		
+                                        }
         ;
 
-initializer.list: 
-          initializer   { 
+initializer.list:
+          initializer   {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer \n");
-                            $$ =NULL; 
+                            $$ =NULL;
                         }
-        | initializer.list ',' initializer  { 
+        | initializer.list ',' initializer  {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer.list ',' initializer \n");
-                            $$ =NULL; 
+                            $$ =NULL;
                         }
         ;
 /*************************************************************************/
@@ -256,27 +256,27 @@ function.definition:
           type.specifier IDENTIFIER '(' ')' function.body {
                 line("Line:%-3d",@1.first_line);
                 debug ("function.definition ::= type.specifier IDENTIFIER '(' ')' function.body \n");
-                $$ =NULL; 
+                $$ =NULL;
         }
         | type.specifier IDENTIFIER '(' parameter.list ')' function.body  {
                 line("Line:%-3d",@1.first_line);
                 debug ("function.definition ::= type.specifier IDENTIFIER '(' parameter.list ')' function.body \n");
-                $$ =NULL; 
+                $$ =NULL;
         }
         ;
 
-parameter.list: 
+parameter.list:
           parameter.declaration   {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.declaration \n");
-                $$ =NULL; 
+                $$ =NULL;
           }
         | parameter.list ',' parameter.declaration      /* 含有多个参数 */{
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.list ',' parameter.declaration \n");
-                $$ =NULL; 
+                $$ =NULL;
         }
-        | parameter.declaration '=' initializer { 
+        | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
                 line("Line:%-3d",@1.first_line);
                 error( "parameter.list in function definations cannot have initializers");
@@ -284,28 +284,28 @@ parameter.list:
         }
         | parameter.list ',' err_tok
         ;
-parameter.declaration: 
+parameter.declaration:
           type.specifier IDENTIFIER {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier IDENTIFIER \n");
-                                          $$ =NULL; 
+                                          $$ =NULL;
                                     }
         | type.specifier IDENTIFIER array.declarator  {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier IDENTIFIER array.declarator \n");
-                                          $$ =NULL; 
+                                          $$ =NULL;
                                     }
         ;
-function.body:             
+function.body:
           '{' '}'                   {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' '}' \n");
-                                          $$ =NULL; 
+                                          $$ =NULL;
                                     }
         | '{' statement.list '}'    {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' statement.list '}' \n");
-                                          $$ =NULL; 
+                                          $$ =NULL;
                                     }
         ;
 
@@ -317,21 +317,21 @@ function.body:
 composite.definition:
       composite.head composite.body.no.new.scope
     ;
-composite.head:							
-      COMPOSITE IDENTIFIER '(' composite.head.inout ')'  
+composite.head:
+      COMPOSITE IDENTIFIER '(' composite.head.inout ')'
     ;
-composite.head.inout:					
+composite.head.inout:
       /*empty*/             { $$ = NULL; }
     | INPUT composite.head.inout.member.list
     | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list
     | OUTPUT composite.head.inout.member.list
     | OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list
     ;
-composite.head.inout.member.list:		
+composite.head.inout.member.list:
       composite.head.inout.member
     | composite.head.inout.member.list ',' composite.head.inout.member
     ;
-composite.head.inout.member:			
+composite.head.inout.member:
       stream.type.specifier IDENTIFIER
     ;
 /*************************************************************************/
@@ -340,108 +340,152 @@ composite.head.inout.member:
 /*                        1.3.2.2 composite.body.declaration.list        */
 /*                        1.3.2.3 composite.body.statement.list          */
 /*************************************************************************/
-composite.body.no.new.scope:						
+composite.body.no.new.scope:
        '{' composite.body.param.opt composite.body.statement.list '}'
     |  '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'
     ;
-composite.body.param.opt:		
+composite.body.param.opt:
       /*empty*/               { $$ = NULL; }
     | PARAM parameter.list ';'
     ;
-composite.declaration.list:              
-          declaration                  
-        | composite.declaration.list declaration  
+composite.declaration.list:
+          declaration
+        | composite.declaration.list declaration
         ;
 composite.body.statement.list:
           costream.composite.statement
         | composite.body.statement.list costream.composite.statement
         ;
-costream.composite.statement: 
+costream.composite.statement:
           composite.body.operator
         | statement
         ;
 /*************************************************************************/
 /*        2. statement 花括号内以';'结尾的结构是statement                  */
 /*************************************************************************/
+statement:
+          labeled.statement
+        | compound.statement            /* 复合类型声明  */
+        | expression.statement
+        | selection.statement
+        | iteration.statement
+        | jump.statement
+        | error ';'
+           {  $$ = NULL; }
+        ;
 
+labeled.statement:
+        | CASE constant.expression ':' statement
+        | DEFAULT ':' statement
+        ;
+compound.statement:
+          '{' '}'
+        | '{' declaration.list '}'
+        | '{' composite.body.statement.list '}'
+        | '{' declaration.list composite.body.statement.list '}'
+        ;
+
+expression.statement:
+          expression.opt ';'
+        ;
+
+selection.statement:
+          IF '(' expression ')' costream.composite.statement
+        | IF '(' expression ')' costream.composite.statement ELSE costream.composite.statement  /* 可以为普通表达式也可以为流声明 */
+        | SWITCH '(' expression ')' statement
+        ;
+iteration.statement:
+          WHILE '(' expression ')' costream.composite.statement
+        | DO  costream.composite.statement WHILE '(' expression ')' ';'
+        | FOR '(' expression.opt ';' expression.opt ';' expression.opt ')'  costream.composite.statement
+        | FOR '(' error ';' expression.opt ';' expression.opt ')'  costream.composite.statement
+        | FOR '(' expression.opt ';' expression.opt ';' error ')'  costream.composite.statement
+        | FOR '(' expression.opt ';' error ';' expression.opt ')'  costream.composite.statement
+        | FOR '(' error ')' { ;}  costream.composite.statement
+        ;
+jump.statement:
+        | CONTINUE ';'
+        | BREAK ';'
+        | RETURN expression.opt ';'
+        ;
 
 /*************************************************************************/
 /*        3. assignment.expression 计算表达式头节点                         */
 /*************************************************************************/
-expression.constant: 
+expression.constant:
           intConstant     {
                             line("Line:%-3d",@1.first_line);
                             debug ("expression.constant ::= intConstant | value:=%lld\n",$1);
                             $$ = $1;
-                          } 
+                          }
         | stringConstant  {
                             line("Line:%-3d",@1.first_line);
                             debug ("expression.constant ::= stringConstant | value:=%s\n",$1->c_str());
                             $$ = $$;
-                          } 
+                          }
         ;
 /*************************************************************************/
 /*        4. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
-constant: 
-          doubleConstant    { 
+constant:
+          doubleConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= doubleConstant | value:=%s\n",$1->c_str());
-                                $$ = $$; 
+                                $$ = $$;
                             }
-        | integerConstant   { 
+        | integerConstant   {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= integerConstant | value:=%s\n",$1->c_str());
-                                $$ = $$; 
+                                $$ = $$;
                             }
-        | stringConstant    { 
+        | stringConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= stringConstant | value:=%s\n",$1->c_str());
-                                $$ = $$; 
+                                $$ = $$;
                             }
         ;
 type.specifier:
           basic.type.name       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  basic.type.name \n");
-                                    $$ =NULL; 
+                                    $$ =NULL;
                                 }
         | CONST basic.type.name {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  CONST basic.type.name \n");
-                                    $$ =NULL; 
+                                    $$ =NULL;
                                 }
-        ;  
+        ;
 basic.type.name:
           INT   {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  INT \n");
-                      $$ =NULL; 
+                      $$ =NULL;
                 }
         | LONG  {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG \n");
-                      $$ =NULL; 
+                      $$ =NULL;
                 }
         | LONG LONG{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
-                      $$ =NULL; 
-                    }     
+                      $$ =NULL;
+                    }
         | FLOAT {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  FLOAT \n");
-                      $$ =NULL; 
+                      $$ =NULL;
                 }
         | DOUBLE{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  DOUBLE \n");
-                      $$ =NULL; 
+                      $$ =NULL;
                 }
         | STRING{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  STRING \n");
-                      $$ =NULL; 
+                      $$ =NULL;
                 }
         ;
 %%
