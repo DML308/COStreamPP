@@ -226,7 +226,7 @@ initializer:
                                             $ = NULL ;
                                             //$ = NULL ;
                                         }
-        | exp         {
+        | exp                           {
 
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= exp \n");
@@ -370,7 +370,7 @@ composite.body.operator:
         | operator.add
         ;
 operator.file.writer:
-          FILEWRITER '(' IDENTIFIER ')' '(' argument.expression.list ')' ';'
+          FILEWRITER '(' IDENTIFIER ')' '(' stringConstant ')' ';'
         | FILEWRITER '(' IDENTIFIER ')' '(' ')' ';' {
                                                        error("Line:%d FILEWRITER must have the filename of the output file.\n",@1.first_line);
                                                     }
@@ -493,7 +493,8 @@ assignment.operator:
         | ERassign        { $ = NULL ;  }
         | ORassign        { $ = NULL ;  }
         ;
-exp:    IDENTIFIER        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n");}
+exp:      IDENTIFIER                        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n");}
+        | IDENTIFIER  array.declarator      { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n");}
         | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n");}
         | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n");}
         | exp '-' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n");}
@@ -526,12 +527,65 @@ exp:    IDENTIFIER        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDEN
         | '(' basic.type.name ')' exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n"); }
         | IDENTIFIER assignment.operator exp                  { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER assignment.operator exp\n"); }
         | IDENTIFIER array.declarator assignment.operator exp { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER array.declarator assignment.operator exp\n"); }
+        | IDENTIFIER '(' argument.expression.list ')'         { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER ( exp.list )\n"); }
+        | FILEREADER '(' ')' '(' stringConstant ')'           { line("Line:%-3d",@1.first_line);debug ("exp ::= FILEREADER()( stringConstant )\n"); }
+        | IDENTIFIER '('  ')' operator.selfdefine.body
+        | IDENTIFIER '(' IDENTIFIER ')' operator.selfdefine.body
+        | IDENTIFIER '('  ')'  '(' ')'{
+                                                                        /* 调用composite的四种情况*/
+                                      }
+        | IDENTIFIER '('  ')'  '(' argument.expression.list ')'
+        | IDENTIFIER '(' IDENTIFIER ')'  '(' ')'
+        | IDENTIFIER '(' IDENTIFIER ')'  '(' argument.expression.list ')'
+
+        | SPLITJOIN '(' IDENTIFIER ')'  '{'   split.statement  splitjoinPipeline.statement.list  join.statement '}'
+        | SPLITJOIN '(' IDENTIFIER ')'  '{'   declaration.list split.statement  splitjoinPipeline.statement.list  join.statement '}'
+        | SPLITJOIN '(' IDENTIFIER ')'  '{'   declaration.list statement.list split.statement splitjoinPipeline.statement.list  join.statement '}'
+        |  PIPELINE '(' IDENTIFIER ')'  '{'   splitjoinPipeline.statement.list '}'
+        |  PIPELINE '(' IDENTIFIER ')'  '{'   declaration.list splitjoinPipeline.statement.list '}'
         ;
 constant.expression:
           exp             {
                             //常量表达式放到语义检查中做
                           }
         ;
+
+
+operator.selfdefine.body:
+		   '{' operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+		 | '{' declaration.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+		 ;
+
+operator.selfdefine.body.init:
+		  /*empty*/{ $$ = NULL; }
+		| INIT compound.statement
+		;
+
+operator.selfdefine.body.work:
+		  WORK compound.statement
+		;
+
+operator.selfdefine.body.window.list:
+		  /*empty*/{ $$ = NULL; }
+		  | WINDOW '{' operator.selfdefine.window.list '}'
+		;
+
+operator.selfdefine.window.list:
+		  operator.selfdefine.window
+		| operator.selfdefine.window.list operator.selfdefine.window
+		;
+
+operator.selfdefine.window:
+		  IDENTIFIER window.type ';'
+		;
+
+window.type:
+		  SLIDING '('  ')'
+		| TUMBLING '('  ')'
+		| SLIDING '(' argument.expression.list ')'
+		| TUMBLING '(' argument.expression.list ')'
+		;
+
 
 /*************************************************************************/
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
