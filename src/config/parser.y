@@ -401,12 +401,36 @@ type.specifier:
                                 }
         ;  
 basic.type.name:
-          INT
-        | LONG 
-        | LONG LONG
-        | FLOAT
-        | DOUBLE
-        | STRING
+          INT   {
+                      line("Line:%-3d",@1.first_line);
+                      debug ("basic.type.name ::=  INT \n");
+                      $$ =NULL; 
+                }
+        | LONG  {
+                      line("Line:%-3d",@1.first_line);
+                      debug ("basic.type.name ::=  LONG \n");
+                      $$ =NULL; 
+                }
+        | LONG LONG{
+                      line("Line:%-3d",@1.first_line);
+                      debug ("basic.type.name ::=  LONG LONG  \n");
+                      $$ =NULL; 
+                    }     
+        | FLOAT {
+                      line("Line:%-3d",@1.first_line);
+                      debug ("basic.type.name ::=  FLOAT \n");
+                      $$ =NULL; 
+                }
+        | DOUBLE{
+                      line("Line:%-3d",@1.first_line);
+                      debug ("basic.type.name ::=  DOUBLE \n");
+                      $$ =NULL; 
+                }
+        | STRING{
+                      line("Line:%-3d",@1.first_line);
+                      debug ("basic.type.name ::=  STRING \n");
+                      $$ =NULL; 
+                }
         ;
 %%
 /* ----语法树结束----*/
