@@ -479,22 +479,73 @@ jump.statement:
         ;
 
 /*************************************************************************/
-/*        3. assignment.expression 计算表达式头节点                         */
+/*        4. assignment.expression 计算表达式头节点                        */
 /*************************************************************************/
-expression.constant:
-          intConstant     {
-                            line("Line:%-3d",@1.first_line);
-                            debug ("expression.constant ::= intConstant | value:=%lld\n",$1);
-                            $$ = $1;
-                          }
-        | stringConstant  {
-                            line("Line:%-3d",@1.first_line);
-                            debug ("expression.constant ::= stringConstant | value:=%s\n",$1->c_str());
-                            $$ = $$;
+assignment.expression:
+          exp
+        | IDENTIFIER assignment.operator assignment.expression
+        | IDENTIFIER array.declarator assignment.operator assignment.expression
+        ;
+assignment.operator:
+          '='             { $$ = NULL;  }
+        | MULTassign      { $$ = NULL;  }
+        | DIVassign       { $$ = NULL;  }
+        | MODassign       { $$ = NULL;  }
+        | PLUSassign      { $$ = NULL;  }
+        | MINUSassign     { $$ = NULL;  }
+        | LSassign        { $$ = NULL;  }
+        | RSassign        { $$ = NULL;  }
+        | ANDassign       { $$ = NULL;  }
+        | ERassign        { $$ = NULL;  }
+        | ORassign        { $$ = NULL;  }
+        ;
+unary.expression:
+          postfix.expression
+        | ICR unary.expression
+        | DECR unary.expression
+        | unary.operator cast.expression
+        ;
+
+unary.operator:
+          '+'     { $$ = MakeUnaryCoord('+', NULL, $1); }
+        | '-'     { $$ = MakeUnaryCoord('-', NULL, $1); }
+        | '~'     { $$ = MakeUnaryCoord('~', NULL, $1); }
+        | '!'     { $$ = MakeUnaryCoord('!', NULL, $1); }
+        ;
+
+exp:    IDENTIFIER        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n");}
+        | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n");}
+        | unary.expression
+        | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n");}
+        | exp '-' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n");}
+        | exp '*' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp * exp\n");}
+        | exp '/' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp / exp\n");}
+        | exp '%' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp %% exp\n");}
+        | exp OROR exp    { line("Line:%-3d",@1.first_line);debug ("exp ::= exp || exp\n");}
+        | exp ANDAND exp  { line("Line:%-3d",@1.first_line);debug ("exp ::= exp && exp\n");}
+        | exp '|' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp | exp\n");}
+        | exp '&' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp & exp\n");}
+        | exp '^' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp ^ exp\n");}
+        | exp LS exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp << exp\n");}
+        | exp RS exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp >> exp\n");}
+        | exp '<' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp < exp\n");}
+        | exp '>' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp > exp\n");}
+        | exp LE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp <= exp\n");}
+        | exp GE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp >= exp\n");}
+        | exp EQ exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp == exp\n");}
+        | exp NE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp != exp\n");}
+        | exp '?' exp ':' exp
+        | IDENTIFIER assignment.operator exp
+        | IDENTIFIER array.declarator assignment.operator exp
+        ;
+constant.expression:
+          exp             {
+                            //常量表达式放到语义检查中做
                           }
         ;
+
 /*************************************************************************/
-/*        4. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
+/*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
 constant:
           doubleConstant    {
