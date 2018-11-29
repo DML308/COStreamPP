@@ -193,8 +193,7 @@ array.declarator:
                             $$ = NULL;
                     }
         | array.declarator '[' ']'  {
-                            line("Line:%-3d",@1.first_line);
-                            error ("array declaration with illegal empty dimension\n");
+                            error ("Line:%-3d array declaration with illegal empty dimension\n",@1.first_line);
                             exit(113);
                     }
         ;
@@ -279,7 +278,7 @@ parameter.list:
         | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
                 line("Line:%-3d",@1.first_line);
-                error( "parameter.list in function definations cannot have initializers");
+                error( "Line:%-3d parameter.list in function definations cannot have initializers");
                 exit(121);
         }
         | parameter.list ',' err_tok
@@ -341,13 +340,13 @@ composite.head.inout.member:
 /*                        1.3.2.3 composite.body.statement.list          */
 /*************************************************************************/
 composite.body.no.new.scope:
-       '{' composite.body.param.opt composite.body.statement.list '}'
-    |  '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'
-    ;
+          '{' composite.body.param.opt composite.body.statement.list '}'
+        |  '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'
+        ;
 composite.body.param.opt:
-      /*empty*/               { $$ = NULL; }
-    | PARAM parameter.list ';'
-    ;
+          /*empty*/               { $$ = NULL; }
+        | PARAM parameter.list ';'
+        ;
 composite.declaration.list:
           declaration
         | composite.declaration.list declaration
@@ -360,6 +359,77 @@ costream.composite.statement:
           composite.body.operator
         | statement
         ;
+
+/*****************************************************************************/
+/*        2. composite.body.operator  composite体内的init work window等组件   */
+/*             2.1   ADD operator.pipeline                                   */
+/*             2.2   ADD operator.splitjoin                                  */
+/*             2.3   ADD operator.default.call                               */
+/*****************************************************************************/
+composite.body.operator:
+          operator.file.writer
+        | operator.add
+        ;
+operator.file.writer:
+          FILEWRITER '(' IDENTIFIER ')' '(' argument.expression.list ')' ';'
+        | FILEWRITER '(' IDENTIFIER ')' '(' ')' ';' {
+                                                       error("Line:%d FILEWRITER must have the filename of the output file.\n",@1.first_line);
+                                                    }
+        ;
+operator.add:
+          ADD operator.pipeline
+        | ADD operator.splitjoin
+        | ADD operator.default.call
+        ;
+operator.pipeline:
+          PIPELINE '{'  splitjoinPipeline.statement.list '}'
+        | PIPELINE '{'  declaration.list splitjoinPipeline.statement.list '}'
+        ;
+splitjoinPipeline.statement.list:
+          statement
+        | operator.add
+        | splitjoinPipeline.statement.list statement
+        | splitjoinPipeline.statement.list operator.add
+        ;
+operator.splitjoin:
+		      SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'      {
+                                                                                                    //add 方式 add splitjoin
+                                                                                                  }
+		    | SPLITJOIN '{' declaration.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
+                                                                                                    //add 方式 add splitjoin
+                                                                                                  }
+	      | SPLITJOIN '{' declaration.list statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
+                                                                                                    //add 方式 add splitjoin
+                                                                                                  }
+		    ;
+split.statement:
+          SPLIT duplicate.statement
+        | SPLIT roundrobin.statement
+        ;
+roundrobin.statement:
+          ROUNDROBIN '(' ')' ';'
+        | ROUNDROBIN '(' argument.expression.list ')' ';'
+        ;
+duplicate.statement:
+          DUPLICATE '('  ')' ';'
+        | DUPLICATE '(' assignment.expression ')'  ';'
+        ;
+join.statement:
+          JOIN roundrobin.statement
+        ;
+argument.expression.list:
+          assignment.expression
+        | argument.expression.list ',' assignment.expression
+        ;
+operator.default.call:
+          IDENTIFIER  '(' ')' ';'
+		    | IDENTIFIER  '(' argument.expression.list ')' ';'  {
+                                                              /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
+                                                              ///*DEBUG*/printf("have found operator.default.call\n");
+                                                              $$ = NULL;
+                                                            }
+		    ;
+
 /*************************************************************************/
 /*        2. statement 花括号内以';'结尾的结构是statement                  */
 /*************************************************************************/
@@ -370,8 +440,7 @@ statement:
         | selection.statement
         | iteration.statement
         | jump.statement
-        | error ';'
-           {  $$ = NULL; }
+        | error ';'{  $$ = NULL; }
         ;
 
 labeled.statement:
