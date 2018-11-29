@@ -42,8 +42,8 @@ extern void yyerror (const char *msg);
 %type<node> composite.head composite.body.no.new.scope
 /* 语法分析器自己的结构 2.statement 花括号内以';'结尾的结构是statement  */
 %type<node> statement.list
-/* 语法分析器自己的结构 3.assignment.expression 计算表达式头节点  */
-%type<node> assignment.expression constant.expression
+/* 语法分析器自己的结构 3.exp 计算表达式头节点  */
+%type<node> exp constant.expression
 /* 语法分析器自己的结构 4.basic 从词法TOKEN直接归约得到的节点 */
 %type<node>constant type.specifier basic.type.name
 %type<num> integerConstant
@@ -72,7 +72,7 @@ translation.unit:
           external.definition   {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("translation.unit ::= external.definition\n");
-                                      $$ = NULL;
+                                      $ = NULL ;
                                 }
         | translation.unit external.definition
         ;
@@ -80,12 +80,12 @@ external.definition:
           declaration           {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= declaration\n");
-                                      $$ = NULL;
+                                      $ = NULL ;
                                 }
         | function.definition   {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= function.definition\n");
-                                      $$ = NULL;
+                                      $ = NULL ;
                                 }
         //| composite.definition
         ;
@@ -100,12 +100,12 @@ declaration:
       declaring.list ';'        {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("declaration ::= declaring.list ';' \n");
-                                      $$ = NULL;
+                                      $ = NULL ;
                                 }
     | stream.declaring.list ';' {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("declaration ::= stream.declaring.list ';' \n");
-                                      $$ = NULL;
+                                      $ = NULL ;
 
                                 }
     ;
@@ -113,63 +113,63 @@ declaring.list:
           type.specifier 			  IDENTIFIER initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier IDENTIFIER initializer.opt \n");
-              $$ = NULL;
+              $ = NULL ;
         }
         | type.specifier 			  IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier IDENTIFIER array.declarator initializer.opt \n");
-              $$ = NULL;
+              $ = NULL ;
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	IDENTIFIER initializer.opt \n");
-              $$ = NULL;
+              $ = NULL ;
         }
         | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt \n");
-              $$ = NULL;
+              $ = NULL ;
         }
         ;
 stream.declaring.list:
           stream.type.specifier IDENTIFIER    {
                                                   line("Line:%-3d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier IDENTIFIER \n");
-                                                  $$ = NULL;
+                                                  $ = NULL ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
                                                   line("Line:%-3d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' IDENTIFIER \n");
-                                                  $$ = NULL;
+                                                  $ = NULL ;
                                               }
         ;
 stream.type.specifier:
           STREAM '<' stream.declaration.list '>'{
                                                     line("Line:%-3d",@1.first_line);
                                                     debug ("stream.type.specifier ::=  STREAM '<' stream.declaration.list '>' \n");
-                                                    $$ = NULL;
+                                                    $ = NULL ;
                                                 }
         ;
 stream.declaration.list:
           type.specifier IDENTIFIER {
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier IDENTIFIER \n");
-                                        $$ = NULL;
+                                        $ = NULL ;
                                     }
         | type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier IDENTIFIER array.declarator \n");
-                                        $$ = NULL;
+                                        $ = NULL ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER {
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER \n");
-                                        $$ = NULL;
+                                        $ = NULL ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER array.declarator \n");
-                                        $$ = NULL;
+                                        $ = NULL ;
                                     }
         ;
 
@@ -180,17 +180,17 @@ array.declarator:
           '[' ']'   {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= '[' ']' \n");
-                            $$ = NULL;
+                            $ = NULL ;
                     }
         | '[' constant.expression ']' {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= '[' constant.expression ']' \n");
-                            $$ = NULL;
+                            $ = NULL ;
                     }
         | array.declarator '[' constant.expression ']'  {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= array.declarator '[' constant.expression ']' \n");
-                            $$ = NULL;
+                            $ = NULL ;
                     }
         | array.declarator '[' ']'  {
                             error ("Line:%-3d array declaration with illegal empty dimension\n",@1.first_line);
@@ -204,33 +204,33 @@ initializer.opt:
           /* nothing */         {
                                     //line("Line:%-3d",@1.first_line);
                                     debug ("initializer.opt ::= nothing \n");
-                                    $$ = NULL;
+                                    $ = NULL ;
                                 }
         | '=' initializer       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("initializer.opt ::= '=' initializer \n");
-                                    $$ = $2;
+                                    $ = NULL ;
                                 }
         ;
 initializer:
           '{' initializer.list '}'      {
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list '}' \n");
-                                            $$ = $2;
-                                            //$$->coord = $1;
+                                            $ = NULL ;
+                                            //$ = NULL ;
                                         }
         | '{' initializer.list ',' '}'  {
                                             /* 本条规约规则有用吗？有用!现在js支持列表最后多个逗号 */
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list ',' '}' \n");
-                                            $$ = $2;
-                                            //$$->coord = $1;
+                                            $ = NULL ;
+                                            //$ = NULL ;
                                         }
-        | assignment.expression         {
+        | exp         {
 
                                             line("Line:%-3d",@1.first_line);
-                                            debug ("initializer ::= assignment.expression \n");
-                                            $$ = $1;
+                                            debug ("initializer ::= exp \n");
+                                            $ = NULL ;
                                         }
         ;
 
@@ -238,12 +238,12 @@ initializer.list:
           initializer   {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer \n");
-                            $$ =NULL;
+                            $ = NULL ;
                         }
         | initializer.list ',' initializer  {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer.list ',' initializer \n");
-                            $$ =NULL;
+                            $ = NULL ;
                         }
         ;
 /*************************************************************************/
@@ -255,12 +255,12 @@ function.definition:
           type.specifier IDENTIFIER '(' ')' function.body {
                 line("Line:%-3d",@1.first_line);
                 debug ("function.definition ::= type.specifier IDENTIFIER '(' ')' function.body \n");
-                $$ =NULL;
+                $ = NULL ;
         }
         | type.specifier IDENTIFIER '(' parameter.list ')' function.body  {
                 line("Line:%-3d",@1.first_line);
                 debug ("function.definition ::= type.specifier IDENTIFIER '(' parameter.list ')' function.body \n");
-                $$ =NULL;
+                $ = NULL ;
         }
         ;
 
@@ -268,43 +268,42 @@ parameter.list:
           parameter.declaration   {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.declaration \n");
-                $$ =NULL;
+                $ = NULL ;
           }
-        | parameter.list ',' parameter.declaration      /* 含有多个参数 */{
+        | parameter.list ',' parameter.declaration {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.list ',' parameter.declaration \n");
-                $$ =NULL;
-        }
+                $ = NULL ;
+          }
         | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
-                line("Line:%-3d",@1.first_line);
-                error( "Line:%-3d parameter.list in function definations cannot have initializers");
+                error( "Line:%-3d parameter.list in function definations cannot have initializers\n",@1.first_line);
                 exit(121);
-        }
+          }
         | parameter.list ',' err_tok
         ;
 parameter.declaration:
           type.specifier IDENTIFIER {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier IDENTIFIER \n");
-                                          $$ =NULL;
+                                          $ = NULL ;
                                     }
         | type.specifier IDENTIFIER array.declarator  {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier IDENTIFIER array.declarator \n");
-                                          $$ =NULL;
+                                          $ = NULL ;
                                     }
         ;
 function.body:
           '{' '}'                   {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' '}' \n");
-                                          $$ =NULL;
+                                          $ = NULL ;
                                     }
         | '{' statement.list '}'    {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' statement.list '}' \n");
-                                          $$ =NULL;
+                                          $ = NULL ;
                                     }
         ;
 
@@ -320,7 +319,7 @@ composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'
     ;
 composite.head.inout:
-      /*empty*/             { $$ = NULL; }
+      /*empty*/             { $ = NULL ; }
     | INPUT composite.head.inout.member.list
     | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list
     | OUTPUT composite.head.inout.member.list
@@ -344,7 +343,7 @@ composite.body.no.new.scope:
         |  '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'
         ;
 composite.body.param.opt:
-          /*empty*/               { $$ = NULL; }
+          /*empty*/               { $ = NULL ; }
         | PARAM parameter.list ';'
         ;
 composite.declaration.list:
@@ -412,21 +411,21 @@ roundrobin.statement:
         ;
 duplicate.statement:
           DUPLICATE '('  ')' ';'
-        | DUPLICATE '(' assignment.expression ')'  ';'
+        | DUPLICATE '(' exp ')'  ';'
         ;
 join.statement:
           JOIN roundrobin.statement
         ;
 argument.expression.list:
-          assignment.expression
-        | argument.expression.list ',' assignment.expression
+          exp
+        | argument.expression.list ',' exp
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'
 		    | IDENTIFIER  '(' argument.expression.list ')' ';'  {
                                                               /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
                                                               ///*DEBUG*/printf("have found operator.default.call\n");
-                                                              $$ = NULL;
+                                                              $ = NULL ;
                                                             }
 		    ;
 
@@ -440,7 +439,7 @@ statement:
         | selection.statement
         | iteration.statement
         | jump.statement
-        | error ';'{  $$ = NULL; }
+        | error ';'{  $ = NULL ; }
         ;
 
 labeled.statement:
@@ -479,43 +478,23 @@ jump.statement:
         ;
 
 /*************************************************************************/
-/*        4. assignment.expression 计算表达式头节点                        */
+/*        4. exp 计算表达式头节点                        */
 /*************************************************************************/
-assignment.expression:
-          exp
-        | IDENTIFIER assignment.operator assignment.expression
-        | IDENTIFIER array.declarator assignment.operator assignment.expression
-        ;
 assignment.operator:
-          '='             { $$ = NULL;  }
-        | MULTassign      { $$ = NULL;  }
-        | DIVassign       { $$ = NULL;  }
-        | MODassign       { $$ = NULL;  }
-        | PLUSassign      { $$ = NULL;  }
-        | MINUSassign     { $$ = NULL;  }
-        | LSassign        { $$ = NULL;  }
-        | RSassign        { $$ = NULL;  }
-        | ANDassign       { $$ = NULL;  }
-        | ERassign        { $$ = NULL;  }
-        | ORassign        { $$ = NULL;  }
+          '='             { $ = NULL ;  }
+        | MULTassign      { $ = NULL ;  }
+        | DIVassign       { $ = NULL ;  }
+        | MODassign       { $ = NULL ;  }
+        | PLUSassign      { $ = NULL ;  }
+        | MINUSassign     { $ = NULL ;  }
+        | LSassign        { $ = NULL ;  }
+        | RSassign        { $ = NULL ;  }
+        | ANDassign       { $ = NULL ;  }
+        | ERassign        { $ = NULL ;  }
+        | ORassign        { $ = NULL ;  }
         ;
-unary.expression:
-          postfix.expression
-        | ICR unary.expression
-        | DECR unary.expression
-        | unary.operator cast.expression
-        ;
-
-unary.operator:
-          '+'     { $$ = MakeUnaryCoord('+', NULL, $1); }
-        | '-'     { $$ = MakeUnaryCoord('-', NULL, $1); }
-        | '~'     { $$ = MakeUnaryCoord('~', NULL, $1); }
-        | '!'     { $$ = MakeUnaryCoord('!', NULL, $1); }
-        ;
-
 exp:    IDENTIFIER        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n");}
         | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n");}
-        | unary.expression
         | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n");}
         | exp '-' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n");}
         | exp '*' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp * exp\n");}
@@ -534,9 +513,19 @@ exp:    IDENTIFIER        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDEN
         | exp GE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp >= exp\n");}
         | exp EQ exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp == exp\n");}
         | exp NE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp != exp\n");}
-        | exp '?' exp ':' exp
-        | IDENTIFIER assignment.operator exp
-        | IDENTIFIER array.declarator assignment.operator exp
+        | exp '?' exp ':' exp { line("Line:%-3d",@1.first_line);debug ("exp ::= exp ? exp : exp\n");}
+        | '+' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= + exp\n");}
+        | '-' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= - exp\n");}
+        | '~' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= ~ exp\n");}
+        | '!' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= ! exp\n");}
+        |  ICR exp        { line("Line:%-3d",@1.first_line);debug ("exp ::= ++ exp\n");}
+        |  DECR exp       { line("Line:%-3d",@1.first_line);debug ("exp ::= -- exp\n");}
+        |  exp ICR        { line("Line:%-3d",@1.first_line);debug ("exp ::= exp ++ \n");}
+        |  exp DECR       { line("Line:%-3d",@1.first_line);debug ("exp ::= exp --\n");}
+        |  '(' exp ')'    { line("Line:%-3d",@1.first_line);debug ("exp ::= ( exp )\n");}
+        | '(' basic.type.name ')' exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n"); }
+        | IDENTIFIER assignment.operator exp                  { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER assignment.operator exp\n"); }
+        | IDENTIFIER array.declarator assignment.operator exp { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER array.declarator assignment.operator exp\n"); }
         ;
 constant.expression:
           exp             {
@@ -551,61 +540,61 @@ constant:
           doubleConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= doubleConstant | value:=%s\n",$1->c_str());
-                                $$ = $$;
+                                $ = NULL ;
                             }
         | integerConstant   {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= integerConstant | value:=%s\n",$1->c_str());
-                                $$ = $$;
+                                $ = NULL ;
                             }
         | stringConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= stringConstant | value:=%s\n",$1->c_str());
-                                $$ = $$;
+                                $ = NULL ;
                             }
         ;
 type.specifier:
           basic.type.name       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  basic.type.name \n");
-                                    $$ =NULL;
+                                    $ = NULL ;
                                 }
         | CONST basic.type.name {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  CONST basic.type.name \n");
-                                    $$ =NULL;
+                                    $ = NULL ;
                                 }
         ;
 basic.type.name:
           INT   {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  INT \n");
-                      $$ =NULL;
+                      $ = NULL ;
                 }
         | LONG  {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG \n");
-                      $$ =NULL;
+                      $ = NULL ;
                 }
         | LONG LONG{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
-                      $$ =NULL;
+                      $ = NULL ;
                     }
         | FLOAT {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  FLOAT \n");
-                      $$ =NULL;
+                      $ = NULL ;
                 }
         | DOUBLE{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  DOUBLE \n");
-                      $$ =NULL;
+                      $ = NULL ;
                 }
         | STRING{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  STRING \n");
-                      $$ =NULL;
+                      $ = NULL ;
                 }
         ;
 %%
