@@ -28,15 +28,22 @@ extern void yyerror (const char *msg);
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
 %type<num>  expression.constant
-%type<node> prog.start translation.unit external.definition declaration
+%type<node> prog.start translation.unit external.definition 
+%type<node> declaration function.definition composite.definition
 /* 语法分析器自己的结构 1.1.declaration */
+%type<node> declaring.list  stream.declaring.list stream.type.specifier stream.declaration.list
 /* 语法分析器自己的结构   1.1.3.array */
 %type<node> array.declarator
 /* 语法分析器自己的结构   1.1.4.initializer */
-%type<node> initializer.opt
+%type<node> initializer.opt initializer initializer.list
+/* 语法分析器自己的结构 1.2 function.definition 函数声明 */
+%type<node> function.body   parameter.list  parameter.declaration
+/* 语法分析器自己的结构 1.3 composite.definition 数据流计算单元声明 */
+%type<node> composite.head composite.body.no.new.scope
 /* 语法分析器自己的结构 2.statement 花括号内以';'结尾的结构是statement  */
-
+%type<node> statement.list
 /* 语法分析器自己的结构 3.assignment.expression 计算表达式头节点  */
+%type<node> assignment.expression constant.expression
 /* 语法分析器自己的结构 4.basic 从词法TOKEN直接归约得到的节点 */
 %type<node>constant type.specifier basic.type.name
 %type<num> integerConstant
@@ -188,7 +195,7 @@ array.declarator:
         | array.declarator '[' ']'  { 
                             line("Line:%-3d",@1.first_line);
                             error ("array declaration with illegal empty dimension\n");
-                            exit(0);
+                            exit(113);
                     }
         ;
 /*************************************************************************/
@@ -214,11 +221,12 @@ initializer:
                                             //$$->coord = $1; 
                                         }
         | '{' initializer.list ',' '}'  {   
+                                            /* 本条规约规则有用吗？有用!现在js支持列表最后多个逗号 */
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list ',' '}' \n");
                                             $$ = $2; 
                                             //$$->coord = $1; 
-                                        }   /* 本条规约规则有用吗？有用!现在js支持列表最后多个逗号 */
+                                        }   
         | assignment.expression         {   
                                          
                                             line("Line:%-3d",@1.first_line);
