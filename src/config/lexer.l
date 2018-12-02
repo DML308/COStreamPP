@@ -45,6 +45,10 @@ Annotation       \/\/[^\n]*\n
                                                       yylval.num = stoll(yytext,0,0);
                                                       return integerConstant;
                                                     }
+{floating_constant}     {
+                          yylval.doubleNum = strtod(yytext,0);
+                          return doubleConstant;
+                        }
 {string_constant}       {
                           string str = string(yytext);
                           yylval.str = new string(str.substr(1,str.size()-2));
@@ -90,6 +94,9 @@ split        { return SPLIT; }
 join         { return JOIN; }
 duplicate    { return DUPLICATE; }
 roundrobin   { return ROUNDROBIN; }
+
+{identifier} { yylval.str = new string(yytext);
+               return IDENTIFIER; }
 
 "("          { return *yytext; }
 ")"          { return *yytext; }
@@ -140,8 +147,7 @@ roundrobin   { return ROUNDROBIN; }
 "|="         { return ORassign; }
 
 .* {
-  yylval.str = new string(yytext);
-  return err_tok;
+  error("Line:%d,不支持的字符: %s\n",yylineno,yytext);
 }
                         
 %%

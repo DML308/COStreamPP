@@ -13,7 +13,7 @@ extern void yyerror (const char *msg);
     Node * node;
 }
 /* A. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
-%token intConstant      stringConstant      err_tok
+%token intConstant      stringConstant      doubleConstant  IDENTIFIER
 %token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE
 %token WHILE      FOR   BREAK   CONTINUE    SWITCH  CASE DEFAULT IF ELSE
 %token POUNDPOUND ICR   DECR    ANDAND      OROR    LS  RS LE GE EQ NE
@@ -60,7 +60,7 @@ extern void yyerror (const char *msg);
 %type<node>constant type.specifier basic.type.name
 %type<num> integerConstant
 %type<doubleNum> doubleConstant
-%type<str> err_tok stringConstant
+%type<str> IDENTIFIER stringConstant
 
 
 
