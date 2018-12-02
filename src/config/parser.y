@@ -50,10 +50,13 @@ extern void yyerror (const char *msg);
 %type<node> splitjoinPipeline.statement.list  operator.splitjoin  split.statement
 %type<node> roundrobin.statement   duplicate.statement  join.statement  argument.expression.list  operator.default.call
 /* 语法分析器自己的结构 3.statement 花括号内以';'结尾的结构是statement  */
-%type<node> statement labeled.statement labeled.statement compound.statement  
+%type<node> statement labeled.statement compound.statement  
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
 /* 语法分析器自己的结构 4.exp 计算表达式头节点  */
-%type<node> exp constant.expression
+%type<node> assignment.operator exp constant.expression 
+%type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
+%type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
+%type<node> window.type
 /* 语法分析器自己的结构 5.basic 从词法TOKEN直接归约得到的节点 */
 %type<node>constant type.specifier basic.type.name
 %type<num> integerConstant
