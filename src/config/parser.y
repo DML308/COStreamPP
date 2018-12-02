@@ -29,22 +29,32 @@ extern void yyerror (const char *msg);
 /* 语法分析器自己的结构 1. 文法一级入口*/
 %type<num>  expression.constant
 %type<node> prog.start translation.unit external.definition
-%type<node> declaration function.definition composite.definition
-/* 语法分析器自己的结构 1.1.declaration */
-%type<node> declaring.list  stream.declaring.list stream.type.specifier stream.declaration.list
-/* 语法分析器自己的结构   1.1.3.array */
+/* 语法分析器自己的结构   1.1.declaration */
+%type<node> declaration declaring.list  stream.declaring.list stream.type.specifier stream.declaration.list
+/* 语法分析器自己的结构     1.1.3.array */
 %type<node> array.declarator
-/* 语法分析器自己的结构   1.1.4.initializer */
+/* 语法分析器自己的结构     1.1.4.initializer */
 %type<node> initializer.opt initializer initializer.list
-/* 语法分析器自己的结构 1.2 function.definition 函数声明 */
-%type<node> function.body   parameter.list  parameter.declaration
-/* 语法分析器自己的结构 1.3 composite.definition 数据流计算单元声明 */
-%type<node> composite.head composite.body.no.new.scope
-/* 语法分析器自己的结构 2.statement 花括号内以';'结尾的结构是statement  */
-%type<node> statement.list
-/* 语法分析器自己的结构 3.exp 计算表达式头节点  */
+/* 语法分析器自己的结构   1.2 function.definition 函数声明 */
+%type<node> function.definition function.body   parameter.list  parameter.declaration
+/* 语法分析器自己的结构   1.3 composite.definition 数据流计算单元声明 */
+%type<node> composite.definition
+%type<node> composite.head composite.body   composite.head.inout  
+%type<node> composite.head.inout.member.list  composite.head.inout.member
+%type<node> operator.pipeline
+/* 语法分析器自己的结构      1.3.2 composite.body */
+%type<node> composite.body  composite.body.param.opt  composite.declaration.list 
+%type<node> composite.body.statement.list costream.composite.statement
+/* 语法分析器自己的结构 2. composite.body.operator  composite体内的init work window等组件  */
+%type<node> composite.body.operator   operator.file.writer  operator.add 
+%type<node> splitjoinPipeline.statement.list  operator.splitjoin  split.statement
+%type<node> roundrobin.statement   duplicate.statement  join.statement  argument.expression.list  operator.default.call
+/* 语法分析器自己的结构 3.statement 花括号内以';'结尾的结构是statement  */
+%type<node> statement labeled.statement labeled.statement compound.statement  
+%type<node> expression.statement  selection.statement   iteration.statement jump.statement
+/* 语法分析器自己的结构 4.exp 计算表达式头节点  */
 %type<node> exp constant.expression
-/* 语法分析器自己的结构 4.basic 从词法TOKEN直接归约得到的节点 */
+/* 语法分析器自己的结构 5.basic 从词法TOKEN直接归约得到的节点 */
 %type<node>constant type.specifier basic.type.name
 %type<num> integerConstant
 %type<doubleNum> doubleConstant
@@ -313,7 +323,7 @@ function.body:
 /*                      1.3.2 composite.body                             */
 /*************************************************************************/
 composite.definition:
-      composite.head composite.body.no.new.scope
+      composite.head composite.body
     ;
 composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'
@@ -338,7 +348,7 @@ composite.head.inout.member:
 /*                        1.3.2.2 composite.body.declaration.list        */
 /*                        1.3.2.3 composite.body.statement.list          */
 /*************************************************************************/
-composite.body.no.new.scope:
+composite.body:
           '{' composite.body.param.opt composite.body.statement.list '}'
         |  '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'
         ;
@@ -430,7 +440,7 @@ operator.default.call:
 		    ;
 
 /*************************************************************************/
-/*        2. statement 花括号内以';'结尾的结构是statement                  */
+/*        3. statement 花括号内以';'结尾的结构是statement                  */
 /*************************************************************************/
 statement:
           labeled.statement
