@@ -29,7 +29,8 @@ extern void yyerror (const char *msg);
 /* 语法分析器自己的结构 1. 文法一级入口*/
 %type<node> prog.start translation.unit external.definition
 /* 语法分析器自己的结构   1.1.declaration */
-%type<node> declaration declaring.list  stream.declaring.list stream.type.specifier stream.declaration.list
+%type<node> declaration declaring.list declaration.list
+%type<node> stream.declaring.list stream.type.specifier stream.declaration.list
 /* 语法分析器自己的结构     1.1.3.array */
 %type<node> array.declarator
 /* 语法分析器自己的结构     1.1.4.initializer */
@@ -85,7 +86,7 @@ extern void yyerror (const char *msg);
 %%
 /************************************************************************/
 /*              1. 文法一级入口,由下面三种文法组成                           */
-/*                 1.1. decalration 声明                                 */
+/*                 1.1. declaration 声明                                 */
 /*                 1.2. function.definition 函数声明                      */
 /*                 1.3. composite.definition 数据流计算单元声明             */
 /*************************************************************************/
@@ -121,7 +122,7 @@ external.definition:
                                 }
         ;
 /*************************************************************************/
-/*              1.1 decalration 由下面2种文法+2个基础组件组成                */
+/*              1.1 declaration 由下面2种文法+2个基础组件组成                */
 /*                      1.1.1 declaring.list                             */
 /*                      1.1.2 stream.declaring.list                      */
 /*                      1.1.3 array                                      */
@@ -203,7 +204,10 @@ stream.declaration.list:
                                         $$ = NULL ;
                                     }
         ;
-
+declaration.list: 
+          declaration                   { $$ = NULL ; }
+        | declaration.list declaration  { $$ = NULL ; }
+        ;
 /*************************************************************************/
 /*                      1.1.3 array ( int a[] )                          */
 /*************************************************************************/
@@ -533,27 +537,27 @@ compound.statement:
         ;
 
 expression.statement:
-          expression.opt ';'  {  $$ = NULL ; }
+          exp ';'  {  $$ = NULL ; }
         ;
 
 selection.statement:
-          IF '(' expression ')' costream.composite.statement    {  $$ = NULL ; }
-        | IF '(' expression ')' costream.composite.statement ELSE costream.composite.statement {  /* 可以为普通表达式也可以为流声明 */ $$ = NULL ; } 
-        | SWITCH '(' expression ')' statement                   {  $$ = NULL ; }
+          IF '(' exp ')' costream.composite.statement    {  $$ = NULL ; }
+        | IF '(' exp ')' costream.composite.statement ELSE costream.composite.statement {  /* 可以为普通表达式也可以为流声明 */ $$ = NULL ; } 
+        | SWITCH '(' exp ')' statement                   {  $$ = NULL ; }
         ;
 iteration.statement:
-          WHILE '(' expression ')' costream.composite.statement                                           {  $$ = NULL ; }
-        | DO  costream.composite.statement WHILE '(' expression ')' ';'                                   {  $$ = NULL ; }
-        | FOR '(' expression.opt ';' expression.opt ';' expression.opt ')'  costream.composite.statement  {  $$ = NULL ; }
-        | FOR '(' error ';' expression.opt ';' expression.opt ')'  costream.composite.statement           {  $$ = NULL ; }
-        | FOR '(' expression.opt ';' expression.opt ';' error ')'  costream.composite.statement           {  $$ = NULL ; }
-        | FOR '(' expression.opt ';' error ';' expression.opt ')'  costream.composite.statement           {  $$ = NULL ; }
+          WHILE '(' exp ')' costream.composite.statement                                           {  $$ = NULL ; }
+        | DO  costream.composite.statement WHILE '(' exp ')' ';'                                   {  $$ = NULL ; }
+        | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
+        | FOR '(' error ';' exp ';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
+        | FOR '(' exp   ';' exp ';'error')'  costream.composite.statement  {  $$ = NULL ; }
+        | FOR '(' exp   ';'error';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
         | FOR '(' error ')' costream.composite.statement                                                  {  $$ = NULL ; }
         ;
 jump.statement:
           CONTINUE ';'               {  $$ = NULL ; }
         | BREAK ';'                 {  $$ = NULL ; }
-        | RETURN expression.opt ';' {  $$ = NULL ; }
+        | RETURN exp ';' {  $$ = NULL ; }
         ;
 
 /*************************************************************************/
