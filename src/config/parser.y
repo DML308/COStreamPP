@@ -53,7 +53,7 @@ extern void yyerror (const char *msg);
 %type<node> statement labeled.statement compound.statement
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
 /* 语法分析器自己的结构 4.exp 计算表达式头节点  */
-%type<node> assignment.operator exp constant.expression
+%type<node> assignment.operator exp
 %type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
 %type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
 %type<node> window.type
@@ -215,14 +215,14 @@ array.declarator:
                             debug ("array.declarator ::= '[' ']' \n");
                             $$ = NULL ;
                     }
-        | '[' constant.expression ']' {
+        | '[' exp ']' {
                             line("Line:%-3d",@1.first_line);
-                            debug ("array.declarator ::= '[' constant.expression ']' \n");
+                            debug ("array.declarator ::= '[' exp ']' \n");
                             $$ = NULL ;
                     }
-        | array.declarator '[' constant.expression ']'  {
+        | array.declarator '[' exp ']'  {
                             line("Line:%-3d",@1.first_line);
-                            debug ("array.declarator ::= array.declarator '[' constant.expression ']' \n");
+                            debug ("array.declarator ::= array.declarator '[' exp ']' \n");
                             $$ = NULL ;
                     }
         | array.declarator '[' ']'  {
@@ -514,9 +514,9 @@ statement:
         ;
 
 labeled.statement:
-          CASE constant.expression ':' statement    {
+          CASE exp ':' statement    {
                                                           line("Line:%-3d",@1.first_line);
-                                                          debug ("labeled.statement ::= CASE constant.expression ':' statement \n");
+                                                          debug ("labeled.statement ::= CASE exp ':' statement \n");
                                                           $$ = NULL ;
                                                     }
         | DEFAULT ':' statement                     {
@@ -616,12 +616,6 @@ exp:      IDENTIFIER                        { line("Line:%-3d",@1.first_line);de
         | SPLITJOIN '(' IDENTIFIER ')'  '{'   statement.list split.statement splitjoinPipeline.statement.list  join.statement '}'  { $$ = NULL ; }
         |  PIPELINE '(' IDENTIFIER ')'  '{'   splitjoinPipeline.statement.list '}'                                     { $$ = NULL ; }
         ;
-constant.expression:
-          exp             {
-                            //常量表达式放到语义检查中做
-                          }
-        ;
-
 
 operator.selfdefine.body:
        '{' operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
