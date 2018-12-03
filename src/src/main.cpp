@@ -1,4 +1,5 @@
 #include<iostream>
+#include "node.h"
 #include "token.h"
 extern int yyparse();   // parser.cc provides yyparse()
 

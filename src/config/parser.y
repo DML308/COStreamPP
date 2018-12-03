@@ -1,6 +1,7 @@
 %{
 #define DEBUG
 #include "defines.h"
+#include "node.h"
 extern int yylex ();
 extern void yyerror (const char *msg);
 %}
@@ -29,20 +30,20 @@ extern void yyerror (const char *msg);
 /* 语法分析器自己的结构 1. 文法一级入口*/
 %type<node> prog.start translation.unit external.definition
 /* 语法分析器自己的结构   1.1.declaration */
-%type<node> declaration declaring.list declaration.list
+%type<node> declaration declaring.list
 %type<node> stream.declaring.list stream.type.specifier stream.declaration.list
 /* 语法分析器自己的结构     1.1.3.array */
 %type<node> array.declarator
 /* 语法分析器自己的结构     1.1.4.initializer */
 %type<node> initializer.opt initializer initializer.list
 /* 语法分析器自己的结构   1.2 function.definition 函数声明 */
-%type<node> function.definition function.body   parameter.list  parameter.declaration
+%type<node> function.definition function.body   parameter.list  parameter.declaration statement.list
 /* 语法分析器自己的结构   1.3 composite.definition 数据流计算单元声明 */
 %type<node> composite.definition  composite.head  composite.head.inout
 %type<node> composite.head.inout.member.list  composite.head.inout.member
 %type<node> operator.pipeline
 /* 语法分析器自己的结构      1.3.2 composite.body */
-%type<node> composite.body  composite.body.param.opt  composite.declaration.list
+%type<node> composite.body  composite.body.param.opt
 %type<node> composite.body.statement.list costream.composite.statement
 /* 语法分析器自己的结构 2. composite.body.operator  composite体内的init work window等组件  */
 %type<node> composite.body.operator   operator.file.writer  operator.add
@@ -626,13 +627,13 @@ operator.selfdefine.body:
        '{' operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
         {
             line("Line:%-3d",@1.first_line);
-            debug ("operator.selfdefine.body ::=  { init work window.list }\n";
+            debug ("operator.selfdefine.body ::=  { init work window.list }\n");
             $$ = NULL ;
         }
      | '{' statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
         {
             line("Line:%-3d",@1.first_line);
-            debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n";
+            debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n");
             $$ = NULL ;
         }
      ;
@@ -650,7 +651,7 @@ operator.selfdefine.body.window.list:
       /*empty*/                                         { $$ = NULL; }
       | WINDOW '{' operator.selfdefine.window.list '}'  {
                                                             line("Line:%-3d",@1.first_line);
-                                                            debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n";
+                                                            debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n");
                                                             $$ = NULL ;
                                                         }
     ;
@@ -663,7 +664,7 @@ operator.selfdefine.window.list:
 operator.selfdefine.window:
       IDENTIFIER window.type ';'                {
                                                     line("Line:%-3d",@1.first_line);
-                                                    debug ("operator.selfdefine.window ::= IDENTIFIER window.type (sliding? (arg_list?))\n";
+                                                    debug ("operator.selfdefine.window ::= IDENTIFIER window.type (sliding? (arg_list?))\n");
                                                     $$ = NULL ;
                                                 }
     ;
@@ -690,12 +691,12 @@ window.type:
 constant:
           doubleConstant    {
                                 line("Line:%-3d",@1.first_line);
-                                debug ("constant ::= doubleConstant | value:=%s\n",$1->c_str());
+                                debug ("constant ::= doubleConstant | value:=%lf\n",$1);
                                 $$ = NULL ;
                             }
         | integerConstant   {
                                 line("Line:%-3d",@1.first_line);
-                                debug ("constant ::= integerConstant | value:=%s\n",$1->c_str());
+                                debug ("constant ::= integerConstant | value:=%d\n",$1);
                                 $$ = NULL ;
                             }
         | stringConstant    {
