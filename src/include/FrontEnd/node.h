@@ -1,12 +1,7 @@
 #ifndef _NODE_H_
 #define _NODE_H_
-
-typedef enum
-{
-    /* expression nodes */
-    Const,
-    Id
-} NodeType;
+#include "basics.h"
+#include "nodetype.h"
 
 typedef struct
 {
@@ -21,6 +16,12 @@ class Node
   public:
     NodeType type;
     Loc *loc;
+    short pass;
+	/* parenthesized is set on expressions which were parenthesized
+	   in the original source:  e.g., (x+y)*(w+z) would have
+	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
+	   on both MULT nodes. */
+	short parenthesized;
     Node()  { loc = new Loc; }
     virtual ~Node() { delete loc; }
     void setLoc(Loc *loc);
