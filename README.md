@@ -7,7 +7,7 @@
     - [x]  十进制整数|八进制整数|十六进制整数 返回`integerConstant`,数值类型通过`stoll`存为`longlong`
     - [x]  浮点数返回`doubleConstant`,数值类型通过`strtod`存为`double`
 - [ ] 语法分析
-    - [x]  摘抄移植 COStream 文法,修改的地方记录在了(docs/7.delete-yacc.md)[https://github.com/DML308/COStreamPP/blob/master/docs/7.delete-yacc.md]中
+    - [x]  摘抄移植 COStream 文法,修改的地方记录在了[docs/7.delete-yacc.md](https://github.com/DML308/COStreamPP/blob/master/docs/7.delete-yacc.md)中
     - [x]  能 make 通过了
     - [ ]  调试 bug 中
     - [ ]  node 节点相关内容写在 node 分支中
