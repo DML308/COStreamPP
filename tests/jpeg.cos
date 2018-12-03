@@ -1,0 +1,226 @@
+int Mutrix[][16]={
+         52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94,
+		 52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94,
+		 52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94,
+		 52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94
+    };
+int standard[64]={
+        16,11,10,16,24,40,51,61,
+        12,12,14,19,26,58,60,55,
+        14,13,16,24,40,57,69,56,
+        14,17,22,29,51,87,80,62,
+        18,22,37,56,68,109,103,77,
+        24,35,55,64,81,104,113,92,
+        49,64,78,87,103,121,120,101,
+        72,92,95,98,112,100,103,99,
+    };
+const int  PI = 3.141592;
+//int c[];
+//typedef void(*ptr)(int ) ;
+
+double pi = 3.14159265358979323846;
+
+stream<double x,int y>S;
+composite IntSource(output stream<double x,int y> Out)
+{
+	param
+		int size;
+	Out = IntSource()
+	{
+		work
+		{
+			//ptr p1;不支持函数指针的定义
+			int a;
+			//enum{mon,tue,wed} n;
+			//myInt lll=1;
+			const const const const  int asss=1;
+			inline int sfsf=1;
+			//int double sss=1;
+			auto num=12.3;
+			//int costream1,costream1;
+			//int ass=123lul;
+
+			//people p1;
+			//p1.id=1;
+			//p1.name="jack";
+			//println("");
+			int i,j;
+			int k =0;
+			double ddd=(double) k;
+			for(i=0;i<16;++i){
+				for(j=0;j<16;++j){
+					Out[k].x=Mutrix[i][j]-128;
+					k++;
+				}
+			}
+			println("");
+		}
+		window{
+			Out tumbling(256);
+		}
+	};
+}
+
+/*
+composite SplitSource(output stream<double x> Out,input stream<double x> In)
+{
+	param
+		int size;
+	Out = IntSource(In)
+	{
+		int i;
+		split roundrobin(size);
+		for (i = 0; i < size; i++)
+		{
+
+		}
+		join roundrobin(size);
+	};
+}
+*/
+
+composite Quantification(output stream<double x> Out,input stream<double x> In)
+{
+	Out = Quantification(In)
+	{
+		int i,t;
+		double d;
+		init{
+			i = 0;
+		}
+		work
+		{
+			i=i%64;
+			d=In[0].x;
+			d/=standard[i++];
+			t = 2+(int)floor(d+0.499999);
+			Out[0].x = t;
+		}
+		window{
+			In sliding(1,1);
+			Out tumbling(1);
+		}
+	};
+}
+
+
+composite DCT_1D(output stream<double x>Out,input stream<double x>In)
+{
+	param
+		int size;
+	Out = DCT_1D(In)
+	{
+		double coeff[size][size];
+		int xi,u;
+		double Cu;
+		init
+		{
+			for (xi = 0; xi < size; xi++)
+			{
+				Cu = 0.5;
+				if (xi == 0)Cu = sqrt(0.125);
+				for (u = 0; u < size; u++)
+				{
+					coeff[xi][u]= Cu * cos((pi/8.0)*xi*(u+0.5));
+				}
+			}
+		}
+		work
+		{
+			int xi, u;
+			double tmp;
+			for (xi = 0; xi < size; xi++)
+			{
+				tmp = 0.0;
+				for (u = 0; u < size; u++)
+				{
+					tmp += (coeff[xi][u] * In[u].x);
+
+				}
+			   Out[xi].x = tmp;
+
+			}
+		}
+
+		window{
+			Out tumbling(size);
+			In  sliding(size,size);
+		}
+	};
+}
+
+composite DCT_X(output stream<double x>Out,input stream<double x>In)
+{
+	param
+		int size;
+	Out=splitjoin(In)
+	{
+		int i;
+		split roundrobin(size);
+		for (i = 0; i < size; i++)
+		{
+			add DCT_1D(size);
+		}
+		join roundrobin(size);
+	};
+}
+
+composite DCT_Y(output stream<double x>Out,input stream<double x>In)
+{
+	param
+		int size;
+	Out = splitjoin(In)
+	{
+		int i;
+		split roundrobin(1);
+		for (i = 0; i < size; i++)
+		{
+			add DCT_1D(size);
+		}
+		join roundrobin(1);
+
+	};
+}
+
+composite Sink(input stream<int x> In)
+{
+	param
+		int size;
+	Sink(In)
+	{
+		work
+		{
+			int i;
+			//println("");
+			for(i = 0;i<size;i++){
+				print(In[i].x);
+				print(" ");
+			}
+			println("");
+			//println(fun(1));
+		}
+		window{
+			In sliding(size,size);
+		}
+	};
+}
+
+
+composite Main ()
+{
+	stream<double x> Source,S1,S2,S3;
+	int size = 8;
+
+	Source = IntSource()(2*size);
+
+	S1 = DCT_Y(Source)(size);
+
+	S2 = DCT_X(S1)(size);
+
+	S3 = Quantification(S2)();
+
+	Sink(S3)(size);
+
+}
+
+
