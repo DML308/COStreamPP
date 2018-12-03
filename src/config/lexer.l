@@ -74,6 +74,8 @@ case        { return CASE; }
 default     { return DEFAULT; }               
 if          { return IF; }
 else        { return ELSE; }  
+do          { return DO; }
+return      { return RETURN; }
 
 composite   { return COMPOSITE; }
 input       { return INPUT; }
