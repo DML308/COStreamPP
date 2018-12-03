@@ -2,6 +2,8 @@
 #define DEBUG
 #include "defines.h"
 #include "node.h"
+#include <list>
+//using std::list;
 extern int yylex ();
 extern void yyerror (const char *msg);
 %}
@@ -12,6 +14,7 @@ extern void yyerror (const char *msg);
     double doubleNum;
     std::string *str;
     Node * node;
+    std::list<Node*> *list;
 }
 /* A. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
 %token integerConstant  stringConstant      doubleConstant  IDENTIFIER
@@ -28,27 +31,33 @@ extern void yyerror (const char *msg);
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
-%type<node> prog.start translation.unit external.definition
+%type<list> prog.start translation.unit external.definition
 /* 语法分析器自己的结构   1.1.declaration */
 %type<node> declaration declaring.list
-%type<node> stream.declaring.list stream.type.specifier stream.declaration.list
+%type<node> stream.type.specifier
+%type<list> stream.declaration.list stream.declaring.list
 /* 语法分析器自己的结构     1.1.3.array */
 %type<node> array.declarator
 /* 语法分析器自己的结构     1.1.4.initializer */
 %type<node> initializer.opt initializer initializer.list
 /* 语法分析器自己的结构   1.2 function.definition 函数声明 */
-%type<node> function.definition function.body   parameter.list  parameter.declaration statement.list
+%type<node> function.definition function.body  parameter.declaration
+%type<list> statement.list  parameter.list
 /* 语法分析器自己的结构   1.3 composite.definition 数据流计算单元声明 */
 %type<node> composite.definition  composite.head  composite.head.inout
-%type<node> composite.head.inout.member.list  composite.head.inout.member
+%type<node> composite.head.inout.member
+%type<list> composite.head.inout.member.list
 %type<node> operator.pipeline
 /* 语法分析器自己的结构      1.3.2 composite.body */
 %type<node> composite.body  composite.body.param.opt
-%type<node> composite.body.statement.list costream.composite.statement
+%type<node> costream.composite.statement
+%type<list> composite.body.statement.list
 /* 语法分析器自己的结构 2. composite.body.operator  composite体内的init work window等组件  */
 %type<node> composite.body.operator   operator.file.writer  operator.add
-%type<node> splitjoinPipeline.statement.list  operator.splitjoin  split.statement
-%type<node> roundrobin.statement   duplicate.statement  join.statement  argument.expression.list  operator.default.call
+%type<node> operator.splitjoin  split.statement
+%type<list> splitjoinPipeline.statement.list
+%type<node> roundrobin.statement   duplicate.statement  join.statement  operator.default.call
+%type<list> argument.expression.list
 /* 语法分析器自己的结构 3.statement 花括号内以';'结尾的结构是statement  */
 %type<node> statement labeled.statement compound.statement
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
@@ -782,3 +791,4 @@ void yyerror (const char *msg)
 {
     error ("%s", msg);
 }
+

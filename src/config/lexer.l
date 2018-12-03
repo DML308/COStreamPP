@@ -2,6 +2,7 @@
     #define DEBUG
     #include "defines.h"
     #include "node.h"
+    #include <list>
     #include "token.h"
     int yycolumn = 1;
     #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
