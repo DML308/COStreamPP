@@ -53,7 +53,7 @@ extern void yyerror (const char *msg);
 %type<node> statement labeled.statement compound.statement
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
 /* 语法分析器自己的结构 4.exp 计算表达式头节点  */
-%type<node> assignment.operator exp
+%type<node> assignment.operator exp exp.assignable
 %type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
 %type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
 %type<node> window.type
@@ -66,7 +66,7 @@ extern void yyerror (const char *msg);
 
 
 /* C. 优先级标记,从上至下优先级从低到高排列 */
-%left '='
+%right '='
 %left OROR
 %left ANDAND
 %left '|'
@@ -77,8 +77,9 @@ extern void yyerror (const char *msg);
 %left LS RS
 %left '-' '+'
 %left '*' '/' '%'
+%left '.'
 %left ')' ']'
-%right '(' '['
+%left '(' '['
 
 /* D. 语法分析器的起点和坐标声明 */
 %start prog.start
@@ -568,8 +569,13 @@ assignment.operator:
         | ERassign        { $$ = NULL ; }
         | ORassign        { $$ = NULL ; }
         ;
-exp:      IDENTIFIER                        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n"); $$ = NULL ; }
-        | IDENTIFIER  array.declarator      { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER\n"); $$ = NULL ; }
+exp.assignable:
+          IDENTIFIER                        { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= IDENTIFIER\n"); $$ = NULL ; }
+        | IDENTIFIER  array.declarator      { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= IDENTIFIER array.declarator\n"); $$ = NULL ; }  
+        ; 
+exp:      exp.assignable                    { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = NULL ; }
+        | exp.assignable '.' IDENTIFIER                  { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' IDENTIFIER\n"); $$ = NULL ; }
+        | exp.assignable '.' IDENTIFIER array.declarator { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' IDENTIFIER array.declarator\n"); $$ = NULL ; }
         | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n"); $$ = NULL ; }
         | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n"); $$ = NULL ; }
         | exp '-' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n"); $$ = NULL ; }
@@ -600,8 +606,7 @@ exp:      IDENTIFIER                        { line("Line:%-3d",@1.first_line);de
         |  exp DECR       { line("Line:%-3d",@1.first_line);debug ("exp ::= exp --\n"); $$ = NULL ; }
         |  '(' exp ')'    { line("Line:%-3d",@1.first_line);debug ("exp ::= ( exp )\n"); $$ = NULL ; }
         | '(' basic.type.name ')' exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n"); $$ = NULL ; }
-        | IDENTIFIER assignment.operator exp                  { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER assignment.operator exp\n"); $$ = NULL ; }
-        | IDENTIFIER array.declarator assignment.operator exp { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER array.declarator assignment.operator exp\n"); $$ = NULL ; }
+        | exp assignment.operator exp              { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable assignment.operator exp\n"); $$ = NULL ; }
         | IDENTIFIER '(' argument.expression.list ')'         { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER ( exp.list )\n"); $$ = NULL ; }
         | FILEREADER '(' ')' '(' stringConstant ')'           { line("Line:%-3d",@1.first_line);debug ("exp ::= FILEREADER()( stringConstant )\n"); $$ = NULL ; }
         | IDENTIFIER '('  ')' operator.selfdefine.body        { line("Line:%-3d",@1.first_line);debug ("exp ::= IDENTIFIER() operator.selfdefine.body\n"); $$ = NULL ; }
