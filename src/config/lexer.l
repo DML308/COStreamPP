@@ -2,6 +2,7 @@
     #define DEBUG
     #include "defines.h"
     #include "node.h"
+    #include <list>
     #include "token.h"
     int yycolumn = 1;
     #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
@@ -33,7 +34,7 @@ string_constant ('[^\n]*'|\"[^\n]*\")
 /*空白字符的代码只保留 空格 tab 和 \n.*/
 any_white ([ \t \n])
 
-Annotations      \/\*(\/\/|[^(\*\/)]|\n)*\*\/
+Annotations      "/*"([^\*]|(\*)*[^\*/])*(\*)*"*/" 
 Annotation       \/\/[^\n]*\n
 
 %option noyywrap
@@ -73,6 +74,8 @@ case        { return CASE; }
 default     { return DEFAULT; }               
 if          { return IF; }
 else        { return ELSE; }  
+do          { return DO; }
+return      { return RETURN; }
 
 composite   { return COMPOSITE; }
 input       { return INPUT; }
@@ -147,7 +150,7 @@ roundrobin   { return ROUNDROBIN; }
 "^="         { return ERassign; }
 "|="         { return ORassign; }
 
-.* {
+. {
   error("Line:%d,不支持的字符: %s\n",yylineno,yytext);
 }
                         
