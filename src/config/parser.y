@@ -13,11 +13,11 @@ extern void yyerror (const char *msg);
     Node * node;
 }
 /* A. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
-%token intConstant      stringConstant      doubleConstant  IDENTIFIER
+%token integerConstant  stringConstant      doubleConstant  IDENTIFIER
 %token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE
-%token WHILE      FOR   BREAK   CONTINUE    SWITCH  CASE DEFAULT IF ELSE
+%token WHILE      FOR   BREAK   CONTINUE    SWITCH  CASE DEFAULT IF ELSE DO RETURN
 %token POUNDPOUND ICR   DECR    ANDAND      OROR    LS  RS LE GE EQ NE
-%token MULTassign DIVassign     PLUSassign  MINUSassign
+%token MULTassign DIVassign     PLUSassign  MINUSassign MODassign
 %token LSassign   RSassign ANDassign ERassign ORassign
     /* A.1 ----------------- COStream 特有关键字 ---------------*/
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
@@ -27,7 +27,6 @@ extern void yyerror (const char *msg);
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
-%type<num>  expression.constant
 %type<node> prog.start translation.unit external.definition
 /* 语法分析器自己的结构   1.1.declaration */
 %type<node> declaration declaring.list  stream.declaring.list stream.type.specifier stream.declaration.list
@@ -66,6 +65,18 @@ extern void yyerror (const char *msg);
 
 /* C. 优先级标记,从上至下优先级从低到高排列 */
 %left '='
+%left OROR
+%left ANDAND
+%left '|'
+%left '^'
+%left '&'
+%left EQ NE
+%left '<' '>' LE GE
+%left LS RS 
+%left '-' '+'
+%left '*' '/' '%'
+%left ')' ']'
+%right '(' '['
 
 /* D. 语法分析器的起点和坐标声明 */
 %start prog.start
@@ -77,8 +88,8 @@ extern void yyerror (const char *msg);
 /*                 1.1. decalration 声明                                 */
 /*                 1.2. function.definition 函数声明                      */
 /*                 1.3. composite.definition 数据流计算单元声明             */
-/************************************************************************ /
-prog.start: translation.unit ;
+/*************************************************************************/
+prog.start: translation.unit { $$ = NULL ; };
 
 translation.unit:
           external.definition   {
@@ -86,7 +97,11 @@ translation.unit:
                                       debug ("translation.unit ::= external.definition\n");
                                       $$ = NULL ;
                                 }
-        | translation.unit external.definition
+        | translation.unit external.definition  {
+                                                      line("Line:%-3d",@1.first_line);
+                                                      debug ("translation.unit ::= translation.unit external.definition\n");
+                                                      $$ = NULL ;
+                                                }
         ;
 external.definition:
           declaration           {
@@ -99,7 +114,11 @@ external.definition:
                                       debug ("external.definition ::= function.definition\n");
                                       $$ = NULL ;
                                 }
-        //| composite.definition
+        | composite.definition  {
+                                      line("Line:%-3d",@1.first_line);
+                                      debug ("external.definition ::= composite.definition\n");
+                                      $$ = NULL ;
+                                }
         ;
 /*************************************************************************/
 /*              1.1 decalration 由下面2种文法+2个基础组件组成                */
@@ -292,7 +311,7 @@ parameter.list:
                 error( "Line:%-3d parameter.list in function definations cannot have initializers\n",@1.first_line);
                 exit(121);
           }
-        | parameter.list ',' err_tok
+        | parameter.list ',' error
         ;
 parameter.declaration:
           type.specifier IDENTIFIER {
@@ -398,62 +417,82 @@ costream.composite.statement:
 /*             2.3   ADD operator.default.call                               */
 /*****************************************************************************/
 composite.body.operator:
-          operator.file.writer
-        | operator.add
+          operator.file.writer      {
+                                          line("Line:%-3d",@1.first_line);
+                                          debug ("composite.body.operator ::= operator.file.writer \n");
+                                          $$ = NULL ;
+                                    }
+        | operator.add              {
+                                          line("Line:%-3d",@1.first_line);
+                                          debug ("composite.body.operator ::= operator.add \n");
+                                          $$ = NULL ;
+                                    }
         ;
 operator.file.writer:
-          FILEWRITER '(' IDENTIFIER ')' '(' stringConstant ')' ';'
+          FILEWRITER '(' IDENTIFIER ')' '(' stringConstant ')' ';' { $$ = NULL ; }
         | FILEWRITER '(' IDENTIFIER ')' '(' ')' ';' {
                                                        error("Line:%d FILEWRITER must have the filename of the output file.\n",@1.first_line);
                                                     }
         ;
 operator.add:
-          ADD operator.pipeline
-        | ADD operator.splitjoin
-        | ADD operator.default.call
+          ADD operator.pipeline     {
+                                          line("Line:%-3d",@1.first_line);
+                                          debug ("operator.add ::= ADD operator.pipeline \n");
+                                          $$ = NULL ;
+                                    }
+        | ADD operator.splitjoin    {
+                                          line("Line:%-3d",@1.first_line);
+                                          debug ("operator.add ::= ADD operator.splitjoin \n");
+                                          $$ = NULL ;
+                                    }
+        | ADD operator.default.call {
+                                          line("Line:%-3d",@1.first_line);
+                                          debug ("operator.add ::= ADD operator.default.call \n");
+                                          $$ = NULL ;
+                                    }
         ;
 operator.pipeline:
-          PIPELINE '{'  splitjoinPipeline.statement.list '}'
-        | PIPELINE '{'  declaration.list splitjoinPipeline.statement.list '}'
+          PIPELINE '{'  splitjoinPipeline.statement.list '}'                  { $$ = NULL ; }
+        | PIPELINE '{'  declaration.list splitjoinPipeline.statement.list '}' { $$ = NULL ; }
         ;
 splitjoinPipeline.statement.list:
-          statement
-        | operator.add
-        | splitjoinPipeline.statement.list statement
-        | splitjoinPipeline.statement.list operator.add
+          statement                                       { $$ = NULL ; }
+        | operator.add                                    { $$ = NULL ; }
+        | splitjoinPipeline.statement.list statement      { $$ = NULL ; }
+        | splitjoinPipeline.statement.list operator.add   { $$ = NULL ; }
         ;
 operator.splitjoin:
-          SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'      {
-                                                                                                    //add 方式 add splitjoin
+          SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'     {
+                                                                                                    $$ = NULL ;
                                                                                                   }
         | SPLITJOIN '{' declaration.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
-                                                                                                    //add 方式 add splitjoin
+                                                                                                    $$ = NULL ;
                                                                                                   }
         | SPLITJOIN '{' declaration.list statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
-                                                                                                    //add 方式 add splitjoin
+                                                                                                    $$ = NULL ;
                                                                                                   }
         ;
 split.statement:
-          SPLIT duplicate.statement
-        | SPLIT roundrobin.statement
+          SPLIT duplicate.statement                        { $$ = NULL ; }
+        | SPLIT roundrobin.statement                       { $$ = NULL ; }
         ;
 roundrobin.statement:
-          ROUNDROBIN '(' ')' ';'
-        | ROUNDROBIN '(' argument.expression.list ')' ';'
+          ROUNDROBIN '(' ')' ';'                            { $$ = NULL ; }
+        | ROUNDROBIN '(' argument.expression.list ')' ';'   { $$ = NULL ; }
         ;
 duplicate.statement:
-          DUPLICATE '('  ')' ';'
-        | DUPLICATE '(' exp ')'  ';'
+          DUPLICATE '('  ')' ';'                            { $$ = NULL ; }
+        | DUPLICATE '(' exp ')'  ';'                        { $$ = NULL ; }
         ;
 join.statement:
-          JOIN roundrobin.statement
+          JOIN roundrobin.statement                         { $$ = NULL ; }
         ;
 argument.expression.list:
-          exp
-        | argument.expression.list ',' exp
+          exp                                               { $$ = NULL ; }
+        | argument.expression.list ',' exp                  { $$ = NULL ; }
         ;
 operator.default.call:
-          IDENTIFIER  '(' ')' ';'
+          IDENTIFIER  '(' ')' ';'                           { $$ = NULL ; }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
                                                               /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
                                                               ///*DEBUG*/printf("have found operator.default.call\n");
@@ -475,38 +514,46 @@ statement:
         ;
 
 labeled.statement:
-          CASE constant.expression ':' statement
-        | DEFAULT ':' statement
+          CASE constant.expression ':' statement    {
+                                                          line("Line:%-3d",@1.first_line);
+                                                          debug ("labeled.statement ::= CASE constant.expression ':' statement \n");
+                                                          $$ = NULL ;
+                                                    }
+        | DEFAULT ':' statement                     {
+                                                          line("Line:%-3d",@1.first_line);
+                                                          debug ("labeled.statement ::= DEFAULT ':' statement \n");
+                                                          $$ = NULL ;
+                                                    }
         ;
 compound.statement:
-          '{' '}'
-        | '{' declaration.list '}'
-        | '{' composite.body.statement.list '}'
-        | '{' declaration.list composite.body.statement.list '}'
+          '{' '}'                                               {  $$ = NULL ; }
+        | '{' declaration.list '}'                              {  $$ = NULL ; }
+        | '{' composite.body.statement.list '}'                 {  $$ = NULL ; }
+        | '{' declaration.list composite.body.statement.list '}'{  $$ = NULL ; }
         ;
 
 expression.statement:
-          expression.opt ';'
+          expression.opt ';'  {  $$ = NULL ; }
         ;
 
 selection.statement:
-          IF '(' expression ')' costream.composite.statement
-        | IF '(' expression ')' costream.composite.statement ELSE costream.composite.statement  /* 可以为普通表达式也可以为流声明 */
-        | SWITCH '(' expression ')' statement
+          IF '(' expression ')' costream.composite.statement    {  $$ = NULL ; }
+        | IF '(' expression ')' costream.composite.statement ELSE costream.composite.statement {  /* 可以为普通表达式也可以为流声明 */ $$ = NULL ; } 
+        | SWITCH '(' expression ')' statement                   {  $$ = NULL ; }
         ;
 iteration.statement:
-          WHILE '(' expression ')' costream.composite.statement
-        | DO  costream.composite.statement WHILE '(' expression ')' ';'
-        | FOR '(' expression.opt ';' expression.opt ';' expression.opt ')'  costream.composite.statement
-        | FOR '(' error ';' expression.opt ';' expression.opt ')'  costream.composite.statement
-        | FOR '(' expression.opt ';' expression.opt ';' error ')'  costream.composite.statement
-        | FOR '(' expression.opt ';' error ';' expression.opt ')'  costream.composite.statement
-        | FOR '(' error ')' { ;}  costream.composite.statement
+          WHILE '(' expression ')' costream.composite.statement                                           {  $$ = NULL ; }
+        | DO  costream.composite.statement WHILE '(' expression ')' ';'                                   {  $$ = NULL ; }
+        | FOR '(' expression.opt ';' expression.opt ';' expression.opt ')'  costream.composite.statement  {  $$ = NULL ; }
+        | FOR '(' error ';' expression.opt ';' expression.opt ')'  costream.composite.statement           {  $$ = NULL ; }
+        | FOR '(' expression.opt ';' expression.opt ';' error ')'  costream.composite.statement           {  $$ = NULL ; }
+        | FOR '(' expression.opt ';' error ';' expression.opt ')'  costream.composite.statement           {  $$ = NULL ; }
+        | FOR '(' error ')' costream.composite.statement                                                  {  $$ = NULL ; }
         ;
 jump.statement:
-        | CONTINUE ';'
-        | BREAK ';'
-        | RETURN expression.opt ';'
+          CONTINUE ';'               {  $$ = NULL ; }
+        | BREAK ';'                 {  $$ = NULL ; }
+        | RETURN expression.opt ';' {  $$ = NULL ; }
         ;
 
 /*************************************************************************/
@@ -566,8 +613,8 @@ exp:      IDENTIFIER                        { line("Line:%-3d",@1.first_line);de
         | IDENTIFIER '('  ')'  '(' ')'{
                                                                         /* 调用composite的四种情况*/
                                       }
-        | IDENTIFIER '('  ')'  '(' argument.expression.list ')'      { $$ = NULL ; }
-        | IDENTIFIER '(' IDENTIFIER ')'  '(' ')'
+        | IDENTIFIER '('  ')'  '(' argument.expression.list ')'              { $$ = NULL ; }
+        | IDENTIFIER '(' IDENTIFIER ')'  '(' ')'                             { $$ = NULL ; }
         | IDENTIFIER '(' IDENTIFIER ')'  '(' argument.expression.list ')'    { $$ = NULL ; }
         | SPLITJOIN '(' IDENTIFIER ')'  '{'   split.statement  splitjoinPipeline.statement.list  join.statement '}'   { $$ = NULL ; }                              
         | SPLITJOIN '(' IDENTIFIER ')'  '{'   declaration.list split.statement  splitjoinPipeline.statement.list  join.statement '}'  { $$ = NULL ; }
@@ -599,11 +646,11 @@ operator.selfdefine.body:
 
 operator.selfdefine.body.init:
       /*empty*/{ $$ = NULL; }
-    | INIT compound.statement
+    | INIT compound.statement { $$ = NULL ; }
     ;
 
 operator.selfdefine.body.work:
-      WORK compound.statement
+      WORK compound.statement { $$ = NULL ; }
     ;
 
 operator.selfdefine.body.window.list:
