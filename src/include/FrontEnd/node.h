@@ -356,8 +356,6 @@ class declNode:public Node{
         void print();
 };
 
-/*  删除了atrributeNode */
-
 class procNode:public Node{
     public:
         Node *decl;

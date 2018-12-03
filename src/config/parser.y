@@ -42,17 +42,17 @@ extern void yyerror (const char *msg);
 %type<node> composite.head.inout.member.list  composite.head.inout.member
 %type<node> operator.pipeline
 /* 语法分析器自己的结构      1.3.2 composite.body */
-%type<node> composite.body  composite.body.param.opt  composite.declaration.list 
+%type<node> composite.body  composite.body.param.opt  composite.declaration.list
 %type<node> composite.body.statement.list costream.composite.statement
 /* 语法分析器自己的结构 2. composite.body.operator  composite体内的init work window等组件  */
-%type<node> composite.body.operator   operator.file.writer  operator.add 
+%type<node> composite.body.operator   operator.file.writer  operator.add
 %type<node> splitjoinPipeline.statement.list  operator.splitjoin  split.statement
 %type<node> roundrobin.statement   duplicate.statement  join.statement  argument.expression.list  operator.default.call
 /* 语法分析器自己的结构 3.statement 花括号内以';'结尾的结构是statement  */
-%type<node> statement labeled.statement compound.statement  
+%type<node> statement labeled.statement compound.statement
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
 /* 语法分析器自己的结构 4.exp 计算表达式头节点  */
-%type<node> assignment.operator exp constant.expression 
+%type<node> assignment.operator exp constant.expression
 %type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
 %type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
 %type<node> window.type
@@ -73,7 +73,7 @@ extern void yyerror (const char *msg);
 %left '&'
 %left EQ NE
 %left '<' '>' LE GE
-%left LS RS 
+%left LS RS
 %left '-' '+'
 %left '*' '/' '%'
 %left ')' ']'
@@ -204,10 +204,7 @@ stream.declaration.list:
                                         $$ = NULL ;
                                     }
         ;
-declaration.list: 
-          declaration                   { $$ = NULL ; }
-        | declaration.list declaration  { $$ = NULL ; }
-        ;
+
 /*************************************************************************/
 /*                      1.1.3 array ( int a[] )                          */
 /*************************************************************************/
@@ -342,6 +339,12 @@ function.body:
                                     }
         ;
 
+statement.list:
+          statement                   { $$ = NULL ;}
+        | statement.list statement    { $$ =NULL; }
+        ;
+
+
 /*************************************************************************/
 /*              1.3 composite.definition 数据流计算单元声明                */
 /*                      1.3.1 composite.head                             */
@@ -383,7 +386,6 @@ composite.head.inout.member:
 /*************************************************************************/
 composite.body:
           '{' composite.body.param.opt composite.body.statement.list '}'                              { $$ = NULL ; }
-        | '{' composite.body.param.opt composite.declaration.list composite.body.statement.list '}'   { $$ = NULL ; }
         ;
 composite.body.param.opt:
           /*empty*/                 { $$ = NULL ; }
@@ -393,15 +395,11 @@ composite.body.param.opt:
                                           $$ = NULL ;
                                     }
         ;
-composite.declaration.list:
-          declaration                                                 { $$ = NULL ; }
-        | composite.declaration.list declaration                      { $$ = NULL ; }
-        ;
 composite.body.statement.list:
           costream.composite.statement                                { $$ = NULL ; }
         | composite.body.statement.list costream.composite.statement  { $$ = NULL ; }
         ;
-costream.composite.statement:     
+costream.composite.statement:
           composite.body.operator   {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("costream.composite.statement ::= composite.body.operator \n");
@@ -457,7 +455,6 @@ operator.add:
         ;
 operator.pipeline:
           PIPELINE '{'  splitjoinPipeline.statement.list '}'                  { $$ = NULL ; }
-        | PIPELINE '{'  declaration.list splitjoinPipeline.statement.list '}' { $$ = NULL ; }
         ;
 splitjoinPipeline.statement.list:
           statement                                       { $$ = NULL ; }
@@ -469,10 +466,7 @@ operator.splitjoin:
           SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'     {
                                                                                                     $$ = NULL ;
                                                                                                   }
-        | SPLITJOIN '{' declaration.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
-                                                                                                    $$ = NULL ;
-                                                                                                  }
-        | SPLITJOIN '{' declaration.list statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
+        | SPLITJOIN '{' statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
                                                                                                     $$ = NULL ;
                                                                                                   }
         ;
@@ -514,6 +508,7 @@ statement:
         | selection.statement
         | iteration.statement
         | jump.statement
+        | declaration
         | error ';'{  $$ = NULL ; }
         ;
 
@@ -531,9 +526,7 @@ labeled.statement:
         ;
 compound.statement:
           '{' '}'                                               {  $$ = NULL ; }
-        | '{' declaration.list '}'                              {  $$ = NULL ; }
         | '{' composite.body.statement.list '}'                 {  $$ = NULL ; }
-        | '{' declaration.list composite.body.statement.list '}'{  $$ = NULL ; }
         ;
 
 expression.statement:
@@ -542,16 +535,14 @@ expression.statement:
 
 selection.statement:
           IF '(' exp ')' costream.composite.statement    {  $$ = NULL ; }
-        | IF '(' exp ')' costream.composite.statement ELSE costream.composite.statement {  /* 可以为普通表达式也可以为流声明 */ $$ = NULL ; } 
+        | IF '(' exp ')' costream.composite.statement ELSE costream.composite.statement {  /* 可以为普通表达式也可以为流声明 */ $$ = NULL ; }
         | SWITCH '(' exp ')' statement                   {  $$ = NULL ; }
         ;
 iteration.statement:
           WHILE '(' exp ')' costream.composite.statement                                           {  $$ = NULL ; }
         | DO  costream.composite.statement WHILE '(' exp ')' ';'                                   {  $$ = NULL ; }
-        | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
-        | FOR '(' error ';' exp ';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
-        | FOR '(' exp   ';' exp ';'error')'  costream.composite.statement  {  $$ = NULL ; }
-        | FOR '(' exp   ';'error';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
+        | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement                           {  $$ = NULL ; }
+        | FOR '(' declaration  ';' exp ';' exp ')'  costream.composite.statement                    {  $$ = NULL ; }
         | FOR '(' error ')' costream.composite.statement                                                  {  $$ = NULL ; }
         ;
 jump.statement:
@@ -620,11 +611,9 @@ exp:      IDENTIFIER                        { line("Line:%-3d",@1.first_line);de
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')'              { $$ = NULL ; }
         | IDENTIFIER '(' IDENTIFIER ')'  '(' ')'                             { $$ = NULL ; }
         | IDENTIFIER '(' IDENTIFIER ')'  '(' argument.expression.list ')'    { $$ = NULL ; }
-        | SPLITJOIN '(' IDENTIFIER ')'  '{'   split.statement  splitjoinPipeline.statement.list  join.statement '}'   { $$ = NULL ; }                              
-        | SPLITJOIN '(' IDENTIFIER ')'  '{'   declaration.list split.statement  splitjoinPipeline.statement.list  join.statement '}'  { $$ = NULL ; }
-        | SPLITJOIN '(' IDENTIFIER ')'  '{'   declaration.list statement.list split.statement splitjoinPipeline.statement.list  join.statement '}'  { $$ = NULL ; }
+        | SPLITJOIN '(' IDENTIFIER ')'  '{'   split.statement  splitjoinPipeline.statement.list  join.statement '}'   { $$ = NULL ; }
+        | SPLITJOIN '(' IDENTIFIER ')'  '{'   statement.list split.statement splitjoinPipeline.statement.list  join.statement '}'  { $$ = NULL ; }
         |  PIPELINE '(' IDENTIFIER ')'  '{'   splitjoinPipeline.statement.list '}'                                     { $$ = NULL ; }
-        |  PIPELINE '(' IDENTIFIER ')'  '{'   declaration.list splitjoinPipeline.statement.list '}'                    { $$ = NULL ; }
         ;
 constant.expression:
           exp             {
@@ -640,10 +629,10 @@ operator.selfdefine.body:
             debug ("operator.selfdefine.body ::=  { init work window.list }\n";
             $$ = NULL ;
         }
-     | '{' declaration.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+     | '{' statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
         {
             line("Line:%-3d",@1.first_line);
-            debug ("operator.selfdefine.body ::=  { declaration.list init work window.list }\n";
+            debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n";
             $$ = NULL ;
         }
      ;
@@ -658,7 +647,7 @@ operator.selfdefine.body.work:
     ;
 
 operator.selfdefine.body.window.list:
-      /*empty*/                                         { $$ = NULL; }                           
+      /*empty*/                                         { $$ = NULL; }
       | WINDOW '{' operator.selfdefine.window.list '}'  {
                                                             line("Line:%-3d",@1.first_line);
                                                             debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n";
@@ -683,7 +672,7 @@ window.type:
       SLIDING '('  ')'                          {
                                                     $$ = NULL ;
                                                 }
-    | TUMBLING '('  ')'                         {   
+    | TUMBLING '('  ')'                         {
                                                     $$ = NULL ;
                                                 }
     | SLIDING '(' argument.expression.list ')'  {
