@@ -147,7 +147,7 @@ roundrobin   { return ROUNDROBIN; }
 "^="         { return ERassign; }
 "|="         { return ORassign; }
 
-.* {
+. {
   error("Line:%d,不支持的字符: %s\n",yylineno,yytext);
 }
                         
