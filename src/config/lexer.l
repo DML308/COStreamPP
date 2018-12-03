@@ -33,7 +33,7 @@ string_constant ('[^\n]*'|\"[^\n]*\")
 /*空白字符的代码只保留 空格 tab 和 \n.*/
 any_white ([ \t \n])
 
-Annotations      \/\*(\/\/|[^(\*\/)]|\n)*\*\/
+Annotations      "/*"([^\*]|(\*)*[^\*/])*(\*)*"*/" 
 Annotation       \/\/[^\n]*\n
 
 %option noyywrap
