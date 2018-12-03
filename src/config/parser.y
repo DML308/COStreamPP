@@ -423,16 +423,16 @@ splitjoinPipeline.statement.list:
         | splitjoinPipeline.statement.list operator.add
         ;
 operator.splitjoin:
-		      SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'      {
+          SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'      {
                                                                                                     //add 方式 add splitjoin
                                                                                                   }
-		    | SPLITJOIN '{' declaration.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
+        | SPLITJOIN '{' declaration.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
                                                                                                     //add 方式 add splitjoin
                                                                                                   }
-	      | SPLITJOIN '{' declaration.list statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
+        | SPLITJOIN '{' declaration.list statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
                                                                                                     //add 方式 add splitjoin
                                                                                                   }
-		    ;
+        ;
 split.statement:
           SPLIT duplicate.statement
         | SPLIT roundrobin.statement
@@ -454,12 +454,12 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'
-		    | IDENTIFIER  '(' argument.expression.list ')' ';'  {
+        | IDENTIFIER  '(' argument.expression.list ')' ';'  {
                                                               /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
                                                               ///*DEBUG*/printf("have found operator.default.call\n");
                                                               $$ = NULL ;
                                                             }
-		    ;
+        ;
 
 /*************************************************************************/
 /*        3. statement 花括号内以';'结尾的结构是statement                  */
@@ -583,65 +583,65 @@ constant.expression:
 
 
 operator.selfdefine.body:
-		   '{' operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+       '{' operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { init work window.list }\n";
             $$ = NULL ;
         }
-		 | '{' declaration.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+     | '{' declaration.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { declaration.list init work window.list }\n";
             $$ = NULL ;
         }
-		 ;
+     ;
 
 operator.selfdefine.body.init:
-		  /*empty*/{ $$ = NULL; }
-		| INIT compound.statement
-		;
+      /*empty*/{ $$ = NULL; }
+    | INIT compound.statement
+    ;
 
 operator.selfdefine.body.work:
-		  WORK compound.statement
-		;
+      WORK compound.statement
+    ;
 
 operator.selfdefine.body.window.list:
-		  /*empty*/                                         { $$ = NULL; }                           
-		  | WINDOW '{' operator.selfdefine.window.list '}'  {
+      /*empty*/                                         { $$ = NULL; }                           
+      | WINDOW '{' operator.selfdefine.window.list '}'  {
                                                             line("Line:%-3d",@1.first_line);
                                                             debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n";
                                                             $$ = NULL ;
                                                         }
-		;
+    ;
 
 operator.selfdefine.window.list:
-		  operator.selfdefine.window
-		| operator.selfdefine.window.list operator.selfdefine.window
-		;
+      operator.selfdefine.window
+    | operator.selfdefine.window.list operator.selfdefine.window
+    ;
 
 operator.selfdefine.window:
-		  IDENTIFIER window.type ';'                {
+      IDENTIFIER window.type ';'                {
                                                     line("Line:%-3d",@1.first_line);
                                                     debug ("operator.selfdefine.window ::= IDENTIFIER window.type (sliding? (arg_list?))\n";
                                                     $$ = NULL ;
                                                 }
-		;
+    ;
 
 window.type:
-		  SLIDING '('  ')'                          {
+      SLIDING '('  ')'                          {
                                                     $$ = NULL ;
                                                 }
-		| TUMBLING '('  ')'                         {   
+    | TUMBLING '('  ')'                         {   
                                                     $$ = NULL ;
                                                 }
-		| SLIDING '(' argument.expression.list ')'  {
+    | SLIDING '(' argument.expression.list ')'  {
                                                     $$ = NULL ;
                                                 }
-		| TUMBLING '(' argument.expression.list ')' {
+    | TUMBLING '(' argument.expression.list ')' {
                                                     $$ = NULL ;
                                                 }
-		;
+    ;
 
 
 /*************************************************************************/
@@ -687,7 +687,7 @@ basic.type.name:
                       debug ("basic.type.name ::=  LONG \n");
                       $$ = NULL ;
                 }
-        | LONG LONG{
+        | LONG LONG {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
                       $$ = NULL ;
