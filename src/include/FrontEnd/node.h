@@ -19,18 +19,24 @@ typedef struct
     int last_column;
 } Loc;
 
-class basicNode
+class Node
 {
   public:
     NodeType type;
     Loc *loc;
-    basicNode()  { loc = new Loc; }
-    virtual ~basicNode() { delete loc; }
+    short pass;
+	/* parenthesized is set on expressions which were parenthesized
+	   in the original source:  e.g., (x+y)*(w+z) would have
+	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
+	   on both MULT nodes. */
+	short parenthesized;
+    Node()  { loc = new Loc; }
+    virtual ~Node() { delete loc; }
     void setLoc(Loc *loc);
     virtual void print();
 };
 
-class ConstNode:public basicNode {
+class ConstNode:public Node {
     public:
         const char* text;
         /* Node类型没定义，只能使用向前声明，只能定义为指针或者引用 */
@@ -47,10 +53,10 @@ class ConstNode:public basicNode {
         ConstNode() {}
         ~ConstNode() {}
         void print();
-    
+
 };
 
-class idNode:public basicNode{
+class idNode:public Node{
     public:
         const char * text;
         Node *decl;
@@ -61,7 +67,7 @@ class idNode:public basicNode{
 
 };
 
-class binopNode:public basicNode{
+class binopNode:public Node{
     public:
         OpType op;
 	    opDataType opType;/*zww:define for spl,记录该2元操作的数据类型：整型，浮点型*/
@@ -75,7 +81,7 @@ class binopNode:public basicNode{
         void print();
 };
 
-class unaryNode:public basicNode{
+class unaryNode:public Node{
     public:
         OpType op;
         opDataType opType;/*zww:define for spl,记录该2元操作的数据类型：整型，浮点型*/
@@ -87,7 +93,7 @@ class unaryNode:public basicNode{
         void print();
 };
 
-class castNode:public basicNode{
+class castNode:public Node{
     public:
         Node *type;
         Node *expr;
@@ -97,7 +103,7 @@ class castNode:public basicNode{
         void print();
 };
 
-class commaNode:public basicNode{
+class commaNode:public Node{
     public:
         List *exprs;
         commaNode() {   }
@@ -106,7 +112,7 @@ class commaNode:public basicNode{
 };
 
 /*三元操作符节点 */
-class ternaryNode:public basicNode{
+class ternaryNode:public Node{
     public:
         Node *cond;
         Node *true_;
@@ -119,7 +125,7 @@ class ternaryNode:public basicNode{
         void print();
 };
 
-class arrayNode:public basicNode{
+class arrayNode:public Node{
     public:
         Node *type;
         Node *name;
@@ -130,7 +136,7 @@ class arrayNode:public basicNode{
         void print();
 };
 
-class callNode:public basicNode{
+class callNode:public Node{
     public:
         Node *name;
         List *args;
@@ -139,7 +145,7 @@ class callNode:public basicNode{
         void print();
 };
 
-class initializerNode:public basicNode{
+class initializerNode:public Node{
     public:
         List *exprs;
         initializerNode() { }
@@ -147,7 +153,7 @@ class initializerNode:public basicNode{
         void print();
 };
 
-class implicitcastNode:public basicNode{
+class implicitcastNode:public Node{
     public:
         Node *exprs;
         Node *type;
@@ -162,7 +168,7 @@ class implicitcastNode:public basicNode{
 /*                          Statement nodes                              */
 /*                                                                       */
 /*************************************************************************/
-class labelNode:public basicNode{
+class labelNode:public Node{
     public:
         const char *name;
         Node *stmt;
@@ -173,7 +179,7 @@ class labelNode:public basicNode{
         void print();
 };
 
-class switchNode:public basicNode{
+class switchNode:public Node{
     public:
         Node *exprs;
         Node *stmt;
@@ -186,7 +192,7 @@ class switchNode:public basicNode{
         void print();
 };
 
-class caseNode:public basicNode{
+class caseNode:public Node{
     public:
         Node *expr;
         Node *stmt;
@@ -196,13 +202,13 @@ class caseNode:public basicNode{
         void print();
 };
 
-class defaultNode:public basicNode{
+class defaultNode:public Node{
     public:
         Node *stmt;
         Node *container;
 };
 
-class ifNode:public basicNode{
+class ifNode:public Node{
     public:
         Node *expr;
         Node *stmt;
@@ -211,7 +217,7 @@ class ifNode:public basicNode{
         void print();
 };
 
-class ifelseNode:public basicNode{
+class ifelseNode:public Node{
     public:
         Node *expr;
         Node *ture_;
@@ -222,7 +228,7 @@ class ifelseNode:public basicNode{
         void print();
 };
 
-class whileNode:public basicNode{
+class whileNode:public Node{
     public:
         Node *expr;
         Node *stmt;
@@ -232,7 +238,7 @@ class whileNode:public basicNode{
         void print();
 };
 
-class doNode:public basicNode{
+class doNode:public Node{
     public:
         Node *stmt;
 	    Node *expr;
@@ -243,7 +249,7 @@ class doNode:public basicNode{
         void print();
 };
 
-class forNode:public basicNode{
+class forNode:public Node{
     public:
         Node *init;
 	    Node *cond;
@@ -256,7 +262,7 @@ class forNode:public basicNode{
 };
 
 /*  删除了对gotoNode的支持 */
-class continueNode :public basicNode{
+class continueNode :public Node{
     public:
         Node *container;
         continueNode() {    }
@@ -264,15 +270,15 @@ class continueNode :public basicNode{
         void print();
 };
 
-class breakNode:public basicNode{
+class breakNode:public Node{
     public:
         Node *container;
-        breakNode() {}  
+        breakNode() {}
         ~breakNode(){}
         void print();
 };
 
-class returnNode:public basicNode{
+class returnNode:public Node{
     public:
         Node *expr;
         Node *proc;
@@ -281,7 +287,7 @@ class returnNode:public basicNode{
         void print();
 };
 
-class blockNode:public basicNode{
+class blockNode:public Node{
     public:
         List *decl;
         List *stmts;
@@ -297,7 +303,7 @@ class blockNode:public basicNode{
 /*                          Type nodes                                   */
 /*                                                                       */
 /*************************************************************************/
-class primNode:public basicNode{
+class primNode:public Node{
     public:
         TypeQual tq;
 	    BasicType basic;
@@ -307,7 +313,7 @@ class primNode:public basicNode{
 };
 
 /* 删除了tdefnode、ptrnode sdclNode,udclnode,edclnode*/
-class adclNode:public basicNode{
+class adclNode:public Node{
     public:
         TypeQual tq;
         Node *type;
@@ -318,7 +324,7 @@ class adclNode:public basicNode{
         void print();
 };
 
-class fdclNode:public basicNode{
+class fdclNode:public Node{
     public:
         TypeQual tq;
 	    List *args;
@@ -333,13 +339,13 @@ class fdclNode:public basicNode{
 /*                          Other nodes                                  */
 /*                                                                       */
 /*************************************************************************/
-class declNode:public basicNode{
+class declNode:public Node{
     public:
         const char* name;
 	    TypeQual tq;       /* storage class and decl qualifiers */
 	    Node *type;
 	    Node *init;    /* in other versions of c-parser, init is
-			       overloaded to be the offset for structs -- 
+			       overloaded to be the offset for structs --
 			       but NOT in c-to-c */
 	    Node *prim_init;    /* ：为了保留数组定义是初始化列表 12.2.10 */
 	    Node *bitsize;
@@ -352,7 +358,7 @@ class declNode:public basicNode{
 
 /*  删除了atrributeNode */
 
-class procNode:public basicNode{
+class procNode:public Node{
     public:
         Node *decl;
 	    Node *body;
@@ -363,10 +369,10 @@ class procNode:public basicNode{
         void print();
 };
 
-class textNode:public basicNode{
+class textNode:public Node{
     public:
         const char*text;    /* may be NULL (treated same as "") */
-        bool start_new_line;/* true_ ==> nothing but whitespace should appear 
+        bool start_new_line;/* true_ ==> nothing but whitespace should appear
                             before <text> on line */
         textNode() {    }
         ~textNode(){    }
@@ -382,7 +388,7 @@ class textNode:public basicNode{
 /*                                                                       */
 /*************************************************************************/
 
-class strdclNode:public basicNode{
+class strdclNode:public Node{
     public:
         TypeQual tq;
 	    StreamType *type; /* this is a child link iff S_ELABORATED(tq) */
@@ -391,7 +397,7 @@ class strdclNode:public basicNode{
         void print();
 };
 
-class comDeclNode:public basicNode{
+class comDeclNode:public Node{
     public:
         TypeQual tq;
 	    Node *inout;
@@ -400,7 +406,7 @@ class comDeclNode:public basicNode{
         void print();
 };
 
-class compositeNode:public basicNode{
+class compositeNode:public Node{
     public:
         Node *decl;  /*type->comInoutNode,name->id.name*/
 	    Node *body;
@@ -411,7 +417,7 @@ class compositeNode:public basicNode{
         void print();
 };
 
-class comInOutNode:public basicNode{
+class comInOutNode:public Node{
     public:
         TypeQual tq;
 	    List *outputs;
@@ -421,11 +427,11 @@ class comInOutNode:public basicNode{
         void print();
 };
 
-class comBodyNode:public basicNode{
+class comBodyNode:public Node{
     public:
         Node *param;
 	    List *decl;
-	    List *comstmts;	/*	替代以前的var结构和graph结构 
+	    List *comstmts;	/*	替代以前的var结构和graph结构
 							SPL composite中的特殊语句 和 c语句
 							包括：	普通c语句
 									stream类型的定义语句
@@ -434,8 +440,8 @@ class comBodyNode:public basicNode{
 									composite调用语句
 									splitjoin语句
 									pipeline语句
-							*/  
-	
+							*/
+
 	    /* Coord left_coord; */
 	    /* Coord right_coord; */  /* coordinates of right brace */
 	    Node *type;  /* the type of a {...} block is void;
@@ -447,7 +453,7 @@ class comBodyNode:public basicNode{
         void print();
 };
 
-class paramNode:public basicNode{
+class paramNode:public Node{
     public:
         List *parameters;
         paramNode() {   }
@@ -455,7 +461,7 @@ class paramNode:public basicNode{
         void print();
 };
 
-class operBodyNode:public basicNode{
+class operBodyNode:public Node{
     public:
         List *state;  /*declaration.list  改动：无state关键字，其余结构不变*/
 	    Node *init;   /*compound.statement*/
@@ -473,7 +479,7 @@ class operBodyNode:public basicNode{
 
 };
 
-class operDeclNode:public basicNode{
+class operDeclNode:public Node{
     public:
         TypeQual tq;
 	    List *outputs;/*stream.type.specifier identifier.list | identifier.list*/
@@ -484,7 +490,7 @@ class operDeclNode:public basicNode{
         void print();
 };
 
-class operatorNode:public basicNode{
+class operatorNode:public Node{
     public:
         Node *decl;  /*type->streamif.operator | splitjoin.operator | pipeline.operator | operator.invoke | operator.stream.define */
 	    Node *body;  /*body != null, it is a self-define operator*/
@@ -495,7 +501,7 @@ class operatorNode:public basicNode{
         void print();
 };
 
-class windowNode:public basicNode{
+class windowNode:public Node{
     public:
         Node *id;
 	    Node *wtype;
@@ -504,7 +510,7 @@ class windowNode:public basicNode{
         void print();
 };
 
-class slidingNode:public basicNode{
+class slidingNode:public Node{
     public:
         TypeQual tq;
 	    Node *sliding_value;
@@ -513,7 +519,7 @@ class slidingNode:public basicNode{
         void print();
 };
 
-class tumblingNode:public basicNode{
+class tumblingNode:public Node{
     public:
         TypeQual tq;
 	    Node *tumbling_value;
@@ -522,7 +528,7 @@ class tumblingNode:public basicNode{
         void print();
 };
 
-class uncertaintyNode:public basicNode{
+class uncertaintyNode:public Node{
     public:
         TypeQual tq;
 	    Node*uncertainty_value;
@@ -531,7 +537,7 @@ class uncertaintyNode:public basicNode{
         void print();
 };
 
-class comCallNode:public basicNode{
+class comCallNode:public Node{
     public:
         Node *call;/*call->operDeclNode*/
 	    Node *operdcl;
@@ -542,7 +548,7 @@ class comCallNode:public basicNode{
         void print();
 };
 
-class PipelineNode:public basicNode{
+class PipelineNode:public Node{
     public:
         Node *output;
 	    Node *input;
@@ -559,7 +565,7 @@ class PipelineNode:public basicNode{
         void print();
 };
 
-class SplitJoinNode:public basicNode{
+class SplitJoinNode:public Node{
     public:
         Node *output;
 	    Node *input;
@@ -581,7 +587,7 @@ class SplitJoinNode:public basicNode{
         void print();
 };
 
-class splitNode:public basicNode{
+class splitNode:public Node{
     public:
         Node *type;
         splitNode() {   }
@@ -589,7 +595,7 @@ class splitNode:public basicNode{
         void print();
 };
 
-class joinNode:public basicNode{
+class joinNode:public Node{
     public:
         Node *type;
         joinNode() {    }
@@ -597,7 +603,7 @@ class joinNode:public basicNode{
         void print();
 };
 
-class roundrobinNode:public basicNode{
+class roundrobinNode:public Node{
     public:
         List *arguments;
         roundrobinNode()    {   }
@@ -605,7 +611,7 @@ class roundrobinNode:public basicNode{
         void print();
 };
 
-class duplicateNode:public basicNode{
+class duplicateNode:public Node{
     public:
         Node *expr;
         duplicateNode()    {   }
@@ -613,7 +619,7 @@ class duplicateNode:public basicNode{
         void print();
 };
 
-class addNode:public basicNode{
+class addNode:public Node{
     public:
         Node *content;
         addNode()   {   }
@@ -634,22 +640,20 @@ struct nodeStruct {
     /* 暂时注释掉coord */
 	/* Coord coord; */ /* location of first terminal in production */
 
-	/* pass is incremented for each top-level call to PrintNode, so 
+	/* pass is incremented for each top-level call to PrintNode, so
 	   that PrintNode can print out decls anywhere they are used
 	   without infinite recursion on recursive data structures. */
-	short pass;
 
+    /* pass 表示Node嵌套节点深度 ; */
+	short pass;
 	/* parenthesized is set on expressions which were parenthesized
-	   in the original source:  e.g., (x+y)*(w+z) would have 
+	   in the original source:  e.g., (x+y)*(w+z) would have
 	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
 	   on both MULT nodes. */
 	short parenthesized;
-
-	/* data-flow analysis information */
-
     /*  暂时注释掉 */
+	/* data-flow analysis information */
 	//Analysis analysis;
-
 	union {
 		adclNode adcl;
 		arrayNode array;
@@ -665,8 +669,8 @@ struct nodeStruct {
 		declNode decl;
 		defaultNode Default;
 		doNode Do;
-		fdclNode fdcl;		
-		forNode For;		
+		fdclNode fdcl;
+		forNode For;
 		idNode id;
 		ifNode If;
 		ifelseNode IfElse;
@@ -681,7 +685,7 @@ struct nodeStruct {
 		textNode text;
 		unaryNode unary;		//一元操作符
 		whileNode While;
-		/*********13**************--------------Define For SPL----------****************************/
+		//********13**************--------------Define For SPL----------****************************
 		strdclNode		strdcl;
 		comDeclNode		comdcl;
 		compositeNode	composite;
@@ -689,24 +693,24 @@ struct nodeStruct {
 		comBodyNode		comBody;
 		paramNode		param;
 		operBodyNode	operBody;
-		operDeclNode	operdcl;	
+		operDeclNode	operdcl;
 		operatorNode	operator_;
 		windowNode		window;
 		slidingNode		sliding;
 		tumblingNode	tumbling;
 		uncertaintyNode uncertainty;
-		/*-------7-------New For SPL----------*/
+		//-------7-------New For SPL----------
 		comCallNode		comCall;
 		PipelineNode	pipeline;
 		SplitJoinNode	splitJoin;
 		splitNode		split;
 		joinNode		join;
-		roundrobinNode	roundrobin;				
+		roundrobinNode	roundrobin;
 		duplicateNode	duplicate;
 		/**********1*****新文法*******************/
 		addNode			add;		//add 节点
-		
 	} u;
 };
+
 
 #endif
