@@ -1,6 +1,9 @@
 #include<iostream>
 #include "node.h"
+#include <list>
 #include "token.h"
+using namespace std;
+
 extern int yyparse();   // parser.cc provides yyparse()
 
 int main(){
