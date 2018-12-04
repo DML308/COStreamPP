@@ -28,8 +28,8 @@ class Node
     void setLoc(Loc *loc){
         loc=loc;
     }
-    virtual void print()=0;
-    virtual const char * toString()=0;
+    virtual void print(){};
+    virtual const char * toString(){};
 };
 
 class primaryNode:public Node{
@@ -84,7 +84,9 @@ public:
 class identifierNode:public Node{
 public:
     string name;
-    identifierNode() {}
+    identifierNode() {
+
+    }
     ~identifierNode() {}
     void print(){}
     const char * toString(){
@@ -105,4 +107,16 @@ public:
         
     }
 };
+
+class AdclNode:public Node{
+public:
+    //expNode *dim;
+    AdclNode(){}
+    ~AdclNode(){}
+    void print(){}
+    const char * toString(){
+        
+    }
+};
+
 #endif

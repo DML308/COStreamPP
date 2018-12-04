@@ -64,7 +64,8 @@ extern void yyerror (const char *msg);
 %type<node> statement labeled.statement compound.statement
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
 /* 语法分析器自己的结构 4.exp 计算表达式头节点  */
-%type<node> assignment.operator exp exp.assignable
+%type<str>  assignment.operator
+%type<node> exp exp.assignable
 %type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
 %type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
 %type<node> window.type
@@ -600,26 +601,31 @@ jump.statement:
 /*        4. exp 计算表达式头节点                        */
 /*************************************************************************/
 assignment.operator:
-          '='             { $$ = NULL ; }
-        | MULTassign      { $$ = NULL ; }
-        | DIVassign       { $$ = NULL ; }
-        | MODassign       { $$ = NULL ; }
-        | PLUSassign      { $$ = NULL ; }
-        | MINUSassign     { $$ = NULL ; }
-        | LSassign        { $$ = NULL ; }
-        | RSassign        { $$ = NULL ; }
-        | ANDassign       { $$ = NULL ; }
-        | ERassign        { $$ = NULL ; }
-        | ORassign        { $$ = NULL ; }
+          '='             { $$ = new string("=")  ; }
+        | MULTassign      { $$ = new string("*=") ; }
+        | DIVassign       { $$ = new string("/=") ; }
+        | MODassign       { $$ = new string("%=") ; }
+        | PLUSassign      { $$ = new string("+=") ; }
+        | MINUSassign     { $$ = new string("-=") ; }
+        | LSassign        { $$ = new string("<=") ; }
+        | RSassign        { $$ = new string(">=") ; }
+        | ANDassign       { $$ = new string("&=") ; }
+        | ERassign        { $$ = new string("^=") ; }
+        | ORassign        { $$ = new string("|=") ; }
         ;
 exp.assignable:
-          IDENTIFIER                        { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; }
-        | IDENTIFIER  array.declarator      { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; }  
+          IDENTIFIER                        
+            { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; }
+        | IDENTIFIER  array.declarator      
+            { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; }  
         ; 
-exp:      exp.assignable                    { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = NULL ; }
-        | exp.assignable '.' IDENTIFIER     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); $$ = NULL ; }
-        | exp.assignable '.' IDENTIFIER array.declarator { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); $$ = NULL ; }
-        | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n"); $$ = NULL ; }
+exp:      exp.assignable                    
+            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = NULL ; }
+        | exp.assignable '.' IDENTIFIER     
+            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); $$ = NULL ; }
+        | exp.assignable '.' IDENTIFIER array.declarator 
+            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); $$ = NULL ; }
+        | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n"); $$ = $1 ; }
         | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n"); $$ = NULL ; }
         | exp '-' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n"); $$ = NULL ; }
         | exp '*' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp * exp\n"); $$ = NULL ; }
