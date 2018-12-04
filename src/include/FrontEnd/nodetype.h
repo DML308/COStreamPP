@@ -9,12 +9,10 @@ typedef enum {
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Goto, Continue,
   Break, Return, Block,
   /* type nodes */
-  primary, Tdef, Ptr, Adcl, Fdcl, Sdcl, Udcl, Edcl,
+  primary, Tdef, Ptr, Adcl, Fdcl,
   /* declaration node */
   Decl,
   /* GCC __attribute__ extension */
-  Attrib,
-  /* procedure def node */
   Proc,
   /* random text and preprocessor command node */
   Text,

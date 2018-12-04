@@ -31,8 +31,10 @@ extern void yyerror (const char *msg);
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
-%type<list> prog.start translation.unit external.definition
+%type<list> prog.start translation.unit 
+%type<node> external.definition
 /* 语法分析器自己的结构   1.1.declaration */
+
 %type<node> declaration declaring.list
 %type<node> stream.type.specifier
 %type<list> stream.declaration.list stream.declaring.list
@@ -67,10 +69,10 @@ extern void yyerror (const char *msg);
 %type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
 %type<node> window.type
 /* 语法分析器自己的结构 5.basic 从词法TOKEN直接归约得到的节点 */
-%type<node>constant type.specifier basic.type.name
+%type<node>constant type.specifier basic.type.name  
 %type<num> integerConstant
 %type<doubleNum> doubleConstant
-%type<str> IDENTIFIER stringConstant
+%type<str> stringConstant IDENTIFIER
 
 
 
@@ -119,7 +121,8 @@ external.definition:
           declaration           {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= declaration\n");
-                                      $$ = NULL ;
+                                      //$$->push_back($1);
+                                      $$=$1;
                                 }
         | function.definition   {
                                       line("Line:%-3d",@1.first_line);
@@ -156,6 +159,7 @@ declaring.list:
           type.specifier 			  IDENTIFIER initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
+              //debug ("declaring.list ::= type.specifier %s initializer.opt \n",map[$2]->c_str());
               $$ = NULL ;
         }
         | type.specifier 			  IDENTIFIER array.declarator initializer.opt{
@@ -270,7 +274,6 @@ initializer:
                                             //$$ = NULL ;
                                         }
         | exp                           {
-
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= exp \n");
                                             $$ = NULL ;
@@ -281,12 +284,13 @@ initializer.list:
           initializer   {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer \n");
-                            $$ = NULL ;
+                            $$ = new initializerNode((Loc*)&(@1));
                         }
         | initializer.list ',' initializer  {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer.list ',' initializer \n");
-                            $$ = NULL ;
+                            static_cast<initializerNode*>$1->value.push_back($3);
+                            $$ = $1 ;
                         }
         ;
 /*************************************************************************/
@@ -613,7 +617,7 @@ exp.assignable:
         | IDENTIFIER  array.declarator      { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; }  
         ; 
 exp:      exp.assignable                    { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = NULL ; }
-        | exp.assignable '.' IDENTIFIER                  { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); $$ = NULL ; }
+        | exp.assignable '.' IDENTIFIER     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); $$ = NULL ; }
         | exp.assignable '.' IDENTIFIER array.declarator { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); $$ = NULL ; }
         | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n"); $$ = NULL ; }
         | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n"); $$ = NULL ; }

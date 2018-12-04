@@ -3,6 +3,7 @@
 #include "basics.h"
 #include "nodetype.h"
 #include "defines.h"
+#include <list>
 typedef struct
 {
     int first_line;
@@ -28,7 +29,7 @@ class Node
         loc=loc;
     }
     virtual void print()=0;
-    virtual string toString()=0;
+    virtual const char * toString()=0;
 };
 
 class primaryNode:public Node{
@@ -41,13 +42,12 @@ public:
     }
     ~primaryNode(){}
     void print(){ cout<<"primNodeType :"<<name<<endl;}
-    string toString(){
+    const char * toString(){
         string str = "" ;
         if(isConst) str += "const ";
-        return str+name ;
+        return (str+name).c_str();
     } 
 };
-
 
 class constantNode:public Node {
 public:
@@ -70,16 +70,39 @@ public:
     }
     ~constantNode() {}
     void print(){ cout<<"constant :"<<type<<endl;}
-    string toString(){
-        string str = "" ;
+    const char * toString(){
         if(name == "double") 
-            return str+to_string(dval);
+            return (to_string(dval)).c_str();
         else if(name=="interger")
-            return str+to_string(llval);
+            return (to_string(llval)).c_str();
         else 
-            return str+sval;
+            return (sval).c_str();
        ;
     } 
 };
 
+class identifierNode:public Node{
+public:
+    string name;
+    identifierNode() {}
+    ~identifierNode() {}
+    void print(){}
+    const char * toString(){
+        return name.c_str();
+    }
+};
+
+class initializerNode:public Node{
+public:
+    list<void *> value;
+    initializerNode(Loc *loc){
+        type=Initializer;
+        setLoc(loc);
+    }
+    ~initializerNode(){}
+    void print(){}
+    const char * toString(){
+        
+    }
+};
 #endif
