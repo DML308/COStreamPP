@@ -757,32 +757,32 @@ basic.type.name:
           INT   {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  INT \n");
-                      $$ = NULL ;
+                      $$ = new primNode("int",@1.first_line) ;
                 }
         | LONG  {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG \n");
-                      $$ = NULL ;
+                      $$ = new primNode("LONG",@1.first_line) ;
                 }
         | LONG LONG {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
-                      $$ = NULL ;
+                      $$ = new primNode("LONG LONG",@1.first_line) ;
                     }
         | FLOAT {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  FLOAT \n");
-                      $$ = NULL ;
+                      $$ = new primNode("FLOAT",@1.first_line) ;
                 }
         | DOUBLE{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  DOUBLE \n");
-                      $$ = NULL ;
+                      $$ = new primNode("DOUBLE",@1.first_line) ;
                 }
         | STRING{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  STRING \n");
-                      $$ = NULL ;
+                      $$ = new primNode("STRING",@1.first_line) ;
                 }
         ;
 %%

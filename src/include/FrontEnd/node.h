@@ -2,7 +2,7 @@
 #define _NODE_H_
 #include "basics.h"
 #include "nodetype.h"
-
+#include "defines.h"
 typedef struct
 {
     int first_line;
@@ -24,8 +24,20 @@ class Node
 	short parenthesized;
     Node()  { loc = new Loc; }
     virtual ~Node() { delete loc; }
-    void setLoc(Loc *loc);
-    virtual void print();
+    void setLoc(int line){
+        loc->first_line=line;
+    }
+    virtual void print()=0;
+};
+
+class primNode:public Node{
+    public:
+    string name;
+    primNode(string str,int line):name(str){
+        setLoc(line);
+    }
+    ~primNode(){}
+    void print(){ cout<<"primNodeType :"<<name<<endl;}
 };
 
 #endif
