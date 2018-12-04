@@ -3,13 +3,13 @@
 /* definition of Node data structure */
 typedef enum {
   /* expression nodes */
-  Const, Id, Binop, Unary, Cast, Comma, Ternary, Array, Call, Initializer,
+  constant, Id, Binop, Unary, Cast, Comma, Ternary, Array, Call, Initializer,
   ImplicitCast,
   /* statement nodes */
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Goto, Continue,
   Break, Return, Block,
   /* type nodes */
-  Prim, Tdef, Ptr, Adcl, Fdcl, Sdcl, Udcl, Edcl,
+  primary, Tdef, Ptr, Adcl, Fdcl, Sdcl, Udcl, Edcl,
   /* declaration node */
   Decl,
   /* GCC __attribute__ extension */

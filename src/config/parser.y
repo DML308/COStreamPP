@@ -728,17 +728,17 @@ constant:
           doubleConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= doubleConstant | value:=%lf\n",$1);
-                                $$ = new constantNode("double",$1,@1.first_line) ;
+                                $$ = new constantNode("double",$1,(Loc*)&(@1)) ;
                             }
         | integerConstant   {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= integerConstant | value:=%d\n",$1);
-                                $$ = new constantNode("interger",$1,@1.first_line) ;
+                                $$ = new constantNode("interger",$1,(Loc*)&(@1)) ;
                             }
         | stringConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= stringConstant | value:=%s\n",$1->c_str());
-                                $$ = new constantNode("string",*($1),@1.first_line) ;
+                                $$ = new constantNode("string",*($1),(Loc*)&(@1)) ;
                             }
         ;
 type.specifier:
@@ -748,8 +748,9 @@ type.specifier:
                                     $$ = $1 ;
                                 }
         | CONST basic.type.name {
-                                    line("Line:%-3d",@1.first_line);
+                                    line("Line:%-3d",@2.first_line);
                                     debug ("type.specifier ::=  CONST basic.type.name \n");
+                                    (static_cast<primaryNode*>$2)->isConst=true;
                                     $$ = $2 ; /* const 暂时还未处理*/
                                 }
         ;
@@ -757,32 +758,32 @@ basic.type.name:
           INT   {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  INT \n");
-                      $$ = new primNode("int",@1.first_line) ;
+                      $$ = new primaryNode("int",(Loc*)&(@1) );
                 }
         | LONG  {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG \n");
-                      $$ = new primNode("LONG",@1.first_line) ;
+                      $$ = new primaryNode("LONG",(Loc*)&(@1) ) ;
                 }
         | LONG LONG {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
-                      $$ = new primNode("LONG LONG",@1.first_line) ;
+                      $$ = new primaryNode("LONG LONG",(Loc*)&(@1) ) ;
                     }
         | FLOAT {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  FLOAT \n");
-                      $$ = new primNode("FLOAT",@1.first_line) ;
+                      $$ = new primaryNode("FLOAT",(Loc*)&(@1) ) ;
                 }
         | DOUBLE{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  DOUBLE \n");
-                      $$ = new primNode("DOUBLE",@1.first_line) ;
+                      $$ = new primaryNode("DOUBLE",(Loc*)&(@1) ) ;
                 }
         | STRING{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  STRING \n");
-                      $$ = new primNode("STRING",@1.first_line) ;
+                      $$ = new primaryNode("STRING",(Loc*)&(@1) ) ;
                 }
         ;
 %%
