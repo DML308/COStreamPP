@@ -728,29 +728,29 @@ constant:
           doubleConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= doubleConstant | value:=%lf\n",$1);
-                                $$ = NULL ;
+                                $$ = new constantNode("double",$1,@1.first_line) ;
                             }
         | integerConstant   {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= integerConstant | value:=%d\n",$1);
-                                $$ = NULL ;
+                                $$ = new constantNode("interger",$1,@1.first_line) ;
                             }
         | stringConstant    {
                                 line("Line:%-3d",@1.first_line);
                                 debug ("constant ::= stringConstant | value:=%s\n",$1->c_str());
-                                $$ = NULL ;
+                                $$ = new constantNode("string",*($1),@1.first_line) ;
                             }
         ;
 type.specifier:
           basic.type.name       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  basic.type.name \n");
-                                    $$ = NULL ;
+                                    $$ = $1 ;
                                 }
         | CONST basic.type.name {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  CONST basic.type.name \n");
-                                    $$ = NULL ;
+                                    $$ = $2 ; /* const 暂时还未处理*/
                                 }
         ;
 basic.type.name:

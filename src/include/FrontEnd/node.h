@@ -31,7 +31,7 @@ class Node
 };
 
 class primNode:public Node{
-    public:
+public:
     string name;
     primNode(string str,int line):name(str){
         setLoc(line);
@@ -40,4 +40,22 @@ class primNode:public Node{
     void print(){ cout<<"primNodeType :"<<name<<endl;}
 };
 
+class constantNode:public Node {
+public:
+    string type;
+    string str;
+    double dval;
+    long long llval;
+    constantNode(string type,string str,int line):type(type),str(str){
+        setLoc(line);
+    }
+    constantNode(string type,long long l,int line):type(type),llval(l){
+        setLoc(line);
+    }
+    constantNode(string type,double d,int line):type(type),dval(d){
+        setLoc(line);
+    }
+    ~constantNode() {}
+    void print(){ cout<<"constant :"<<type<<endl;}
+};
 #endif
