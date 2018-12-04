@@ -42,11 +42,7 @@ public:
     }
     ~primaryNode(){}
     void print(){ cout<<"primNodeType :"<<name<<endl;}
-    const char * toString(){
-        string str = "" ;
-        if(isConst) str += "const ";
-        return (str+name).c_str();
-    } 
+    const char * toString(){};
 };
 
 class constantNode:public Node {
@@ -70,15 +66,7 @@ public:
     }
     ~constantNode() {}
     void print(){ cout<<"constant :"<<type<<endl;}
-    const char * toString(){
-        if(name == "double") 
-            return (to_string(dval)).c_str();
-        else if(name=="interger")
-            return (to_string(llval)).c_str();
-        else 
-            return (sval).c_str();
-       ;
-    } 
+    const char * toString(){} 
 };
 
 class identifierNode:public Node{
