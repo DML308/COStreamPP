@@ -1,6 +1,6 @@
 #include "symbol.h"
-int current_version[MAX_SCOPE_DEPTH];
 int Level;
+int current_version[MAX_SCOPE_DEPTH];
 /* enterScope */
 void EnterScope()
 {

@@ -1,6 +1,7 @@
 #include "handle_options.h"
 #include "defines.h"
 #include "global.h"
+
 //处理命令行输入的选项
 int handle_options(int argc, char *argv[]){
     int c;
@@ -95,6 +96,7 @@ FILE * changeTabToSpace(){
     ////////////////////////////
     /* change '\t' with 8 ' ' */
     ////////////////////////////
+    /*
     FILE *tempinfp, *tempoutfp;
     char *tempfile_name = (char *)malloc(sizeof(char) * (strlen(infile_name) + strlen(".temp.c") + 1));
     tempinfp = fopen(infile_name, "r");
@@ -124,12 +126,12 @@ FILE * changeTabToSpace(){
     fclose(tempinfp);
     fclose(tempoutfp);
     ////////////////////////////////
-    /* change '\t' with 8 ' ' end */
+    // change '\t' with 8 ' ' end 
     ////////////////////////////////
     infp = fopen(tempfile_name, "r");
     if (infp == NULL)
     {
         error("Can not open infile %s\n", tempfile_name);
         exit(0);
-    }
+    }*/
 }

@@ -2,10 +2,12 @@
 #define DEBUG
 #include "defines.h"
 #include "node.h"
+#include "symbol.h"
 #include <list>
 //using std::list;
 extern int yylex ();
 extern void yyerror (const char *msg);
+
 %}
 
 /*在 union 里声明 %token 可能有的类型*/
@@ -735,8 +737,9 @@ window.type:
 /*************************************************************************/
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
-lblock: '{'  { /*EnterScope(); */}  
-rblock: '}'  { /*ExitScope();  */}
+/* 设置变量作用域相关 */
+lblock: '{'  { EnterScope();  }  
+rblock: '}'  { ExitScope();   }
 
 constant:
           doubleConstant    {

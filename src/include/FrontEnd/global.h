@@ -9,5 +9,7 @@ extern FILE *outfp;
 
 extern float VersionNumber;
 extern const char *const CompiledDate;
-
+extern int Level;          //symbol.h
+#define MAX_SCOPE_DEPTH 100 //定义最大嵌套深度为100
+extern int current_version[MAX_SCOPE_DEPTH];
 #endif
