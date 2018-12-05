@@ -4,26 +4,25 @@
 //处理命令行输入的选项
 int handle_options(int argc, char *argv[]){
     int c;
-    int version_flag = 0;
-    int help_flag = 0;
     struct option long_options[] =
         {
-            {"version", no_argument, &version_flag, 'v'},
-            {"help", no_argument, &help_flag, 'h'},
-            {"Cpucore", required_argument, NULL, 'j'},
-            {"i",required_argument,NULL,'i'},
+            {"version", no_argument, NULL, 'v'},
+            {"help", no_argument, NULL, 'h'},
+            {"nCpucore", required_argument, NULL, 'j'},
+            {"nowarning",no_argument,NULL,'w'},
+            {"output",required_argument,NULL,'o'},
             {0, 0, 0, 0}};
     int option_index = 0;
     opterr = 0;
 
-    while ((c = getopt_long(argc, argv, ":hvo:d:", long_options, &option_index)) != -1)
+    while ((c = getopt_long(argc, argv, ":hvwo:j:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
         case 0:
             break;
         case 'h':
-            help_flag = 1;
+            print_usage();
             break;
         case 'v':
             print_version_info();
@@ -31,26 +30,16 @@ int handle_options(int argc, char *argv[]){
         case 'o':
             outfile_name = optarg;
             break;
-        case 'd':
-            dumpfile_name = optarg;
-            codefile_name = (char *)malloc(sizeof(char) * (200));
-            strcpy(codefile_name, dumpfile_name);
-            strcat(codefile_name, ".ll");
-            codefp = fopen(codefile_name, "w");
-            if (codefp == NULL)
-            {
-                error("Can not open codefpfile %s\n", codefile_name);
-                exit(0);
-            }
+        case 'w':
+            error("-w 还没写完呢\n");
             break;
         case '?':
-            error("Unknown option -%c\n", optopt);
-            return false;
+            break;
         case ':':
             if (optopt == 'o')
                 error("Option -o requires an argument\n");
-            else if (optopt == 'd')
-                error("Option -d requires an argument\n");
+            else if (optopt == 'j')
+                error("Option -j requires an argument\n");
             else
                 error("Unknown option -%c\n", optopt);
             return false;
@@ -58,95 +47,86 @@ int handle_options(int argc, char *argv[]){
             error("Error in handle_opt()\n");
         }
     }
-
-    if (help_flag)
-    {
-        printf("usage: parser  [options] [file]\n");
-        printf("-h  --help     print this usage and exit\n");
-        printf("-v  --version  print version and exit\n");
-        printf("-o <file>      place the output into <file>\n");
-        printf("-d <file>      dump AST into <file>\n");
-        return false;
-    }
-    if (version_flag)
-    {
-        printf("parser V5.8 & AST & dumpdot\n");
-        return false;
-    }
     if (optind < argc)
         infile_name = argv[optind];
     if (infile_name == NULL)
         infp = stdin;
     else
     {
-        ////////////////////////////
-        /* change '\t' with 8 ' ' */
-        ////////////////////////////
-        FILE *tempinfp, *tempoutfp;
-        char *tempfile_name = (char *)malloc(sizeof(char) * (strlen(infile_name) + strlen(".temp.c") + 1));
-        tempinfp = fopen(infile_name, "r");
-        strcpy(tempfile_name, infile_name);
-        strcat(tempfile_name, ".temp.c");
-        tempoutfp = fopen(tempfile_name, "w");
-
-        if (tempoutfp == NULL)
-        {
-            error("Can not open infile %s\n", infile_name);
-            return false;
-        }
-        char ch;
-        while ((ch = fgetc(tempinfp)) != EOF)
-        {
-            if (ch != '\t')
-                fputc(ch, tempoutfp);
-            else
-            {
-                ch = ' ';
-                fputc(ch, tempoutfp);
-                fputc(ch, tempoutfp);
-                fputc(ch, tempoutfp);
-                fputc(ch, tempoutfp);
-            }
-        }
-        fclose(tempinfp);
-        fclose(tempoutfp);
-        ////////////////////////////////
-        /* change '\t' with 8 ' ' end */
-        ////////////////////////////////
-        infp = fopen(tempfile_name, "r");
-        if (infp == NULL)
-        {
-            error("Can not open infile %s\n", tempfile_name);
-            return false;
-        }
+        changeTabToSpace();
     }
     if (outfile_name == NULL)
         outfp = stdout;
     else
     {
-        outfp = fopen(outfile_name, "w");
-        if (outfp == NULL)
-        {
-            error("Can not open outfile %s\n", outfile_name);
-            return false;
-        }
-    }
-    if (dumpfile_name == NULL)
-        dumpfp = NULL;
-    else
-    {
-        dumpfp = fopen(dumpfile_name, "w");
-        if (dumpfp == NULL)
-        {
-            error("Can not open dumpfile %s\n", dumpfile_name);
-            return false;
-        }
+
     }
     return true;
 }
 
+float VersionNumber = 0.10;
+const char *const CompiledDate = __DATE__;
 void print_version_info()
 {
-    fprintf(stderr, "Version %.02f (%s)\n",VersionNumber, CompiledDate);
+    fprintf(stderr, "COStream\nVersion %.02f (Compiled Date: %s)\n",VersionNumber, CompiledDate);
     exit(0);
+}
+void print_usage(){
+    fprintf(stderr, "usage: COStream  [options] [file]\n");
+    fprintf(stderr,
+            "\n"
+            "Parses <file> as a COStream program, reporting syntax and type errors, and writes\n"
+            "paralleled program out to <file>%s.  If <file> is null, uses "
+            "stdin and stdout.\n"
+            "\n");
+    fprintf(stderr, "General Options:\n");
+    fprintf(stderr, "-h --help              print this usage and exit\n");
+    fprintf(stderr, "-v --version           print Version Number and Compiled Date\n");
+    fprintf(stderr, "-w --nowarning         \n");
+    fprintf(stderr, "-o <dir>               place the output files into <dir>\n");
+    fprintf(stderr, "-j --nCpucore <number> set number of threads\n");
+    fprintf(stderr, "-j --nCpucore <number> set number of threads\n");
+
+}
+FILE * changeTabToSpace(){
+    ////////////////////////////
+    /* change '\t' with 8 ' ' */
+    ////////////////////////////
+    FILE *tempinfp, *tempoutfp;
+    char *tempfile_name = (char *)malloc(sizeof(char) * (strlen(infile_name) + strlen(".temp.c") + 1));
+    tempinfp = fopen(infile_name, "r");
+    strcpy(tempfile_name, infile_name);
+    strcat(tempfile_name, ".temp.c");
+    tempoutfp = fopen(tempfile_name, "w");
+
+    if (tempoutfp == NULL)
+    {
+        error("Can not open infile %s\n", infile_name);
+        return NULL;
+    }
+    char ch;
+    while ((ch = fgetc(tempinfp)) != EOF)
+    {
+        if (ch != '\t')
+            fputc(ch, tempoutfp);
+        else
+        {
+            ch = ' ';
+            fputc(ch, tempoutfp);
+            fputc(ch, tempoutfp);
+            fputc(ch, tempoutfp);
+            fputc(ch, tempoutfp);
+        }
+    }
+    fclose(tempinfp);
+    fclose(tempoutfp);
+    ////////////////////////////////
+    /* change '\t' with 8 ' ' end */
+    ////////////////////////////////
+    infp = fopen(tempfile_name, "r");
+    if (infp == NULL)
+    {
+        error("Can not open infile %s\n", tempfile_name);
+        return NULL;
+    }
 }
