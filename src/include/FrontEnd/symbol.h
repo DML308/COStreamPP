@@ -14,17 +14,16 @@ void ExitScope(void);
 class SymbolTable{
 public:
     
-    SymbolTable(string name){
-        name=name;
-    }
-    ~SymbolTable(){
-    }
-    bool LookupSymbol(identifierNode* node,map<string,list<identifierNode*> > mp);
-    void InsertSymbol(identifierNode* node,map<string,list<identifierNode*> > mp);
+    SymbolTable(){}
+    ~SymbolTable(){}
+    bool LookupSymbol(string  name);
+    void InsertSymbol(identifierNode* node);
+    const identifierNode* operator[](string str);
+
+
 private:
-    string name;
-    map<string,list<identifierNode*> >identifierTable;
-    map<string,functionNode*> functionTable;
-    map<string,compositeNode*> compositeTable;
+    map<string,list<identifierNode*> >iTable;
+    map<string,functionNode*> fTable;
+    map<string,compositeNode*> cTable;
 };
 #endif

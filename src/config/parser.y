@@ -5,6 +5,7 @@
 #include "symbol.h"
 #include <list>
 //using std::list;
+extern SymbolTable S;
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -162,6 +163,7 @@ declaring.list:
           type.specifier 			  IDENTIFIER initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
+              
               //debug ("declaring.list ::= type.specifier %s initializer.opt \n",map[$2]->c_str());
 
               $$ = NULL ;
@@ -595,9 +597,9 @@ iteration.statement:
         | FOR '(' error ')' costream.composite.statement                          {  $$ = NULL ; }
         ;
 jump.statement:
-          CONTINUE ';'               {  $$ = NULL ; }
-        | BREAK ';'                 {  $$ = NULL ; }
-        | RETURN exp ';' {  $$ = NULL ; }
+          CONTINUE ';'        {  $$ = NULL ; }
+        | BREAK ';'           {  $$ = NULL ; }
+        | RETURN exp ';'      {  $$ = NULL ; }
         ;
 
 /*************************************************************************/
@@ -618,7 +620,10 @@ assignment.operator:
         ;
 exp.assignable:
           IDENTIFIER                        
-            { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; }
+            { 
+                  line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; 
+                  if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
+            }
         | IDENTIFIER  array.declarator      
             { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; }  
         ; 
@@ -762,6 +767,7 @@ type.specifier:
           basic.type.name       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  basic.type.name \n");
+                                    
                                     $$ = $1 ;
                                 }
         | CONST basic.type.name {
