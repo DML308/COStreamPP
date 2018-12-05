@@ -12,8 +12,8 @@ SRCEXTS := .cpp # SRC 目录里相关的文件后缀
 
 SHELL := /bin/sh
 SOURCES := $(foreach d,$(SRCDIRS),$(wildcard $(d)/*.cpp))
-POBJ := parser.o lexer.o
-OBJS := $(POBJ) $(foreach x,$(SRCEXTS),$(patsubst %$(x),%.o,$(notdir $(filter %$(x),$(SOURCES)))))
+FILTEROUT := src/FrontEnd/parser.cpp src/FrontEnd/lexer.cpp
+OBJS := parser.o lexer.o $(foreach x,$(SRCEXTS),$(patsubst %$(x),%.o,$(notdir $(filter-out $(FILTEROUT),$(SOURCES)))))
 
 # Rules for producing the executable.
 #----------------------------------------------

@@ -68,25 +68,25 @@ float VersionNumber = 0.10;
 const char *const CompiledDate = __DATE__;
 void print_version_info()
 {
-    fprintf(stderr, "COStream\nVersion %.02f (Compiled Date: %s)\n",VersionNumber, CompiledDate);
+    fprintf(stderr, "COStream\nVersion %.02f (Compiled Date: %s)\n\n",VersionNumber, CompiledDate);
     exit(0);
 }
 void print_usage(){
-    fprintf(stderr, "usage: COStream  [options] [file]\n");
+    fprintf(stderr, "Usage: COStream  [options] [file]\n");
     fprintf(stderr,
             "\n"
             "Parses <file> as a COStream program, reporting syntax and type errors, and writes\n"
-            "paralleled program out to <file>%s.  If <file> is null, uses "
+            "paralleled program out to <file>. If <file> is null, uses "
             "stdin and stdout.\n"
             "\n");
     fprintf(stderr, "General Options:\n");
-    fprintf(stderr, "-h --help              print this usage and exit\n");
-    fprintf(stderr, "-v --version           print Version Number and Compiled Date\n");
-    fprintf(stderr, "-w --nowarning         \n");
-    fprintf(stderr, "-o <dir>               place the output files into <dir>\n");
-    fprintf(stderr, "-j --nCpucore <number> set number of threads\n");
-    fprintf(stderr, "-j --nCpucore <number> set number of threads\n");
-
+    fprintf(stderr, "      -h, --help              print this usage and exit\n");
+    fprintf(stderr, "      -v, --version           print Version Number and Compiled Date\n");
+    fprintf(stderr, "      -w, --nowarning         ignore warnings\n");
+    fprintf(stderr, "      -o, <dir>               place the output files into <dir>\n");
+    fprintf(stderr, "      -j, --nCpucore <number> set number of threads\n");
+    fprintf(stderr, "\n");
+    exit(0);
 }
 FILE * changeTabToSpace(){
     ////////////////////////////
