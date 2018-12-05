@@ -44,7 +44,7 @@ $(PROGRAM) : $(OBJS)
 	$(CXX) -g -o $(PROGRAM) $(CPPFLAGS) $(foreach d,$(OBJS),$(addprefix $(OUTDIRS)/,$(d)))
 
 clean :
-	@$(RM) src/*/lexer.cpp include/*/token.h src/*/parser.cpp y.tab.[ch] config/*.output *.o  bin/* *.d *.out
+	@$(RM) src/*/lexer.cpp include/*/token.h src/*/parser.cpp y.tab.[ch] config/*.output *.o  bin/* *.d *.out *.temp
 count :
 	make clean
 	find . -maxdepth 2  -name "*[.l|.y|.c|.cc|.cpp|.h|Makefile]"  | xargs cat | wc -l
