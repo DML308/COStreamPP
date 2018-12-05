@@ -4,6 +4,7 @@
 //处理命令行输入的选项
 int handle_options(int argc, char *argv[]){
     int c;
+    printf("err:%d\n",opterr);
     struct option long_options[] =
         {
             {"version", no_argument, NULL, 'v'},
@@ -13,8 +14,6 @@ int handle_options(int argc, char *argv[]){
             {"output",required_argument,NULL,'o'},
             {0, 0, 0, 0}};
     int option_index = 0;
-    opterr = 0;
-
     while ((c = getopt_long(argc, argv, ":hvwo:j:", long_options, &option_index)) != -1)
     {
         switch (c)
@@ -33,7 +32,11 @@ int handle_options(int argc, char *argv[]){
         case 'w':
             error("-w 还没写完呢\n");
             break;
+        case 'j':
+            error("-j 还没写完呢\n");
+            break;
         case '?':
+            error("unknown option: %c\n", optopt);
             break;
         case ':':
             if (optopt == 'o')
@@ -102,7 +105,7 @@ FILE * changeTabToSpace(){
     if (tempoutfp == NULL)
     {
         error("Can not open infile %s\n", infile_name);
-        return NULL;
+        exit(0);
     }
     char ch;
     while ((ch = fgetc(tempinfp)) != EOF)
@@ -127,6 +130,6 @@ FILE * changeTabToSpace(){
     if (infp == NULL)
     {
         error("Can not open infile %s\n", tempfile_name);
-        return NULL;
+        exit(0);
     }
 }
