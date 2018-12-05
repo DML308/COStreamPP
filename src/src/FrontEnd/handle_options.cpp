@@ -1,11 +1,11 @@
 #include "handle_options.h"
-#include "defines.h"
-#include "global.h"
+
+float VersionNumber = 0.10;
+const char *const CompiledDate = __DATE__;
 
 //处理命令行输入的选项
 int handle_options(int argc, char *argv[]){
     int c;
-    printf("err:%d\n",opterr);
     struct option long_options[] =
         {
             {"version", no_argument, NULL, 'v'},
@@ -67,9 +67,6 @@ int handle_options(int argc, char *argv[]){
     }
     return true;
 }
-
-float VersionNumber = 0.10;
-const char *const CompiledDate = __DATE__;
 void print_version_info()
 {
     fprintf(stderr, "COStream\nVersion %.02f (Compiled Date: %s)\n\n",VersionNumber, CompiledDate);
@@ -93,45 +90,47 @@ void print_usage(){
     exit(0);
 }
 FILE * changeTabToSpace(){
-    ////////////////////////////
-    /* change '\t' with 8 ' ' */
-    ////////////////////////////
-    /*
-    FILE *tempinfp, *tempoutfp;
-    char *tempfile_name = (char *)malloc(sizeof(char) * (strlen(infile_name) + strlen(".temp.c") + 1));
-    tempinfp = fopen(infile_name, "r");
-    strcpy(tempfile_name, infile_name);
-    strcat(tempfile_name, ".temp.c");
-    tempoutfp = fopen(tempfile_name, "w");
-
-    if (tempoutfp == NULL)
-    {
-        error("Can not open infile %s\n", infile_name);
+    /* 使用一个 xx.cos.temp 的文件来把所有\t 转化为4个空格 ' ' */
+    FILE *temp;
+    const char *temp_name = getFileNameAll(string(infile_name) + ".temp").c_str() ;
+    infp = fopen(infile_name, "r");  // infp 是在 global.h 中注册的输入文件指针
+    if(infp == NULL){
+        error("%s:%d 无法打开该文件名对应的文件: \"%s\"\n", __FILE__ , __LINE__ , infile_name);
         exit(0);
     }
+    temp = fopen(temp_name, "w");
+    assert(temp != NULL);
     char ch;
-    while ((ch = fgetc(tempinfp)) != EOF)
+    while ((ch = fgetc(infp)) != EOF)
     {
         if (ch != '\t')
-            fputc(ch, tempoutfp);
+            fputc(ch, temp);
         else
         {
-            ch = ' ';
-            fputc(ch, tempoutfp);
-            fputc(ch, tempoutfp);
-            fputc(ch, tempoutfp);
-            fputc(ch, tempoutfp);
+            fputs("    ",temp);
         }
     }
-    fclose(tempinfp);
-    fclose(tempoutfp);
-    ////////////////////////////////
-    // change '\t' with 8 ' ' end 
-    ////////////////////////////////
-    infp = fopen(tempfile_name, "r");
-    if (infp == NULL)
+    fclose(infp);
+    fclose(temp);
+    infp = fopen(temp_name, "r");
+    assert(infp != NULL);
+}
+
+// 取文件名字 包括后缀 https://www.jianshu.com/p/4ea92d9688d1
+static string getFileNameAll(string str)
+{
+    string::size_type idx = str.rfind('/', str.length());
+    string name_all = str.substr(idx + 1, str.length());
+    return name_all;
+}
+
+//在语法树使用完毕后删除 xx.cos.temp 临时文件
+void removeTempFile()
+{
+    const char *temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
+    if (remove(temp_name))
     {
-        error("Can not open infile %s\n", tempfile_name);
+        error("删除 temp 文件失败! Can't delete temp file!");
         exit(0);
-    }*/
+    }
 }
