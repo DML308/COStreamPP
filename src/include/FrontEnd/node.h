@@ -2,6 +2,7 @@
 #define _NODE_H_
 #include "basics.h"
 #include "nodetype.h"
+//#include "symbol.h"
 #include "defines.h"
 #include <list>
 typedef struct
@@ -72,8 +73,11 @@ public:
 class identifierNode:public Node{
 public:
     string name;
-    identifierNode() {
-
+    int level;
+    int version;
+    identifierNode(string name,int level,int version):name(name) {
+        this->level=Level;
+        this->version=current_version[Level];
     }
     ~identifierNode() {}
     void print(){}
@@ -105,6 +109,19 @@ public:
     const char * toString(){
         
     }
+};
+
+class functionNode:public Node{
+public:
+    functionNode(){}
+    ~functionNode(){}
+};
+
+
+class compositeNode:public Node{
+public:
+    compositeNode(){}
+    ~compositeNode() {}
 };
 
 #endif

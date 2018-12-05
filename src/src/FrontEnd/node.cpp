@@ -3,8 +3,8 @@ const char * primaryNode::toString(){
         string str = "" ;
         if(isConst) str += "const ";
         return (str+name).c_str();
-    } 
-};
+} 
+
 
 const char * constantNode::toString(){
         if(name == "double") 
@@ -14,4 +14,4 @@ const char * constantNode::toString(){
         else 
             return (sval).c_str();
        ;
-    } 
+} 
