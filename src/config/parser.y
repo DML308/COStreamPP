@@ -161,6 +161,7 @@ declaring.list:
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
               //debug ("declaring.list ::= type.specifier %s initializer.opt \n",map[$2]->c_str());
+
               $$ = NULL ;
         }
         | type.specifier 			  IDENTIFIER array.declarator initializer.opt{
@@ -343,12 +344,12 @@ parameter.declaration:
                                     }
         ;
 function.body:
-          '{' '}'                   {
+          lblock rblock                   {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' '}' \n");
                                           $$ = NULL ;
-                                    }
-        | '{' statement.list '}'    {
+                                          }
+        | lblock statement.list rblock    {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' statement.list '}' \n");
                                           $$ = NULL ;
@@ -401,7 +402,7 @@ composite.head.inout.member:
 /*                        1.3.2.3 composite.body.statement.list          */
 /*************************************************************************/
 composite.body:
-          '{' composite.body.param.opt composite.body.statement.list '}'                              { $$ = NULL ; }
+          lblock composite.body.param.opt composite.body.statement.list rblock                              { $$ = NULL ; }
         ;
 composite.body.param.opt:
           /*empty*/                 { $$ = NULL ; }
@@ -470,7 +471,7 @@ operator.add:
                                     }
         ;
 operator.pipeline:
-          PIPELINE '{'  splitjoinPipeline.statement.list '}'                  { $$ = NULL ; }
+          PIPELINE lblock  splitjoinPipeline.statement.list rblock                  { $$ = NULL ; }
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
@@ -495,10 +496,10 @@ splitjoinPipeline.statement.list:
                                                           }
         ;
 operator.splitjoin:
-          SPLITJOIN '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'     {
+          SPLITJOIN lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock     {
                                                                                                     $$ = NULL ;
                                                                                                   }
-        | SPLITJOIN '{' statement.list split.statement splitjoinPipeline.statement.list join.statement '}'  {
+        | SPLITJOIN lblock statement.list split.statement splitjoinPipeline.statement.list join.statement rblock  {
                                                                                                     $$ = NULL ;
                                                                                                   }
         ;
@@ -562,8 +563,8 @@ labeled.statement:
                                                     }
         ;
 compound.statement:
-          '{' '}'                                               {  $$ = NULL ; }
-        | '{' composite.body.statement.list '}'                 {  $$ = NULL ; }
+          lblock rblock                                               {  $$ = NULL ; }
+        | lblock composite.body.statement.list rblock                 {  $$ = NULL ; }
         ;
 
 expression.statement:
@@ -664,19 +665,19 @@ exp:      exp.assignable
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')'                            { $$ = NULL ; }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'                             { $$ = NULL ; }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { $$ = NULL ; }
-        |  SPLITJOIN '(' argument.expression.list ')'  '{' split.statement  splitjoinPipeline.statement.list  join.statement '}'                { $$ = NULL ; }
-        |  SPLITJOIN '(' argument.expression.list ')'  '{' statement.list split.statement splitjoinPipeline.statement.list  join.statement '}'  { $$ = NULL ; }
-        |   PIPELINE '(' argument.expression.list ')'  '{' splitjoinPipeline.statement.list '}'                                                 { $$ = NULL ; }
+        |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock                { $$ = NULL ; }
+        |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { $$ = NULL ; }
+        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock                                                 { $$ = NULL ; }
         ;
 
 operator.selfdefine.body:
-       '{' operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+       lblock operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list rblock
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { init work window.list }\n");
             $$ = NULL ;
         }
-     | '{' statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list '}'
+     | lblock statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list rblock
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n");
@@ -695,7 +696,7 @@ operator.selfdefine.body.work:
 
 operator.selfdefine.body.window.list:
       /*empty*/                                         { $$ = NULL; }
-      | WINDOW '{' operator.selfdefine.window.list '}'  {
+      | WINDOW lblock operator.selfdefine.window.list rblock  {
                                                             line("Line:%-3d",@1.first_line);
                                                             debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n");
                                                             $$ = NULL ;
@@ -734,6 +735,9 @@ window.type:
 /*************************************************************************/
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
+lblock: '{'  { /*EnterScope(); */}  
+rblock: '}'  { /*ExitScope();  */}
+
 constant:
           doubleConstant    {
                                 line("Line:%-3d",@1.first_line);
