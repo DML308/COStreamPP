@@ -1,6 +1,5 @@
 #ifndef _NODE_H_
 #define _NODE_H_
-#include "basics.h"
 #include "global.h"
 #include "nodetype.h"
 #include "defines.h"
@@ -140,4 +139,10 @@ class compositeNode : public Node
     ~compositeNode() {}
 };
 
+class arraydclNode:public Node{
+public:
+    int size;
+    arraydclNode() {}
+    ~arraydclNode() {}
+};
 #endif

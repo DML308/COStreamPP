@@ -5,7 +5,7 @@
 //处理命令行输入的选项
 int handle_options(int argc, char *argv[]){
     int c;
-    printf("err:%d\n",opterr);
+    //printf("err:%d\n",opterr);
     struct option long_options[] =
         {
             {"version", no_argument, NULL, 'v'},

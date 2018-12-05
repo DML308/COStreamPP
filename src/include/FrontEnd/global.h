@@ -1,6 +1,7 @@
 #ifndef _GLOBAL_HH_
 #define _GLOBAL_HH_
 #include <stdio.h>
+//#include "symbol.h"
 
 extern char *infile_name;
 extern char *outfile_name;
@@ -12,4 +13,5 @@ extern const char *const CompiledDate;
 extern int Level;          //symbol.h
 #define MAX_SCOPE_DEPTH 100 //定义最大嵌套深度为100
 extern int current_version[MAX_SCOPE_DEPTH];
+
 #endif

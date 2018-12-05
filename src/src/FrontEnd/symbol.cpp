@@ -20,23 +20,41 @@ void ExitScope()
 	Level--;
 }
 
-void SymbolTable::InsertSymbol(identifierNode* node,map<string,list<identifierNode*> > mp){
-    if(mp.find(node->name)==mp.end()){
-        mp[node->name].push_back(node);
+void SymbolTable::InsertSymbol(identifierNode* node){
+    if(iTable.find(node->name)==iTable.end()){
+        iTable[node->name].push_back(node);
     }else{
         /* 暂时保留 可能需要添加内容 */
-         mp[node->name].push_back(node);
+         iTable[node->name].push_back(node);
     }
     return ;
 }
 
-bool SymbolTable::LookupSymbol(identifierNode* node,map<string,list<identifierNode*> > mp){
-    auto iter=mp.find(node->name);
-    if(iter==mp.end())
+/* 必须查找上层作用域名 还未修改*/
+bool SymbolTable::LookupSymbol(string  name){
+    auto iter=iTable.find(name);
+    if(iter==iTable.end())
         return false;
-    for(auto it=mp[node->name].begin();it!=mp[node->name].end();it++){
+    for(auto it=iTable[name].begin();it!=iTable[name].end();it++){
         if((*it)->level==Level && (*it)->version==current_version[Level])
             return true;
     }
     return false;
+}
+
+const identifierNode* SymbolTable::operator[](string str){
+    auto iter=iTable.find(str);
+    if(iter!=iTable.end()){
+        for(auto it=iTable[str].begin();it!=iTable[str].end();it++){
+        if((*it)->level==Level && (*it)->version==current_version[Level])
+            return (*it);
+    }
+    }
+    /*
+    if(functionTable.find(str)!=functionTable.end())
+        return functionTable[str];
+    if(compositeTable.find(str)!=compositeTable.end())  
+        return compositeTable[str];
+    */
+    return NULL;
 }
