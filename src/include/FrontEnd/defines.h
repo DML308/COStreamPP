@@ -12,7 +12,7 @@
 #endif
 //line-column info is grey
 #ifdef DEBUG
-#define line(format, args...) fprintf(stdout, "\033[32m" format "\033[0m", ##args)
+#define line(format, args...) fprintf(stdout, "\033[32m" format " \033[0m", ##args)
 #else
 #define line(format, args...)
 #endif
@@ -25,8 +25,6 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
+#include <assert.h>
 using namespace std;
-#undef assert
-#define assert(x) ((x) ? (void)0 : (void)Fail(__FILE__, __LINE__, #x))
-
 #endif
