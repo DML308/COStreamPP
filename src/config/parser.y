@@ -622,13 +622,19 @@ exp.assignable:
           IDENTIFIER                        
             { 
                   line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; 
-                  //if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
+                  if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
+                  $$ = new identifierNode(*($1),(Loc*)&(@1));
+
             }
         | IDENTIFIER  array.declarator      
-            { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; }  
+            { 
+                  line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; 
+                  ((adclNode*)$2)->name= *($1);
+                  $$=$2;
+            }  
         ; 
 exp:      exp.assignable                    
-            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = NULL ; }
+            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = $1 ; }
         | exp.assignable '.' IDENTIFIER     
             { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); $$ = NULL ; }
         | exp.assignable '.' IDENTIFIER array.declarator 

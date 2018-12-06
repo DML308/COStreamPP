@@ -135,6 +135,7 @@ class expNode;
 class adclNode : public Node
 {
   public:
+    string name;
     int size;
     expNode *dim;
     NodeType valType;
@@ -151,6 +152,8 @@ class adclNode : public Node
     void print() {}
     const char *toString() {}
 };
+
+
 
 class expNode : public Node
 {
