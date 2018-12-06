@@ -262,27 +262,25 @@ initializer.opt:
         | '=' initializer       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("initializer.opt ::= '=' initializer \n");
-                                    $$ = NULL ;
+                                    $$ = $2 ;
                                 }
         ;
 initializer:
           '{' initializer.list '}'      {
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list '}' \n");
-                                            $$ = NULL ;
-                                            //$$ = NULL ;
+                                            $$ = $2 ;
                                         }
         | '{' initializer.list ',' '}'  {
                                             /* 本条规约规则有用吗？有用!现在js支持列表最后多个逗号 */
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= '{' initializer.list ',' '}' \n");
-                                            $$ = NULL ;
-                                            //$$ = NULL ;
+                                            $$ = $2 ;
                                         }
         | exp                           {
                                             line("Line:%-3d",@1.first_line);
                                             debug ("initializer ::= exp \n");
-                                            $$ = NULL ;
+                                            $$ = $1 ;
                                         }
         ;
 

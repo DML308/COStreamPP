@@ -100,7 +100,7 @@ class identifierNode : public Node
 class initializerNode : public Node
 {
   public:
-    list<void *> value;
+    list<Node *> value;
     initializerNode(Loc *loc)
     {
         type = Initializer;
@@ -108,9 +108,7 @@ class initializerNode : public Node
     }
     ~initializerNode() {}
     void print() {}
-    const char *toString()
-    {
-    }
+    const char *toString(){}
 };
 
 class AdclNode : public Node
