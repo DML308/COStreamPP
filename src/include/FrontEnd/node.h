@@ -4,7 +4,7 @@
 #include "nodetype.h"
 #include "defines.h"
 #include <list>
-
+#include <vector>
 
 typedef struct
 {
@@ -84,8 +84,9 @@ class identifierNode : public Node
     string name;
     int level;
     int version;
-    identifierNode(string name,Loc *loc) : name(name)
+    identifierNode(string name, Loc *loc) : name(name)
     {
+        type = Id;
         setLoc(loc);
         this->level = Level;
         this->version = current_version[Level];
@@ -94,16 +95,16 @@ class identifierNode : public Node
     void print() {}
     const char *toString()
     {
-        string str="name:"+name;
-        str+="  level:"+to_string(level);
-        str+="  version:"+to_string(version);
+        string str = "name:" + name;
+        str += "  level:" + to_string(level);
+        str += "  version:" + to_string(version);
         return str.c_str();
     }
 };
 
 class initializerNode : public Node
 {
-public:
+  public:
     list<Node *> value;
     initializerNode(Loc *loc)
     {
@@ -112,57 +113,69 @@ public:
     }
     ~initializerNode() {}
     void print() {}
-    const char *toString(){}
+    const char *toString() {}
 };
-
 
 class functionNode : public Node
 {
-public:
+  public:
     functionNode() {}
     ~functionNode() {}
 };
 
 class compositeNode : public Node
 {
-public:
+  public:
     compositeNode() {}
     ~compositeNode() {}
 };
 
-class expNode:public Node{
-public:
-    expNode(){}
-    ~expNode(){}
-    void print() {}
-    const char *toString(){}
-};
-
-class adclNode:public Node{
-public:
+/* expNode向前声明 */
+class expNode;
+class adclNode : public Node
+{
+  public:
     int size;
     expNode *dim;
-    primaryNode *pNode;
-    adclNode() {}
+    NodeType valType;
+    /* 默认1维 */
+    adclNode( NodeType valType,expNode * eNode, Loc *loc)
+    {
+        type = Adcl;
+        this->setLoc(loc);
+        this->dim=eNode;
+        this->valType = valType;
+    }
+
     ~adclNode() {}
     void print() {}
-    const char *toString(){}
-
+    const char *toString() {}
 };
 
-class declareNode:public Node{
-public:
-    primaryNode * primNode;
+class expNode : public Node
+{
+  public:
+    expNode() {}
+    ~expNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class declareNode : public Node
+{
+  public:
+    primaryNode *primNode;
     identifierNode *idenNode;
     initializerNode *initNode;
-    declareNode(primaryNode * pnode,identifierNode *idnode,initializerNode *innode):primNode(pnode),idenNode(idnode),initNode(innode){
-        
+    declareNode(primaryNode *pnode, identifierNode *idnode, initializerNode *innode)
+    {
+        this->primNode = pnode;
+        this->idenNode = idnode;
+        this->initNode = innode;
     }
-    ~declareNode(){}
+    ~declareNode() {}
     void print() {}
-    const char *toString(){}
-
+    const char *toString() {}
 };
-
 
 #endif

@@ -234,17 +234,18 @@ array.declarator:
           '[' ']'   {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= '[' ']' \n");
-                            $$ = NULL ;
+                            $$ = new adclNode(basic,NULL, (Loc *)&(@1)) ;
                     }
         | '[' exp ']' {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= '[' exp ']' \n");
-                            $$ = NULL ;
+                            $$ = new adclNode(basic, (expNode*)$2, (Loc *)&(@1)) ;
                     }
         | array.declarator '[' exp ']'  {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= array.declarator '[' exp ']' \n");
-                            $$ = NULL ;
+                            $$ =new adclNode(arr,NULL,(Loc*)&(@2));
+
                     }
         | array.declarator '[' ']'  {
                             error ("Line:%-3d array declaration with illegal empty dimension\n",@1.first_line);
