@@ -18,7 +18,7 @@ public:
     ~SymbolTable(){}
     bool LookupSymbol(string  name);
     void InsertSymbol(identifierNode* node);
-    const identifierNode* operator[](string str);
+    identifierNode* operator[](string str);
 
 
 private:

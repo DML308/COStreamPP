@@ -163,10 +163,11 @@ declaring.list:
           type.specifier 			  IDENTIFIER initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
-              
-              //debug ("declaring.list ::= type.specifier %s initializer.opt \n",map[$2]->c_str());
-
-              $$ = NULL ;
+              identifierNode *node=new identifierNode(*($2),(Loc*)&($2));
+              if(S[*($2)]==NULL) S.InsertSymbol(node);
+              $$ = new declareNode((primaryNode*)$1,node,(initializerNode*)$3) ;
+              string name=(((declareNode*)$$)->primNode)->name;
+              //error ("%s\n",name.c_str());
         }
         | type.specifier 			  IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
@@ -247,7 +248,7 @@ array.declarator:
                     }
         | array.declarator '[' ']'  {
                             error ("Line:%-3d array declaration with illegal empty dimension\n",@1.first_line);
-                            exit(113);
+                            exit(-1);
                     }
         ;
 /*************************************************************************/
@@ -620,7 +621,7 @@ exp.assignable:
           IDENTIFIER                        
             { 
                   line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; 
-                  if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
+                  //if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
             }
         | IDENTIFIER  array.declarator      
             { line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; }  

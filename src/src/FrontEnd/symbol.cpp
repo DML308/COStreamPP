@@ -21,13 +21,22 @@ void ExitScope()
 }
 
 void SymbolTable::InsertSymbol(identifierNode* node){
-    if(iTable.find(node->name)==iTable.end()){
+    auto iter=iTable.find(node->name);
+    if(iter==iTable.end()){
         iTable[node->name].push_back(node);
+    
     }else{
-        /* 暂时保留 可能需要添加内容 */
-         iTable[node->name].push_back(node);
+        /* 遍历节点 查找是否定义过，同level和version不能重新定义 */
+        // 此处不同于LookupSymbol,所以代码未重用
+        //iTable[node->name].push_back(node);
+        for(auto it=iTable[node->name].begin();it!=iTable[node->name].end();it++){
+            if((*it)->level==Level && (*it)->version==current_version[Level]){
+                cout<<"identifierNode had been declared!";
+                exit(-1);
+            }
+        }
+        iTable[node->name].push_back(node);
     }
-    return ;
 }
 
 /* 必须查找上层作用域名 还未修改*/
@@ -42,13 +51,13 @@ bool SymbolTable::LookupSymbol(string  name){
     return false;
 }
 
-const identifierNode* SymbolTable::operator[](string str){
+identifierNode* SymbolTable::operator[](string str){
     auto iter=iTable.find(str);
     if(iter!=iTable.end()){
         for(auto it=iTable[str].begin();it!=iTable[str].end();it++){
         if((*it)->level==Level && (*it)->version==current_version[Level])
             return (*it);
-    }
+        }
     }
     /*
     if(functionTable.find(str)!=functionTable.end())

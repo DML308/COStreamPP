@@ -84,8 +84,9 @@ class identifierNode : public Node
     string name;
     int level;
     int version;
-    identifierNode(string name, int level, int version) : name(name)
+    identifierNode(string name,Loc *loc) : name(name)
     {
+        setLoc(loc);
         this->level = Level;
         this->version = current_version[Level];
     }
@@ -93,13 +94,16 @@ class identifierNode : public Node
     void print() {}
     const char *toString()
     {
-        return name.c_str();
+        string str="name:"+name;
+        str+="  level:"+to_string(level);
+        str+="  version:"+to_string(version);
+        return str.c_str();
     }
 };
 
 class initializerNode : public Node
 {
-  public:
+public:
     list<Node *> value;
     initializerNode(Loc *loc)
     {
@@ -111,36 +115,54 @@ class initializerNode : public Node
     const char *toString(){}
 };
 
-class AdclNode : public Node
-{
-  public:
-    //expNode *dim;
-    AdclNode() {}
-    ~AdclNode() {}
-    void print() {}
-    const char *toString()
-    {
-    }
-};
 
 class functionNode : public Node
 {
-  public:
+public:
     functionNode() {}
     ~functionNode() {}
 };
 
 class compositeNode : public Node
 {
-  public:
+public:
     compositeNode() {}
     ~compositeNode() {}
 };
 
-class arraydclNode:public Node{
+class expNode:public Node{
+public:
+    expNode(){}
+    ~expNode(){}
+    void print() {}
+    const char *toString(){}
+};
+
+class adclNode:public Node{
 public:
     int size;
-    arraydclNode() {}
-    ~arraydclNode() {}
+    expNode *dim;
+    primaryNode *pNode;
+    adclNode() {}
+    ~adclNode() {}
+    void print() {}
+    const char *toString(){}
+
 };
+
+class declareNode:public Node{
+public:
+    primaryNode * primNode;
+    identifierNode *idenNode;
+    initializerNode *initNode;
+    declareNode(primaryNode * pnode,identifierNode *idnode,initializerNode *innode):primNode(pnode),idenNode(idnode),initNode(innode){
+        
+    }
+    ~declareNode(){}
+    void print() {}
+    const char *toString(){}
+
+};
+
+
 #endif
