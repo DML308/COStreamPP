@@ -621,14 +621,14 @@ assignment.operator:
 exp.assignable:
           IDENTIFIER                        
             { 
-                  line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str()); $$ = NULL ; 
-                  if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
+                  line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str());
+                  //if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
                   $$ = new identifierNode(*($1),(Loc*)&(@1));
 
             }
         | IDENTIFIER  array.declarator      
             { 
-                  line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str()); $$ = NULL ; 
+                  line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str());
                   ((adclNode*)$2)->name= *($1);
                   $$=$2;
             }  
@@ -640,33 +640,115 @@ exp:      exp.assignable
         | exp.assignable '.' IDENTIFIER array.declarator 
             { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); $$ = NULL ; }
         | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n"); $$ = $1 ; }
-        | exp '+' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n"); $$ = NULL ; }
-        | exp '-' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n"); $$ = NULL ; }
-        | exp '*' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp * exp\n"); $$ = NULL ; }
-        | exp '/' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp / exp\n"); $$ = NULL ; }
-        | exp '%' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp %% exp\n"); $$ = NULL ; }
-        | exp OROR exp    { line("Line:%-3d",@1.first_line);debug ("exp ::= exp || exp\n"); $$ = NULL ; }
-        | exp ANDAND exp  { line("Line:%-3d",@1.first_line);debug ("exp ::= exp && exp\n"); $$ = NULL ; }
-        | exp '|' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp | exp\n"); $$ = NULL ; }
-        | exp '&' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp & exp\n"); $$ = NULL ; }
-        | exp '^' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp ^ exp\n"); $$ = NULL ; }
-        | exp LS exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp << exp\n"); $$ = NULL ; }
-        | exp RS exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp >> exp\n"); $$ = NULL ; }
-        | exp '<' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp < exp\n"); $$ = NULL ; }
-        | exp '>' exp     { line("Line:%-3d",@1.first_line);debug ("exp ::= exp > exp\n"); $$ = NULL ; }
-        | exp LE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp <= exp\n"); $$ = NULL ; }
-        | exp GE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp >= exp\n"); $$ = NULL ; }
-        | exp EQ exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp == exp\n"); $$ = NULL ; }
-        | exp NE exp      { line("Line:%-3d",@1.first_line);debug ("exp ::= exp != exp\n"); $$ = NULL ; }
-        | exp '?' exp ':' exp { line("Line:%-3d",@1.first_line);debug ("exp ::= exp ? exp : exp\n"); $$ = NULL ; }
-        | '+' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= + exp\n"); $$ = NULL ; }
-        | '-' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= - exp\n"); $$ = NULL ; }
-        | '~' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= ~ exp\n"); $$ = NULL ; }
-        | '!' exp         { line("Line:%-3d",@1.first_line);debug ("exp ::= ! exp\n"); $$ = NULL ; }
-        |  ICR exp        { line("Line:%-3d",@1.first_line);debug ("exp ::= ++ exp\n"); $$ = NULL ; }
-        |  DECR exp       { line("Line:%-3d",@1.first_line);debug ("exp ::= -- exp\n"); $$ = NULL ; }
-        |  exp ICR        { line("Line:%-3d",@1.first_line);debug ("exp ::= exp ++ \n"); $$ = NULL ; }
-        |  exp DECR       { line("Line:%-3d",@1.first_line);debug ("exp ::= exp --\n"); $$ = NULL ; }
+        | exp '+' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,(Loc*)&(@2)) ; 
+                        }
+        | exp '-' exp   {
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp - exp\n");  
+                              $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,(Loc*)&(@2)) ; 
+                        }
+        | exp '*' exp   {    
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp * exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,(Loc*)&(@2)) ; 
+                        }
+        | exp '/' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp / exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"/",(expNode*)$3,(Loc*)&(@2)) ; 
+                        }
+        | exp '%' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp %% exp\n");
+                              $$ = new binopNode((expNode*)$1,"%",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp OROR exp  { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp || exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"||",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+
+        | exp ANDAND exp{ 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp && exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"&&",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp '|' exp   {     
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp | exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"|",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp '&' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp & exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"&",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp '^' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp ^ exp\n");
+                              $$ = new binopNode((expNode*)$1,"^",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp LS exp    { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp << exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"<<",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp RS exp    {     
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp >> exp\n"); 
+                              $$ = new binopNode((expNode*)$1,">>",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp '<' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp < exp\n");
+                              $$ = new binopNode((expNode*)$1,"<",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp '>' exp   { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp > exp\n");
+                              $$ = new binopNode((expNode*)$1,">",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp LE exp    { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp <= exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"<=",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp GE exp    { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp >= exp\n");
+                              $$ = new binopNode((expNode*)$1,">=",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp EQ exp    { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp == exp\n");
+                              $$ = new binopNode((expNode*)$1,"==",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp NE exp    { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp != exp\n"); 
+                              $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,(Loc*)&(@2)) ;
+                        }
+        | exp '?' exp ':' exp { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp ? exp : exp\n"); 
+                              $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,(Loc*)&(@4));
+                        }
+        | '+' exp       { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= + exp\n"); 
+                              $$ = new unaryNode("+",(expNode*)$2,(Loc*)&(@2)) ; 
+                        }
+        | '-' exp       { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= - exp\n"); 
+                              $$ = new unaryNode("-",(expNode*)$2,(Loc*)&(@2)) ; 
+                        }
+        | '~' exp       {     
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= ~ exp\n");
+                              $$ = new unaryNode("~",(expNode*)$2,(Loc*)&(@2)) ; 
+                        }
+        | '!' exp       { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= ! exp\n"); 
+                              $$ = new unaryNode("!",(expNode*)$2,(Loc*)&(@2)) ; 
+                        }
+        |  ICR exp      {     
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= ++ exp\n");
+                              $$ = new unaryNode("PREINC",(expNode*)$2,(Loc*)&(@2)) ; 
+                        }
+        |  DECR exp     {
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= -- exp\n");
+                              $$ = new unaryNode("PREDEC",(expNode*)$2,(Loc*)&(@2)) ; 
+                        }
+        |  exp ICR      { 
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp ++ \n");
+                              $$ = new unaryNode("POSTINC",(expNode*)$1,(Loc*)&(@2)) ; 
+                        }
+        |  exp DECR     {     
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= exp --\n");
+                              $$ = new unaryNode("POSTDEC",(expNode*)$1,(Loc*)&(@2)) ; 
+                        }
         |  '(' exp ')'    { line("Line:%-3d",@1.first_line);debug ("exp ::= ( exp )\n"); $$ = NULL ; }
         | '(' basic.type.name ')' exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n"); $$ = NULL ; }
         | exp assignment.operator exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable assignment.operator exp\n"); $$ = NULL ; }

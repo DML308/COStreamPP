@@ -136,24 +136,21 @@ class adclNode : public Node
 {
   public:
     string name;
-    int size;
+    int size; // 还未用到
     expNode *dim;
     NodeType valType;
     /* 默认1维 */
-    adclNode( NodeType valType,expNode * eNode, Loc *loc)
+    adclNode(NodeType valType, expNode *eNode, Loc *loc)
     {
         type = Adcl;
         this->setLoc(loc);
-        this->dim=eNode;
+        this->dim = eNode;
         this->valType = valType;
     }
-
     ~adclNode() {}
     void print() {}
     const char *toString() {}
 };
-
-
 
 class expNode : public Node
 {
@@ -177,6 +174,58 @@ class declareNode : public Node
         this->initNode = innode;
     }
     ~declareNode() {}
+    void print() {}
+    const char *toString() {}
+};
+class unaryNode : public Node
+{
+  public:
+    expNode *node;
+    string op;
+    unaryNode(string op, expNode *node, Loc *loc)
+    {
+        setLoc(loc);
+        this->node = node;
+        this->op = op;
+    }
+    ~unaryNode() {}
+    void print() {}
+    const char *toString() {}
+};
+class binopNode : public Node
+{
+  public:
+    expNode *left;
+    expNode *right;
+    string op;
+    binopNode(expNode *left, string op, expNode *right, Loc *loc)
+    {
+        type = Binop;
+        setLoc(loc);
+        this->left = left;
+        this->right = right;
+        op = op;
+    }
+    ~binopNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class ternaryNode : public Node
+{
+  public:
+    expNode *first;
+    expNode *second;
+    expNode *third;
+    ternaryNode(expNode *first, expNode *second, expNode *thrid, Loc *loc)
+    {
+        setLoc(loc);
+        type = Ternary;
+        this->first = first;
+        this->second = second;
+        this->third = third;
+    }
+    ~ternaryNode() {}
     void print() {}
     const char *toString() {}
 };
