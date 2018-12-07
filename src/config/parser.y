@@ -331,7 +331,7 @@ parameter.list:
         | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
                 error( "Line:%-3d parameter.list in function definations cannot have initializers\n",@1.first_line);
-                exit(121);
+                exit(-1);
           }
         | parameter.list ',' error
         ;
@@ -508,19 +508,19 @@ operator.splitjoin:
                                                                                                   }
         ;
 split.statement:
-          SPLIT duplicate.statement                        { $$ = NULL ; }
-        | SPLIT roundrobin.statement                       { $$ = NULL ; }
+          SPLIT duplicate.statement                        { $$ = new splitNode("duplicate" ,(duplicateNode*)$2,(Loc*)&(@1)) ; }
+        | SPLIT roundrobin.statement                       { $$ = new splitNode("roundrobin",(duplicateNode*)$2,(Loc*)&(@1)) ; }
         ;
 roundrobin.statement:
-          ROUNDROBIN '(' ')' ';'                            { $$ = NULL ; }
-        | ROUNDROBIN '(' argument.expression.list ')' ';'   { $$ = NULL ; }
+          ROUNDROBIN '(' ')' ';'                            { $$ = new roundrobinNode(NULL,(Loc*)&(@1)) ; }
+        | ROUNDROBIN '(' argument.expression.list ')' ';'   { $$ = new roundrobinNode($3,(Loc*)&(@1)) ; }
         ;
 duplicate.statement:
-          DUPLICATE '('  ')' ';'                            { $$ = NULL ; }
-        | DUPLICATE '(' exp ')'  ';'                        { $$ = NULL ; }
+          DUPLICATE '('  ')' ';'                            { $$ = new duplicateNode(NULL,(Loc*)&(@1)) ; }
+        | DUPLICATE '(' exp ')'  ';'                        { $$ = new duplicateNode((expNode*)$3,(Loc*)&(@1)) ; }
         ;
 join.statement:
-          JOIN roundrobin.statement                         { $$ = NULL ; }
+          JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,(Loc*)&(@1))) ;}
         ;
 argument.expression.list:
           exp                                               { 

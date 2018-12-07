@@ -342,4 +342,74 @@ class pipelineNode : public Node
     void print() {}
     const char *toString(){};
 };
+
+class roundrobinNode : public Node
+{
+  public:
+    list<Node *> *arg_list;
+    roundrobinNode(list<Node *> *arg_list, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = RoundRobin;
+        this->arg_list = arg_list;
+    }
+    ~roundrobinNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class duplicateNode : public Node
+{
+  public:
+    expNode *exp;
+    duplicateNode(expNode *exp, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Duplicate;
+        this->exp = exp;
+    }
+    ~duplicateNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class splitNode : public Node
+{
+  public:
+    /* 标识split节点的类型 roundrobin/duplicate*/
+    string name;
+    splitNode *spt;
+    duplicateNode *dup;
+    splitNode(string name, splitNode *spt, Loc *loc)
+    {
+        this->type = Split;
+        this->setLoc(loc);
+        this->spt = spt;
+        this->name = name;
+    }
+    splitNode(string name, duplicateNode *dup, Loc *loc)
+    {
+        this->type = Split;
+        this->setLoc(loc);
+        this->dup = dup;
+        this->name = name;
+    }
+    ~splitNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class joinNode : public Node
+{
+  public:
+    roundrobinNode *rdb;
+    joinNode(roundrobinNode *rdb,Loc*loc) {
+        this->setLoc(loc);
+        this->type=Join;
+        this->rdb=rdb;
+    }
+    ~joinNode() {}
+    void print() {}
+    const char *toString(){};
+};
 #endif
