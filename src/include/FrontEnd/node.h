@@ -168,12 +168,12 @@ class declareNode : public Node
     identifierNode *id;
     initNode *init;
     adclNode *adcl;
-    declareNode(primaryNode *prim, identifierNode *id, adclNode *adcl,initNode *init,Loc*loc)
+    declareNode(primaryNode *prim, identifierNode *id, adclNode *adcl, initNode *init, Loc *loc)
     {
         this->setLoc(loc);
-        this->type=Decl;
+        this->type = Decl;
         this->prim = prim;
-        this->adcl=adcl;
+        this->adcl = adcl;
         this->id = id;
         this->init = init;
     }
@@ -458,4 +458,33 @@ class addNode : public Node
     const char *toString(){};
 };
 
+class slidingNode : public Node
+{
+  public:
+    list<Node *> *arg_list;
+    slidingNode(list<Node *> *arg_list, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Sliding;
+        this->arg_list = arg_list;
+    }
+    ~slidingNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class tumblingNode : public Node
+{
+  public:
+    list<Node *> *arg_list;
+    tumblingNode(list<Node *> *arg_list, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Tumbling;
+        this->arg_list = arg_list;
+    }
+    ~tumblingNode() {}
+    void print() {}
+    const char *toString(){};
+};
 #endif

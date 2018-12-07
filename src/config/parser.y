@@ -844,16 +844,16 @@ operator.selfdefine.window:
 
 window.type:
       SLIDING '('  ')'                          {
-                                                    $$ = NULL ;
+                                                    $$ = new slidingNode(NULL,(Loc*)&(@1)) ;
                                                 }
     | TUMBLING '('  ')'                         {
-                                                    $$ = NULL ;
+                                                    $$ = new tumblingNode(NULL,(Loc*)&(@1)) ;
                                                 }
     | SLIDING '(' argument.expression.list ')'  {
-                                                    $$ = NULL ;
+                                                    $$ = new slidingNode($3,(Loc*)&(@1)) ;
                                                 }
     | TUMBLING '(' argument.expression.list ')' {
-                                                    $$ = NULL ;
+                                                    $$ = new tumblingNode($3,(Loc*)&(@1)) ;
                                                 }
     ;
 
