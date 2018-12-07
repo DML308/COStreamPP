@@ -749,9 +749,20 @@ exp:      exp.assignable
                               line("Line:%-3d",@1.first_line);debug ("exp ::= exp --\n");
                               $$ = new unaryNode("POSTDEC",(expNode*)$1,(Loc*)&(@2)) ; 
                         }
-        |  '(' exp ')'    { line("Line:%-3d",@1.first_line);debug ("exp ::= ( exp )\n"); $$ = NULL ; }
-        | '(' basic.type.name ')' exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n"); $$ = NULL ; }
-        | exp assignment.operator exp                         { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable assignment.operator exp\n"); $$ = NULL ; }
+        |  '(' exp ')'  {     
+                              line("Line:%-3d",@1.first_line);debug ("exp ::= ( exp )\n"); 
+                              ((expNode*)$2)->parenthesized=true;
+                              $$=$2;
+                        }
+        | '(' basic.type.name ')' exp                         { 
+                                                                  line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n");
+                                                                  $$ = new castNode((primaryNode*)$2,(expNode*)$4,(Loc*)&(@3)); 
+                                                              }
+        | exp assignment.operator exp                         { 
+                                                                  line("Line:%-3d",@1.first_line);
+                                                                  debug ("exp ::= exp.assignable assignment.operator exp\n"); 
+                                                                  $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2)) ;
+                                                              }
         | IDENTIFIER '(' argument.expression.list ')'         { line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); $$ = NULL ; }
         | FILEREADER '(' ')' '(' stringConstant ')'           { line("Line:%-3d",@1.first_line);debug ("exp ::= FILEREADER()( stringConstant )\n"); $$ = NULL ; }
         | IDENTIFIER '('  ')' operator.selfdefine.body        { line("Line:%-3d",@1.first_line);debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str()); $$ = NULL ; }

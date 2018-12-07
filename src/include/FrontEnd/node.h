@@ -24,7 +24,7 @@ class Node
 	   in the original source:  e.g., (x+y)*(w+z) would have
 	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
 	   on both MULT nodes. */
-    short parenthesized;
+    bool parenthesized;
     Node() {}
     virtual ~Node() {}
     void setLoc(Loc *loc)
@@ -226,6 +226,21 @@ class ternaryNode : public Node
         this->third = third;
     }
     ~ternaryNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class castNode:public Node{
+    public:
+    primaryNode *prim;
+    expNode *expr;
+    castNode(primaryNode *prim,expNode *expr,Loc *loc){
+        type=Cast;
+        setLoc(loc);
+        this->prim=prim;
+        this->expr=expr;
+    }
+    ~castNode(){}
     void print() {}
     const char *toString() {}
 };
