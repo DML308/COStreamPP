@@ -180,12 +180,12 @@ class declareNode : public Node
 class unaryNode : public Node
 {
   public:
-    expNode *node;
+    expNode *exp;
     string op;
-    unaryNode(string op, expNode *node, Loc *loc)
+    unaryNode(string op, expNode *exp, Loc *loc)
     {
         setLoc(loc);
-        this->node = node;
+        this->exp = exp;
         this->op = op;
     }
     ~unaryNode() {}
@@ -234,13 +234,13 @@ class castNode : public Node
 {
   public:
     primaryNode *prim;
-    expNode *expr;
-    castNode(primaryNode *prim, expNode *expr, Loc *loc)
+    expNode *exp;
+    castNode(primaryNode *prim, expNode *exp, Loc *loc)
     {
         setLoc(loc);
         this->type = Cast;
         this->prim = prim;
-        this->expr = expr;
+        this->exp = exp;
     }
     ~castNode() {}
     void print() {}
@@ -266,15 +266,67 @@ class caseNode : public Node
     const char *toString() {}
 };
 
-class defaultNode:public Node{
-    public:
+class defaultNode : public Node
+{
+  public:
     statNode *stmt;
-    defaultNode(statNode *stmt,Loc *loc){
+    defaultNode(statNode *stmt, Loc *loc)
+    {
         setLoc(loc);
-        this->type=Default;
-        this->stmt=stmt;
+        this->type = Default;
+        this->stmt = stmt;
     }
-    ~defaultNode(){}
+    ~defaultNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class continueNode : public Node
+{
+  public:
+    continueNode(Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Continue;
+    }
+    ~continueNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class breakNode : public Node
+{
+  public:
+    breakNode(Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Break;
+    }
+    ~breakNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class returnNode : public Node
+{
+  public:
+    expNode *exp;
+    returnNode(expNode *exp, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Return;
+        this->exp = exp;
+    }
+    ~returnNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class ifNode:public Node{
+    public:
+    expNode *exp;
+    ifNode(){}
+    ~ifNode(){}
     void print() {}
     const char *toString() {}
 };

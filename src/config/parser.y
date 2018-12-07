@@ -429,7 +429,7 @@ costream.composite.statement:
         | statement                 {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("costream.composite.statement ::= statement \n");
-                                          $$ = NULL ;
+                                          $$ = $1 ;
                                     }
         ;
 
@@ -572,7 +572,7 @@ compound.statement:
         ;
 
 expression.statement:
-          exp ';'  {  $$ = NULL ; }
+          exp ';'  {  $$ = $1 ; }
         ;
 
 selection.statement:
@@ -597,9 +597,9 @@ iteration.statement:
         | FOR '(' error ')' costream.composite.statement                          {  $$ = NULL ; }
         ;
 jump.statement:
-          CONTINUE ';'        {  $$ = NULL ; }
-        | BREAK ';'           {  $$ = NULL ; }
-        | RETURN exp ';'      {  $$ = NULL ; }
+          CONTINUE ';'        {  $$ = new continueNode((Loc*)&(@1)) ; }
+        | BREAK ';'           {  $$ = new breakNode((Loc*)&(@1)) ; }
+        | RETURN exp ';'      {  $$ = new returnNode((expNode*)$2,(Loc*)&(@1)) ; }
         ;
 
 /*************************************************************************/
@@ -914,4 +914,3 @@ void yyerror (const char *msg)
 {
     error ("%s", msg);
 }
-
