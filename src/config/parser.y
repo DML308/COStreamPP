@@ -38,9 +38,9 @@ extern void yyerror (const char *msg);
 %type<node> external.definition
 /* 语法分析器自己的结构   1.1.declaration */
 
-%type<node> declaration declaring.list
+%type<node> declaration declaring.list stream.declaring.list
 %type<node> stream.type.specifier
-%type<list> stream.declaration.list stream.declaring.list
+%type<list> stream.declaration.list 
 /* 语法分析器自己的结构     1.1.3.array */
 %type<node> array.declarator
 /* 语法分析器自己的结构     1.1.4.initializer */
@@ -150,13 +150,12 @@ declaration:
       declaring.list ';'        {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("declaration ::= declaring.list ';' \n");
-                                      $$ = NULL ;
+                                      $$ = $1 ;
                                 }
     | stream.declaring.list ';' {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("declaration ::= stream.declaring.list ';' \n");
-                                      $$ = NULL ;
-
+                                      $$ = $1 ;
                                 }
     ;
 declaring.list:
@@ -166,7 +165,7 @@ declaring.list:
               identifierNode *node=new identifierNode(*($2),(Loc*)&($2));
               if(S[*($2)]==NULL) S.InsertSymbol(node);
               $$ = new declareNode((primaryNode*)$1,node,(initializerNode*)$3) ;
-              string name=(((declareNode*)$$)->primNode)->name;
+              //string name=(((declareNode*)$$)->primNode)->name;
               //error ("%s\n",name.c_str());
         }
         | type.specifier 			  IDENTIFIER array.declarator initializer.opt{
@@ -361,8 +360,15 @@ function.body:
         ;
 
 statement.list:
-          statement                   { $$ = NULL ;}
-        | statement.list statement    { $$ =NULL; }
+          statement                   { 
+                                          list<Node*> *stmt_list=new list<Node*> ();
+                                          stmt_list->push_back($1);
+                                          $$ = stmt_list ;
+                                      }
+        | statement.list statement    { 
+                                          $1->push_back($2);
+                                          $$=$1;
+                                      }
         ;
 
 
@@ -417,7 +423,9 @@ composite.body.param.opt:
                                     }
         ;
 composite.body.statement.list:
-          costream.composite.statement                                { $$ = NULL ; }
+          costream.composite.statement                                { 
+                                                                        $$ = NULL ; 
+                                                                      }
         | composite.body.statement.list costream.composite.statement  { $$ = NULL ; }
         ;
 costream.composite.statement:
@@ -461,12 +469,12 @@ operator.add:
           ADD operator.pipeline     {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.pipeline \n");
-                                          $$ = NULL ;
+                                          $$ = new addNode((pipelineNode*)$2,(Loc*)&(@1)) ;
                                     }
         | ADD operator.splitjoin    {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.splitjoin \n");
-                                          $$ = NULL ;
+                                          $$ = new addNode((splitNode*)$2,(Loc*)&(@1)) ;
                                     }
         | ADD operator.default.call {
                                           line("Line:%-3d",@1.first_line);
@@ -475,37 +483,43 @@ operator.add:
                                     }
         ;
 operator.pipeline:
-          PIPELINE lblock  splitjoinPipeline.statement.list rblock                  { $$ = NULL ; }
+          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode($3,(Loc*)&(@1)) ; }
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= statement \n");
-                                                                $$ = NULL ;
+                                                                list<Node*> *split_pipe=new list<Node*>();
+                                                                split_pipe->push_back($1);
+                                                                $$ = split_pipe ;
                                                           }
         | operator.add                                    {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= operator.add \n");
-                                                                $$ = NULL ;
+                                                                list<Node*> *add_list=new list<Node*>();
+                                                                add_list->push_back($1);
+                                                                $$ = add_list ;
                                                           }
         | splitjoinPipeline.statement.list statement      {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= splitjoinPipeline.statement.list statement \n");
-                                                                $$ = NULL ;
+                                                                $1->push_back($2);
+                                                                $$ = $1;
                                                           }
         | splitjoinPipeline.statement.list operator.add   {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= splitjoinPipeline.statement.list operator.add \n");
-                                                                $$ = NULL ;
+                                                                $1->push_back($2);
+                                                                $$ = $1;
                                                           }
         ;
 operator.splitjoin:
           SPLITJOIN lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock     {
-                                                                                                    $$ = NULL ;
-                                                                                                  }
+                   $$=new splitjoinNode((splitNode*)$3,NULL,$4,(joinNode*)$5,(Loc*)&(@1));
+            }
         | SPLITJOIN lblock statement.list split.statement splitjoinPipeline.statement.list join.statement rblock  {
-                                                                                                    $$ = NULL ;
-                                                                                                  }
+                   $$=new splitjoinNode((splitNode*)$4,$3,$5,(joinNode*)$6,(Loc*)&(@1));
+            }
         ;
 split.statement:
           SPLIT duplicate.statement                        { $$ = new splitNode("duplicate" ,(duplicateNode*)$2,(Loc*)&(@1)) ; }
@@ -517,10 +531,10 @@ roundrobin.statement:
         ;
 duplicate.statement:
           DUPLICATE '('  ')' ';'                            { $$ = new duplicateNode(NULL,(Loc*)&(@1)) ; }
-        | DUPLICATE '(' exp ')'  ';'                        { $$ = new duplicateNode((expNode*)$3,(Loc*)&(@1)) ; }
+        | DUPLICATE '(' exp ')'  ';'                        { $$ = new duplicateNode((expNode*)$3,(Loc*)&(@1))  ;}
         ;
 join.statement:
-          JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,(Loc*)&(@1))) ;}
+          JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,(Loc*)&(@1)) ;}
         ;
 argument.expression.list:
           exp                                               { 
@@ -554,8 +568,6 @@ statement:
         | jump.statement
         | declaration
         | ';'       {
-                      line("Line:%-3d",@1.first_line);
-                      debug ("statement ::= ';'\n");
                       $$ = NULL ;
                     }
         | error ';' {  $$ = NULL ; }
@@ -873,7 +885,6 @@ type.specifier:
           basic.type.name       {
                                     line("Line:%-3d",@1.first_line);
                                     debug ("type.specifier ::=  basic.type.name \n");
-                                    
                                     $$ = $1 ;
                                 }
         | CONST basic.type.name {

@@ -335,8 +335,12 @@ class ifNode : public Node
 class pipelineNode : public Node
 {
   public:
-    pipelineNode()
+    list<Node *> *split_pipe;
+    pipelineNode(list<Node *> *split_pipe, Loc *loc)
     {
+        this->setLoc(loc);
+        this->type = Pipeline;
+        this->split_pipe = split_pipe;
     }
     ~pipelineNode() {}
     void print() {}
@@ -403,13 +407,49 @@ class joinNode : public Node
 {
   public:
     roundrobinNode *rdb;
-    joinNode(roundrobinNode *rdb,Loc*loc) {
+    joinNode(roundrobinNode *rdb, Loc *loc)
+    {
         this->setLoc(loc);
-        this->type=Join;
-        this->rdb=rdb;
+        this->type = Join;
+        this->rdb = rdb;
     }
     ~joinNode() {}
     void print() {}
     const char *toString(){};
 };
+
+class splitjoinNode : public Node
+{
+  public:
+    splitNode *split;
+    joinNode *join;
+    list<Node *> *stmt_list;
+    list<Node *> *split_pipe;
+    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe, joinNode *join, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = SplitJoin;
+        this->split = split;
+        this->join = join;
+        this->stmt_list = stmt_list;
+        this->split_pipe = split_pipe;
+    }
+    ~splitjoinNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class addNode:public Node{
+    public:
+    Node *content;
+    addNode(Node *content,Loc*loc){
+        this->setLoc(loc);
+        this->type=Add;
+        this->content=content;
+    }
+    ~addNode(){}
+    void print() {}
+    const char *toString(){};
+};
+
 #endif
