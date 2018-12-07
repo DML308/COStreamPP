@@ -42,7 +42,7 @@ class primaryNode : public Node
     bool isConst;
     primaryNode(string str, Loc *loc) : name(str), isConst(false)
     {
-        type = primary;
+        this->type = primary;
         setLoc(loc);
     }
     ~primaryNode() {}
@@ -61,17 +61,17 @@ class constantNode : public Node
     constantNode(string type, string str, Loc *loc) : name(type), sval(str)
     {
         setLoc(loc);
-        type = constant;
+        this->type = constant;
     }
     constantNode(string type, long long l, Loc *loc) : name(type), llval(l)
     {
         setLoc(loc);
-        type = constant;
+        this->type = constant;
     }
     constantNode(string type, double d, Loc *loc) : name(type), dval(d)
     {
         setLoc(loc);
-        type = constant;
+        this->type = constant;
     }
     ~constantNode() {}
     void print() { cout << "constant :" << type << endl; }
@@ -86,7 +86,7 @@ class identifierNode : public Node
     int version;
     identifierNode(string name, Loc *loc) : name(name)
     {
-        type = Id;
+        this->type = Id;
         setLoc(loc);
         this->level = Level;
         this->version = current_version[Level];
@@ -108,7 +108,7 @@ class initializerNode : public Node
     list<Node *> value;
     initializerNode(Loc *loc)
     {
-        type = Initializer;
+        this->type = Initializer;
         setLoc(loc);
     }
     ~initializerNode() {}
@@ -142,8 +142,8 @@ class adclNode : public Node
     /* 默认1维 */
     adclNode(NodeType valType, expNode *eNode, Loc *loc)
     {
-        type = Adcl;
         this->setLoc(loc);
+        this->type = Adcl;
         this->dim = eNode;
         this->valType = valType;
     }
@@ -200,7 +200,7 @@ class binopNode : public Node
     string op;
     binopNode(expNode *left, string op, expNode *right, Loc *loc)
     {
-        type = Binop;
+        this->type = Binop;
         setLoc(loc);
         this->left = left;
         this->right = right;
@@ -220,7 +220,7 @@ class ternaryNode : public Node
     ternaryNode(expNode *first, expNode *second, expNode *thrid, Loc *loc)
     {
         setLoc(loc);
-        type = Ternary;
+        this->type = Ternary;
         this->first = first;
         this->second = second;
         this->third = third;
@@ -230,19 +230,52 @@ class ternaryNode : public Node
     const char *toString() {}
 };
 
-class castNode:public Node{
-    public:
+class castNode : public Node
+{
+  public:
     primaryNode *prim;
     expNode *expr;
-    castNode(primaryNode *prim,expNode *expr,Loc *loc){
-        type=Cast;
+    castNode(primaryNode *prim, expNode *expr, Loc *loc)
+    {
         setLoc(loc);
-        this->prim=prim;
-        this->expr=expr;
+        this->type = Cast;
+        this->prim = prim;
+        this->expr = expr;
     }
-    ~castNode(){}
+    ~castNode() {}
     void print() {}
     const char *toString() {}
 };
 
+/* switch() case: */
+class statNode;
+class caseNode : public Node
+{
+  public:
+    expNode *exp;
+    statNode *stmt;
+    caseNode(expNode *exp, statNode *stmt, Loc *loc)
+    {
+        setLoc(loc);
+        this->type = Case;
+        this->exp = exp;
+        this->stmt = stmt;
+    }
+    ~caseNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class defaultNode:public Node{
+    public:
+    statNode *stmt;
+    defaultNode(statNode *stmt,Loc *loc){
+        setLoc(loc);
+        this->type=Default;
+        this->stmt=stmt;
+    }
+    ~defaultNode(){}
+    void print() {}
+    const char *toString() {}
+};
 #endif

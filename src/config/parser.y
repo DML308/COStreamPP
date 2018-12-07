@@ -107,7 +107,7 @@ extern void yyerror (const char *msg);
 /*                 1.2. function.definition 函数声明                      */
 /*                 1.3. composite.definition 数据流计算单元声明             */
 /*************************************************************************/
-prog.start: translation.unit { $$ = NULL ; };
+prog.start: translation.unit { $$ = $1 ; };
 
 translation.unit:
           external.definition   {
@@ -558,12 +558,12 @@ labeled.statement:
           CASE exp ':' statement                    {
                                                           line("Line:%-3d",@1.first_line);
                                                           debug ("labeled.statement ::= CASE exp ':' statement \n");
-                                                          $$ = NULL ;
+                                                          $$ = new caseNode((expNode*)$2,(statNode*)$4,(Loc*)&(@3)) ;
                                                     }
         | DEFAULT ':' statement                     {
                                                           line("Line:%-3d",@1.first_line);
                                                           debug ("labeled.statement ::= DEFAULT ':' statement \n");
-                                                          $$ = NULL ;
+                                                          $$ = new defaultNode((statNode*)$3,(Loc*)&(@2)) ;
                                                     }
         ;
 compound.statement:
