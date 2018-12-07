@@ -131,12 +131,12 @@ external.definition:
         | function.definition   {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= function.definition\n");
-                                      $$ = NULL ;
+                                      $$ = $1 ;
                                 }
         | composite.definition  {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= composite.definition\n");
-                                      $$ = NULL ;
+                                      $$ = $1 ;
                                 }
         ;
 /*************************************************************************/
@@ -159,19 +159,20 @@ declaration:
                                 }
     ;
 declaring.list:
-          type.specifier 			  IDENTIFIER initializer.opt  {
+          type.specifier      IDENTIFIER       initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
-              identifierNode *node=new identifierNode(*($2),(Loc*)&($2));
-              if(S[*($2)]==NULL) S.InsertSymbol(node);
-              $$ = new declareNode((primaryNode*)$1,node,(initializerNode*)$3) ;
-              //string name=(((declareNode*)$$)->primNode)->name;
+              identifierNode *id=new identifierNode(*($2),(Loc*)&($2));
+              if(S[*($2)]==NULL) S.InsertSymbol(id);
+              $$ = new declareNode((primaryNode*)$1,id,NULL,(initNode*)$3,(Loc*)&($2)) ;
               //error ("%s\n",name.c_str());
         }
-        | type.specifier 			  IDENTIFIER array.declarator initializer.opt{
+        | type.specifier 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s array.declarator initializer.opt \n",$2->c_str());
-              $$ = NULL ;
+              identifierNode *id=new identifierNode(*($2),(Loc*)&($2));
+              if(S[*($2)]==NULL) S.InsertSymbol(id);
+              $$ = new declareNode((primaryNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&($2)) ;
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-3d",@1.first_line);
@@ -243,7 +244,7 @@ array.declarator:
         | array.declarator '[' exp ']'  {
                             line("Line:%-3d",@1.first_line);
                             debug ("array.declarator ::= array.declarator '[' exp ']' \n");
-                            $$ =new adclNode(arr,NULL,(Loc*)&(@2));
+                            $$ =new adclNode(Arr,NULL,(Loc*)&(@2));
 
                     }
         | array.declarator '[' ']'  {
@@ -289,12 +290,12 @@ initializer.list:
           initializer   {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer \n");
-                            $$ = new initializerNode((Loc*)&(@1));
+                            $$ = new initNode((Loc*)&(@1));
                         }
         | initializer.list ',' initializer  {
                             line("Line:%-3d",@1.first_line);
                             debug ("initializer.list ::= initializer.list ',' initializer \n");
-                            static_cast<initializerNode*>$1->value.push_back($3);
+                            static_cast<initNode*>$1->value.push_back($3);
                             $$ = $1 ;
                         }
         ;

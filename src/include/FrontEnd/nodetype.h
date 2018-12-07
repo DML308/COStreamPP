@@ -6,12 +6,12 @@ typedef enum {
   constant, Id, Binop, Unary, Cast, Comma, Ternary, Array, Call, Initializer,
   ImplicitCast,
   /* statement nodes */
-  Label, Switch, Case, Default, If, IfElse, While, Do, For, Goto, Continue,
+  Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
   Break, Return, Block,
   /* type nodes */
   primary, Tdef, Fdcl,
   /* array */
-  Adcl, basic,arr,
+  Adcl, basic,Arr,
   /* declaration node */
   Decl,
   /* GCC __attribute__ extension */

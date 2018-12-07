@@ -102,16 +102,16 @@ class identifierNode : public Node
     }
 };
 
-class initializerNode : public Node
+class initNode : public Node
 {
   public:
     list<Node *> value;
-    initializerNode(Loc *loc)
+    initNode(Loc *loc)
     {
         this->type = Initializer;
         setLoc(loc);
     }
-    ~initializerNode() {}
+    ~initNode() {}
     void print() {}
     const char *toString() {}
 };
@@ -164,14 +164,18 @@ class expNode : public Node
 class declareNode : public Node
 {
   public:
-    primaryNode *primNode;
-    identifierNode *idenNode;
-    initializerNode *initNode;
-    declareNode(primaryNode *pnode, identifierNode *idnode, initializerNode *innode)
+    primaryNode *prim;
+    identifierNode *id;
+    initNode *init;
+    adclNode *adcl;
+    declareNode(primaryNode *prim, identifierNode *id, adclNode *adcl,initNode *init,Loc*loc)
     {
-        this->primNode = pnode;
-        this->idenNode = idnode;
-        this->initNode = innode;
+        this->setLoc(loc);
+        this->type=Decl;
+        this->prim = prim;
+        this->adcl=adcl;
+        this->id = id;
+        this->init = init;
     }
     ~declareNode() {}
     void print() {}
@@ -439,15 +443,17 @@ class splitjoinNode : public Node
     const char *toString(){};
 };
 
-class addNode:public Node{
-    public:
+class addNode : public Node
+{
+  public:
     Node *content;
-    addNode(Node *content,Loc*loc){
+    addNode(Node *content, Loc *loc)
+    {
         this->setLoc(loc);
-        this->type=Add;
-        this->content=content;
+        this->type = Add;
+        this->content = content;
     }
-    ~addNode(){}
+    ~addNode() {}
     void print() {}
     const char *toString(){};
 };
