@@ -424,7 +424,7 @@ costream.composite.statement:
           composite.body.operator   {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("costream.composite.statement ::= composite.body.operator \n");
-                                          $$ = NULL ;
+                                          $$ = $1 ;
                                     }
         | statement                 {
                                           line("Line:%-3d",@1.first_line);
@@ -443,12 +443,12 @@ composite.body.operator:
           operator.file.writer      {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("composite.body.operator ::= operator.file.writer \n");
-                                          $$ = NULL ;
+                                          $$ = $1 ;
                                     }
         | operator.add              {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("composite.body.operator ::= operator.add \n");
-                                          $$ = NULL ;
+                                          $$ = $1 ;
                                     }
         ;
 operator.file.writer:
@@ -523,8 +523,15 @@ join.statement:
           JOIN roundrobin.statement                         { $$ = NULL ; }
         ;
 argument.expression.list:
-          exp                                               { $$ = NULL ; }
-        | argument.expression.list ',' exp                  { $$ = NULL ; }
+          exp                                               { 
+                                                              list<Node*> *arg_list=new list<Node*>();
+                                                              arg_list->push_back($1);
+                                                              $$ = arg_list ; 
+                                                            }
+        | argument.expression.list ',' exp                  { 
+                                                              $1->push_back($3);
+                                                              $$ = $1 ; 
+                                                            }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { $$ = NULL ; }

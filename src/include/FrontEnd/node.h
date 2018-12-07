@@ -322,12 +322,24 @@ class returnNode : public Node
     const char *toString() {}
 };
 
-class ifNode:public Node{
-    public:
+class ifNode : public Node
+{
+  public:
     expNode *exp;
-    ifNode(){}
-    ~ifNode(){}
+    ifNode() {}
+    ~ifNode() {}
     void print() {}
     const char *toString() {}
+};
+
+class pipelineNode : public Node
+{
+  public:
+    pipelineNode()
+    {
+    }
+    ~pipelineNode() {}
+    void print() {}
+    const char *toString(){};
 };
 #endif
