@@ -58,6 +58,7 @@ int handle_options(int argc, char *argv[]){
     else
     {
         changeTabToSpace();
+        recordFunctionAndCompositeName();
     }
     if (outfile_name == NULL)
         outfp = stdout;
@@ -114,8 +115,26 @@ FILE * changeTabToSpace(){
     fclose(temp);
     infp = fopen(temp_name, "r");
     assert(infp != NULL);
+    return infp;
 }
 
+//获取
+void recordFunctionAndCompositeName(){
+    char line[1000];
+    while(!feof(infp))
+    {
+        fgets(line,1000,infp);
+        cmatch cm;
+        regex ef("\\s*(int|double|string|float|long)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
+        if( regex_search(line,cm,ef)){
+            S.firstScanFTable[cm.str(2)] = true;
+        }
+        regex ec("\\s*(composite)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
+        if( regex_search(line,cm,ec)){
+            S.firstScanCTable[cm.str(2)] = true;
+        }
+    }
+}
 // 取文件名字 包括后缀 https://www.jianshu.com/p/4ea92d9688d1
 static string getFileNameAll(string str)
 {
