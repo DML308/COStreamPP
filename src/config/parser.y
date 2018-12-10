@@ -433,9 +433,14 @@ composite.body.param.opt:
         ;
 composite.body.statement.list:
           costream.composite.statement                                { 
-                                                                        $$ = NULL ; 
+                                                                        list<Node *> *body_List=new list<Node *>();
+                                                                        body_List->push_back($1);
+                                                                        $$ = body_List ; 
                                                                       }
-        | composite.body.statement.list costream.composite.statement  { $$ = NULL ; }
+        | composite.body.statement.list costream.composite.statement  { 
+                                                                        $1->push_back($2);
+                                                                        $$ = $1 ; 
+                                                                      }
         ;
 costream.composite.statement:
           composite.body.operator   {
@@ -488,7 +493,7 @@ operator.add:
         | ADD operator.default.call {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.default.call \n");
-                                          $$ = NULL ;
+                                          $$ = new addNode((compositeCallNode*)$2,(Loc*)&(@1)) ;
                                     }
         ;
 operator.pipeline:
@@ -608,14 +613,14 @@ expression.statement:
         ;
 
 selection.statement:
-          IF '(' exp ')' costream.composite.statement   {  $$ = NULL ; }
+          IF '(' exp ')' costream.composite.statement   {  $$ = new ifNode((expNode*)$3,$5,(Loc*)&(@1)) ; }
         | IF '(' exp ')' costream.composite.statement 
           ELSE costream.composite.statement             {
                                                           line("Line:%-3d",@1.first_line);
                                                           debug ("selection.statement ::= if(exp) costream.composite.statement else ...\n");
-                                                          $$ = NULL ;
+                                                          $$ = new ifElseNode((expNode*)$3,$5,$7,(Loc*)&(@1));
                                                         }
-        | SWITCH '(' exp ')' statement                  {  $$ = NULL ; }
+        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,(statNode*)$5,(Loc*)&(@1)); }
         ;
 iteration.statement:
           WHILE '(' exp ')' costream.composite.statement                          {  $$ = NULL ; }

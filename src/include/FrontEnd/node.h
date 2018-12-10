@@ -337,12 +337,54 @@ class ifNode : public Node
 {
   public:
     expNode *exp;
-    ifNode() {}
+    Node *stmt;
+    ifNode(expNode *exp, Node *stmt, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = If;
+        this->exp = exp;
+        this->stmt = stmt;
+    }
     ~ifNode() {}
     void print() {}
     const char *toString() {}
 };
 
+class ifElseNode : public Node
+{
+  public:
+    expNode *exp;
+    Node *stmt1;
+    Node *stmt2;
+    ifElseNode(expNode *exp, Node *stmt1, Node *stmt2, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = IfElse;
+        this->exp = exp;
+        this->stmt1 = stmt1;
+        this->stmt2 = stmt2;
+    }
+    ~ifElseNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class switchNode : public Node
+{
+  public:
+    expNode *exp;
+    statNode *stat;
+    switchNode(expNode *exp, statNode *stat, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Switch;
+        this->exp = exp;
+        this->stat = stat;
+    }
+    ~switchNode() {}
+    void print() {}
+    const char *toString() {}
+};
 class pipelineNode : public Node
 {
   public:
@@ -453,6 +495,7 @@ class splitjoinNode : public Node
 class addNode : public Node
 {
   public:
+    /* content可以为pipeline，splitjoin或者composite调用 */
     Node *content;
     addNode(Node *content, Loc *loc)
     {
