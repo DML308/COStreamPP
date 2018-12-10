@@ -19,13 +19,13 @@ public:
     bool LookupSymbol(string  name);
     void InsertSymbol(identifierNode* node);
     identifierNode* operator[](string str);
-    map<string,bool>firstScanFTable;
-    map<string,bool>firstScanCTable;
+    map<string,bool>firstScanFuncTable;
+    map<string,bool>firstScanCompTable;
 
 private:
-    map<string,list<identifierNode*> >iTable;
-    map<string,functionNode*> fTable;
-    map<string,compositeNode*> cTable;
+    map<string,list<identifierNode*> >idTable;
+    map<string,functionNode*> funcTable;
+    map<string,compositeNode*> compTable;
     
 };
 #endif

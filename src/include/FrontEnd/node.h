@@ -165,29 +165,27 @@ class declareNode : public Node
 {
   public:
     primaryNode *prim;
-    list<Node *> *id_List;
-    list<Node *> *init_List;
-    list<Node *> *adcl_List;
+    list<identifierNode *> id_List;
+    list<adclNode *> adcl_List;
+    list<initNode *> init_List;
     declareNode(primaryNode *prim, identifierNode *id, adclNode *adcl, initNode *init, Loc *loc)
     {
         this->setLoc(loc);
         this->type = Decl;
         this->prim = prim;
-        this->adcl_List->push_back(adcl);
-        this->id_List->push_back(id);
-        this->init_List->push_back(init);
+        this->append(id,adcl,init);
     }
-    declareNode *append(identifierNode *id, adclNode *adcl, initNode *init)
+    void  append(identifierNode *id, adclNode *adcl, initNode *init)
     {
-        this->adcl_List->push_back(adcl);
-        this->id_List->push_back(id);
-        this->init_List->push_back(init);
-        return this;
+        id_List.push_back(id);
+        adcl_List.push_back(adcl);
+        init_List.push_back(init);
     }
     ~declareNode() {}
     void print() {}
     const char *toString() {}
 };
+
 class unaryNode : public Node
 {
   public:

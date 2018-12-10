@@ -162,46 +162,34 @@ declaring.list:
           type.specifier      IDENTIFIER       initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
-              /*
-              identifierNode *id=new identifierNode(*($2),(Loc*)&($2));
-              if(S[*($2)]==NULL) S.InsertSymbol(id);
-              */
-              //$$ = new declareNode((primaryNode*)$1,id,NULL,(initNode*)$3,(Loc*)&(@2)) ;
-              $$=NULL;
+              identifierNode *id=new identifierNode(*($2),(Loc*)&(@2));
+              //if(S[*($2)]==NULL) S.InsertSymbol(id);
+              $$ = new declareNode((primaryNode*)$1,id,NULL,(initNode*)$3,(Loc*)&(@2)) ;
               //error ("%s\n",name.c_str());
         }
         | type.specifier 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s array.declarator initializer.opt \n",$2->c_str());
-              /*
-              identifierNode *id=new identifierNode(*($2),(Loc*)&($2));
-              if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primaryNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&(@2)) ;
-              */
-              $$=NULL;
+              identifierNode *id=new identifierNode(*($2),(Loc*)&(@2));
+              //if(S[*($2)]==NULL) S.InsertSymbol(id);
+              $$ = new declareNode((primaryNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&(@2));
               
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	%s initializer.opt \n",$3->c_str());
-              /*
               identifierNode *id=new identifierNode(*($3),(Loc*)&(@2));
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->append(id,NULL,(initNode*)$4);
               $$=$1;
-              */
-              $$=NULL;
         }
         | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	%s array.declarator initializer.opt \n",$3->c_str());
-              /*
               identifierNode *id=new identifierNode(*($3),(Loc*)&(@2));
-              if(S[*($3)]==NULL) S.InsertSymbol(id);
+              //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->append(id,(adclNode*)$4,(initNode*)$5);
               $$=$1;
-              */
-              $$=NULL;
         }
         ;
 stream.declaring.list:

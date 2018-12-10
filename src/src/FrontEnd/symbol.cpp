@@ -21,30 +21,30 @@ void ExitScope()
 }
 
 void SymbolTable::InsertSymbol(identifierNode* node){
-    auto iter=iTable.find(node->name);
-    if(iter==iTable.end()){
-        iTable[node->name].push_back(node);
+    auto iter=idTable.find(node->name);
+    if(iter==idTable.end()){
+        idTable[node->name].push_back(node);
     
     }else{
         /* 遍历节点 查找是否定义过，同level和version不能重新定义 */
         // 此处不同于LookupSymbol,所以代码未重用
-        //iTable[node->name].push_back(node);
-        for(auto it=iTable[node->name].begin();it!=iTable[node->name].end();it++){
+        //idTable[node->name].push_back(node);
+        for(auto it=idTable[node->name].begin();it!=idTable[node->name].end();it++){
             if((*it)->level==Level && (*it)->version==current_version[Level]){
                 cout<<"identifierNode had been declared!";
                 exit(-1);
             }
         }
-        iTable[node->name].push_back(node);
+        idTable[node->name].push_back(node);
     }
 }
 
 /* 必须查找上层作用域名 还未修改*/
 bool SymbolTable::LookupSymbol(string  name){
-    auto iter=iTable.find(name);
-    if(iter==iTable.end())
+    auto iter=idTable.find(name);
+    if(iter==idTable.end())
         return false;
-    for(auto it=iTable[name].begin();it!=iTable[name].end();it++){
+    for(auto it=idTable[name].begin();it!=idTable[name].end();it++){
         if((*it)->level==Level && (*it)->version==current_version[Level])
             return true;
     }
@@ -52,9 +52,9 @@ bool SymbolTable::LookupSymbol(string  name){
 }
 
 identifierNode* SymbolTable::operator[](string str){
-    auto iter=iTable.find(str);
-    if(iter!=iTable.end()){
-        for(auto it=iTable[str].begin();it!=iTable[str].end();it++){
+    auto iter=idTable.find(str);
+    if(iter!=idTable.end()){
+        for(auto it=idTable[str].begin();it!=idTable[str].end();it++){
         if((*it)->level==Level && (*it)->version==current_version[Level])
             return (*it);
         }

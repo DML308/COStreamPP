@@ -113,6 +113,7 @@ FILE * changeTabToSpace(){
     }
     fclose(infp);
     fclose(temp);
+    cout<<temp_name<<endl;
     infp = fopen(temp_name, "r");
     assert(infp != NULL);
     return infp;
@@ -127,11 +128,11 @@ void recordFunctionAndCompositeName(){
         cmatch cm;
         regex ef("\\s*(int|double|string|float|long)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
         if( regex_search(line,cm,ef)){
-            S.firstScanFTable[cm.str(2)] = true;
+            S.firstScanFuncTable[cm.str(2)] = true;
         }
         regex ec("\\s*(composite)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
         if( regex_search(line,cm,ec)){
-            S.firstScanCTable[cm.str(2)] = true;
+            S.firstScanCompTable[cm.str(2)] = true;
         }
     }
 }
