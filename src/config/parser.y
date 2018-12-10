@@ -40,7 +40,7 @@ extern void yyerror (const char *msg);
 
 %type<node> declaration declaring.list stream.declaring.list
 %type<node> stream.type.specifier
-%type<list> stream.declaration.list 
+%type<node> stream.declaration.list 
 /* 语法分析器自己的结构     1.1.3.array */
 %type<node> array.declarator
 /* 语法分析器自己的结构     1.1.4.initializer */
@@ -215,22 +215,25 @@ stream.declaration.list:
           type.specifier IDENTIFIER {
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier %s \n",$2->c_str());
-                                        $$ = NULL ;
+                                        /* 需要添加符号表查找操作*/
+                                        $$ = new strdclNode((primaryNode*)$1,(identifierNode*)$2,NULL,(Loc*)&(@2)) ;
                                     }
         | type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier %s array.declarator \n",$2->c_str());
-                                        $$ = NULL ;
+                                        $$ = new strdclNode((primaryNode*)$1,(identifierNode*)$2,(adclNode*)$3,(Loc*)&(@2)) ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER {
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s \n",$4->c_str());
-                                        $$ = NULL ;
+                                        ((strdclNode*)($1))->append((primaryNode*)$3,(identifierNode*)$4,NULL);
+                                        $$ = $1 ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s array.declarator \n",$4->c_str());
-                                        $$ = NULL ;
+                                        ((strdclNode*)($1))->append((primaryNode*)$3,(identifierNode*)$4,(adclNode*)$5);
+                                        $$ = $1 ;
                                     }
         ;
 
@@ -603,8 +606,8 @@ labeled.statement:
                                                     }
         ;
 compound.statement:
-          lblock rblock                                               {  $$ = NULL ; }
-        | lblock composite.body.statement.list rblock                 {  $$ = NULL ; }
+          lblock rblock                                     {  $$ = new blockNode(NULL,(Loc*)&(@1),(Loc*)&(@2)); }
+        | lblock composite.body.statement.list rblock       {  $$ = new blockNode($2,(Loc*)&(@1),(Loc*)&(@3)) ; }
         ;
 
 expression.statement:

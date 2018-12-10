@@ -9,9 +9,9 @@ typedef enum {
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
   Break, Return, Block,
   /* type nodes */
-  primary, Tdef, Fdcl,
+  primary, Fdcl,
   /* array */
-  Adcl, basic,Arr,
+  Adcl, basic, Arr,
   /* declaration node */
   Decl,
   /* GCC __attribute__ extension */
@@ -19,7 +19,7 @@ typedef enum {
   /* random text and preprocessor command node */
   Text,
   /*----------12----SPL node----------*/
-  STRdcl,		/*stream SPL*/
+  StrDcl,		/*stream SPL*/
   Comdcl,		/*composite SPL*/
   Composite,	/* composite def node SPL*/
   ComInOut,		/*composite SPL*/

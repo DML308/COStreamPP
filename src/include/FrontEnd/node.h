@@ -418,20 +418,39 @@ class doNode : public Node
     const char *toString() {}
 };
 
-class forNode:public Node{
-    public:
+class forNode : public Node
+{
+  public:
     expNode *init;
     expNode *cond;
     expNode *next;
-    Node* stmt;
-    forNode(expNode *init,expNode *cond,expNode *next,Node *stmt,Loc *loc){
+    Node *stmt;
+    forNode(expNode *init, expNode *cond, expNode *next, Node *stmt, Loc *loc)
+    {
         this->setLoc(loc);
-        this->type=For;
-        this->init=init;
-        this->cond=cond;
-        this->next=next;
-        this->stmt=stmt;
+        this->type = For;
+        this->init = init;
+        this->cond = cond;
+        this->next = next;
+        this->stmt = stmt;
     }
+    void print() {}
+    const char *toString() {}
+};
+
+class blockNode : public Node
+{
+  public:
+    list<Node *> *stmt_List;
+    Loc *right;
+    blockNode(list<Node *> *stmt_List, Loc *left, Loc *right)
+    {
+        this->setLoc(left);
+        this->right = right;
+        this->type = Block;
+        this->stmt_List = stmt_List;
+    }
+    ~blockNode() {}
     void print() {}
     const char *toString() {}
 };
@@ -602,6 +621,31 @@ class compositeCallNode : public Node
         this->arg_List = arg_List;
     }
     ~compositeCallNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class strdclNode : public Node
+{
+  public:
+    list<primaryNode *> prim_List;
+    list<identifierNode *> id_List;
+    list<adclNode *> adcl_List;
+    strdclNode(primaryNode *prim, identifierNode *id, adclNode *adcl, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = StrDcl;
+        prim_List.push_back(prim);
+        id_List.push_back(id);
+        adcl_List.push_back(adcl);
+    }
+    void append(primaryNode *prim, identifierNode *id, adclNode *adcl)
+    {
+        prim_List.push_back(prim);
+        id_List.push_back(id);
+        adcl_List.push_back(adcl);
+    }
+    ~strdclNode() {}
     void print() {}
     const char *toString(){};
 };
