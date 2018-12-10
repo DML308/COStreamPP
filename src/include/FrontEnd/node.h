@@ -173,9 +173,9 @@ class declareNode : public Node
         this->setLoc(loc);
         this->type = Decl;
         this->prim = prim;
-        this->append(id,adcl,init);
+        this->append(id, adcl, init);
     }
-    void  append(identifierNode *id, adclNode *adcl, initNode *init)
+    void append(identifierNode *id, adclNode *adcl, initNode *init)
     {
         id_List.push_back(id);
         adcl_List.push_back(adcl);
@@ -383,6 +383,59 @@ class switchNode : public Node
     void print() {}
     const char *toString() {}
 };
+
+class whileNode : public Node
+{
+  public:
+    expNode *exp;
+    Node *stmt;
+    whileNode(expNode *exp, Node *stmt, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = While;
+        this->exp = exp;
+        this->stmt = stmt;
+    }
+    ~whileNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class doNode : public Node
+{
+  public:
+    expNode *exp;
+    Node *stmt;
+    doNode(Node *stmt, expNode *exp, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Do;
+        this->exp = exp;
+        this->stmt = stmt;
+    }
+    ~doNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class forNode:public Node{
+    public:
+    expNode *init;
+    expNode *cond;
+    expNode *next;
+    Node* stmt;
+    forNode(expNode *init,expNode *cond,expNode *next,Node *stmt,Loc *loc){
+        this->setLoc(loc);
+        this->type=For;
+        this->init=init;
+        this->cond=cond;
+        this->next=next;
+        this->stmt=stmt;
+    }
+    void print() {}
+    const char *toString() {}
+};
+
 class pipelineNode : public Node
 {
   public:

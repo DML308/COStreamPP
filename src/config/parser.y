@@ -622,13 +622,13 @@ selection.statement:
         | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,(statNode*)$5,(Loc*)&(@1)); }
         ;
 iteration.statement:
-          WHILE '(' exp ')' costream.composite.statement                          {  $$ = NULL ; }
-        | DO  costream.composite.statement WHILE '(' exp ')' ';'                  {  $$ = NULL ; }
-        | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement         {
-                                                                                        line("Line:%-3d",@1.first_line);
-                                                                                        debug ("iteration.statement ::= for(...)  costream.composite.statement \n");
-                                                                                        $$ = NULL ;
-                                                                                  }
+          WHILE '(' exp ')' costream.composite.statement                          {  $$ = new whileNode((expNode*)$3,$5,(Loc*)&(@1)) ; }
+        | DO  costream.composite.statement WHILE '(' exp ')' ';'                  {  $$ = new doNode($2,(expNode*)$5,(Loc*)&(@1)) ; }
+        | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement     {
+                  line("Line:%-3d",@1.first_line);
+                  debug ("iteration.statement ::= for(...)  costream.composite.statement \n");
+                  $$ = new forNode((expNode*)$3,(expNode*)$5,(expNode*)$7,$9,(Loc*)&(@1)) ;
+            }
         | FOR '(' declaration  ';' exp ';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
         | FOR '(' error ')' costream.composite.statement                          {  $$ = NULL ; }
         ;
