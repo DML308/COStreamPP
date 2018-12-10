@@ -126,7 +126,7 @@ external.definition:
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= declaration\n");
                                       //$$->push_back($1);
-                                      $$=$1;
+                                      $$ = $1;
                                 }
         | function.definition   {
                                       line("Line:%-3d",@1.first_line);
@@ -164,7 +164,8 @@ declaring.list:
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
               identifierNode *id=new identifierNode(*($2),(Loc*)&($2));
               if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primaryNode*)$1,id,NULL,(initNode*)$3,(Loc*)&($2)) ;
+              $$ = new declareNode((primaryNode*)$1,id,NULL,(initNode*)$3,(Loc*)&(@2)) ;
+             
               //error ("%s\n",name.c_str());
         }
         | type.specifier 	IDENTIFIER array.declarator initializer.opt{
@@ -172,17 +173,24 @@ declaring.list:
               debug ("declaring.list ::= type.specifier %s array.declarator initializer.opt \n",$2->c_str());
               identifierNode *id=new identifierNode(*($2),(Loc*)&($2));
               if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primaryNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&($2)) ;
+              $$ = new declareNode((primaryNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&(@2)) ;
+              
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	%s initializer.opt \n",$3->c_str());
-              $$ = NULL ;
+              identifierNode *id=new identifierNode(*($3),(Loc*)&(@2));
+              if(S[*($3)]==NULL) S.InsertSymbol(id);
+              ((declareNode*)$1)->append(id,NULL,(initNode*)$4);
+              $$=$1;
         }
         | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	%s array.declarator initializer.opt \n",$3->c_str());
-              $$ = NULL ;
+              identifierNode *id=new identifierNode(*($3),(Loc*)&(@2));
+              if(S[*($3)]==NULL) S.InsertSymbol(id);
+              ((declareNode*)$1)->append(id,(adclNode*)$4,(initNode*)$5);
+              $$=$1;
         }
         ;
 stream.declaring.list:
@@ -539,9 +547,9 @@ join.statement:
         ;
 argument.expression.list:
           exp                                               { 
-                                                              list<Node*> *arg_list=new list<Node*>();
-                                                              arg_list->push_back($1);
-                                                              $$ = arg_list ; 
+                                                              list<Node*> *arg_List=new list<Node*>();
+                                                              arg_List->push_back($1);
+                                                              $$ = arg_List ; 
                                                             }
         | argument.expression.list ',' exp                  { 
                                                               $1->push_back($3);
@@ -549,11 +557,15 @@ argument.expression.list:
                                                             }
         ;
 operator.default.call:
-          IDENTIFIER  '(' ')' ';'                           { $$ = NULL ; }
+          IDENTIFIER  '(' ')' ';'                           { 
+                                                              $$ = new compositeCallNode(*($1),NULL,(Loc*)&(@1)); 
+                                                              /*需要查找符号表*/
+                                                            }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
                                                               /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
                                                               ///*DEBUG*/printf("have found operator.default.call\n");
-                                                              $$ = NULL ;
+                                                              $$ = new compositeCallNode(*($1),$3,(Loc*)&(@1));
+                                                              /* 需要查找符号表 */
                                                             }
         ;
 

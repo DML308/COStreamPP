@@ -165,17 +165,24 @@ class declareNode : public Node
 {
   public:
     primaryNode *prim;
-    identifierNode *id;
-    initNode *init;
-    adclNode *adcl;
+    list<Node *> *id_List;
+    list<Node *> *init_List;
+    list<Node *> *adcl_List;
     declareNode(primaryNode *prim, identifierNode *id, adclNode *adcl, initNode *init, Loc *loc)
     {
         this->setLoc(loc);
         this->type = Decl;
         this->prim = prim;
-        this->adcl = adcl;
-        this->id = id;
-        this->init = init;
+        this->adcl_List->push_back(adcl);
+        this->id_List->push_back(id);
+        this->init_List->push_back(init);
+    }
+    declareNode *append(identifierNode *id, adclNode *adcl, initNode *init)
+    {
+        this->adcl_List->push_back(adcl);
+        this->id_List->push_back(id);
+        this->init_List->push_back(init);
+        return this;
     }
     ~declareNode() {}
     void print() {}
@@ -484,6 +491,23 @@ class tumblingNode : public Node
         this->arg_list = arg_list;
     }
     ~tumblingNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class compositeCallNode : public Node
+{
+  public:
+    string name;
+    list<Node *> *arg_List;
+    compositeCallNode(string name, list<Node *> *arg_List, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = CompositeCall;
+        this->name = name;
+        this->arg_List = arg_List;
+    }
+    ~compositeCallNode() {}
     void print() {}
     const char *toString(){};
 };
