@@ -114,12 +114,15 @@ translation.unit:
           external.definition   {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("translation.unit ::= external.definition\n");
-                                      $$ = NULL ;
+                                      list<Node*> *ext_List=new list<Node*>();
+                                      ext_List->push_back($1);
+                                      $$ = ext_List ;
                                 }
         | translation.unit external.definition  {
                                                       line("Line:%-3d",@1.first_line);
                                                       debug ("translation.unit ::= translation.unit external.definition\n");
-                                                      $$ = NULL ;
+                                                      $1->push_back($2);
+                                                      $$ = $1 ;
                                                 }
         ;
 external.definition:
@@ -199,7 +202,6 @@ stream.declaring.list:
                                                   idNode *id=new idNode(*($2),(Loc*)&(@2));
                                                   /* 需要添加符号表插入操作 */
                                                   ((strdclNode*)($1))->insert(id);
-
                                                   $$ = $1 ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
@@ -410,18 +412,30 @@ composite.head:
                                                           }
     ;
 composite.head.inout:
-      /*empty*/                                                                           { $$ = NULL ; }
-    | INPUT composite.head.inout.member.list                                              { $$ = NULL ; }
-    | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list  { $$ = NULL ; }
-    | OUTPUT composite.head.inout.member.list                                             { $$ = NULL ; }
-    | OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list  { $$ = NULL ; }
+      /*empty*/                                                                           { error("composite has no input or output") ;exit(-1);}
+    | INPUT composite.head.inout.member.list                                              { $$ = new ComInOutNode($2,NULL, (Loc*)&(@1))  ; }
+    | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list  { $$ = new ComInOutNode($2,$5,   (Loc*)&(@1))  ; }
+    | OUTPUT composite.head.inout.member.list                                             { $$ = new ComInOutNode(NULL,$2, (Loc*)&(@1))  ; }
+    | OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list  { $$ = new ComInOutNode($5,$2,   (Loc*)&(@1))  ; }
     ;
 composite.head.inout.member.list:
-      composite.head.inout.member                                                         { $$ = NULL ; }
-    | composite.head.inout.member.list ',' composite.head.inout.member                    { $$ = NULL ; }
+      composite.head.inout.member         { 
+                  list<Node*> *inout_List = new list<Node*>();
+                  inout_List->push_back($1);
+                  $$ = inout_List ; 
+            }
+    | composite.head.inout.member.list ',' composite.head.inout.member     { 
+                  $1->push_back($3);
+                  $$ = $1; 
+            }
     ;
 composite.head.inout.member:
-      stream.type.specifier IDENTIFIER                                                    { $$ = NULL ; }
+      stream.type.specifier IDENTIFIER    { 
+                  line("Line:%-3d",@1.first_line);
+                  debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER  \n");
+                  idNode *id = new idNode(*($2),(Loc*)&(@2));
+                  $$ = new inOutdeclNode($1,id,(Loc*)&(@2)) ; 
+            }
     ;
 /*************************************************************************/
 /*                      1.3.2 composite.body                             */
@@ -807,9 +821,11 @@ exp:      exp.assignable
         | exp assignment.operator exp                         { 
                                                                   line("Line:%-3d",@1.first_line);
                                                                   debug ("exp ::= exp.assignable assignment.operator exp\n"); 
-                                                                  $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2)) ;
+                                                                  $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2) ) ;
                                                               }
-        | IDENTIFIER '(' argument.expression.list ')'         { line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); $$ = NULL ; }
+        | IDENTIFIER '(' argument.expression.list ')'         { line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
+                                                                $$ = new callNode(*($1),$3,(Loc*)&(@1)) ; 
+                                                              }
         | FILEREADER '(' ')' '(' stringConstant ')'           { line("Line:%-3d",@1.first_line);debug ("exp ::= FILEREADER()( stringConstant )\n"); $$ = NULL ; }
         | IDENTIFIER '('  ')' operator.selfdefine.body        { line("Line:%-3d",@1.first_line);debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str()); $$ = NULL ; }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { $$ = NULL ; }
