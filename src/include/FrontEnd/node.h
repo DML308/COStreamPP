@@ -837,4 +837,22 @@ class funcDclNode : public Node
     void print() {}
     const char *toString(){};
 };
+
+class compCallNode : public Node
+{
+  public:
+    string compName;
+    list<Node *> *stream_List;
+    list<Node *> *param_List;
+    compCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = CompositeCall;
+        this->compName = compName;
+        this->param_List = param_List;
+    }
+    ~compCallNode() {}
+    void print() {}
+    const char *toString(){};
+};
 #endif
