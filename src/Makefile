@@ -1,12 +1,12 @@
 CXX		= g++ -std=c++11 -w
 YACC    = bison -y
 LEX     = flex
-CPPFLAGS  = -I include/FrontEnd -I include/BackEnd
+CPPFLAGS  = -I include/FrontEnd -I include/BackEnd -I include/LifeCycle
 
 TAB = '	'
 VPATH = .:bin:config
 PROGRAM := a
-SRCDIRS := src src/FrontEnd src/BackEnd
+SRCDIRS := src src/FrontEnd src/BackEnd src/LifeCycle
 OUTDIRS := bin
 SRCEXTS := .cpp # SRC 目录里相关的文件后缀
 
