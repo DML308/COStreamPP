@@ -30,23 +30,49 @@ FILE *changeTabToSpace()
     return infp;
 }
 
-//获取
-FILE * recordFunctionAndCompositeName()
+//在第一遍扫描时, 将函数和 Composite 变量名存入符号表 S 的对应位置中方便后续使用
+//考虑带注释的情形
+FILE *recordFunctionAndCompositeName()
 {
     char line[1000];
+    int comment_flag = 0;
     while (!feof(infp))
     {
         fgets(line, 1000, infp);
         cmatch cm;
-        regex ef("\\s*(int|double|string|float|long)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
-        if (regex_search(line, cm, ef))
+        //检查注释
+        // 情况1:如果现在是多行注释状态
+        if (comment_flag == 1)
         {
-            S.firstScanFuncTable[cm.str(2)] = true;
+            regex comment2("\\*");
+            if (regex_search(line, comment2))
+                comment_flag = 0;
         }
-        regex ec("\\s*(composite)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
-        if (regex_search(line, cm, ec))
+        // 情况2:如果不是多行注释状态
+        else
         {
-            S.firstScanCompTable[cm.str(2)] = true;
+            //如果是单行注释
+            regex comment1("\/\/");
+            if (regex_search(line, comment1))
+                continue;
+            //如果遇到了多行注释的开头
+            regex comment3("\\*");
+            if (regex_search(line, comment3))
+            {
+                comment_flag = 1;
+                continue;
+            }
+            //终于到了非注释文本的识别
+            regex efunc("\\s*(int|double|string|float|long)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
+            if (regex_search(line, cm, efunc))
+            {
+                S.firstScanFuncTable[cm.str(2)] = true;
+            }
+            regex ecomp("\\s*(composite)\\s+([a-zA-Z_][0-9a-zA-Z_]*)\\s*\\(");
+            if (regex_search(line, cm, ecomp))
+            {
+                S.firstScanCompTable[cm.str(2)] = true;
+            }
         }
     }
     //重新打开文件(即将文件读取的锚点移动回文件头)
@@ -56,6 +82,7 @@ FILE * recordFunctionAndCompositeName()
     assert(infp != NULL);
     return infp;
 }
+
 // 取文件名字 包括后缀 https://www.jianshu.com/p/4ea92d9688d1
 static string getFileNameAll(string str)
 {
