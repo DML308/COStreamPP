@@ -1,6 +1,4 @@
 CXX		= g++ -std=c++11 -w
-YACC    = bison -y
-LEX     = flex
 CPPFLAGS  = -I include/FrontEnd -I include/BackEnd -I include/LifeCycle
 
 TAB = '	'
@@ -24,12 +22,12 @@ parser.o: parser.y
 	@echo OBJS$(TAB)= ${OBJS}
 	@echo
 	@mkdir -p bin
-	$(YACC) -v --defines=include/FrontEnd/token.h config/parser.y
+	bison -y -v --defines=include/FrontEnd/token.h config/parser.y
 	mv y.tab.c src/FrontEnd/parser.cpp
 	mv y.output config/y.output
 	$(CXX) $(CPPFLAGS) -DYYDEBUG -c -g src/FrontEnd/parser.cpp -o $(OUTDIRS)/parser.o
 lexer.o:  lexer.l
-	$(LEX) config/lexer.l
+	flex config/lexer.l
 	mv lex.yy.c src/FrontEnd/lexer.cpp
 	$(CXX) $(CPPFLAGS) -g -c src/FrontEnd/lexer.cpp -o bin/lexer.o
 
@@ -39,6 +37,8 @@ main.o : src/main.cpp
 	$(CXX) -c $(CPPFLAGS) -g -o $(OUTDIRS)/$@ $<
 %.o : src/BackEnd/%.cpp
 	$(CXX) -c $(CPPFLAGS) -g -o $(OUTDIRS)/$@ $<
+%.o : src/LifeCycle/%.cpp
+	$(CXX) -c $(CPPFLAGS) -g -o $(OUTDIRS)/$@ $<
 
 $(PROGRAM) : $(OBJS)
 	$(CXX) -g -o $(PROGRAM) $(CPPFLAGS) $(foreach d,$(OBJS),$(addprefix $(OUTDIRS)/,$(d)))
@@ -47,4 +47,4 @@ clean :
 	@$(RM) src/*/lexer.cpp include/*/token.h src/*/parser.cpp y.tab.[ch] config/*.output *.o  bin/* *.d *.out *.temp
 count :
 	make clean
-	find . -maxdepth 2  -name "*[.l|.y|.c|.cc|.cpp|.h|Makefile]"  | xargs cat | wc -l
+	find . -maxdepth 3  -name "*[.l|.y|.c|.cc|.cpp|.h|Makefile]"  | xargs cat | wc -l

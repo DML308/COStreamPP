@@ -2,7 +2,8 @@
 #include "node.h"
 #include <list>
 #include "token.h"
-#include "handle_options.h"
+#include "0.handle_options.h"
+#include "1.firstScan.h"
 #include "symbol.h"
 #include "global.h"
 
@@ -20,16 +21,21 @@ int main(int argc, char *argv[])
     // 编译前端 begin
     //===----------------------------------------------------------------------===//
 
-    // (0) 对命令行输入预处理,同时做第一遍扫描 ---- 对应文件 FrontEnd/ ( handle_options.h, handle_options.c )
+    // (0) 对命令行输入预处理,同时
     if (handle_options(argc, argv) == false)
         return 0;
-    yyin = infp; // infp is initialized in handle_opt() , default is stdin
 
-    //
+    // (1) 做第一遍扫描(当输入文件存在时)(函数和 composite 变量名存入符号表 S)
+    if (infile_name == NULL)
+        infp = stdin;
+    else{
+        infp = changeTabToSpace();
+        infp = recordFunctionAndCompositeName();
+    }
 
-    // (2)文法建 (1) 初始化环境（类型、符号表、操作符表）
-    //S=new SymbolTable();立和语法树生成，
+    // (2) 文法建立和语法树生成
     PhaseName = "Parsing";
+    yyin = infp;
     yyparse();
 
     //===----------------------------------------------------------------------===//
