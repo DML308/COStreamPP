@@ -23,9 +23,10 @@ typedef enum {
   Comdcl,		/*composite SPL*/
   Composite,	/* composite def node SPL*/
   ComInOut,		/*composite SPL*/
-  InOutdecl,
+  InOutdcl,
   ComBody,		/*composite.block SPL*/
   Param,		/*composite.body.param SPL*/
+  ParamDcl,
   OperBody,		/*operator SPL*/
   Operdcl,		/*operator SPL*/
   Operator_,	/* operator def node SPL*/

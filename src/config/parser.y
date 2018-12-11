@@ -340,12 +340,15 @@ parameter.list:
           parameter.declaration   {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.declaration \n");
-                $$ = NULL ;
+                list<Node*> *param_List = new list<Node*>();
+                param_List->push_back($1);
+                $$=param_List;
           }
         | parameter.list ',' parameter.declaration {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.list ',' parameter.declaration \n");
-                $$ = NULL ;
+                $1->push_back($3);
+                $$ = $1 ;
           }
         | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
@@ -358,12 +361,14 @@ parameter.declaration:
           type.specifier IDENTIFIER {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier %s \n",$2->c_str());
-                                          $$ = NULL ;
+                                          idNode*id = new idNode(*($2),(Loc*)&(@2));
+                                          $$ = new paramDeclNode((primNode*)$1,id,NULL,(Loc*)&(@2) );
                                     }
         | type.specifier IDENTIFIER array.declarator  {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier %s array.declarator \n",$2->c_str());
-                                          $$ = NULL ;
+                                          idNode*id = new idNode(*($2),(Loc*)&(@2));
+                                          $$ = new paramDeclNode((primNode*)$1,id,(adclNode*)$3,(Loc*)&(@2) );
                                     }
         ;
 function.body:
@@ -412,7 +417,7 @@ composite.head:
                                                           }
     ;
 composite.head.inout:
-      /*empty*/                                                                           { error("composite has no input or output") ;exit(-1);}
+      /*empty*/                                                                           { $$ = NULL ;}
     | INPUT composite.head.inout.member.list                                              { $$ = new ComInOutNode($2,NULL, (Loc*)&(@1))  ; }
     | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list  { $$ = new ComInOutNode($2,$5,   (Loc*)&(@1))  ; }
     | OUTPUT composite.head.inout.member.list                                             { $$ = new ComInOutNode(NULL,$2, (Loc*)&(@1))  ; }
@@ -444,14 +449,14 @@ composite.head.inout.member:
 /*                        1.3.2.3 composite.body.statement.list          */
 /*************************************************************************/
 composite.body:
-          lblock composite.body.param.opt composite.body.statement.list rblock                              { $$ = NULL ; }
+          lblock composite.body.param.opt composite.body.statement.list rblock     { $$ = NULL ; }
         ;
 composite.body.param.opt:
           /*empty*/                 { $$ = NULL ; }
         | PARAM parameter.list ';'  {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("composite.body.param.opt ::= PARAM parameter.list \n");
-                                          $$ = NULL ;
+                                          $$ = new paramNode($2) ;
                                     }
         ;
 composite.body.statement.list:
