@@ -964,5 +964,5 @@ basic.type.name:
 /* ----语法树结束----*/
 void yyerror (const char *msg)
 {
-    error ("%s", msg);
+    error ("Line:%-4d%s\n",yylloc.first_line, msg);
 }
