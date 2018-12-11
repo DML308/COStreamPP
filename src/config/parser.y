@@ -70,7 +70,8 @@ extern void yyerror (const char *msg);
 %type<str>  assignment.operator
 %type<node> exp exp.assignable
 %type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
-%type<node> operator.selfdefine.body.window.list  operator.selfdefine.window.list operator.selfdefine.window
+%type<node> operator.selfdefine.body.window.list operator.selfdefine.window
+%type<list> operator.selfdefine.window.list 
 %type<node> window.type
 /* 语法分析器自己的结构 5.basic 从词法TOKEN直接归约得到的节点 */
 %type<node>constant type.specifier basic.type.name  
@@ -826,44 +827,51 @@ operator.selfdefine.body:
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { init work window.list }\n");
-            $$ = NULL ;
+            $$ = new comBodyNode(NULL,$2,$3,(windowNode*)$4) ;
         }
      | lblock statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list rblock
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n");
-            $$ = NULL ;
+            $$ = new comBodyNode($2,$3,$4,(windowNode*)$5);
         }
      ;
 
 operator.selfdefine.body.init:
-      /*empty*/{ $$ = NULL; }
-    | INIT compound.statement { $$ = NULL ; }
+      /*empty*/{ $$ = NULL ; }
+    | INIT compound.statement { $$ = $2 ; }
     ;
 
 operator.selfdefine.body.work:
-      WORK compound.statement { $$ = NULL ; }
+      WORK compound.statement { $$ = $2 ; }
     ;
 
 operator.selfdefine.body.window.list:
-      /*empty*/                                         { $$ = NULL; }
+      /*empty*/                                         { $$ = NULL ; }
       | WINDOW lblock operator.selfdefine.window.list rblock  {
                                                             line("Line:%-3d",@1.first_line);
                                                             debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n");
-                                                            $$ = NULL ;
+                                                            $$ = new windowNode($3) ;
                                                         }
     ;
 
 operator.selfdefine.window.list:
-      operator.selfdefine.window
-    | operator.selfdefine.window.list operator.selfdefine.window
+      operator.selfdefine.window                {
+                                                      list<Node*> *win_List=new list<Node*>();
+                                                      win_List->push_back($1);
+                                                      $$=win_List;
+      }
+    | operator.selfdefine.window.list operator.selfdefine.window{
+                                                      $1->push_back($2);
+                                                      $$=$1;
+                                                }
     ;
 
 operator.selfdefine.window:
       IDENTIFIER window.type ';'                {
                                                     line("Line:%-3d",@1.first_line);
                                                     debug ("operator.selfdefine.window ::= %s window.type (sliding? (arg_list?))\n",$1->c_str());
-                                                    $$ = NULL ;
+                                                    $$ = new winStmtNode(*($1),$2,(Loc*)&(@1)) ;
                                                 }
     ;
 

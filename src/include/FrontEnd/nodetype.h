@@ -29,6 +29,7 @@ typedef enum {
   Operdcl,		/*operator SPL*/
   Operator_,	/* operator def node SPL*/
   Window,		/*operator.body.window SPL*/
+  WindowStmt,
   Sliding,		/*sliding window SPL*/
   Tumbling,		/*tumbling window SPL*/
 

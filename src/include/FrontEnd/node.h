@@ -631,7 +631,7 @@ class strdclNode : public Node
     list<primNode *> prim_List;
     list<idNode *> id_List;
     list<adclNode *> adcl_List;
-    list<idNode*>   decl_List;
+    list<idNode *> decl_List;
     strdclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
     {
         this->setLoc(loc);
@@ -646,11 +646,65 @@ class strdclNode : public Node
         id_List.push_back(id);
         adcl_List.push_back(adcl);
     }
-    void insert(idNode* decl){
+    void insert(idNode *decl)
+    {
         decl_List.push_back(decl);
     }
     ~strdclNode() {}
     void print() {}
     const char *toString(){};
 };
+
+class winStmtNode : public Node
+{
+  public:
+    Node *winType;
+    string winName;
+    winStmtNode(string winName, Node *winType, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = WindowStmt;
+        this->winName = winName;
+        this->winType = winType;
+    }
+
+    ~winStmtNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class windowNode : public Node
+{
+  public:
+    list<Node *> *winStmt_List;
+    windowNode(list<Node *> *winStmt_List)
+    {
+        this->type = Window;
+        this->winStmt_List = winStmt_List;
+    }
+    ~windowNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class comBodyNode : public Node
+{
+  public:
+  list<Node*> *stmt_List;
+    Node *init;
+    Node *work;
+    windowNode *win;
+    comBodyNode(list<Node*> *stmt_List,Node *init, Node *work, windowNode *win)
+    {
+        this->type = ComBody;
+        this->stmt_List=stmt_List;
+        this->init = init;
+        this->work = work;
+        this->win = win;
+    }
+    ~comBodyNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
 #endif
