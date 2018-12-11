@@ -14,8 +14,8 @@ typedef enum {
   Adcl, basic, Arr,
   /* declaration node */
   Decl,
-  /* GCC __attribute__ extension */
-  Proc,
+  /* function */
+  FuncDcl,
   /* random text and preprocessor command node */
   Text,
   /*----------12----SPL node----------*/
@@ -23,8 +23,10 @@ typedef enum {
   Comdcl,		/*composite SPL*/
   Composite,	/* composite def node SPL*/
   ComInOut,		/*composite SPL*/
+  InOutdcl,
   ComBody,		/*composite.block SPL*/
   Param,		/*composite.body.param SPL*/
+  ParamDcl,
   OperBody,		/*operator SPL*/
   Operdcl,		/*operator SPL*/
   Operator_,	/* operator def node SPL*/

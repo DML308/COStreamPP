@@ -687,17 +687,19 @@ class windowNode : public Node
     const char *toString(){};
 };
 
+class paramNode;
 class comBodyNode : public Node
 {
   public:
-  list<Node*> *stmt_List;
+    paramNode *param;
+    list<Node *> *stmt_List;
     Node *init;
     Node *work;
     windowNode *win;
-    comBodyNode(list<Node*> *stmt_List,Node *init, Node *work, windowNode *win)
+    comBodyNode(list<Node *> *stmt_List, Node *init, Node *work, windowNode *win)
     {
         this->type = ComBody;
-        this->stmt_List=stmt_List;
+        this->stmt_List = stmt_List;
         this->init = init;
         this->work = work;
         this->win = win;
@@ -707,4 +709,150 @@ class comBodyNode : public Node
     const char *toString(){};
 };
 
+class callNode : public Node
+{
+  public:
+    string name;
+    list<Node *> *arg_List;
+    callNode(string name, list<Node *> *arg_List, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Call;
+        this->name = name;
+        this->arg_List = arg_List;
+    }
+    ~callNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class inOutdeclNode : public Node
+{
+  public:
+    Node *strType;
+    idNode *id;
+    inOutdeclNode(Node *strType, idNode *id, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = InOutdcl;
+        this->strType = strType;
+    }
+    ~inOutdeclNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class ComInOutNode : public Node
+{
+  public:
+    list<Node *> *input_List;
+    list<Node *> *output_List;
+    ComInOutNode(list<Node *> *input_List, list<Node *> *output_List, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = ComInOut;
+        this->input_List = input_List;
+        this->output_List = output_List;
+    }
+    ~ComInOutNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class paramDeclNode : public Node
+{
+  public:
+    primNode *prim;
+    idNode *id;
+    adclNode *adcl;
+    paramDeclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = ParamDcl;
+        this->prim = prim;
+        this->id = id;
+        this->adcl = adcl;
+    }
+    ~paramDeclNode() {}
+    void print() {}
+    const char *toString(){};
+};
+class paramNode : public Node
+{
+  public:
+    list<Node *> *param_List;
+    paramNode(list<Node *> *param_List)
+    {
+        this->type = Param;
+        this->param_List = param_List;
+    }
+    ~paramNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+// class ComdclNode : public Node
+// {
+//   public:
+//     paramNode *param;
+//     list<Node *> *body_List;
+//     ComdclNode(paramNode *param, list<Node *> *body_List)
+//     {
+//         this->type = Comdcl;
+//         this->param = param;
+//         this->body_List = body_List;
+//     }
+//     ~ComdclNode() {}
+// };
+
+class funcBodyNode : public Node
+{
+  public:
+    list<Node *> *stmt_List;
+    funcBodyNode(list<Node *> *stmt_List)
+    {
+        this->stmt_List = stmt_List;
+    }
+    ~funcBodyNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class funcDclNode : public Node
+{
+  public:
+    primNode *prim;
+    idNode *id;
+    list<Node *> *param_List;
+    funcBodyNode *funcBody;
+    funcDclNode(primNode *prim, idNode *id, list<Node *> *param_List, funcBodyNode *funcBody)
+    {
+        this->type = FuncDcl;
+        this->prim = prim;
+        this->id = id;
+        this->param_List = param_List;
+        this->funcBody = funcBody;
+    }
+    ~funcDclNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class compCallNode : public Node
+{
+  public:
+    string compName;
+    list<Node *> *stream_List;
+    list<Node *> *param_List;
+    compCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = CompositeCall;
+        this->compName = compName;
+        this->param_List = param_List;
+    }
+    ~compCallNode() {}
+    void print() {}
+    const char *toString(){};
+};
 #endif
