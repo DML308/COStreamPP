@@ -20,7 +20,7 @@ void ExitScope()
 	Level--;
 }
 
-void SymbolTable::InsertSymbol(identifierNode* node){
+void SymbolTable::InsertSymbol(idNode* node){
     auto iter=idTable.find(node->name);
     if(iter==idTable.end()){
         idTable[node->name].push_back(node);
@@ -31,7 +31,7 @@ void SymbolTable::InsertSymbol(identifierNode* node){
         //idTable[node->name].push_back(node);
         for(auto it=idTable[node->name].begin();it!=idTable[node->name].end();it++){
             if((*it)->level==Level && (*it)->version==current_version[Level]){
-                cout<<"identifierNode had been declared!";
+                cout<<"idNode had been declared!";
                 exit(-1);
             }
         }
@@ -51,7 +51,7 @@ bool SymbolTable::LookupSymbol(string  name){
     return false;
 }
 
-identifierNode* SymbolTable::operator[](string str){
+idNode* SymbolTable::operator[](string str){
     auto iter=idTable.find(str);
     if(iter!=idTable.end()){
         for(auto it=idTable[str].begin();it!=idTable[str].end();it++){

@@ -25,10 +25,10 @@ int main(int argc, char *argv[])
         return 0;
     yyin = infp; // infp is initialized in handle_opt() , default is stdin
 
-    // (1) 初始化环境（类型、符号表、操作符表）
-    //S=new SymbolTable();
+    //
 
-    // (2)文法建立和语法树生成，
+    // (2)文法建 (1) 初始化环境（类型、符号表、操作符表）
+    //S=new SymbolTable();立和语法树生成，
     PhaseName = "Parsing";
     yyparse();
 

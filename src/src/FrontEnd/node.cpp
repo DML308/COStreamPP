@@ -1,5 +1,5 @@
 #include"node.h"
-const char * primaryNode::toString(){
+const char * primNode::toString(){
         string str = "" ;
         if(isConst) str += "const ";
         return (str+name).c_str();

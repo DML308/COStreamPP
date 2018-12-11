@@ -125,7 +125,6 @@ external.definition:
           declaration           {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("external.definition ::= declaration\n");
-                                      //$$->push_back($1);
                                       $$ = $1;
                                 }
         | function.definition   {
@@ -162,23 +161,23 @@ declaring.list:
           type.specifier      IDENTIFIER       initializer.opt  {
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s initializer.opt \n",$2->c_str());
-              identifierNode *id=new identifierNode(*($2),(Loc*)&(@2));
+              idNode *id=new idNode(*($2),(Loc*)&(@2));
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primaryNode*)$1,id,NULL,(initNode*)$3,(Loc*)&(@2)) ;
+              $$ = new declareNode((primNode*)$1,id,NULL,(initNode*)$3,(Loc*)&(@2)) ;
               //error ("%s\n",name.c_str());
         }
         | type.specifier 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= type.specifier %s array.declarator initializer.opt \n",$2->c_str());
-              identifierNode *id=new identifierNode(*($2),(Loc*)&(@2));
+              idNode *id=new idNode(*($2),(Loc*)&(@2));
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primaryNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&(@2));
+              $$ = new declareNode((primNode*)$1,id,(adclNode*)$3,(initNode*)$4,(Loc*)&(@2));
               
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	%s initializer.opt \n",$3->c_str());
-              identifierNode *id=new identifierNode(*($3),(Loc*)&(@2));
+              idNode *id=new idNode(*($3),(Loc*)&(@2));
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->append(id,NULL,(initNode*)$4);
               $$=$1;
@@ -186,7 +185,7 @@ declaring.list:
         | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-3d",@1.first_line);
               debug ("declaring.list ::= declaring.list 	',' 	%s array.declarator initializer.opt \n",$3->c_str());
-              identifierNode *id=new identifierNode(*($3),(Loc*)&(@2));
+              idNode *id=new idNode(*($3),(Loc*)&(@2));
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->append(id,(adclNode*)$4,(initNode*)$5);
               $$=$1;
@@ -196,19 +195,26 @@ stream.declaring.list:
           stream.type.specifier IDENTIFIER    {
                                                   line("Line:%-3d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
-                                                  $$ = NULL ;
+                                                  idNode *id=new idNode(*($2),(Loc*)&(@2));
+                                                  /* 需要添加符号表插入操作 */
+                                                  ((strdclNode*)($1))->insert(id);
+
+                                                  $$ = $1 ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
                                                   line("Line:%-3d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
-                                                  $$ = NULL ;
+                                                  idNode *id=new idNode(*($3),(Loc*)&(@3));
+                                                  /* 需要添加符号表插入操作 */
+                                                  ((strdclNode*)($1))->insert(id);
+                                                  $$ = $1 ;
                                               }
         ;
 stream.type.specifier:
           STREAM '<' stream.declaration.list '>'{
                                                     line("Line:%-3d",@1.first_line);
                                                     debug ("stream.type.specifier ::=  STREAM '<' stream.declaration.list '>' \n");
-                                                    $$ = NULL ;
+                                                    $$ = $3 ;
                                                 }
         ;
 stream.declaration.list:
@@ -216,23 +222,23 @@ stream.declaration.list:
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier %s \n",$2->c_str());
                                         /* 需要添加符号表查找操作*/
-                                        $$ = new strdclNode((primaryNode*)$1,(identifierNode*)$2,NULL,(Loc*)&(@2)) ;
+                                        $$ = new strdclNode((primNode*)$1,(idNode*)$2,NULL,(Loc*)&(@2)) ;
                                     }
         | type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier %s array.declarator \n",$2->c_str());
-                                        $$ = new strdclNode((primaryNode*)$1,(identifierNode*)$2,(adclNode*)$3,(Loc*)&(@2)) ;
+                                        $$ = new strdclNode((primNode*)$1,(idNode*)$2,(adclNode*)$3,(Loc*)&(@2)) ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER {
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s \n",$4->c_str());
-                                        ((strdclNode*)($1))->append((primaryNode*)$3,(identifierNode*)$4,NULL);
+                                        ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,NULL);
                                         $$ = $1 ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s array.declarator \n",$4->c_str());
-                                        ((strdclNode*)($1))->append((primaryNode*)$3,(identifierNode*)$4,(adclNode*)$5);
+                                        ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,(adclNode*)$5);
                                         $$ = $1 ;
                                     }
         ;
@@ -662,7 +668,7 @@ exp.assignable:
             { 
                   line("Line:%-3d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str());
                   //if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
-                  $$ = new identifierNode(*($1),(Loc*)&(@1));
+                  $$ = new idNode(*($1),(Loc*)&(@1));
 
             }
         | IDENTIFIER  array.declarator      
@@ -795,7 +801,7 @@ exp:      exp.assignable
                         }
         | '(' basic.type.name ')' exp                         { 
                                                                   line("Line:%-3d",@1.first_line);debug ("exp ::= ( type ) exp\n");
-                                                                  $$ = new castNode((primaryNode*)$2,(expNode*)$4,(Loc*)&(@3)); 
+                                                                  $$ = new castNode((primNode*)$2,(expNode*)$4,(Loc*)&(@3)); 
                                                               }
         | exp assignment.operator exp                         { 
                                                                   line("Line:%-3d",@1.first_line);
@@ -910,7 +916,7 @@ type.specifier:
         | CONST basic.type.name {
                                     line("Line:%-3d",@2.first_line);
                                     debug ("type.specifier ::=  CONST basic.type.name \n");
-                                    (static_cast<primaryNode*>$2)->isConst=true;
+                                    (static_cast<primNode*>$2)->isConst=true;
                                     $$ = $2 ; /* const 暂时还未处理*/
                                 }
         ;
@@ -918,32 +924,32 @@ basic.type.name:
           INT   {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  INT \n");
-                      $$ = new primaryNode("int",(Loc*)&(@1) );
+                      $$ = new primNode("int",(Loc*)&(@1) );
                 }
         | LONG  {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG \n");
-                      $$ = new primaryNode("LONG",(Loc*)&(@1) ) ;
+                      $$ = new primNode("LONG",(Loc*)&(@1) ) ;
                 }
         | LONG LONG {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
-                      $$ = new primaryNode("LONG LONG",(Loc*)&(@1) ) ;
+                      $$ = new primNode("LONG LONG",(Loc*)&(@1) ) ;
                     }
         | FLOAT {
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  FLOAT \n");
-                      $$ = new primaryNode("FLOAT",(Loc*)&(@1) ) ;
+                      $$ = new primNode("FLOAT",(Loc*)&(@1) ) ;
                 }
         | DOUBLE{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  DOUBLE \n");
-                      $$ = new primaryNode("DOUBLE",(Loc*)&(@1) ) ;
+                      $$ = new primNode("DOUBLE",(Loc*)&(@1) ) ;
                 }
         | STRING{
                       line("Line:%-3d",@1.first_line);
                       debug ("basic.type.name ::=  STRING \n");
-                      $$ = new primaryNode("STRING",(Loc*)&(@1) ) ;
+                      $$ = new primNode("STRING",(Loc*)&(@1) ) ;
                 }
         ;
 %%

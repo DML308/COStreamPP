@@ -17,13 +17,13 @@ public:
     SymbolTable(){}
     ~SymbolTable(){}
     bool LookupSymbol(string  name);
-    void InsertSymbol(identifierNode* node);
-    identifierNode* operator[](string str);
+    void InsertSymbol(idNode* node);
+    idNode* operator[](string str);
     map<string,bool>firstScanFuncTable;
     map<string,bool>firstScanCompTable;
 
 private:
-    map<string,list<identifierNode*> >idTable;
+    map<string,list<idNode*> >idTable;
     map<string,functionNode*> funcTable;
     map<string,compositeNode*> compTable;
     

@@ -35,17 +35,17 @@ class Node
     virtual const char *toString() = 0;
 };
 
-class primaryNode : public Node
+class primNode : public Node
 {
   public:
     string name;
     bool isConst;
-    primaryNode(string str, Loc *loc) : name(str), isConst(false)
+    primNode(string str, Loc *loc) : name(str), isConst(false)
     {
         this->type = primary;
         setLoc(loc);
     }
-    ~primaryNode() {}
+    ~primNode() {}
     void print() { cout << "primNodeType :" << name << endl; }
     const char *toString();
 };
@@ -78,20 +78,20 @@ class constantNode : public Node
     const char *toString();
 };
 
-class identifierNode : public Node
+class idNode : public Node
 {
   public:
     string name;
     int level;
     int version;
-    identifierNode(string name, Loc *loc) : name(name)
+    idNode(string name, Loc *loc) : name(name)
     {
         this->type = Id;
         setLoc(loc);
         this->level = Level;
         this->version = current_version[Level];
     }
-    ~identifierNode() {}
+    ~idNode() {}
     void print() {}
     const char *toString()
     {
@@ -164,18 +164,18 @@ class expNode : public Node
 class declareNode : public Node
 {
   public:
-    primaryNode *prim;
-    list<identifierNode *> id_List;
+    primNode *prim;
+    list<idNode *> id_List;
     list<adclNode *> adcl_List;
     list<initNode *> init_List;
-    declareNode(primaryNode *prim, identifierNode *id, adclNode *adcl, initNode *init, Loc *loc)
+    declareNode(primNode *prim, idNode *id, adclNode *adcl, initNode *init, Loc *loc)
     {
         this->setLoc(loc);
         this->type = Decl;
         this->prim = prim;
         this->append(id, adcl, init);
     }
-    void append(identifierNode *id, adclNode *adcl, initNode *init)
+    void append(idNode *id, adclNode *adcl, initNode *init)
     {
         id_List.push_back(id);
         adcl_List.push_back(adcl);
@@ -242,9 +242,9 @@ class ternaryNode : public Node
 class castNode : public Node
 {
   public:
-    primaryNode *prim;
+    primNode *prim;
     expNode *exp;
-    castNode(primaryNode *prim, expNode *exp, Loc *loc)
+    castNode(primNode *prim, expNode *exp, Loc *loc)
     {
         setLoc(loc);
         this->type = Cast;
@@ -628,10 +628,11 @@ class compositeCallNode : public Node
 class strdclNode : public Node
 {
   public:
-    list<primaryNode *> prim_List;
-    list<identifierNode *> id_List;
+    list<primNode *> prim_List;
+    list<idNode *> id_List;
     list<adclNode *> adcl_List;
-    strdclNode(primaryNode *prim, identifierNode *id, adclNode *adcl, Loc *loc)
+    list<idNode*>   decl_List;
+    strdclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
     {
         this->setLoc(loc);
         this->type = StrDcl;
@@ -639,11 +640,14 @@ class strdclNode : public Node
         id_List.push_back(id);
         adcl_List.push_back(adcl);
     }
-    void append(primaryNode *prim, identifierNode *id, adclNode *adcl)
+    void append(primNode *prim, idNode *id, adclNode *adcl)
     {
         prim_List.push_back(prim);
         id_List.push_back(id);
         adcl_List.push_back(adcl);
+    }
+    void insert(idNode* decl){
+        decl_List.push_back(decl);
     }
     ~strdclNode() {}
     void print() {}
