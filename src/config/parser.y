@@ -408,15 +408,16 @@ composite.definition:
       composite.head composite.body {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
-                                          $$ = NULL ;
+                                          $$ = new compDclNode((compHeadNode*)$1,(compBodyNode*)$2) ;
                                     }
     ;
 composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'   {
-                                                                line("Line:%-3d",@1.first_line);
-                                                                debug ("composite.head ::= COMPOSITE %s '(' composite.head.inout ')' \n",$2->c_str());
-                                                                $$ = NULL ;
-                                                          }
+            line("Line:%-3d",@1.first_line);
+            debug ("composite.head ::= COMPOSITE %s '(' composite.head.inout ')' \n",$2->c_str());
+            idNode *id = new idNode(*($2),(Loc*)&(@2));
+            $$ = new compHeadNode(id,(ComInOutNode*)$4) ;
+      }
     ;
 composite.head.inout:
       /*empty*/                                                                           { $$ = NULL ;}
@@ -451,7 +452,7 @@ composite.head.inout.member:
 /*                        1.3.2.3 composite.body.statement.list          */
 /*************************************************************************/
 composite.body:
-          lblock composite.body.param.opt composite.body.statement.list rblock     { $$ = NULL ; }
+          lblock composite.body.param.opt composite.body.statement.list rblock     { $$ = new compBodyNode((paramNode*)$2,$3) ; }
         ;
 composite.body.param.opt:
           /*empty*/                 { $$ = NULL ; }
@@ -464,7 +465,7 @@ composite.body.param.opt:
 composite.body.statement.list:
           costream.composite.statement                                { 
                                                                         list<Node *> *body_List=new list<Node *>();
-                                                                        body_List->push_back($1);
+                                                                        if(!$1) body_List->push_back($1);
                                                                         $$ = body_List ; 
                                                                       }
         | composite.body.statement.list costream.composite.statement  { 
@@ -658,9 +659,11 @@ iteration.statement:
         | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement     {
                   line("Line:%-3d",@1.first_line);
                   debug ("iteration.statement ::= for(...)  costream.composite.statement \n");
-                  $$ = new forNode((expNode*)$3,(expNode*)$5,(expNode*)$7,$9,(Loc*)&(@1)) ;
+                  $$ = new forNode($3,(expNode*)$5,(expNode*)$7,$9,(Loc*)&(@1)) ;
             }
-        | FOR '(' declaration  ';' exp ';' exp ')'  costream.composite.statement  {  $$ = NULL ; }
+        | FOR '(' declaration  ';' exp ';' exp ')'  costream.composite.statement  {  
+                  $$ = new forNode($3,(expNode*)$5,(expNode*)$7,$9,(Loc*)&(@1)) ; 
+            }
         | FOR '(' error ')' costream.composite.statement                          {  $$ = NULL ; }
         ;
 jump.statement:
@@ -700,12 +703,20 @@ exp.assignable:
                   $$=$2;
             }  
         ; 
-exp:      exp.assignable                    
-            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = $1 ; }
-        | exp.assignable '.' IDENTIFIER     
-            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); $$ = NULL ; }
+exp:      exp.assignable                    {
+              line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = $1 ; 
+              }
+        | exp.assignable '.' IDENTIFIER     { 
+              line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); 
+              idNode *id=new idNode(*($3),(Loc*)&(@3));
+              $$ = new pointNode($1,id,(Loc*)&(@2)) ; 
+            }
         | exp.assignable '.' IDENTIFIER array.declarator 
-            { line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); $$ = NULL ; }
+            { 
+              line("Line:%-3d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); 
+              ((adclNode*)$4)->name= *($3);
+              $$ = new pointNode($1,$4,(Loc*)&(@2)) ; 
+            }
         | constant        { line("Line:%-3d",@1.first_line);debug ("exp ::= constant\n"); $$ = $1 ; }
         | exp '+' exp   { 
                               line("Line:%-3d",@1.first_line);debug ("exp ::= exp + exp\n"); 
@@ -841,10 +852,11 @@ exp:      exp.assignable
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  $$ = NULL ; 
+                  /* 这里处理不知道会不会有问题  暂时先这么处理 */
+                  $$ = $4 ; 
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = NULL ; 
+                  $$ = $5 ; 
             }
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);
@@ -882,13 +894,13 @@ operator.selfdefine.body:
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { init work window.list }\n");
-            $$ = new comBodyNode(NULL,$2,$3,(windowNode*)$4) ;
+            $$ = new operBodyNode(NULL,$2,$3,(windowNode*)$4) ;
         }
      | lblock statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list rblock
         {
             line("Line:%-3d",@1.first_line);
             debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n");
-            $$ = new comBodyNode($2,$3,$4,(windowNode*)$5);
+            $$ = new operBodyNode($2,$3,$4,(windowNode*)$5);
         }
      ;
 

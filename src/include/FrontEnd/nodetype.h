@@ -3,7 +3,7 @@
 /* definition of Node data structure */
 typedef enum {
   /* expression nodes */
-  constant, Id, Binop, Unary, Cast, Comma, Ternary, Array, Call, Initializer,
+  constant, Id, Binop, Point,Unary, Cast, Comma, Ternary, Array,Initializer,
   ImplicitCast,
   /* statement nodes */
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
@@ -15,16 +15,15 @@ typedef enum {
   /* declaration node */
   Decl,
   /* function */
-  FuncDcl,
-  /* random text and preprocessor command node */
-  Text,
+  FuncDcl, Call,
   /*----------12----SPL node----------*/
   StrDcl,		/*stream SPL*/
-  Comdcl,		/*composite SPL*/
+  Compdcl,		/*composite SPL*/
   Composite,	/* composite def node SPL*/
   ComInOut,		/*composite SPL*/
   InOutdcl,
-  ComBody,		/*composite.block SPL*/
+  CompHead,
+  CompBody,		/*composite.block SPL*/
   Param,		/*composite.body.param SPL*/
   ParamDcl,
   OperBody,		/*operator SPL*/

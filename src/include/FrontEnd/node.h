@@ -201,6 +201,26 @@ class unaryNode : public Node
     void print() {}
     const char *toString() {}
 };
+/*  这里pointNode可以和binopnode可以合成一个，但是需要将binopNode的expnode改为node
+    因此在这里单独处理
+*/
+class pointNode : public Node
+{
+  public:
+    Node *assign;
+    Node *id;
+    pointNode(Node *assign, Node *id, Loc *loc)
+    {
+        this->setLoc(loc);
+        this->type = Point;
+        this->assign=assign;
+        this->id=id;
+    }
+    ~pointNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
 class binopNode : public Node
 {
   public:
@@ -421,11 +441,11 @@ class doNode : public Node
 class forNode : public Node
 {
   public:
-    expNode *init;
+    Node *init;
     expNode *cond;
     expNode *next;
     Node *stmt;
-    forNode(expNode *init, expNode *cond, expNode *next, Node *stmt, Loc *loc)
+    forNode(Node *init, expNode *cond, expNode *next, Node *stmt, Loc *loc)
     {
         this->setLoc(loc);
         this->type = For;
@@ -467,7 +487,7 @@ class pipelineNode : public Node
     }
     ~pipelineNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class roundrobinNode : public Node
@@ -482,7 +502,7 @@ class roundrobinNode : public Node
     }
     ~roundrobinNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class duplicateNode : public Node
@@ -497,7 +517,7 @@ class duplicateNode : public Node
     }
     ~duplicateNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class splitNode : public Node
@@ -523,7 +543,7 @@ class splitNode : public Node
     }
     ~splitNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class joinNode : public Node
@@ -538,7 +558,7 @@ class joinNode : public Node
     }
     ~joinNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class splitjoinNode : public Node
@@ -559,7 +579,7 @@ class splitjoinNode : public Node
     }
     ~splitjoinNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class addNode : public Node
@@ -575,7 +595,7 @@ class addNode : public Node
     }
     ~addNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class slidingNode : public Node
@@ -590,7 +610,7 @@ class slidingNode : public Node
     }
     ~slidingNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class tumblingNode : public Node
@@ -605,7 +625,7 @@ class tumblingNode : public Node
     }
     ~tumblingNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class compositeCallNode : public Node
@@ -622,7 +642,7 @@ class compositeCallNode : public Node
     }
     ~compositeCallNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class strdclNode : public Node
@@ -652,7 +672,7 @@ class strdclNode : public Node
     }
     ~strdclNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class winStmtNode : public Node
@@ -670,7 +690,7 @@ class winStmtNode : public Node
 
     ~winStmtNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class windowNode : public Node
@@ -684,11 +704,11 @@ class windowNode : public Node
     }
     ~windowNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class paramNode;
-class comBodyNode : public Node
+class operBodyNode : public Node
 {
   public:
     paramNode *param;
@@ -696,17 +716,17 @@ class comBodyNode : public Node
     Node *init;
     Node *work;
     windowNode *win;
-    comBodyNode(list<Node *> *stmt_List, Node *init, Node *work, windowNode *win)
+    operBodyNode(list<Node *> *stmt_List, Node *init, Node *work, windowNode *win)
     {
-        this->type = ComBody;
+        this->type = OperBody;
         this->stmt_List = stmt_List;
         this->init = init;
         this->work = work;
         this->win = win;
     }
-    ~comBodyNode() {}
+    ~operBodyNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class callNode : public Node
@@ -723,7 +743,7 @@ class callNode : public Node
     }
     ~callNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class inOutdeclNode : public Node
@@ -739,7 +759,7 @@ class inOutdeclNode : public Node
     }
     ~inOutdeclNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class ComInOutNode : public Node
@@ -756,7 +776,7 @@ class ComInOutNode : public Node
     }
     ~ComInOutNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class paramDeclNode : public Node
@@ -775,7 +795,7 @@ class paramDeclNode : public Node
     }
     ~paramDeclNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 class paramNode : public Node
 {
@@ -788,22 +808,8 @@ class paramNode : public Node
     }
     ~paramNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
-
-// class ComdclNode : public Node
-// {
-//   public:
-//     paramNode *param;
-//     list<Node *> *body_List;
-//     ComdclNode(paramNode *param, list<Node *> *body_List)
-//     {
-//         this->type = Comdcl;
-//         this->param = param;
-//         this->body_List = body_List;
-//     }
-//     ~ComdclNode() {}
-// };
 
 class funcBodyNode : public Node
 {
@@ -815,7 +821,23 @@ class funcBodyNode : public Node
     }
     ~funcBodyNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
+};
+
+class compBodyNode : public Node
+{
+  public:
+    paramNode *param;
+    list<Node *> *bodystmt_List;
+    compBodyNode(paramNode *param, list<Node *> *bodystmt_List)
+    {
+        this->type = CompBody;
+        this->param = param;
+        this->bodystmt_List = bodystmt_List;
+    }
+    ~compBodyNode() {}
+    void print() {}
+    const char *toString() {}
 };
 
 class funcDclNode : public Node
@@ -835,7 +857,7 @@ class funcDclNode : public Node
     }
     ~funcDclNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
 
 class compCallNode : public Node
@@ -853,6 +875,39 @@ class compCallNode : public Node
     }
     ~compCallNode() {}
     void print() {}
-    const char *toString(){};
+    const char *toString() {}
 };
+
+class compHeadNode : public Node
+{
+  public:
+    idNode *id;
+    ComInOutNode *inout;
+    compHeadNode(idNode *id, ComInOutNode *inout)
+    {
+        this->type = CompHead;
+        this->id = id;
+        this->inout = inout;
+    }
+    ~compHeadNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
+class compDclNode : public Node
+{
+  public:
+    compHeadNode *head;
+    compBodyNode *body;
+    compDclNode(compHeadNode *head, compBodyNode *body)
+    {
+        this->type = Compdcl;
+        this->head = head;
+        this->body = body;
+    }
+    ~compDclNode() {}
+    void print() {}
+    const char *toString() {}
+};
+
 #endif
