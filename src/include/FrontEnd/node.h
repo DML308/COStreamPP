@@ -804,4 +804,37 @@ class paramNode : public Node
 //     }
 //     ~ComdclNode() {}
 // };
+
+class funcBodyNode : public Node
+{
+  public:
+    list<Node *> *stmt_List;
+    funcBodyNode(list<Node *> *stmt_List)
+    {
+        this->stmt_List = stmt_List;
+    }
+    ~funcBodyNode() {}
+    void print() {}
+    const char *toString(){};
+};
+
+class funcDclNode : public Node
+{
+  public:
+    primNode *prim;
+    idNode *id;
+    list<Node *> *param_List;
+    funcBodyNode *funcBody;
+    funcDclNode(primNode *prim, idNode *id, list<Node *> *param_List, funcBodyNode *funcBody)
+    {
+        this->type = FuncDcl;
+        this->prim = prim;
+        this->id = id;
+        this->param_List = param_List;
+        this->funcBody = funcBody;
+    }
+    ~funcDclNode() {}
+    void print() {}
+    const char *toString(){};
+};
 #endif

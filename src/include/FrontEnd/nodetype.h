@@ -14,8 +14,8 @@ typedef enum {
   Adcl, basic, Arr,
   /* declaration node */
   Decl,
-  /* GCC __attribute__ extension */
-  Proc,
+  /* function */
+  FuncDcl,
   /* random text and preprocessor command node */
   Text,
   /*----------12----SPL node----------*/

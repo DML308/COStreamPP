@@ -327,12 +327,14 @@ function.definition:
           type.specifier IDENTIFIER '(' ')' function.body {
                 line("Line:%-3d",@1.first_line);
                 debug ("function.definition ::= type.specifier %s '(' ')' function.body \n",$2->c_str());
-                $$ = NULL ;
+                idNode *id = new idNode(*($2),(Loc*)&(@2));
+                $$ = new funcDclNode((primNode*)$1,id,NULL,(funcBodyNode*)$5) ;
         }
         | type.specifier IDENTIFIER '(' parameter.list ')' function.body  {
                 line("Line:%-3d",@1.first_line);
                 debug ("function.definition ::= type.specifier %s '(' parameter.list ')' function.body \n",$2->c_str());
-                $$ = NULL ;
+                idNode *id = new idNode(*($2),(Loc*)&(@2));
+                $$ = new funcDclNode((primNode*)$1,id,$4,(funcBodyNode*)$6) ;
         }
         ;
 
@@ -375,12 +377,12 @@ function.body:
           lblock rblock                   {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' '}' \n");
-                                          $$ = NULL ;
+                                          $$ = new funcBodyNode(NULL) ;
                                           }
         | lblock statement.list rblock    {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("function.body ::= '{' statement.list '}' \n");
-                                          $$ = NULL ;
+                                          $$ = new funcBodyNode($2) ;
                                     }
         ;
 
