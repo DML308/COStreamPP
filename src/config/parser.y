@@ -115,15 +115,12 @@ translation.unit:
           external.definition   {
                                       line("Line:%-3d",@1.first_line);
                                       debug ("translation.unit ::= external.definition\n");
-                                      list<Node*> *ext_List=new list<Node*>();
-                                      ext_List->push_back($1);
-                                      $$ = ext_List ;
+                                      $$ = new list<Node*>({$1});
                                 }
         | translation.unit external.definition  {
                                                       line("Line:%-3d",@1.first_line);
                                                       debug ("translation.unit ::= translation.unit external.definition\n");
-                                                      $1->push_back($2);
-                                                      $$ = $1 ;
+                                                      $$->push_back($2);
                                                 }
         ;
 external.definition:
@@ -343,15 +340,12 @@ parameter.list:
           parameter.declaration   {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.declaration \n");
-                list<Node*> *param_List = new list<Node*>();
-                param_List->push_back($1);
-                $$=param_List;
+                $$=new list<Node*>({$1});
           }
         | parameter.list ',' parameter.declaration {
                 line("Line:%-3d",@1.first_line);
                 debug ("parameter.list ::= parameter.list ',' parameter.declaration \n");
-                $1->push_back($3);
-                $$ = $1 ;
+                $$->push_back($3);
           }
         | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
@@ -388,15 +382,8 @@ function.body:
         ;
 
 statement.list:
-          statement                   { 
-                                          list<Node*> *stmt_list=new list<Node*> ();
-                                          stmt_list->push_back($1);
-                                          $$ = stmt_list ;
-                                      }
-        | statement.list statement    { 
-                                          $1->push_back($2);
-                                          $$=$1;
-                                      }
+          statement                   {   $$ = new list<Node*> ({$1});  }
+        | statement.list statement    {   $$->push_back($2);            }
         ;
 
 
@@ -428,15 +415,8 @@ composite.head.inout:
     | OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list  { $$ = new ComInOutNode($5,$2,   (Loc*)&(@1))  ; }
     ;
 composite.head.inout.member.list:
-      composite.head.inout.member         { 
-                  list<Node*> *inout_List = new list<Node*>();
-                  inout_List->push_back($1);
-                  $$ = inout_List ; 
-            }
-    | composite.head.inout.member.list ',' composite.head.inout.member     { 
-                  $1->push_back($3);
-                  $$ = $1; 
-            }
+      composite.head.inout.member                                       {     $$ = new list<Node*>({$1});   }
+    | composite.head.inout.member.list ',' composite.head.inout.member  {     $$->push_back($3);            }
     ;
 composite.head.inout.member:
       stream.type.specifier IDENTIFIER    { 
@@ -467,15 +447,8 @@ composite.body.statement.list:
           costream.composite.statement                                { 
                                                                         $$=new list<Node *>();
                                                                         if($1!=NULL) $$->push_back($1);
-                                                                        // list<Node *> *body_List=new list<Node *>();
-                                                                        // if(!$1) body_List->push_back($1);
-                                                                        // $$ = body_List ; 
                                                                       }
-        | composite.body.statement.list costream.composite.statement  { 
-                                                                        // $1->push_back($2);
-                                                                        // $$ = $1 ; 
-                                                                        $$ ->push_back($2);
-                                                                      }
+        | composite.body.statement.list costream.composite.statement  { $$ ->push_back($2); }
         ;
 costream.composite.statement:
           composite.body.operator   {
@@ -538,28 +511,22 @@ splitjoinPipeline.statement.list:
           statement                                       {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= statement \n");
-                                                                list<Node*> *split_pipe=new list<Node*>();
-                                                                split_pipe->push_back($1);
-                                                                $$ = split_pipe ;
+                                                                $$ = new list<Node*>({$1});
                                                           }
         | operator.add                                    {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= operator.add \n");
-                                                                list<Node*> *add_list=new list<Node*>();
-                                                                add_list->push_back($1);
-                                                                $$ = add_list ;
+                                                                $$ = new list<Node*>({$1});
                                                           }
         | splitjoinPipeline.statement.list statement      {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= splitjoinPipeline.statement.list statement \n");
-                                                                $1->push_back($2);
-                                                                $$ = $1;
+                                                                $$->push_back($2);
                                                           }
         | splitjoinPipeline.statement.list operator.add   {
                                                                 line("Line:%-3d",@1.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= splitjoinPipeline.statement.list operator.add \n");
-                                                                $1->push_back($2);
-                                                                $$ = $1;
+                                                                $$->push_back($2);
                                                           }
         ;
 operator.splitjoin:
@@ -586,15 +553,8 @@ join.statement:
           JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,(Loc*)&(@1)) ;}
         ;
 argument.expression.list:
-          exp                                               { 
-                                                              list<Node*> *arg_List=new list<Node*>();
-                                                              arg_List->push_back($1);
-                                                              $$ = arg_List ; 
-                                                            }
-        | argument.expression.list ',' exp                  { 
-                                                              $1->push_back($3);
-                                                              $$ = $1 ; 
-                                                            }
+          exp                                               {  $$ = new list<Node*>({$1}); }
+        | argument.expression.list ',' exp                  {  $$ ->push_back($3);         }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
@@ -930,15 +890,8 @@ operator.selfdefine.body.window.list:
     ;
 
 operator.selfdefine.window.list:
-      operator.selfdefine.window                {
-                                                      list<Node*> *win_List=new list<Node*>();
-                                                      win_List->push_back($1);
-                                                      $$=win_List;
-      }
-    | operator.selfdefine.window.list operator.selfdefine.window{
-                                                      $1->push_back($2);
-                                                      $$=$1;
-                                                }
+      operator.selfdefine.window                                        {     $$ = new list<Node*>({$1}); }
+    | operator.selfdefine.window.list operator.selfdefine.window        {     $$->push_back($2);          }
     ;
 
 operator.selfdefine.window:
