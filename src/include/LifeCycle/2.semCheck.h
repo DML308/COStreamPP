@@ -1,4 +1,3 @@
-#include <list>
 #include "node.h"
 #include "defines.h"
 extern list<Node*> *Program;
@@ -8,8 +7,8 @@ class SemCheck{
 public:
     SemCheck(){}
     ~SemCheck(){
-        
+
     }
-    void findMainComposite(list<Node*> *program);
+    static void findMainComposite(list<Node*> *program);
     
 };

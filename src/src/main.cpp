@@ -1,4 +1,4 @@
-#include<iostream>
+#include <iostream>
 #include "node.h"
 #include <list>
 #include "token.h"
@@ -8,11 +8,11 @@
 #include "symbol.h"
 #include "global.h"
 
-extern FILE *yyin;      // flex uses yyin as input file's pointer
-extern int  yyparse();   // parser.cc provides yyparse()
-string PhaseName = "undefined"; //阶段名
-list<Node*> *Program=NULL;  //用于存储语法树节点
-compositeNode *gMainComposite = NULL;   //compositeMain
+extern FILE *yyin;                    // flex uses yyin as input file's pointer
+extern int yyparse();                 // parser.cc provides yyparse()
+string PhaseName = "undefined";       //阶段名
+list<Node *> *Program = NULL;         //用于存储语法树节点
+compositeNode *gMainComposite = NULL; //compositeMain
 SymbolTable S;
 
 //===----------------------------------------------------------------------===//
@@ -31,7 +31,8 @@ int main(int argc, char *argv[])
     // (1) 做第一遍扫描(当输入文件存在时)(函数和 composite 变量名存入符号表 S)
     if (infile_name == NULL)
         infp = stdin;
-    else{
+    else
+    {
         infp = changeTabToSpace();
         infp = recordFunctionAndCompositeName();
     }
@@ -41,14 +42,11 @@ int main(int argc, char *argv[])
     yyin = infp;
     yyparse();
 
-    // (3) 语意检查
-     PhaseName = "SemCheck";
-     SemCheck check;
-     check.findMainComposite(Program);
-     
-     
+    // (3) 语义检查
+    PhaseName = "SemCheck";
+    SemCheck::findMainComposite(Program);
 
-    //（10）语法树到平面图 SSG 是 StaticStreamGraph 对象
+    //（4）语法树到平面图 SSG 是 StaticStreamGraph 对象
     PhaseName = "AST2FlatSSG";
 
     //===----------------------------------------------------------------------===//
@@ -60,7 +58,6 @@ int main(int argc, char *argv[])
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
-   
 
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
