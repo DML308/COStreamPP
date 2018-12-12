@@ -3,8 +3,6 @@
 
 #include "global.h"
 #include <regex>
-//#include "symbol.h"
-//extern SymbolTable S;
 
 FILE *changeTabToSpace();
 FILE *recordFunctionAndCompositeName();
