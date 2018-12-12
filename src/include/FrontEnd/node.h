@@ -875,12 +875,14 @@ class compHeadNode : public Node
 {
   public:
     idNode *id;
+    string compName;
     ComInOutNode *inout;
     compHeadNode(idNode *id, ComInOutNode *inout)
     {
         this->type = CompHead;
         this->id = id;
         this->inout = inout;
+        this->compName=id->name;
     }
     ~compHeadNode() {}
     void print() {}
@@ -892,11 +894,13 @@ class compositeNode : public Node
   public:
     compHeadNode *head;
     compBodyNode *body;
+    string compName;
     compositeNode(compHeadNode *head, compBodyNode *body)
     {
         this->type = Composite;
         this->head = head;
         this->body = body;
+        this->compName=head->compName;
     }
     ~compositeNode() {}
     void print() {}

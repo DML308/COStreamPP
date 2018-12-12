@@ -1,10 +1,10 @@
 %{
-#define DEBUG
+//#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
-#include <list>
-#include "global.h"
+//#include <list>
+
 extern SymbolTable S;
 extern list<Node*> *Program;
 extern int yylex ();

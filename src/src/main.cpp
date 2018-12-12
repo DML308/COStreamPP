@@ -4,6 +4,7 @@
 #include "token.h"
 #include "0.handle_options.h"
 #include "1.firstScan.h"
+#include "2.semCheck.h"
 #include "symbol.h"
 #include "global.h"
 
@@ -39,6 +40,13 @@ int main(int argc, char *argv[])
     PhaseName = "Parsing";
     yyin = infp;
     yyparse();
+
+    // (3) 语意检查
+     PhaseName = "SemCheck";
+     SemCheck check;
+     check.findMainComposite(Program);
+     
+     
 
     //（10）语法树到平面图 SSG 是 StaticStreamGraph 对象
     PhaseName = "AST2FlatSSG";

@@ -9,7 +9,7 @@ typedef enum {
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
   Break, Return, Block,
   /* type nodes */
-  primary, Fdcl,
+  primary, 
   /* array */
   Adcl, basic, Arr,
   /* declaration node */
