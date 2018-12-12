@@ -10,6 +10,8 @@
 extern FILE *yyin;      // flex uses yyin as input file's pointer
 extern int  yyparse();   // parser.cc provides yyparse()
 string PhaseName = "undefined"; //阶段名
+list<Node*> *Program=NULL;  //用于存储语法树节点
+compositeNode *gMainComposite = NULL;   //compositeMain
 SymbolTable S;
 
 //===----------------------------------------------------------------------===//
@@ -38,6 +40,9 @@ int main(int argc, char *argv[])
     yyin = infp;
     yyparse();
 
+    //（10）语法树到平面图 SSG 是 StaticStreamGraph 对象
+    PhaseName = "AST2FlatSSG";
+
     //===----------------------------------------------------------------------===//
     // 编译前端 end
     //===----------------------------------------------------------------------===//
@@ -47,6 +52,7 @@ int main(int argc, char *argv[])
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
+   
 
     // (last) 全局垃圾回收
     PhaseName = "Recycling";

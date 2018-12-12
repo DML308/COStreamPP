@@ -4,8 +4,9 @@
 #include "node.h"
 #include "symbol.h"
 #include <list>
-//using std::list;
+#include "global.h"
 extern SymbolTable S;
+extern list<Node*> *Program;
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -34,7 +35,7 @@ extern void yyerror (const char *msg);
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
-%type<list> prog.start translation.unit 
+%type<list> translation.unit 
 %type<node> external.definition
 /* 语法分析器自己的结构   1.1.declaration */
 
@@ -108,7 +109,7 @@ extern void yyerror (const char *msg);
 /*                 1.2. function.definition 函数声明                      */
 /*                 1.3. composite.definition 数据流计算单元声明             */
 /*************************************************************************/
-prog.start: translation.unit { $$ = $1 ; };
+prog.start: translation.unit { Program = $1 ; };
 
 translation.unit:
           external.definition   {
@@ -408,7 +409,7 @@ composite.definition:
       composite.head composite.body {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
-                                          $$ = new compDclNode((compHeadNode*)$1,(compBodyNode*)$2) ;
+                                          $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2) ;
                                     }
     ;
 composite.head:
@@ -524,7 +525,7 @@ operator.add:
         | ADD operator.default.call {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.default.call \n");
-                                          $$ = new addNode((compositeCallNode*)$2,(Loc*)&(@1)) ;
+                                          $$ = new addNode((OperdclNode*)$2,(Loc*)&(@1)) ;
                                     }
         ;
 operator.pipeline:
@@ -594,13 +595,13 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                                                              $$ = new compositeCallNode(*($1),NULL,(Loc*)&(@1)); 
+                                                              $$ = new OperdclNode(*($1),NULL,(Loc*)&(@1)); 
                                                               /*需要查找符号表*/
                                                             }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
                                                               /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
                                                               ///*DEBUG*/printf("have found operator.default.call\n");
-                                                              $$ = new compositeCallNode(*($1),$3,(Loc*)&(@1));
+                                                              $$ = new OperdclNode(*($1),$3,(Loc*)&(@1));
                                                               /* 需要查找符号表 */
                                                             }
         ;
@@ -853,24 +854,24 @@ exp:      exp.assignable                    {
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
                   /* 这里处理不知道会不会有问题  暂时先这么处理 */
-                  $$ = $4 ; 
+                  $$ = new operatorNode(*($1),NULL,(operBodyNode*)$4) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = $5 ; 
+                  $$ = new operatorNode(*($1),$3,(operBodyNode*)$5) ; 
             }
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
-                  $$ = new compCallNode(*($1),NULL,NULL,(Loc*)&(@1)) ; 
+                  $$ = new compsiteCallNode(*($1),NULL,NULL,(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
-                  $$ = new compCallNode(*($1),NULL,$5,(Loc*)&(@1)) ; 
+                  $$ = new compsiteCallNode(*($1),NULL,$5,(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
-                  $$ = new compCallNode(*($1),$3,NULL,(Loc*)&(@1)) ; 
+                  $$ = new compsiteCallNode(*($1),$3,NULL,(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
-                  $$ = new compCallNode(*($1),$3,$6,(Loc*)&(@1)) ; 
+                  $$ = new compsiteCallNode(*($1),$3,$6,(Loc*)&(@1)) ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier

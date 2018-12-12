@@ -123,13 +123,6 @@ class functionNode : public Node
     ~functionNode() {}
 };
 
-class compositeNode : public Node
-{
-  public:
-    compositeNode() {}
-    ~compositeNode() {}
-};
-
 /* expNode向前声明 */
 class expNode;
 class adclNode : public Node
@@ -213,8 +206,8 @@ class pointNode : public Node
     {
         this->setLoc(loc);
         this->type = Point;
-        this->assign=assign;
-        this->id=id;
+        this->assign = assign;
+        this->id = id;
     }
     ~pointNode() {}
     void print() {}
@@ -628,19 +621,19 @@ class tumblingNode : public Node
     const char *toString() {}
 };
 
-class compositeCallNode : public Node
+class OperdclNode : public Node
 {
   public:
     string name;
     list<Node *> *arg_List;
-    compositeCallNode(string name, list<Node *> *arg_List, Loc *loc)
+    OperdclNode(string name, list<Node *> *arg_List, Loc *loc)
     {
         this->setLoc(loc);
-        this->type = CompositeCall;
+        this->type = Operdcl;
         this->name = name;
         this->arg_List = arg_List;
     }
-    ~compositeCallNode() {}
+    ~OperdclNode() {}
     void print() {}
     const char *toString() {}
 };
@@ -860,20 +853,20 @@ class funcDclNode : public Node
     const char *toString() {}
 };
 
-class compCallNode : public Node
+class compsiteCallNode : public Node
 {
   public:
     string compName;
     list<Node *> *stream_List;
     list<Node *> *param_List;
-    compCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
+    compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
         this->compName = compName;
         this->param_List = param_List;
     }
-    ~compCallNode() {}
+    ~compsiteCallNode() {}
     void print() {}
     const char *toString() {}
 };
@@ -894,20 +887,37 @@ class compHeadNode : public Node
     const char *toString() {}
 };
 
-class compDclNode : public Node
+class compositeNode : public Node
 {
   public:
     compHeadNode *head;
     compBodyNode *body;
-    compDclNode(compHeadNode *head, compBodyNode *body)
+    compositeNode(compHeadNode *head, compBodyNode *body)
     {
-        this->type = Compdcl;
+        this->type = Composite;
         this->head = head;
         this->body = body;
     }
-    ~compDclNode() {}
+    ~compositeNode() {}
     void print() {}
     const char *toString() {}
 };
 
+class operatorNode : public Node
+{
+  public:
+    string operName;
+    list<Node *> *arg_List;
+    operBodyNode *operBody;
+    operatorNode(string operName, list<Node *> *arg_List, operBodyNode *operBody)
+    {
+        this->type = Operator_;
+        this->operName = operName;
+        this->arg_List = arg_List;
+        this->operBody = operBody;
+    }
+    ~operatorNode() {}
+    void print() {}
+    const char *toString() {}
+};
 #endif
