@@ -5,15 +5,19 @@ static StaticStreamGraph *ssg = NULL;
 void GraphToOperators(compositeNode *composite, compositeNode *oldComposite)
 {
     /* 获取compositebody内的statementNode */
-    list<Node *> list = *(composite->body->bodystmt_List);
+    list<Node *> list = *(composite->body->stmt_List);
     cout<<"list.size()= "<<list.size()<<endl;
     for (auto it : (list))
     {
         cout<<it->type<<endl;
         switch (it->type)
         {
+        case Binop:
+            cout<<"Binop"<<endl;
+            break;
         case Operator_:
-            cout <<((operatorNode*)it)->operName<< "Operator_" << endl;
+            cout <<((operatorNode*)it)->operName<<"     "<< "Operator_" << endl;
+            //cout<<"Line:: "<<it->loc->first_line<<endl;
             break;
         case CompositeCall:
             cout << "compositeCall" << endl;

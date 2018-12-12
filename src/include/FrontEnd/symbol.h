@@ -18,6 +18,8 @@ public:
     ~SymbolTable(){}
     bool LookupSymbol(string  name);
     void InsertSymbol(idNode* node);
+    void InsertCompositeSymbol(string name,compositeNode*);
+    compositeNode* LookupCompositeSymbol(string name ) ;
     idNode* operator[](string str);
     map<string,bool>firstScanFuncTable;
     map<string,bool>firstScanCompTable;

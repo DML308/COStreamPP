@@ -805,8 +805,8 @@ exp:      exp.assignable                    {
                               line("Line:%-3d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2) ) ;
-                              if($3->type==CompositeCall ||$3->type==Pipeline ||$3->type==SplitJoin ||$3->type==Operator_ )
-                              $$->type = $3->type;
+                              // if($3->type==CompositeCall ||$3->type==Pipeline ||$3->type==SplitJoin ||$3->type==Operator_ )
+                              // $$->type = $3->type;
                         }
         | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
                                                                   $$ = new callNode(*($1),$3,(Loc*)&(@1)) ; 
@@ -819,8 +819,8 @@ exp:      exp.assignable                    {
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  /* 这里处理不知道会不会有问题  暂时先这么处理 */
                   $$ = new operatorNode(*($1),NULL,(operBodyNode*)$4) ; 
+                  //error("%s",((operatorNode*)$$)->operName.c_str());
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
                   $$ = new operatorNode(*($1),$3,(operBodyNode*)$5) ; 
@@ -903,18 +903,10 @@ operator.selfdefine.window:
     ;
 
 window.type:
-      SLIDING '('  ')'                          {
-                                                    $$ = new slidingNode(NULL,(Loc*)&(@1)) ;
-                                                }
-    | TUMBLING '('  ')'                         {
-                                                    $$ = new tumblingNode(NULL,(Loc*)&(@1)) ;
-                                                }
-    | SLIDING '(' argument.expression.list ')'  {
-                                                    $$ = new slidingNode($3,(Loc*)&(@1)) ;
-                                                }
-    | TUMBLING '(' argument.expression.list ')' {
-                                                    $$ = new tumblingNode($3,(Loc*)&(@1)) ;
-                                                }
+      SLIDING '('  ')'                          {     $$ = new slidingNode(NULL,(Loc*)&(@1)) ;  }
+    | TUMBLING '('  ')'                         {     $$ = new tumblingNode(NULL,(Loc*)&(@1)) ; }
+    | SLIDING '(' argument.expression.list ')'  {     $$ = new slidingNode($3,(Loc*)&(@1)) ;    }
+    | TUMBLING '(' argument.expression.list ')' {     $$ = new tumblingNode($3,(Loc*)&(@1)) ;   }
     ;
 
 
@@ -952,7 +944,7 @@ type.specifier:
                                     line("Line:%-3d",@2.first_line);
                                     debug ("type.specifier ::=  CONST basic.type.name \n");
                                     (static_cast<primNode*>$2)->isConst=true;
-                                    $$ = $2 ; /* const 暂时还未处理*/
+                                    $$ = $2 ; 
                                 }
         ;
 basic.type.name:

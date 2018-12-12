@@ -25,8 +25,12 @@ class Node
 	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
 	   on both MULT nodes. */
     bool parenthesized;
-    Node() {}
-    virtual ~Node() {}
+    Node() {
+        loc=new Loc();
+    }
+    virtual ~Node() {
+        delete loc;
+    }
     void setLoc(Loc *loc)
     {
         loc = loc;
@@ -821,12 +825,12 @@ class compBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *bodystmt_List;
-    compBodyNode(paramNode *param, list<Node *> *bodystmt_List)
+    list<Node *> *stmt_List;
+    compBodyNode(paramNode *param, list<Node *> *stmt_List)
     {
         this->type = CompBody;
         this->param = param;
-        this->bodystmt_List = bodystmt_List;
+        this->stmt_List = stmt_List;
     }
     ~compBodyNode() {}
     void print() {}
@@ -853,12 +857,14 @@ class funcDclNode : public Node
     const char *toString() {}
 };
 
+class compositeNode;
 class compsiteCallNode : public Node
 {
   public:
     string compName;
     list<Node *> *stream_List;
     list<Node *> *param_List;
+    compositeNode *actual_composite;    //保存composite展开节点
     compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
     {
         this->setLoc(loc);
