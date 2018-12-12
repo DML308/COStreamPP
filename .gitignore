@@ -14,3 +14,4 @@ src/src/FrontEnd/parser.cpp
 src/src/FrontEnd/lexer.cpp
 src/a
 .vscode
+*.temp
