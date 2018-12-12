@@ -3,7 +3,7 @@
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
-//#include <list>
+#include "nodetype.h"
 
 extern SymbolTable S;
 extern list<Node*> *Program;
@@ -465,13 +465,16 @@ composite.body.param.opt:
         ;
 composite.body.statement.list:
           costream.composite.statement                                { 
-                                                                        list<Node *> *body_List=new list<Node *>();
-                                                                        if(!$1) body_List->push_back($1);
-                                                                        $$ = body_List ; 
+                                                                        $$=new list<Node *>();
+                                                                        if($1!=NULL) $$->push_back($1);
+                                                                        // list<Node *> *body_List=new list<Node *>();
+                                                                        // if(!$1) body_List->push_back($1);
+                                                                        // $$ = body_List ; 
                                                                       }
         | composite.body.statement.list costream.composite.statement  { 
-                                                                        $1->push_back($2);
-                                                                        $$ = $1 ; 
+                                                                        // $1->push_back($2);
+                                                                        // $$ = $1 ; 
+                                                                        $$ ->push_back($2);
                                                                       }
         ;
 costream.composite.statement:
@@ -611,7 +614,7 @@ operator.default.call:
 /*************************************************************************/
 statement:
           labeled.statement
-        | compound.statement            /* 复合类型声明  */
+        | compound.statement   {debug("statement::=compound.statement");}         /* 复合类型声明  */
         | expression.statement
         | selection.statement
         | iteration.statement
@@ -619,6 +622,7 @@ statement:
         | declaration
         | ';'       {
                       $$ = NULL ;
+                      debug("statement :: NULL");
                     }
         | error ';' {  $$ = NULL ; }
         ;
@@ -841,6 +845,8 @@ exp:      exp.assignable                    {
                               line("Line:%-3d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2) ) ;
+                              if($3->type==CompositeCall ||$3->type==Pipeline ||$3->type==SplitJoin ||$3->type==Operator_ )
+                              $$->type = $3->type;
                         }
         | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
                                                                   $$ = new callNode(*($1),$3,(Loc*)&(@1)) ; 
