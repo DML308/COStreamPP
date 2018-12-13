@@ -12,7 +12,7 @@
 #endif
 //line-column info is grey
 #ifdef DEBUG
-#define line(format, args...) fprintf(stdout, "\033[32m" format " \033[0m", ##args)
+#define line(format, args...) fprintf(stdout, "\033[32m" format "\033[0m", ##args)
 #else
 #define line(format, args...)
 #endif
