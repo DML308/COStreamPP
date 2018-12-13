@@ -1,6 +1,6 @@
 #include "0.handle_options.h"
 
-float VersionNumber = 0.10;
+float VersionNumber = 0.30;
 const char *const CompiledDate = __DATE__;
 
 //处理命令行输入的选项

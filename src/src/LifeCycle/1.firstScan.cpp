@@ -44,7 +44,7 @@ FILE *recordFunctionAndCompositeName()
         // 情况1:如果现在是多行注释状态
         if (comment_flag == 1)
         {
-            regex comment2("\\*");
+            regex comment2("\\*/");
             if (regex_search(line, comment2))
                 comment_flag = 0;
         }
@@ -59,6 +59,11 @@ FILE *recordFunctionAndCompositeName()
             regex comment3("\\*");
             if (regex_search(line, comment3))
             {
+                //如果在这一行里直接检测到了多行注释的结尾
+                regex comment4("\\*/");
+                if(regex_search(line, comment4))
+                    continue;
+                //如果在这一行里检测不到多行注释的结尾
                 comment_flag = 1;
                 continue;
             }
