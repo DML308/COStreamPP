@@ -1,7 +1,7 @@
 #include "staticStreamGragh.h"
 static StaticStreamGraph *ssg = NULL;
 
-//只针对composite节点
+//对composite节点展开成数据流图
 void GraphToOperators(compositeNode *composite, compositeNode *oldComposite)
 {
     /* 获取compositebody内的statementNode */
