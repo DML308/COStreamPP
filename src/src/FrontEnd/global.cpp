@@ -1,7 +1,7 @@
 #include "global.h"
 
-char *infile_name = NULL;   // input file's name
-char *outfile_name = NULL;  // output file's name
+char *infile_name = "stdin";      // input file's name
+char *outfile_name = "stdout";    // output file's name
 FILE *infp = NULL;   // input file's pointer, default is stdin
 FILE *outfp = NULL;  // output file's pointer, default is stdout
 
@@ -18,6 +18,10 @@ static void show_line(int line, const char *file_name)
     line_str += ".temp.c";
     system(line_str.c_str());
 }
+/**
+ * @brief 输出一段波浪线来强调一行源码中的一段代码片段
+ * @param column 要强调位置的中心点
+ */
 static void printWaveLine(int column)
 {
     int i = 0;
@@ -25,16 +29,23 @@ static void printWaveLine(int column)
         line(" ");
     line("^\n");
 };
-void SyntaxError(const char *msg, const char *file_name, int line, int column = 0)
+/**
+ * @brief 发现输入的.cos文件有错误时输出报错信息
+ * @param msg       报错信息
+ * @param file_name 当前文件名,默认为 stdin
+ * @param line      出错行号
+ * @param column    需要强调的标识符的列号
+ */
+void SyntaxError(const char *msg, const char *file_name, int line, int column)
 {
-    line("Line:%-4d",line);
-    error("%s\n", msg);
+    error("[%s:%d]  error: %s\n", file_name, line, msg);
     show_line(line,file_name);
     printWaveLine(column);
 }
-void SyntaxWarning(const char *msg, const char *file_name, int line, int column = 0)
+/** 和上面函数类似,处理 Warning **/
+void SyntaxWarning(const char *msg, const char *file_name, int line, int column)
 {
-    line("Line:%-4d", line);
-    error("%s\n", msg);
+    warning("[%s:%d]  warning: %s\n", file_name, line, msg);
     show_line(line, file_name);
+    printWaveLine(column);
 }

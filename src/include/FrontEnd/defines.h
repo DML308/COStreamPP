@@ -17,9 +17,9 @@
 #define line(format, args...)
 #endif
 // error info is in red
-#define error(format, args...) fprintf(stderr, "\033[31m[ERROR]:  " format "\033[0m", ##args)
+#define error(format, args...) fprintf(stderr, "\033[31m" format "\033[0m", ##args)
 // warning info is in orange
-#define warning(format, args...) fprintf(stderr, "\033[33m[WARNING]:" format "\033[30;1m", ##args)
+#define warning(format, args...) fprintf(stderr, "\033[33m" format "\033[30;1m", ##args)
 
 #include <stdio.h>
 #include <stdlib.h>
