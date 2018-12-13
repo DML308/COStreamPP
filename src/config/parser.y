@@ -574,7 +574,7 @@ operator.default.call:
 /*************************************************************************/
 statement:
           labeled.statement
-        | compound.statement   {debug("statement::=compound.statement");}         /* 复合类型声明  */
+        | compound.statement   {debug("statement::=compound.statement\n");}         /* 复合类型声明  */
         | expression.statement
         | selection.statement
         | iteration.statement
