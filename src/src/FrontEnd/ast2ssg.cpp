@@ -12,6 +12,7 @@ void GraphToOperators(compositeNode *composite, compositeNode *oldComposite)
         cout<<it->type<<endl;
         switch (it->type)
         {
+        // 当type为binop时候检查binop的右子节点是否为以下节点类型
         case Binop:
             cout<<"Binop"<<endl;
             break;

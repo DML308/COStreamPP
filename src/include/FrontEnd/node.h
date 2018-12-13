@@ -520,23 +520,12 @@ class duplicateNode : public Node
 class splitNode : public Node
 {
   public:
-    /* 标识split节点的类型 roundrobin/duplicate*/
-    string name;
-    splitNode *spt;
-    duplicateNode *dup;
-    splitNode(string name, splitNode *spt, Loc *loc)
+    Node *dup_round;
+    splitNode(Node *dup_round, Loc *loc)
     {
         this->type = Split;
         this->setLoc(loc);
-        this->spt = spt;
-        this->name = name;
-    }
-    splitNode(string name, duplicateNode *dup, Loc *loc)
-    {
-        this->type = Split;
-        this->setLoc(loc);
-        this->dup = dup;
-        this->name = name;
+        this->dup_round=dup_round;
     }
     ~splitNode() {}
     void print() {}

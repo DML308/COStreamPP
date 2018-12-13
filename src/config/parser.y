@@ -538,8 +538,8 @@ operator.splitjoin:
             }
         ;
 split.statement:
-          SPLIT duplicate.statement                        { $$ = new splitNode("duplicate" ,(duplicateNode*)$2,(Loc*)&(@1)) ; }
-        | SPLIT roundrobin.statement                       { $$ = new splitNode("roundrobin",(duplicateNode*)$2,(Loc*)&(@1)) ; }
+          SPLIT duplicate.statement                        { $$ = new splitNode($2,(Loc*)&(@1)) ; }
+        | SPLIT roundrobin.statement                       { $$ = new splitNode($2,(Loc*)&(@1)) ; }
         ;
 roundrobin.statement:
           ROUNDROBIN '(' ')' ';'                            { $$ = new roundrobinNode(NULL,(Loc*)&(@1)) ; }
@@ -828,15 +828,19 @@ exp:      exp.assignable                    {
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compsiteCallNode(*($1),NULL,NULL,(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compsiteCallNode(*($1),NULL,$5,(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compsiteCallNode(*($1),$3,NULL,(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compsiteCallNode(*($1),$3,$6,(Loc*)&(@1)) ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
