@@ -475,12 +475,12 @@ class blockNode : public Node
 class pipelineNode : public Node
 {
   public:
-    list<Node *> *split_pipe;
-    pipelineNode(list<Node *> *split_pipe, Loc *loc)
+    list<Node *> *split_pipe_stmt_List;
+    pipelineNode(list<Node *> *split_pipe_stmt_List, Loc *loc)
     {
         this->setLoc(loc);
         this->type = Pipeline;
-        this->split_pipe = split_pipe;
+        this->split_pipe_stmt_List = split_pipe_stmt_List;
     }
     ~pipelineNode() {}
     void print() {}
@@ -553,15 +553,15 @@ class splitjoinNode : public Node
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
-    list<Node *> *split_pipe;
-    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe, joinNode *join, Loc *loc)
+    list<Node *> *split_pipe_stmt_List;
+    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, Loc *loc)
     {
         this->setLoc(loc);
         this->type = SplitJoin;
         this->split = split;
         this->join = join;
         this->stmt_list = stmt_list;
-        this->split_pipe = split_pipe;
+        this->split_pipe_stmt_List = split_pipe_stmt_List;
     }
     ~splitjoinNode() {}
     void print() {}
