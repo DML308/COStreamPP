@@ -531,10 +531,10 @@ splitjoinPipeline.statement.list:
         ;
 operator.splitjoin:
           SPLITJOIN lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock     {
-                   $$=new splitjoinNode((splitNode*)$3,NULL,$4,(joinNode*)$5,(Loc*)&(@1));
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$3,NULL,$4,(joinNode*)$5,(Loc*)&(@1));
             }
         | SPLITJOIN lblock statement.list split.statement splitjoinPipeline.statement.list join.statement rblock  {
-                   $$=new splitjoinNode((splitNode*)$4,$3,$5,(joinNode*)$6,(Loc*)&(@1));
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$4,$3,$5,(joinNode*)$6,(Loc*)&(@1));
             }
         ;
 split.statement:
@@ -846,12 +846,12 @@ exp:      exp.assignable                    {
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode((splitNode*)$6,NULL,$7,(joinNode*)$8,(Loc*)&(@1))  ; 
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$6,NULL,$7,(joinNode*)$8,(Loc*)&(@1))  ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { 
                   /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode((splitNode*)$7,$6,$8,(joinNode*)$9,(Loc*)&(@1))  ;  
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,(Loc*)&(@1))  ;  
             }
         |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock                                                 {
                    /*    1.argument.expression.list是一个identifier

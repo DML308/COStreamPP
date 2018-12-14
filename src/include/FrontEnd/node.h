@@ -25,10 +25,12 @@ class Node
 	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
 	   on both MULT nodes. */
     bool parenthesized;
-    Node() {
-        loc=new Loc();
+    Node()
+    {
+        loc = new Loc();
     }
-    virtual ~Node() {
+    virtual ~Node()
+    {
         delete loc;
     }
     void setLoc(Loc *loc)
@@ -112,8 +114,8 @@ class initNode : public Node
     list<Node *> value;
     initNode(Loc *loc)
     {
-        this->type = Initializer;
         setLoc(loc);
+        this->type = Initializer;
     }
     ~initNode() {}
     void print() {}
@@ -525,7 +527,7 @@ class splitNode : public Node
     {
         this->type = Split;
         this->setLoc(loc);
-        this->dup_round=dup_round;
+        this->dup_round = dup_round;
     }
     ~splitNode() {}
     void print() {}
@@ -550,13 +552,17 @@ class joinNode : public Node
 class splitjoinNode : public Node
 {
   public:
+    idNode *output;
+    list<Node*> *input;
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
     list<Node *> *split_pipe_stmt_List;
-    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, Loc *loc)
+    splitjoinNode(list<Node*> *input, idNode *output, splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, Loc *loc)
     {
         this->setLoc(loc);
+        this->input = input;
+        this->output = output;
         this->type = SplitJoin;
         this->split = split;
         this->join = join;
@@ -853,7 +859,7 @@ class compsiteCallNode : public Node
     string compName;
     list<Node *> *stream_List;
     list<Node *> *param_List;
-    compositeNode *actual_composite;    //保存composite展开节点
+    compositeNode *actual_composite; //保存composite展开节点
     compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
     {
         this->setLoc(loc);
@@ -877,7 +883,7 @@ class compHeadNode : public Node
         this->type = CompHead;
         this->id = id;
         this->inout = inout;
-        this->compName=id->name;
+        this->compName = id->name;
     }
     ~compHeadNode() {}
     void print() {}
@@ -895,7 +901,7 @@ class compositeNode : public Node
         this->type = Composite;
         this->head = head;
         this->body = body;
-        this->compName=head->compName;
+        this->compName = head->compName;
     }
     ~compositeNode() {}
     void print() {}
