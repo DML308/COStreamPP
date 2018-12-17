@@ -5,9 +5,9 @@ static StaticStreamGraph *ssg = NULL;
 void GraphToOperators(compositeNode *composite)
 {
     /* 获取compositebody内的statementNode */
-    list<Node *> list = *(composite->body->stmt_List);
+    list<Node *> body_stmt = *(composite->body->stmt_List);
     //cout << "list.size()= " << list.size() << endl;
-    for (auto it : (list))
+    for (auto it : body_stmt)
     {
         //cout << it->type << endl;
         // 当type为binop时候检查binop的右子节点是否为以下节点类型
@@ -27,7 +27,9 @@ void GraphToOperators(compositeNode *composite)
             }
             else if (exp->type == SplitJoin)
             {
+                
                 cout << "SplitJoin" << endl;
+                
             }
             else if (exp->type == Pipeline)
             {

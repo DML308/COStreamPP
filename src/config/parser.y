@@ -4,9 +4,11 @@
 #include "node.h"
 #include "symbol.h"
 #include "nodetype.h"
+#include "unfoldComposite.h"
 
 extern SymbolTable S;
 extern list<Node*> *Program;
+UnfoldComposite unfold;
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -802,8 +804,6 @@ exp:      exp.assignable                    {
                               line("Line:%-3d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2) ) ;
-                              // if($3->type==CompositeCall ||$3->type==Pipeline ||$3->type==SplitJoin ||$3->type==Operator_ )
-                              // $$->type = $3->type;
                         }
         | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
                                                                   $$ = new callNode(*($1),$3,(Loc*)&(@1)) ; 
@@ -844,13 +844,17 @@ exp:      exp.assignable                    {
             /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
                   $$ = new splitjoinNode($3,NULL,(splitNode*)$6,NULL,$7,(joinNode*)$8,(Loc*)&(@1))  ; 
+
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { 
                   /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,(Loc*)&(@1))  ;  
+                  
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,(Loc*)&(@1))  ; 
+                  ((splitjoinNode*)$$)->replace_composite=unfold.UnfoldSplitJoin((splitjoinNode*)$$);
+
             }
-        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock                                                 {
+        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode($6,(Loc*)&(@1)) ; 

@@ -440,6 +440,7 @@ class doNode : public Node
 class forNode : public Node
 {
   public:
+    /* init可以为declartion也可以为statement */
     Node *init;
     expNode *cond;
     expNode *next;
@@ -474,6 +475,7 @@ class blockNode : public Node
     const char *toString() {}
 };
 
+class compositeNode;
 class pipelineNode : public Node
 {
   public:
@@ -484,6 +486,7 @@ class pipelineNode : public Node
         this->setLoc(loc);
         this->type = Pipeline;
         this->bodyStmt_List = bodyStmt_List;
+        this->replace_composite = NULL;
     }
     ~pipelineNode() {}
     void print() {}
@@ -570,6 +573,7 @@ class splitjoinNode : public Node
         this->join = join;
         this->stmt_list = stmt_list;
         this->bodyStmt_List = bodyStmt_List;
+        this->replace_composite = NULL;
     }
     ~splitjoinNode() {}
     void print() {}
@@ -650,7 +654,7 @@ class strdclNode : public Node
     {
         this->setLoc(loc);
         this->type = StrDcl;
-        append(prim,id,adcl);
+        append(prim, id, adcl);
     }
     void append(primNode *prim, idNode *id, adclNode *adcl)
     {
@@ -860,13 +864,13 @@ class compositeCallNode : public Node
     list<Node *> *stream_List;
     list<Node *> *param_List;
     compositeNode *actual_composite; //保存composite展开节点
-    compositeCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, compositeNode *actual_composite,Loc *loc)
+    compositeCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, compositeNode *actual_composite, Loc *loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
         this->compName = compName;
         this->param_List = param_List;
-        this->actual_composite=actual_composite;
+        this->actual_composite = actual_composite;
     }
     ~compositeCallNode() {}
     void print() {}
