@@ -406,8 +406,7 @@ composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'   {
             line("Line:%-3d",@1.first_line);
             debug ("composite.head ::= COMPOSITE %s '(' composite.head.inout ')' \n",$2->c_str());
-            idNode *id = new idNode(*($2),(Loc*)&(@2));
-            $$ = new compHeadNode(id,(ComInOutNode*)$4) ;
+            $$ = new compHeadNode(*($2),(ComInOutNode*)$4) ;
       }
     ;
 composite.head.inout:
@@ -804,6 +803,17 @@ exp:      exp.assignable                    {
                               line("Line:%-3d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2) ) ;
+                              //当类型为splitjoin，pipeline，operator，compositecall时需要设置输出流
+                              if($3->type==SplitJoin){
+                                    list<Node*> *outputs=new list<Node*>({$1});
+                                    ((splitjoinNode*)$3)->outputs=outputs;
+                                    ((splitjoinNode*)$3)->replace_composite=unfold.UnfoldSplitJoin((splitjoinNode*)$3);
+                              }
+                              else if($3->type==Pipeline){
+                                    list<Node*> *outputs=new list<Node*>({$1});
+                                    ((splitjoinNode*)$3)->outputs=outputs;
+                                    ((splitjoinNode*)$3)->replace_composite=unfold.UnfoldPipeline((splitjoinNode*)$3);
+                              }
                         }
         | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
                                                                   $$ = new callNode(*($1),$3,(Loc*)&(@1)) ; 
@@ -851,7 +861,7 @@ exp:      exp.assignable                    {
                   2.查找符号表 identifier是否出现过 */
                   
                   $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,(Loc*)&(@1))  ; 
-                  ((splitjoinNode*)$$)->replace_composite=unfold.UnfoldSplitJoin((splitjoinNode*)$$);
+                  
 
             }
         |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {

@@ -529,8 +529,8 @@ class splitNode : public Node
     Node *dup_round;
     splitNode(Node *dup_round, Loc *loc)
     {
-        this->type = Split;
         this->setLoc(loc);
+        this->type = Split;
         this->dup_round = dup_round;
     }
     ~splitNode() {}
@@ -556,14 +556,14 @@ class joinNode : public Node
 class splitjoinNode : public Node
 {
   public:
-    list<idNode *> *outputs;
+    list<Node *> *outputs;
     list<Node *> *inputs;
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
     list<Node *> *bodyStmt_List;
     compositeNode *replace_composite;
-    splitjoinNode(list<Node *> *inputs, list<idNode *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, Loc *loc)
+    splitjoinNode(list<Node *> *inputs, list<Node *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, Loc *loc)
     {
         this->setLoc(loc);
         this->type = SplitJoin;
@@ -856,7 +856,6 @@ class funcDclNode : public Node
     const char *toString() {}
 };
 
-class compositeNode;
 class compositeCallNode : public Node
 {
   public:
@@ -880,15 +879,13 @@ class compositeCallNode : public Node
 class compHeadNode : public Node
 {
   public:
-    idNode *id;
     string compName;
     ComInOutNode *inout;
-    compHeadNode(idNode *id, ComInOutNode *inout)
+    compHeadNode(string compName, ComInOutNode *inout)
     {
         this->type = CompHead;
-        this->id = id;
+        this->compName=compName;
         this->inout = inout;
-        this->compName = id->name;
     }
     ~compHeadNode() {}
     void print() {}
