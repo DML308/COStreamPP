@@ -397,6 +397,7 @@ composite.definition:
                                           line("Line:%-3d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
                                           $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2) ;
+                                          S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
                                     }
     ;
 composite.head:
@@ -558,15 +559,11 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                                                              $$ = new OperdclNode(*($1),NULL,(Loc*)&(@1)); 
-                                                              /*需要查找符号表*/
-                                                            }
+                  $$ = new compositeCallNode(*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1));
+            }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                                                              /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
-                                                              ///*DEBUG*/printf("have found operator.default.call\n");
-                                                              $$ = new OperdclNode(*($1),$3,(Loc*)&(@1));
-                                                              /* 需要查找符号表 */
-                                                            }
+                  $$ = new compositeCallNode(*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1));
+            }
         ;
 
 /*************************************************************************/
@@ -574,7 +571,7 @@ operator.default.call:
 /*************************************************************************/
 statement:
           labeled.statement
-        | compound.statement   {debug("statement::=compound.statement");}         /* 复合类型声明  */
+        | compound.statement            
         | expression.statement
         | selection.statement
         | iteration.statement
@@ -829,19 +826,19 @@ exp:      exp.assignable                    {
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),NULL,NULL,(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),NULL,$5,(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(*($1),NULL,$5,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),$3,NULL,(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),$3,$6,(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(*($1),$3,$6,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier

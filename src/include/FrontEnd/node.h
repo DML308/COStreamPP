@@ -477,12 +477,12 @@ class blockNode : public Node
 class pipelineNode : public Node
 {
   public:
-    list<Node *> *split_pipe_stmt_List;
-    pipelineNode(list<Node *> *split_pipe_stmt_List, Loc *loc)
+    list<Node *> *bodyStmt_List;
+    pipelineNode(list<Node *> *bodyStmt_List, Loc *loc)
     {
         this->setLoc(loc);
         this->type = Pipeline;
-        this->split_pipe_stmt_List = split_pipe_stmt_List;
+        this->bodyStmt_List = bodyStmt_List;
     }
     ~pipelineNode() {}
     void print() {}
@@ -552,22 +552,22 @@ class joinNode : public Node
 class splitjoinNode : public Node
 {
   public:
-    idNode *output;
-    list<Node*> *input;
+    list<idNode *> *outputs;
+    list<Node *> *inputs;
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
-    list<Node *> *split_pipe_stmt_List;
-    splitjoinNode(list<Node*> *input, idNode *output, splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, Loc *loc)
+    list<Node *> *bodyStmt_List;
+    splitjoinNode(list<Node *> *inputs, list<idNode *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, Loc *loc)
     {
         this->setLoc(loc);
-        this->input = input;
-        this->output = output;
         this->type = SplitJoin;
+        this->inputs = inputs;
+        this->outputs = outputs;
         this->split = split;
         this->join = join;
         this->stmt_list = stmt_list;
-        this->split_pipe_stmt_List = split_pipe_stmt_List;
+        this->bodyStmt_List = bodyStmt_List;
     }
     ~splitjoinNode() {}
     void print() {}
@@ -648,9 +648,7 @@ class strdclNode : public Node
     {
         this->setLoc(loc);
         this->type = StrDcl;
-        prim_List.push_back(prim);
-        id_List.push_back(id);
-        adcl_List.push_back(adcl);
+        append(prim,id,adcl);
     }
     void append(primNode *prim, idNode *id, adclNode *adcl)
     {
@@ -853,21 +851,22 @@ class funcDclNode : public Node
 };
 
 class compositeNode;
-class compsiteCallNode : public Node
+class compositeCallNode : public Node
 {
   public:
     string compName;
     list<Node *> *stream_List;
     list<Node *> *param_List;
     compositeNode *actual_composite; //保存composite展开节点
-    compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
+    compositeCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, compositeNode *actual_composite,Loc *loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
         this->compName = compName;
         this->param_List = param_List;
+        this->actual_composite=actual_composite;
     }
-    ~compsiteCallNode() {}
+    ~compositeCallNode() {}
     void print() {}
     const char *toString() {}
 };
