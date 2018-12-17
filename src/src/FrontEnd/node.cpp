@@ -20,6 +20,6 @@ string constantNode::toString(){
         else if(name=="interger")
             return to_string(llval);
         else
-            return (sval).c_str();
+            return sval;
        ;
 }

@@ -221,24 +221,24 @@ stream.type.specifier:
 stream.declaration.list:
           type.specifier IDENTIFIER {
                                         line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  type.specifier %s \n",$2->c_str());
+                                        debug ("stream.declaration.list ::=  type.specifier(%s) IDENTIFIER(%s) \n",$1->toString().c_str(),$2->c_str());
                                         /* 需要添加符号表查找操作*/
                                         $$ = new strdclNode((primNode*)$1,(idNode*)$2,NULL,@2) ;
                                     }
         | type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  type.specifier %s array.declarator \n",$2->c_str());
+                                        debug ("stream.declaration.list ::=  type.specifier(%s) IDENTIFIER(%s) array.declarator \n",$1->toString().c_str(),$2->c_str());
                                         $$ = new strdclNode((primNode*)$1,(idNode*)$2,(adclNode*)$3,@2) ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER {
                                         line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s \n",$4->c_str());
+                                        debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER(%s) \n",$4->c_str());
                                         ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,NULL);
                                         $$ = $1 ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s array.declarator \n",$4->c_str());
+                                        debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER(%s) array.declarator \n",$4->c_str());
                                         ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,(adclNode*)$5);
                                         $$ = $1 ;
                                     }
@@ -324,13 +324,13 @@ initializer.list:
 function.definition:
           type.specifier IDENTIFIER '(' ')' function.body {
                 line("Line:%-4d",@1.first_line);
-                debug ("function.definition ::= type.specifier %s '(' ')' function.body \n",$2->c_str());
+                debug ("function.definition ::= type.specifier(%s) IDENTIFIER(%s) '(' ')' function.body \n",$1->toString().c_str(),$2->c_str());
                 idNode *id = new idNode(*($2),@2);
                 $$ = new funcDclNode((primNode*)$1,id,NULL,(funcBodyNode*)$5) ;
         }
         | type.specifier IDENTIFIER '(' parameter.list ')' function.body  {
                 line("Line:%-4d",@1.first_line);
-                debug ("function.definition ::= type.specifier %s '(' parameter.list ')' function.body \n",$2->c_str());
+                debug ("function.definition ::= type.specifier(%s) IDENTIFIER(%s) '(' parameter.list ')' function.body \n",$1->toString().c_str(),$2->c_str());
                 idNode *id = new idNode(*($2),@2);
                 $$ = new funcDclNode((primNode*)$1,id,$4,(funcBodyNode*)$6) ;
         }
@@ -357,13 +357,13 @@ parameter.list:
 parameter.declaration:
           type.specifier IDENTIFIER {
                                           line("Line:%-4d",@1.first_line);
-                                          debug ("parameter.declaration ::= type.specifier %s \n",$2->c_str());
+                                          debug ("parameter.declaration ::= type.specifier(%s) IDENTIFIER(%s) \n",$1->toString().c_str(),$2->c_str());
                                           idNode*id = new idNode(*($2),@2);
                                           $$ = new paramDeclNode((primNode*)$1,id,NULL,@2 );
                                     }
         | type.specifier IDENTIFIER array.declarator  {
                                           line("Line:%-4d",@1.first_line);
-                                          debug ("parameter.declaration ::= type.specifier %s array.declarator \n",$2->c_str());
+                                          debug ("parameter.declaration ::= type.specifier(%s) IDENTIFIER(%s) array.declarator \n",$1->toString().c_str(),$2->c_str());
                                           idNode*id = new idNode(*($2),@2);
                                           $$ = new paramDeclNode((primNode*)$1,id,(adclNode*)$3,@2 );
                                     }
@@ -421,7 +421,7 @@ composite.head.inout.member.list:
 composite.head.inout.member:
       stream.type.specifier IDENTIFIER    { 
                   line("Line:%-4d",@1.first_line);
-                  debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER  \n");
+                  debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER(%s)  \n",$2->c_str());
                   idNode *id = new idNode(*($2),@2);
                   $$ = new inOutdeclNode($1,id,@2) ; 
             }
