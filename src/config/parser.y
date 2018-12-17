@@ -1,5 +1,5 @@
 %{
-#define DEBUG
+//#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"

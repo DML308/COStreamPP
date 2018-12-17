@@ -2,7 +2,7 @@
 
 string infile_name ;          // input file's name
 string outfile_name = "stdout";    // output file's name
-string temp_name;
+string temp_name = "stdin";
 FILE *infp = NULL;   // input file's pointer, default is stdin
 FILE *outfp = NULL;  // output file's pointer, default is stdout
 
@@ -25,9 +25,10 @@ static void show_line(int line, const char *file_name)
 static void printWaveLine(int column)
 {
     int i = 0;
-    for (i = 0; i < column - 5; i++)
+    for (i = 1; i < column; i++)
         fprintf(stdout," ");
-    for (i = 0; i < 10; i++)
+    fprintf(stdout, "\033[32m%s\033[0m", "^");
+    for (i = 0; i < 5; i++)
         fprintf(stdout, "\033[32m%s\033[0m", "~");
     fprintf(stdout, "\n");
 };
@@ -40,8 +41,7 @@ static void printWaveLine(int column)
 void Error(const char *msg, int line, int column)
 {
     assert(temp_name.c_str());
-    error("temp_name: %s\n", temp_name.c_str());
-    error("[%s:%d]  error: %s\n", infile_name.c_str(), line, msg);
+    error("[%s:%d]  error: %s", infile_name.c_str(), line, msg);
     if(temp_name != "stdin"){
         show_line(line, temp_name.c_str());
         printWaveLine(column);
@@ -50,7 +50,7 @@ void Error(const char *msg, int line, int column)
 /** 和上面函数类似,处理 Warning **/
 void Warning(const char *msg, int line, int column)
 {
-    warning("[%s:%d]  warning: %s\n", infile_name.c_str(), line, msg);
+    warning("[%s:%d]  warning: %s", infile_name.c_str(), line, msg);
     if (string(temp_name.c_str()) != "stdin" || Level >= WarningLevel)
     {
         show_line(line, temp_name.c_str());

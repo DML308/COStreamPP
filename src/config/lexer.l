@@ -31,8 +31,8 @@ hex_constant ("0"[xX][0-9a-fA-F]+)
 /* 字符串: 考虑到可能会有这样的字符串 "123 \n \" " ,不合规的字符串有很多,放到后续语义分析再处理 */
 string_constant ('[^\n]*'|\"[^\n]*\")
 
-/*空白字符的代码只保留 空格 tab 和 \n.*/
-any_white ([ \t \n])
+/*空白字符的代码只保留 空格 tab.*/
+any_white ([ \t])
 
 Annotations      "/*"([^\*]|(\*)*[^\*/])*(\*)*"*/" 
 Annotation       \/\/[^\n]*\n
@@ -40,9 +40,10 @@ Annotation       \/\/[^\n]*\n
 %option noyywrap
 %option yylineno
 %%
+"\n"                    {yycolumn=1;}
 {any_white}             
-{Annotation}            {debug("单行注释\n");}
-{Annotations}           {debug("多行注释\n");}
+{Annotation}            {debug("单行注释\n");yycolumn=1;}
+{Annotations}           {debug("多行注释\n");yycolumn=1;}
 {decimal_constant}|{hex_constant}|{octal_constant}  {
                                                       yylval.num = stoll(yytext,0,0);
                                                       return integerConstant;

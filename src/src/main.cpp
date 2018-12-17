@@ -43,7 +43,6 @@ int main(int argc, char *argv[])
     // (2) 文法建立和语法树生成
     PhaseName = "Parsing";
     yyin = infp;
-    error("temp_name: %s\n", temp_name.c_str());
     yyparse();
 
     // (3) 语义检查
