@@ -1,6 +1,7 @@
 #ifndef _GLOBAL_HH_
 #define _GLOBAL_HH_
 #include <stdio.h>
+#define MAX_INF 2147483647
 #define MAX_SCOPE_DEPTH 100 //定义最大嵌套深度为100
 extern char *infile_name;
 extern char *outfile_name;

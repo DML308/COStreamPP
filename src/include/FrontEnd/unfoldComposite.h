@@ -8,12 +8,13 @@ class UnfoldComposite
     list<compositeCallNode*>* call_List;
     UnfoldComposite() {
         compNum=0;
-        call_List=NULL;
+       call_List=NULL;
     }
     /* 给与每一个不同的splitjoin或者pipeline节点不同的名字 */
     inline string MakeCompositeName(string name){
         return name+to_string(compNum);
     }
+    void setCallList(list<Node*> *stmt);
     compositeNode *UnfoldRoundrobin(string comName, splitjoinNode *node);
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
     compositeNode *UnfoldPipeline(Node *node);

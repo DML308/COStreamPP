@@ -60,21 +60,21 @@ class constantNode : public Node
 {
   public:
     /* 判断是double/long或者string类型 */
-    string name;
+    string style;
     string sval;
     double dval;
     long long llval;
-    constantNode(string type, string str, Loc *loc) : name(type), sval(str)
+    constantNode(string type, string str, Loc *loc) : style(type), sval(str)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, long long l, Loc *loc) : name(type), llval(l)
+    constantNode(string type, long long l, Loc *loc) : style(type), llval(l)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, double d, Loc *loc) : name(type), dval(d)
+    constantNode(string type, double d, Loc *loc) : style(type), dval(d)
     {
         setLoc(loc);
         this->type = constant;

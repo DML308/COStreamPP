@@ -7,9 +7,9 @@ const char * primNode::toString(){
 
 
 const char * constantNode::toString(){
-        if(name == "double") 
+        if(style == "double") 
             return (to_string(dval)).c_str();
-        else if(name=="interger")
+        else if(style=="interger")
             return (to_string(llval)).c_str();
         else 
             return (sval).c_str();
