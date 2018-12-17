@@ -1,5 +1,5 @@
 %{
-#define DEBUG
+//#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
@@ -825,19 +825,19 @@ exp:      exp.assignable                    {
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compositeCallNode(*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compositeCallNode(*($1),NULL,$5,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compositeCallNode(*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   $$ = new compositeCallNode(*($1),$3,$6,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
