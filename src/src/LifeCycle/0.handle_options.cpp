@@ -2,6 +2,7 @@
 
 float VersionNumber = 0.30;
 const char *const CompiledDate = __DATE__;
+int WarningLevel = 99; //大于99级作用域 Level 后不报警告,即默认大部分情况都报警告
 
 //处理命令行输入的选项
 int handle_options(int argc, char *argv[]){
@@ -31,7 +32,7 @@ int handle_options(int argc, char *argv[]){
             outfile_name = optarg;
             break;
         case 'w':
-            error("-w 还没写完呢\n");
+            WarningLevel = 0;//大于等于0级的作用域中需要报警告时直接 return, 即不报警告
             break;
         case 'j':
             error("-j 还没写完呢\n");

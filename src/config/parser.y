@@ -965,6 +965,7 @@ basic.type.name:
         | LONG LONG {
                       line("Line:%-4d",@1.first_line);
                       debug ("basic.type.name ::=  LONG LONG  \n");
+                      Error("test error",@1.first_line,@1.first_column);
                       $$ = new primNode("LONG LONG",(Loc*)&(@1) ) ;
                     }
         | FLOAT {

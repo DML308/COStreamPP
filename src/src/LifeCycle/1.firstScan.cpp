@@ -4,7 +4,7 @@ FILE *changeTabToSpace()
 {
     /* 使用一个 xx.cos.temp 的文件来把所有\t 转化为4个空格 ' ' */
     FILE *temp;
-    const char *temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
+    temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
     infp = fopen(infile_name, "r"); // infp 是在 global.h 中注册的输入文件指针
     if (infp == NULL)
     {
@@ -82,7 +82,6 @@ FILE *recordFunctionAndCompositeName()
     }
     //重新打开文件(即将文件读取的锚点移动回文件头)
     fclose(infp);
-    const char *temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
     infp = fopen(temp_name, "r");
     assert(infp != NULL);
     return infp;

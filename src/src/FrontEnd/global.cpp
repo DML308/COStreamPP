@@ -1,6 +1,6 @@
 #include "global.h"
 
-char *infile_name = "stdin";      // input file's name
+char *infile_name ;          // input file's name
 char *outfile_name = "stdout";    // output file's name
 FILE *infp = NULL;   // input file's pointer, default is stdin
 FILE *outfp = NULL;  // output file's pointer, default is stdout
@@ -15,7 +15,6 @@ static void show_line(int line, const char *file_name)
     line_str += temp;
     line_str += "p' ";
     line_str += file_name;
-    line_str += ".temp.c";
     system(line_str.c_str());
 }
 /**
@@ -25,27 +24,35 @@ static void show_line(int line, const char *file_name)
 static void printWaveLine(int column)
 {
     int i = 0;
-    for (i = 0; i < column - 1; i++)
-        line(" ");
-    line("^\n");
+    for (i = 0; i < column - 5; i++)
+        fprintf(stdout," ");
+    for (i = 0; i < 10; i++)
+        fprintf(stdout, "\033[32m%s\033[0m", "~");
+    fprintf(stdout, "\n");
 };
 /**
  * @brief 发现输入的.cos文件有错误时输出报错信息
  * @param msg       报错信息
- * @param file_name 当前文件名,默认为 stdin
  * @param line      出错行号
  * @param column    需要强调的标识符的列号
  */
-void SyntaxError(const char *msg, const char *file_name, int line, int column)
+void Error(const char *msg, int line, int column)
 {
-    error("[%s:%d]  error: %s\n", file_name, line, msg);
-    show_line(line,file_name);
-    printWaveLine(column);
+    assert(temp_name);
+    error("temp_name: %s\n", temp_name);
+    error("[%s:%d]  error: %s\n", infile_name, line, msg);
+    if(string(temp_name) != "stdin"){
+        show_line(line, temp_name);
+        printWaveLine(column);
+    }
 }
 /** 和上面函数类似,处理 Warning **/
-void SyntaxWarning(const char *msg, const char *file_name, int line, int column)
+void Warning(const char *msg, int line, int column)
 {
-    warning("[%s:%d]  warning: %s\n", file_name, line, msg);
-    show_line(line, file_name);
-    printWaveLine(column);
+    warning("[%s:%d]  warning: %s\n", infile_name, line, msg);
+    if (string(temp_name) != "stdin" || Level >= WarningLevel)
+    {
+        show_line(line, temp_name);
+        printWaveLine(column);
+    }
 }
