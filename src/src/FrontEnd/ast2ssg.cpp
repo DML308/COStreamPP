@@ -11,7 +11,9 @@ void GraphToOperators(compositeNode *composite)
     {
         //cout << it->type << endl;
         // 当type为binop时候检查binop的右子节点是否为以下节点类型
-        if (it->type == Binop)
+        switch (it->type)
+        {
+        case Binop:
         {
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
@@ -31,23 +33,29 @@ void GraphToOperators(compositeNode *composite)
             {
                 cout << "Pipeline" << endl;
             }
+            break;
         }
-        else if (it->type == Operator_)
+        case Operator_:
         {
             cout << "Operator_" << endl;
+            break;
         }
-        else if (it->type == CompositeCall)
+        case CompositeCall:
         {
             cout << "compositeCall" << endl;
             GraphToOperators(((compositeCallNode *)it)->actual_composite);
+            break;
         }
-        else if (it->type == SplitJoin)
+        case SplitJoin:
         {
             cout << "SplitJoin" << endl;
+            break;
         }
-        else if (it->type == Pipeline)
+        case Pipeline:
         {
             cout << "Pipeline" << endl;
+            break;
+        }
         }
     }
     return;

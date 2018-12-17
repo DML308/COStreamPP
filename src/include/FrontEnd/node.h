@@ -478,6 +478,7 @@ class pipelineNode : public Node
 {
   public:
     list<Node *> *bodyStmt_List;
+    compositeNode *replace_composite;
     pipelineNode(list<Node *> *bodyStmt_List, Loc *loc)
     {
         this->setLoc(loc);
@@ -558,6 +559,7 @@ class splitjoinNode : public Node
     joinNode *join;
     list<Node *> *stmt_list;
     list<Node *> *bodyStmt_List;
+    compositeNode *replace_composite;
     splitjoinNode(list<Node *> *inputs, list<idNode *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, Loc *loc)
     {
         this->setLoc(loc);
