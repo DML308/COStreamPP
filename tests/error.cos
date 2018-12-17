@@ -1,28 +1,6 @@
 //本测试用例用来测试error
 int aaa[8] = {1,2,3,4,5,6,7,8};
 int bbb = 33;
-var a = 1;
-composite B(output stream<int x>Out,input stream<int x>In)
-{
-	param
-		int size1,int size2;
-	Out = B(In)
-	{
-
-		work
-		{
-			int i,j;
-			Out[0].x = In[0].x;
-			for(i = 0;i < 10000;i++){
-				j = i * i;
-			}
-		}
-		window{
-			In  sliding(1,1);
-			Out tumbling(1);
-		}
-	};
-}
 
 composite Main(){
 	int N =99;

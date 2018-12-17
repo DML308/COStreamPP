@@ -162,7 +162,7 @@ declaration:
 declaring.list:
           type.specifier      IDENTIFIER       initializer.opt  {
               line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString(),$2->c_str());
+              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->c_str());
               idNode *id=new idNode(*($2),@2);
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
               $$ = new declareNode((primNode*)$1,id,NULL,(initNode*)$3,@2) ;
@@ -170,7 +170,7 @@ declaring.list:
         }
         | type.specifier 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= type.specifier %s array.declarator initializer.opt \n",$2->c_str());
+              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) array.declarator initializer.opt \n",$1->toString().c_str(),$2->c_str());
               idNode *id=new idNode(*($2),@2);
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
               $$ = new declareNode((primNode*)$1,id,(adclNode*)$3,(initNode*)$4,@2);
@@ -947,11 +947,11 @@ type.specifier:
         ;
 basic.type.name:
           INT         { $$ = new primNode("int",@1 ); }
-        | LONG        { $$ = new primNode("LONG",@1 ); }
-        | LONG LONG   { $$ = new primNode("LONG LONG",@1 ); }
-        | FLOAT       { $$ = new primNode("FLOAT",@1 ); }
-        | DOUBLE      { $$ = new primNode("DOUBLE",@1 ); }
-        | STRING      { $$ = new primNode("STRING",@1 ); }
+        | LONG        { $$ = new primNode("long",@1 ); }
+        | LONG LONG   { $$ = new primNode("long long",@1 ); }
+        | FLOAT       { $$ = new primNode("float",@1 ); }
+        | DOUBLE      { $$ = new primNode("double",@1 ); }
+        | STRING      { $$ = new primNode("string",@1 ); }
         ;
 %%
 /* ----语法树结束----*/

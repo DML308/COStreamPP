@@ -26,7 +26,7 @@ class Node
     }
     void setLoc(YYLTYPE loc);
     virtual void print() = 0;
-    virtual const char *toString() = 0;
+    virtual string toString() = 0;
 };
 
 class primNode : public Node
@@ -41,7 +41,7 @@ class primNode : public Node
     }
     ~primNode() {}
     void print() { cout << "primNodeType :" << name << endl; }
-    const char *toString();
+    string toString();
 };
 
 class constantNode : public Node
@@ -69,7 +69,7 @@ class constantNode : public Node
     }
     ~constantNode() {}
     void print() { cout << "constant :" << type << endl; }
-    const char *toString();
+    string toString();
 };
 
 class idNode : public Node
@@ -87,7 +87,7 @@ class idNode : public Node
     }
     ~idNode() {}
     void print() {}
-    const char *toString()
+    string toString()
     {
         string str = "name:" + name;
         str += "  level:" + to_string(level);
@@ -107,7 +107,7 @@ class initNode : public Node
     }
     ~initNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class functionNode : public Node
@@ -136,7 +136,7 @@ class adclNode : public Node
     }
     ~adclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class expNode : public Node
@@ -145,7 +145,7 @@ class expNode : public Node
     expNode() {}
     ~expNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class declareNode : public Node
@@ -170,7 +170,7 @@ class declareNode : public Node
     }
     ~declareNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class unaryNode : public Node
@@ -186,7 +186,7 @@ class unaryNode : public Node
     }
     ~unaryNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 /*  这里pointNode可以和binopnode可以合成一个，但是需要将binopNode的expnode改为node
     因此在这里单独处理
@@ -205,7 +205,7 @@ class pointNode : public Node
     }
     ~pointNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class binopNode : public Node
@@ -224,7 +224,7 @@ class binopNode : public Node
     }
     ~binopNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ternaryNode : public Node
@@ -243,7 +243,7 @@ class ternaryNode : public Node
     }
     ~ternaryNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class castNode : public Node
@@ -260,7 +260,7 @@ class castNode : public Node
     }
     ~castNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 /* switch() case: */
@@ -279,7 +279,7 @@ class caseNode : public Node
     }
     ~caseNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class defaultNode : public Node
@@ -294,7 +294,7 @@ class defaultNode : public Node
     }
     ~defaultNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class continueNode : public Node
@@ -307,7 +307,7 @@ class continueNode : public Node
     }
     ~continueNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class breakNode : public Node
@@ -320,7 +320,7 @@ class breakNode : public Node
     }
     ~breakNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class returnNode : public Node
@@ -335,7 +335,7 @@ class returnNode : public Node
     }
     ~returnNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ifNode : public Node
@@ -352,7 +352,7 @@ class ifNode : public Node
     }
     ~ifNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ifElseNode : public Node
@@ -371,7 +371,7 @@ class ifElseNode : public Node
     }
     ~ifElseNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class switchNode : public Node
@@ -388,7 +388,7 @@ class switchNode : public Node
     }
     ~switchNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class whileNode : public Node
@@ -405,7 +405,7 @@ class whileNode : public Node
     }
     ~whileNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class doNode : public Node
@@ -422,7 +422,7 @@ class doNode : public Node
     }
     ~doNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class forNode : public Node
@@ -442,7 +442,7 @@ class forNode : public Node
         this->stmt = stmt;
     }
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class blockNode : public Node
@@ -459,7 +459,7 @@ class blockNode : public Node
     }
     ~blockNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class pipelineNode : public Node
@@ -474,7 +474,7 @@ class pipelineNode : public Node
     }
     ~pipelineNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class roundrobinNode : public Node
@@ -489,7 +489,7 @@ class roundrobinNode : public Node
     }
     ~roundrobinNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class duplicateNode : public Node
@@ -504,7 +504,7 @@ class duplicateNode : public Node
     }
     ~duplicateNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class splitNode : public Node
@@ -519,7 +519,7 @@ class splitNode : public Node
     }
     ~splitNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class joinNode : public Node
@@ -534,7 +534,7 @@ class joinNode : public Node
     }
     ~joinNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class splitjoinNode : public Node
@@ -555,7 +555,7 @@ class splitjoinNode : public Node
     }
     ~splitjoinNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class addNode : public Node
@@ -571,7 +571,7 @@ class addNode : public Node
     }
     ~addNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class slidingNode : public Node
@@ -586,7 +586,7 @@ class slidingNode : public Node
     }
     ~slidingNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class tumblingNode : public Node
@@ -601,7 +601,7 @@ class tumblingNode : public Node
     }
     ~tumblingNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class OperdclNode : public Node
@@ -618,7 +618,7 @@ class OperdclNode : public Node
     }
     ~OperdclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class strdclNode : public Node
@@ -648,7 +648,7 @@ class strdclNode : public Node
     }
     ~strdclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class winStmtNode : public Node
@@ -666,7 +666,7 @@ class winStmtNode : public Node
 
     ~winStmtNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class windowNode : public Node
@@ -680,7 +680,7 @@ class windowNode : public Node
     }
     ~windowNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class paramNode;
@@ -702,7 +702,7 @@ class operBodyNode : public Node
     }
     ~operBodyNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class callNode : public Node
@@ -719,7 +719,7 @@ class callNode : public Node
     }
     ~callNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class inOutdeclNode : public Node
@@ -735,7 +735,7 @@ class inOutdeclNode : public Node
     }
     ~inOutdeclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ComInOutNode : public Node
@@ -752,7 +752,7 @@ class ComInOutNode : public Node
     }
     ~ComInOutNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class paramDeclNode : public Node
@@ -771,7 +771,7 @@ class paramDeclNode : public Node
     }
     ~paramDeclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 class paramNode : public Node
 {
@@ -784,7 +784,7 @@ class paramNode : public Node
     }
     ~paramNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class funcBodyNode : public Node
@@ -797,7 +797,7 @@ class funcBodyNode : public Node
     }
     ~funcBodyNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compBodyNode : public Node
@@ -813,7 +813,7 @@ class compBodyNode : public Node
     }
     ~compBodyNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class funcDclNode : public Node
@@ -833,7 +833,7 @@ class funcDclNode : public Node
     }
     ~funcDclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compositeNode;
@@ -853,7 +853,7 @@ class compsiteCallNode : public Node
     }
     ~compsiteCallNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compHeadNode : public Node
@@ -871,7 +871,7 @@ class compHeadNode : public Node
     }
     ~compHeadNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compositeNode : public Node
@@ -889,7 +889,7 @@ class compositeNode : public Node
     }
     ~compositeNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class operatorNode : public Node
@@ -907,6 +907,6 @@ class operatorNode : public Node
     }
     ~operatorNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 #endif

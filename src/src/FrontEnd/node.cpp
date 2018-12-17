@@ -7,19 +7,18 @@ void Node::setLoc(YYLTYPE loc)
     this->loc->last_column = loc.last_column;
 }
 
-const char * primNode::toString(){
-        warning("prinNode::toString");
+string primNode::toString(){
         string str = "" ;
         if(isConst) str += "const ";
-        return (str+name).c_str();
+        return str+name;
 }
 
 
-const char * constantNode::toString(){
+string constantNode::toString(){
         if(name == "double")
-            return (to_string(dval)).c_str();
+            return to_string(dval);
         else if(name=="interger")
-            return (to_string(llval)).c_str();
+            return to_string(llval);
         else
             return (sval).c_str();
        ;
