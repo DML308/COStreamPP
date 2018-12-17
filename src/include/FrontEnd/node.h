@@ -100,14 +100,15 @@ class initNode : public Node
 {
   public:
     list<Node *> value;
-    initNode(YYLTYPE loc)
+    initNode(Node *node,YYLTYPE loc)
     {
+        value.push_back(node);
         this->type = Initializer;
         setLoc(loc);
     }
     ~initNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class functionNode : public Node

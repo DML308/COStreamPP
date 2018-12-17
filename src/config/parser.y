@@ -280,38 +280,21 @@ initializer.opt:
                                 }
         | '=' initializer       {
                                     line("Line:%-4d",@1.first_line);
-                                    debug ("initializer.opt ::= '=' initializer \n");
+                                    debug ("initializer.opt ::= '=' initializer(%s) \n",$2->toString().c_str());
                                     $$ = $2 ;
                                 }
         ;
 initializer:
-          '{' initializer.list '}'      {
-                                            line("Line:%-4d",@1.first_line);
-                                            debug ("initializer ::= '{' initializer.list '}' \n");
-                                            $$ = $2 ;
-                                        }
-        | '{' initializer.list ',' '}'  {
-                                            /* 本条规约规则有用吗？有用!现在js支持列表最后多个逗号 */
-                                            line("Line:%-4d",@1.first_line);
-                                            debug ("initializer ::= '{' initializer.list ',' '}' \n");
-                                            $$ = $2 ;
-                                        }
-        | exp                           {
-                                            line("Line:%-4d",@1.first_line);
-                                            debug ("initializer ::= exp \n");
-                                            $$ = $1 ;
-                                        }
+          '{' initializer.list '}'      { $$ = $2 ; }
+        | '{' initializer.list ',' '}'  { $$ = $2 ; }
+        | exp                           { $$ = $1 ; }
         ;
 
 initializer.list:
           initializer   {
-                            line("Line:%-4d",@1.first_line);
-                            debug ("initializer.list ::= initializer \n");
-                            $$ = new initNode(@1);
+                            $$ = new initNode($1,@1);
                         }
         | initializer.list ',' initializer  {
-                            line("Line:%-4d",@1.first_line);
-                            debug ("initializer.list ::= initializer.list ',' initializer \n");
                             static_cast<initNode*>$1->value.push_back($3);
                             $$ = $1 ;
                         }
@@ -349,7 +332,7 @@ parameter.list:
           }
         | parameter.declaration '=' initializer {
                 //函数参数里不支持初始化
-                error( "Line:%-3d parameter.list in function definations cannot have initializers\n",@1.first_line);
+                Error( "Line:%-3d parameter.list in function definations cannot have initializers\n",@1.first_line,@3.first_column);
                 exit(-1);
           }
         | parameter.list ',' error
@@ -917,26 +900,14 @@ window.type:
 /*************************************************************************/
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
-/* 设置变量作用域相关 */
-lblock: '{'  { EnterScope();  }  
-rblock: '}'  { ExitScope();   }
+
+lblock: '{'  { EnterScope(); /* 进入新的变量块级作用域 */ }  
+rblock: '}'  { ExitScope();  /* 退出一个块级作用域    */ }
 
 constant:
-          doubleConstant    {
-                                line("Line:%-4d",@1.first_line);
-                                debug ("constant ::= doubleConstant | value:=%lf\n",$1);
-                                $$ = new constantNode("double",$1,@1) ;
-                            }
-        | integerConstant   {
-                                line("Line:%-4d",@1.first_line);
-                                debug ("constant ::= integerConstant | value:=%d\n",$1);
-                                $$ = new constantNode("interger",$1,@1) ;
-                            }
-        | stringConstant    {
-                                line("Line:%-4d",@1.first_line);
-                                debug ("constant ::= stringConstant | value:=%s\n",$1->c_str());
-                                $$ = new constantNode("string",*($1),@1) ;
-                            }
+          doubleConstant    { $$ = new constantNode("double",$1,@1) ; }
+        | integerConstant   { $$ = new constantNode("interger",$1,@1) ; }
+        | stringConstant    { $$ = new constantNode("string",*($1),@1) ; }
         ;
 type.specifier:
           basic.type.name       { $$ = $1 ;}
