@@ -4,14 +4,14 @@ FILE *changeTabToSpace()
 {
     /* 使用一个 xx.cos.temp 的文件来把所有\t 转化为4个空格 ' ' */
     FILE *temp;
-    temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
-    infp = fopen(infile_name, "r"); // infp 是在 global.h 中注册的输入文件指针
+    temp_name = getFileNameAll(string(infile_name) + ".temp");
+    infp = fopen(infile_name.c_str(), "r"); // infp 是在 global.h 中注册的输入文件指针
     if (infp == NULL)
     {
-        error("%s:%d 无法打开该文件名对应的文件: \"%s\"\n", __FILE__, __LINE__, infile_name);
+        error("%s:%d 无法打开该文件名对应的文件: \"%s\"\n", __FILE__, __LINE__, infile_name.c_str());
         exit(0);
     }
-    temp = fopen(temp_name, "w");
+    temp = fopen(temp_name.c_str(), "w");
     assert(temp != NULL);
     char ch;
     while ((ch = fgetc(infp)) != EOF)
@@ -25,7 +25,7 @@ FILE *changeTabToSpace()
     }
     fclose(infp);
     fclose(temp);
-    infp = fopen(temp_name, "r");
+    infp = fopen(temp_name.c_str(), "r");
     assert(infp != NULL);
     return infp;
 }
@@ -82,7 +82,7 @@ FILE *recordFunctionAndCompositeName()
     }
     //重新打开文件(即将文件读取的锚点移动回文件头)
     fclose(infp);
-    infp = fopen(temp_name, "r");
+    infp = fopen(temp_name.c_str(), "r");
     assert(infp != NULL);
     return infp;
 }
@@ -98,8 +98,8 @@ static string getFileNameAll(string str)
 //在语法树使用完毕后删除 xx.cos.temp 临时文件
 void removeTempFile()
 {
-    const char *temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
-    if (remove(temp_name))
+    const string temp_name = getFileNameAll(string(infile_name) + ".temp").c_str();
+    if (remove(temp_name.c_str()))
     {
         error("删除 temp 文件失败! Can't delete temp file!");
         exit(0);

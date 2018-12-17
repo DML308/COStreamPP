@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
         return 0;
 
     // (1) 做第一遍扫描(当输入文件存在时)(函数和 composite 变量名存入符号表 S)
-    if (infile_name == NULL)
+    if (infile_name.size() == 0)
     {
         infp = stdin;
         infile_name = "stdin";
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     // (2) 文法建立和语法树生成
     PhaseName = "Parsing";
     yyin = infp;
-    error("temp_name: %s\n", temp_name);
+    error("temp_name: %s\n", temp_name.c_str());
     yyparse();
 
     // (3) 语义检查

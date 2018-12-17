@@ -1,7 +1,8 @@
 #include "global.h"
 
-char *infile_name ;          // input file's name
-char *outfile_name = "stdout";    // output file's name
+string infile_name ;          // input file's name
+string outfile_name = "stdout";    // output file's name
+string temp_name;
 FILE *infp = NULL;   // input file's pointer, default is stdin
 FILE *outfp = NULL;  // output file's pointer, default is stdout
 
@@ -38,21 +39,21 @@ static void printWaveLine(int column)
  */
 void Error(const char *msg, int line, int column)
 {
-    assert(temp_name);
-    error("temp_name: %s\n", temp_name);
-    error("[%s:%d]  error: %s\n", infile_name, line, msg);
-    if(string(temp_name) != "stdin"){
-        show_line(line, temp_name);
+    assert(temp_name.c_str());
+    error("temp_name: %s\n", temp_name.c_str());
+    error("[%s:%d]  error: %s\n", infile_name.c_str(), line, msg);
+    if(temp_name != "stdin"){
+        show_line(line, temp_name.c_str());
         printWaveLine(column);
     }
 }
 /** 和上面函数类似,处理 Warning **/
 void Warning(const char *msg, int line, int column)
 {
-    warning("[%s:%d]  warning: %s\n", infile_name, line, msg);
-    if (string(temp_name) != "stdin" || Level >= WarningLevel)
+    warning("[%s:%d]  warning: %s\n", infile_name.c_str(), line, msg);
+    if (string(temp_name.c_str()) != "stdin" || Level >= WarningLevel)
     {
-        show_line(line, temp_name);
+        show_line(line, temp_name.c_str());
         printWaveLine(column);
     }
 }
