@@ -27,7 +27,7 @@ typedef enum {
   Param,		/*composite.body.param SPL*/
   ParamDcl,
   OperBody,		/*operator SPL*/
-  Operdcl,		/*operator SPL*/
+  OperHead,		/*operator SPL*/
   Operator_,	/* operator def node SPL*/
   Window,		/*operator.body.window SPL*/
   WindowStmt,

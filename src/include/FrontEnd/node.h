@@ -626,22 +626,26 @@ class tumblingNode : public Node
     const char *toString() {}
 };
 
-class OperdclNode : public Node
+/*
+class OperHeadNode : public Node
 {
   public:
     string name;
-    list<Node *> *arg_List;
-    OperdclNode(string name, list<Node *> *arg_List, Loc *loc)
+    list<Node *> *inputs;
+    list<Node *> *outputs;
+    OperHeadNode(string name, list<Node *> *inputs, list<Node *> *outputs, Loc *loc)
     {
         this->setLoc(loc);
-        this->type = Operdcl;
+        this->type = OperHead;
         this->name = name;
-        this->arg_List = arg_List;
+        this->inputs = inputs;
+        this->outputs = outputs;
     }
-    ~OperdclNode() {}
+    ~OperHeadNode() {}
     void print() {}
     const char *toString() {}
 };
+*/
 
 class strdclNode : public Node
 {
@@ -884,7 +888,7 @@ class compHeadNode : public Node
     compHeadNode(string compName, ComInOutNode *inout)
     {
         this->type = CompHead;
-        this->compName=compName;
+        this->compName = compName;
         this->inout = inout;
     }
     ~compHeadNode() {}
@@ -914,13 +918,15 @@ class operatorNode : public Node
 {
   public:
     string operName;
-    list<Node *> *arg_List;
+    list<Node *> *inputs;
+    list<Node*> *outputs;
     operBodyNode *operBody;
-    operatorNode(string operName, list<Node *> *arg_List, operBodyNode *operBody)
+    operatorNode(list<Node*> *outputs,string operName, list<Node *> *inputs, operBodyNode *operBody)
     {
         this->type = Operator_;
+        this->outputs=outputs;
         this->operName = operName;
-        this->arg_List = arg_List;
+        this->inputs = inputs;
         this->operBody = operBody;
     }
     ~operatorNode() {}

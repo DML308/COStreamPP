@@ -8,7 +8,7 @@
 
 extern SymbolTable S;
 extern list<Node*> *Program;
-UnfoldComposite unfold;
+UnfoldComposite *unfold=new UnfoldComposite();
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -503,7 +503,7 @@ operator.add:
         | ADD operator.default.call {
                                           line("Line:%-3d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.default.call \n");
-                                          $$ = new addNode((OperdclNode*)$2,(Loc*)&(@1)) ;
+                                          $$ = new addNode((compositeCallNode*)$2,(Loc*)&(@1)) ;
                                     }
         ;
 operator.pipeline:
@@ -803,16 +803,16 @@ exp:      exp.assignable                    {
                               line("Line:%-3d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,(Loc*)&(@2) ) ;
-                              //当类型为splitjoin，pipeline，operator，compositecall时需要设置输出流
+                              //当类型为splitjoin，pipeline，operator，compositecall时设置输出流
                               if($3->type==SplitJoin){
                                     list<Node*> *outputs=new list<Node*>({$1});
                                     ((splitjoinNode*)$3)->outputs=outputs;
-                                    ((splitjoinNode*)$3)->replace_composite=unfold.UnfoldSplitJoin((splitjoinNode*)$3);
+                                    ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldSplitJoin((splitjoinNode*)$3);
                               }
                               else if($3->type==Pipeline){
                                     list<Node*> *outputs=new list<Node*>({$1});
                                     ((splitjoinNode*)$3)->outputs=outputs;
-                                    ((splitjoinNode*)$3)->replace_composite=unfold.UnfoldPipeline((splitjoinNode*)$3);
+                                    ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldPipeline((splitjoinNode*)$3);
                               }
                         }
         | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
@@ -826,11 +826,11 @@ exp:      exp.assignable                    {
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  $$ = new operatorNode(*($1),NULL,(operBodyNode*)$4) ; 
+                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4) ; 
                   //error("%s",((operatorNode*)$$)->operName.c_str());
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = new operatorNode(*($1),$3,(operBodyNode*)$5) ; 
+                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5) ; 
             }
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);
