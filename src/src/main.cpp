@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
     // (3) 语义检查
     PhaseName = "SemCheck";
-    SemCheck::findMainComposite(Program);
+    //SemCheck::findMainComposite(Program);
 
     // (4) 打印抽象语法树
     PhaseName = "PrintAstTree";

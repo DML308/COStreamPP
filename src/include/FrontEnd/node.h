@@ -6,19 +6,12 @@
 #include <list>
 #include <vector>
 
-typedef struct
-{
-    int first_line;
-    int first_column;
-    int last_line;
-    int last_column;
-} Loc;
 
 class Node
 {
   public:
     NodeType type;
-    Loc *loc;
+    YYLTYPE *loc;
     short pass;
     /* parenthesized is set on expressions which were parenthesized
 	   in the original source:  e.g., (x+y)*(w+z) would have
@@ -26,15 +19,12 @@ class Node
 	   on both MULT nodes. */
     bool parenthesized;
     Node() {
-        loc=new Loc();
+        loc = new YYLTYPE();
     }
     virtual ~Node() {
         delete loc;
     }
-    void setLoc(Loc *loc)
-    {
-        loc = loc;
-    }
+    void setLoc(YYLTYPE loc);
     virtual void print() = 0;
     virtual const char *toString() = 0;
 };
@@ -44,7 +34,7 @@ class primNode : public Node
   public:
     string name;
     bool isConst;
-    primNode(string str, Loc *loc) : name(str), isConst(false)
+    primNode(string str, YYLTYPE loc) : name(str), isConst(false)
     {
         this->type = primary;
         setLoc(loc);
@@ -62,17 +52,17 @@ class constantNode : public Node
     string sval;
     double dval;
     long long llval;
-    constantNode(string type, string str, Loc *loc) : name(type), sval(str)
+    constantNode(string type, string str, YYLTYPE loc) : name(type), sval(str)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, long long l, Loc *loc) : name(type), llval(l)
+    constantNode(string type, long long l, YYLTYPE loc) : name(type), llval(l)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, double d, Loc *loc) : name(type), dval(d)
+    constantNode(string type, double d, YYLTYPE loc) : name(type), dval(d)
     {
         setLoc(loc);
         this->type = constant;
@@ -88,7 +78,7 @@ class idNode : public Node
     string name;
     int level;
     int version;
-    idNode(string name, Loc *loc) : name(name)
+    idNode(string name, YYLTYPE loc) : name(name)
     {
         this->type = Id;
         setLoc(loc);
@@ -110,7 +100,7 @@ class initNode : public Node
 {
   public:
     list<Node *> value;
-    initNode(Loc *loc)
+    initNode(YYLTYPE loc)
     {
         this->type = Initializer;
         setLoc(loc);
@@ -137,7 +127,7 @@ class adclNode : public Node
     expNode *dim;
     NodeType valType;
     /* 默认1维 */
-    adclNode(NodeType valType, expNode *eNode, Loc *loc)
+    adclNode(NodeType valType, expNode *eNode, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Adcl;
@@ -165,7 +155,7 @@ class declareNode : public Node
     list<idNode *> id_List;
     list<adclNode *> adcl_List;
     list<initNode *> init_List;
-    declareNode(primNode *prim, idNode *id, adclNode *adcl, initNode *init, Loc *loc)
+    declareNode(primNode *prim, idNode *id, adclNode *adcl, initNode *init, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Decl;
@@ -188,7 +178,7 @@ class unaryNode : public Node
   public:
     expNode *exp;
     string op;
-    unaryNode(string op, expNode *exp, Loc *loc)
+    unaryNode(string op, expNode *exp, YYLTYPE loc)
     {
         setLoc(loc);
         this->exp = exp;
@@ -206,7 +196,7 @@ class pointNode : public Node
   public:
     Node *assign;
     Node *id;
-    pointNode(Node *assign, Node *id, Loc *loc)
+    pointNode(Node *assign, Node *id, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Point;
@@ -224,7 +214,7 @@ class binopNode : public Node
     expNode *left;
     expNode *right;
     string op;
-    binopNode(expNode *left, string op, expNode *right, Loc *loc)
+    binopNode(expNode *left, string op, expNode *right, YYLTYPE loc)
     {
         this->type = Binop;
         setLoc(loc);
@@ -243,7 +233,7 @@ class ternaryNode : public Node
     expNode *first;
     expNode *second;
     expNode *third;
-    ternaryNode(expNode *first, expNode *second, expNode *thrid, Loc *loc)
+    ternaryNode(expNode *first, expNode *second, expNode *thrid, YYLTYPE loc)
     {
         setLoc(loc);
         this->type = Ternary;
@@ -261,7 +251,7 @@ class castNode : public Node
   public:
     primNode *prim;
     expNode *exp;
-    castNode(primNode *prim, expNode *exp, Loc *loc)
+    castNode(primNode *prim, expNode *exp, YYLTYPE loc)
     {
         setLoc(loc);
         this->type = Cast;
@@ -280,7 +270,7 @@ class caseNode : public Node
   public:
     expNode *exp;
     statNode *stmt;
-    caseNode(expNode *exp, statNode *stmt, Loc *loc)
+    caseNode(expNode *exp, statNode *stmt, YYLTYPE loc)
     {
         setLoc(loc);
         this->type = Case;
@@ -296,7 +286,7 @@ class defaultNode : public Node
 {
   public:
     statNode *stmt;
-    defaultNode(statNode *stmt, Loc *loc)
+    defaultNode(statNode *stmt, YYLTYPE loc)
     {
         setLoc(loc);
         this->type = Default;
@@ -310,7 +300,7 @@ class defaultNode : public Node
 class continueNode : public Node
 {
   public:
-    continueNode(Loc *loc)
+    continueNode(YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Continue;
@@ -323,7 +313,7 @@ class continueNode : public Node
 class breakNode : public Node
 {
   public:
-    breakNode(Loc *loc)
+    breakNode(YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Break;
@@ -337,7 +327,7 @@ class returnNode : public Node
 {
   public:
     expNode *exp;
-    returnNode(expNode *exp, Loc *loc)
+    returnNode(expNode *exp, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Return;
@@ -353,7 +343,7 @@ class ifNode : public Node
   public:
     expNode *exp;
     Node *stmt;
-    ifNode(expNode *exp, Node *stmt, Loc *loc)
+    ifNode(expNode *exp, Node *stmt, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = If;
@@ -371,7 +361,7 @@ class ifElseNode : public Node
     expNode *exp;
     Node *stmt1;
     Node *stmt2;
-    ifElseNode(expNode *exp, Node *stmt1, Node *stmt2, Loc *loc)
+    ifElseNode(expNode *exp, Node *stmt1, Node *stmt2, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = IfElse;
@@ -389,7 +379,7 @@ class switchNode : public Node
   public:
     expNode *exp;
     statNode *stat;
-    switchNode(expNode *exp, statNode *stat, Loc *loc)
+    switchNode(expNode *exp, statNode *stat, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Switch;
@@ -406,7 +396,7 @@ class whileNode : public Node
   public:
     expNode *exp;
     Node *stmt;
-    whileNode(expNode *exp, Node *stmt, Loc *loc)
+    whileNode(expNode *exp, Node *stmt, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = While;
@@ -423,7 +413,7 @@ class doNode : public Node
   public:
     expNode *exp;
     Node *stmt;
-    doNode(Node *stmt, expNode *exp, Loc *loc)
+    doNode(Node *stmt, expNode *exp, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Do;
@@ -442,7 +432,7 @@ class forNode : public Node
     expNode *cond;
     expNode *next;
     Node *stmt;
-    forNode(Node *init, expNode *cond, expNode *next, Node *stmt, Loc *loc)
+    forNode(Node *init, expNode *cond, expNode *next, Node *stmt, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = For;
@@ -459,8 +449,8 @@ class blockNode : public Node
 {
   public:
     list<Node *> *stmt_List;
-    Loc *right;
-    blockNode(list<Node *> *stmt_List, Loc *left, Loc *right)
+    YYLTYPE right;
+    blockNode(list<Node *> *stmt_List, YYLTYPE left, YYLTYPE right)
     {
         this->setLoc(left);
         this->right = right;
@@ -476,7 +466,7 @@ class pipelineNode : public Node
 {
   public:
     list<Node *> *split_pipe_stmt_List;
-    pipelineNode(list<Node *> *split_pipe_stmt_List, Loc *loc)
+    pipelineNode(list<Node *> *split_pipe_stmt_List, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Pipeline;
@@ -491,7 +481,7 @@ class roundrobinNode : public Node
 {
   public:
     list<Node *> *arg_list;
-    roundrobinNode(list<Node *> *arg_list, Loc *loc)
+    roundrobinNode(list<Node *> *arg_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = RoundRobin;
@@ -506,7 +496,7 @@ class duplicateNode : public Node
 {
   public:
     expNode *exp;
-    duplicateNode(expNode *exp, Loc *loc)
+    duplicateNode(expNode *exp, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Duplicate;
@@ -521,7 +511,7 @@ class splitNode : public Node
 {
   public:
     Node *dup_round;
-    splitNode(Node *dup_round, Loc *loc)
+    splitNode(Node *dup_round, YYLTYPE loc)
     {
         this->type = Split;
         this->setLoc(loc);
@@ -536,7 +526,7 @@ class joinNode : public Node
 {
   public:
     roundrobinNode *rdb;
-    joinNode(roundrobinNode *rdb, Loc *loc)
+    joinNode(roundrobinNode *rdb, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Join;
@@ -554,7 +544,7 @@ class splitjoinNode : public Node
     joinNode *join;
     list<Node *> *stmt_list;
     list<Node *> *split_pipe_stmt_List;
-    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, Loc *loc)
+    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = SplitJoin;
@@ -573,7 +563,7 @@ class addNode : public Node
   public:
     /* content可以为pipeline，splitjoin或者composite调用 */
     Node *content;
-    addNode(Node *content, Loc *loc)
+    addNode(Node *content, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Add;
@@ -588,7 +578,7 @@ class slidingNode : public Node
 {
   public:
     list<Node *> *arg_list;
-    slidingNode(list<Node *> *arg_list, Loc *loc)
+    slidingNode(list<Node *> *arg_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Sliding;
@@ -603,7 +593,7 @@ class tumblingNode : public Node
 {
   public:
     list<Node *> *arg_list;
-    tumblingNode(list<Node *> *arg_list, Loc *loc)
+    tumblingNode(list<Node *> *arg_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Tumbling;
@@ -619,7 +609,7 @@ class OperdclNode : public Node
   public:
     string name;
     list<Node *> *arg_List;
-    OperdclNode(string name, list<Node *> *arg_List, Loc *loc)
+    OperdclNode(string name, list<Node *> *arg_List, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Operdcl;
@@ -638,7 +628,7 @@ class strdclNode : public Node
     list<idNode *> id_List;
     list<adclNode *> adcl_List;
     list<idNode *> decl_List;
-    strdclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
+    strdclNode(primNode *prim, idNode *id, adclNode *adcl, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = StrDcl;
@@ -666,7 +656,7 @@ class winStmtNode : public Node
   public:
     Node *winType;
     string winName;
-    winStmtNode(string winName, Node *winType, Loc *loc)
+    winStmtNode(string winName, Node *winType, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = WindowStmt;
@@ -720,7 +710,7 @@ class callNode : public Node
   public:
     string name;
     list<Node *> *arg_List;
-    callNode(string name, list<Node *> *arg_List, Loc *loc)
+    callNode(string name, list<Node *> *arg_List, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Call;
@@ -737,7 +727,7 @@ class inOutdeclNode : public Node
   public:
     Node *strType;
     idNode *id;
-    inOutdeclNode(Node *strType, idNode *id, Loc *loc)
+    inOutdeclNode(Node *strType, idNode *id, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = InOutdcl;
@@ -753,7 +743,7 @@ class ComInOutNode : public Node
   public:
     list<Node *> *input_List;
     list<Node *> *output_List;
-    ComInOutNode(list<Node *> *input_List, list<Node *> *output_List, Loc *loc)
+    ComInOutNode(list<Node *> *input_List, list<Node *> *output_List, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = ComInOut;
@@ -771,7 +761,7 @@ class paramDeclNode : public Node
     primNode *prim;
     idNode *id;
     adclNode *adcl;
-    paramDeclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
+    paramDeclNode(primNode *prim, idNode *id, adclNode *adcl, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = ParamDcl;
@@ -854,7 +844,7 @@ class compsiteCallNode : public Node
     list<Node *> *stream_List;
     list<Node *> *param_List;
     compositeNode *actual_composite;    //保存composite展开节点
-    compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, Loc *loc)
+    compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;

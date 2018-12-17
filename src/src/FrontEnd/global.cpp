@@ -45,6 +45,8 @@ void Error(const char *msg, int line, int column)
     if(temp_name != "stdin"){
         show_line(line, temp_name.c_str());
         printWaveLine(column);
+    }else{
+        printf("\n");
     }
 }
 /** 和上面函数类似,处理 Warning **/
@@ -55,5 +57,8 @@ void Warning(const char *msg, int line, int column)
     {
         show_line(line, temp_name.c_str());
         printWaveLine(column);
+    }else
+    {
+        printf("\n");
     }
 }
