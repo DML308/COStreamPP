@@ -221,11 +221,11 @@ class binopNode : public Node
         setLoc(loc);
         this->left = left;
         this->right = right;
-        op = op;
+        this->op = op;
     }
     ~binopNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class ternaryNode : public Node
