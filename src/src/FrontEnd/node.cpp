@@ -68,3 +68,32 @@ string castNode::toString()
 {
     return "(" + prim->toString() + ")" + exp->toString();
 }
+
+string callNode::toString()
+{
+    string str = name + '(';
+    for (auto i : arg_list)
+    {
+        str += i->toString();
+    }
+    return str + ')';
+}
+
+string operatorNode::toString()
+{
+    string str = operName + '(';
+    for (auto i : arg_list)
+    {
+        str += i->toString();
+    }
+    return str + ')' + operBody->toString();
+}
+
+string idNode::toString(){
+    string str = name;
+    for (auto i : arg_list)
+    {
+        str += '['+i->toString()+']';
+    }
+    return str;
+}

@@ -164,32 +164,38 @@ declaring.list:
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->c_str());
               idNode *id=new idNode(*($2),@2);
+              id->init = $3;
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primNode*)$1,id,NULL,(initNode*)$3,@2) ;
+              $$ = new declareNode((primNode*)$1,id,@2) ;
               //error ("%s\n",name.c_str());
         }
         | type.specifier 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) array.declarator initializer.opt \n",$1->toString().c_str(),$2->c_str());
               idNode *id=new idNode(*($2),@2);
+              id->arg_list = (static_cast<arrayNode*>$3)->arg_list;
+              id->init = $4;
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primNode*)$1,id,(adclNode*)$3,(initNode*)$4,@2);
+              $$ = new declareNode((primNode*)$1,id,@2);
               
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
               line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= declaring.list 	',' 	%s initializer.opt \n",$3->c_str());
+              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) initializer.opt \n",$3->c_str());
               idNode *id=new idNode(*($3),@2);
+              id->init = $4;
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
-              ((declareNode*)$1)->append(id,NULL,(initNode*)$4);
+              ((declareNode*)$1)->id_list.push_back(id);
               $$=$1;
         }
         | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= declaring.list 	',' 	%s array.declarator initializer.opt \n",$3->c_str());
+              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) array.declarator initializer.opt \n",$3->c_str());
               idNode *id=new idNode(*($3),@2);
+              id->arg_list = (static_cast<arrayNode*>$4)->arg_list;
+              id->init = $5;
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
-              ((declareNode*)$1)->append(id,(adclNode*)$4,(initNode*)$5);
+              ((declareNode*)$1)->id_list.push_back(id);
               $$=$1;
         }
         ;
@@ -199,7 +205,7 @@ stream.declaring.list:
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
                                                   /* 需要添加符号表插入操作 */
-                                                  ((strdclNode*)($1))->insert(id);
+                                                  ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
@@ -207,7 +213,7 @@ stream.declaring.list:
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
                                                   idNode *id=new idNode(*($3),@3);
                                                   /* 需要添加符号表插入操作 */
-                                                  ((strdclNode*)($1))->insert(id);
+                                                  ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
         ;
@@ -223,23 +229,27 @@ stream.declaration.list:
                                         line("Line:%-4d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier(%s) IDENTIFIER(%s) \n",$1->toString().c_str(),$2->c_str());
                                         /* 需要添加符号表查找操作*/
-                                        $$ = new strdclNode((primNode*)$1,(idNode*)$2,NULL,@2) ;
+                                        $$ = new strdclNode(new idNode($2,@2),@1) ;
                                     }
         | type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-4d",@1.first_line);
                                         debug ("stream.declaration.list ::=  type.specifier(%s) IDENTIFIER(%s) array.declarator \n",$1->toString().c_str(),$2->c_str());
-                                        $$ = new strdclNode((primNode*)$1,(idNode*)$2,(adclNode*)$3,@2) ;
+                                        idNode * id = new idNode($2,@2);
+                                        id->arg_list = (static_cast<arrayNode*>$3)->arg_list;
+                                        $$ = new strdclNode(id,@2) ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER {
                                         line("Line:%-4d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER(%s) \n",$4->c_str());
-                                        ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,NULL);
+                                        (static_cast<strdclNode*>$1)->id_list.push_back(new idNode($4,@4));
                                         $$ = $1 ;
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-4d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER(%s) array.declarator \n",$4->c_str());
-                                        ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,(adclNode*)$5);
+                                        idNode * id = new idNode($4,@4);
+                                        id->arg_list = (static_cast<arrayNode*>$5)->arg_list;
+                                        (static_cast<strdclNode*>$1)->id_list.push_back(id);
                                         $$ = $1 ;
                                     }
         ;
@@ -251,23 +261,22 @@ array.declarator:
           '[' ']'   {
                             line("Line:%-4d",@1.first_line);
                             debug ("array.declarator ::= '[' ']' \n");
-                            $$ = new adclNode(basic,NULL, @1) ;
+                            $$ = new arrayNode(NULL, @1) ;
                     }
         | '[' exp ']' {
                             line("Line:%-4d",@1.first_line);
                             debug ("array.declarator ::= '[' exp ']' \n");
-                            $$ = new adclNode(basic, (expNode*)$2, @1) ;
+                            $$ = new arrayNode((expNode*)$2, @1) ;
                     }
         | array.declarator '[' exp ']'  {
                             line("Line:%-4d",@1.first_line);
                             debug ("array.declarator ::= array.declarator '[' exp ']' \n");
-                            $$ =new adclNode(Arr,NULL,@2);
-
+                            (static_cast<arrayNode*>$1)->arg_list.push_back((expNode*)$3); $$ = $1;
                     }
-        | array.declarator '[' ']'  {
-                            error ("Line:%-3d array declaration with illegal empty dimension\n",@1.first_line);
-                            exit(-1);
-                    }
+        | array.declarator '[' ']'{
+                                          yyerror ("array declaration with illegal empty dimension\n");
+                                          exit(-1);
+                                  }
         ;
 /*************************************************************************/
 /*                      1.1.4 initializer                                */
@@ -341,14 +350,13 @@ parameter.declaration:
           type.specifier IDENTIFIER {
                                           line("Line:%-4d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier(%s) IDENTIFIER(%s) \n",$1->toString().c_str(),$2->c_str());
-                                          idNode*id = new idNode(*($2),@2);
-                                          $$ = new paramDeclNode((primNode*)$1,id,NULL,@2 );
+                                          $$ = new idNode($2,@2);
                                     }
         | type.specifier IDENTIFIER array.declarator  {
                                           line("Line:%-4d",@1.first_line);
                                           debug ("parameter.declaration ::= type.specifier(%s) IDENTIFIER(%s) array.declarator \n",$1->toString().c_str(),$2->c_str());
-                                          idNode*id = new idNode(*($2),@2);
-                                          $$ = new paramDeclNode((primNode*)$1,id,(adclNode*)$3,@2 );
+                                          $$ = new idNode($2,@2);
+                                          (static_cast<idNode*>$$)->arg_list = (static_cast<arrayNode*>$3)->arg_list;
                                     }
         ;
 function.body:
@@ -467,7 +475,7 @@ composite.body.operator:
 operator.file.writer:
           FILEWRITER '(' IDENTIFIER ')' '(' stringConstant ')' ';' { $$ = NULL ; }
         | FILEWRITER '(' IDENTIFIER ')' '(' ')' ';' {
-                                                       error("Line:%d FILEWRITER must have the filename of the output file.\n",@1.first_line);
+                                                       yyerror("FILEWRITER must have the filename of the output file.\n");
                                                     }
         ;
 operator.add:
@@ -639,16 +647,13 @@ assignment.operator:
 exp.assignable:
           IDENTIFIER                        
             { 
-                  line("Line:%-4d",@1.first_line);debug ("exp.assignable ::= %s\n",$1->c_str());
                   //if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
                   $$ = new idNode(*($1),@1);
-
             }
         | IDENTIFIER  array.declarator      
             { 
-                  line("Line:%-4d",@1.first_line);debug ("exp.assignable ::= %s array.declarator\n",$1->c_str());
-                  ((adclNode*)$2)->name= *($1);
-                  $$=$2;
+                  $$ = new idNode(*($1),@1);
+                  (static_cast<idNode*>$$)->arg_list = (static_cast<arrayNode*>$2)->arg_list;
             }  
         ; 
 exp:      exp.assignable                    { $$ = $1 ; }
@@ -662,8 +667,9 @@ exp:      exp.assignable                    { $$ = $1 ; }
                                             { 
                                               line("Line:%-4d",@1.first_line);
                                               debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); 
-                                              ((adclNode*)$4)->name= *($3);
-                                              $$ = new pointNode($1,$4,@2) ; 
+                                              idNode * id = new idNode($3,@3);
+                                              id->arg_list = (static_cast<arrayNode*>$4)->arg_list;
+                                              $$ = new pointNode($1,id,@2) ; 
                                             }
         | constant        { $$ = $1 ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
@@ -699,12 +705,9 @@ exp:      exp.assignable                    { $$ = $1 ; }
                               line("Line:%-4d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
-                              // if($3->type==CompositeCall ||$3->type==Pipeline ||$3->type==SplitJoin ||$3->type==Operator_ )
-                              // $$->type = $3->type;
                         }
-        | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-4d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
-                                                                  $$ = new callNode(*($1),$3,@1) ; 
-                                                              }
+        | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
+        | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@1) ; }
         | FILEREADER '(' ')' '(' stringConstant ')'   { 
                   line("Line:%-4d",@1.first_line);
                   debug ("exp ::= FILEREADER()( stringConstant )\n"); 
