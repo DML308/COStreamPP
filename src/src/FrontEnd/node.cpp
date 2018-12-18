@@ -30,6 +30,22 @@ string initNode::toString()
 {
     string str = "";
     for (auto i : value)
-        str = str + i->toString()+',';
+        str = str + i->toString() + ',';
     return str;
+}
+
+string binopNode::toString()
+{
+    return left->toString() + op + right->toString();
+}
+
+string ternaryNode::toString()
+{
+    assert(first && second && third);
+    return first->toString() + "?" + second->toString() + ":" + third->toString();
+}
+
+string unaryNode::toString()
+{
+    return op + exp->toString();
 }

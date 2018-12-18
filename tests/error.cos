@@ -1,32 +1,3 @@
 //本测试用例用来测试error
-int aaa[8] = {1,2,3,4,5,6,7,8};
-int bbb = 33;
-
-composite Main(){
-	int N =99;
-	stream<int x,double y>S,P;
-	S=Source(){
-		int i;
-		init{
-			i=0;
-            if(1) { println(1); }
-		}
-		work{
-			for(i = 0;i < 8;i++){
-				S[i].x=aaa[i];
-			}
-		}
-		window{
-			S tumbling(8);
-		}
-	};
-	P = B(S)(88,N);
-	Sink(P){
-		work{
-			println(P[0].x);
-		}
-		window{
-			P tumbling(1);
-		}
-	};
-}
+//int aaa[8] = {1,2,3,4,5,6,7,8};
+int i = 1+2*3/4 ? 99 :100;

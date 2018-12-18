@@ -651,94 +651,39 @@ exp.assignable:
                   $$=$2;
             }  
         ; 
-exp:      exp.assignable                    {
-              line("Line:%-4d",@1.first_line);debug ("exp ::= exp.assignable\n"); $$ = $1 ; 
-              }
-        | exp.assignable '.' IDENTIFIER     { 
-              line("Line:%-4d",@1.first_line);debug ("exp ::= exp.assignable '.' %s\n",$3->c_str()); 
-              idNode *id=new idNode(*($3),@3);
-              $$ = new pointNode($1,id,@2) ; 
-            }
+exp:      exp.assignable                    { $$ = $1 ; }
+        | exp.assignable '.' IDENTIFIER     {  
+                                              line("Line:%-4d",@1.first_line);
+                                              debug ("exp ::= exp.assignable(%s) '.' IDENTIFIER(%s)\n",$1->toString().c_str(),$3->c_str()); 
+                                              idNode *id=new idNode(*($3),@3);
+                                              $$ = new pointNode($1,id,@2) ; 
+                                            }
         | exp.assignable '.' IDENTIFIER array.declarator 
-            { 
-              line("Line:%-4d",@1.first_line);debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); 
-              ((adclNode*)$4)->name= *($3);
-              $$ = new pointNode($1,$4,@2) ; 
-            }
-        | constant        { line("Line:%-4d",@1.first_line);debug ("exp ::= constant\n"); $$ = $1 ; }
-        | exp '+' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp + exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; 
-                        }
-        | exp '-' exp   {
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp - exp\n");  
-                              $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; 
-                        }
-        | exp '*' exp   {    
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp * exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@2) ; 
-                        }
-        | exp '/' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp / exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"/",(expNode*)$3,@2) ; 
-                        }
-        | exp '%' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp %% exp\n");
-                              $$ = new binopNode((expNode*)$1,"%",(expNode*)$3,@2) ;
-                        }
-        | exp OROR exp  { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp || exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"||",(expNode*)$3,@2) ;
-                        }
-
-        | exp ANDAND exp{ 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp && exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"&&",(expNode*)$3,@2) ;
-                        }
-        | exp '|' exp   {     
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp | exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"|",(expNode*)$3,@2) ;
-                        }
-        | exp '&' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp & exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"&",(expNode*)$3,@2) ;
-                        }
-        | exp '^' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp ^ exp\n");
-                              $$ = new binopNode((expNode*)$1,"^",(expNode*)$3,@2) ;
-                        }
-        | exp LS exp    { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp << exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"<<",(expNode*)$3,@2) ;
-                        }
-        | exp RS exp    {     
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp >> exp\n"); 
-                              $$ = new binopNode((expNode*)$1,">>",(expNode*)$3,@2) ;
-                        }
-        | exp '<' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp < exp\n");
-                              $$ = new binopNode((expNode*)$1,"<",(expNode*)$3,@2) ;
-                        }
-        | exp '>' exp   { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp > exp\n");
-                              $$ = new binopNode((expNode*)$1,">",(expNode*)$3,@2) ;
-                        }
-        | exp LE exp    { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp <= exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"<=",(expNode*)$3,@2) ;
-                        }
-        | exp GE exp    { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp >= exp\n");
-                              $$ = new binopNode((expNode*)$1,">=",(expNode*)$3,@2) ;
-                        }
-        | exp EQ exp    { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp == exp\n");
-                              $$ = new binopNode((expNode*)$1,"==",(expNode*)$3,@2) ;
-                        }
-        | exp NE exp    { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp != exp\n"); 
-                              $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,@2) ;
-                        }
+                                            { 
+                                              line("Line:%-4d",@1.first_line);
+                                              debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); 
+                                              ((adclNode*)$4)->name= *($3);
+                                              $$ = new pointNode($1,$4,@2) ; 
+                                            }
+        | constant        { $$ = $1 ; }
+        | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
+        | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
+        | exp '*' exp     { $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@2) ; }
+        | exp '/' exp     { $$ = new binopNode((expNode*)$1,"/",(expNode*)$3,@2) ; }
+        | exp '%' exp     { $$ = new binopNode((expNode*)$1,"%",(expNode*)$3,@2) ;}
+        | exp OROR exp    { $$ = new binopNode((expNode*)$1,"||",(expNode*)$3,@2) ;}
+        | exp ANDAND exp  { $$ = new binopNode((expNode*)$1,"&&",(expNode*)$3,@2) ;}
+        | exp '|' exp     { $$ = new binopNode((expNode*)$1,"|",(expNode*)$3,@2) ;}
+        | exp '&' exp     { $$ = new binopNode((expNode*)$1,"&",(expNode*)$3,@2) ;}
+        | exp '^' exp     { $$ = new binopNode((expNode*)$1,"^",(expNode*)$3,@2) ;}
+        | exp LS exp      { $$ = new binopNode((expNode*)$1,"<<",(expNode*)$3,@2) ;}
+        | exp RS exp      { $$ = new binopNode((expNode*)$1,">>",(expNode*)$3,@2) ;}
+        | exp '<' exp     { $$ = new binopNode((expNode*)$1,"<",(expNode*)$3,@2) ;}
+        | exp '>' exp     { $$ = new binopNode((expNode*)$1,">",(expNode*)$3,@2) ;}
+        | exp LE exp      { $$ = new binopNode((expNode*)$1,"<=",(expNode*)$3,@2) ;}
+        | exp GE exp      { $$ = new binopNode((expNode*)$1,">=",(expNode*)$3,@2) ;}
+        | exp EQ exp      { $$ = new binopNode((expNode*)$1,"==",(expNode*)$3,@2) ;}
+        | exp NE exp      { $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,@2) ;}
         | exp '?' exp ':' exp { 
                               line("Line:%-4d",@1.first_line);debug ("exp ::= exp ? exp : exp\n"); 
                               $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,@4);

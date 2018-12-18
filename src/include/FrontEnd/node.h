@@ -187,7 +187,7 @@ class unaryNode : public Node
     }
     ~unaryNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 /*  这里pointNode可以和binopnode可以合成一个，但是需要将binopNode的expnode改为node
     因此在这里单独处理
@@ -234,7 +234,7 @@ class ternaryNode : public Node
     expNode *first;
     expNode *second;
     expNode *third;
-    ternaryNode(expNode *first, expNode *second, expNode *thrid, YYLTYPE loc)
+    ternaryNode(expNode *first, expNode *second, expNode *third, YYLTYPE loc)
     {
         setLoc(loc);
         this->type = Ternary;
@@ -244,7 +244,7 @@ class ternaryNode : public Node
     }
     ~ternaryNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class castNode : public Node
