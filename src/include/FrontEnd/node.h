@@ -696,8 +696,8 @@ class winStmtNode : public Node
 class windowNode : public Node
 {
   public:
-    list<winStmtNode *> *winStmt_List;
-    windowNode(list<winStmtNode *> *winStmt_List)
+    list<Node *> *winStmt_List;
+    windowNode(list<Node *> *winStmt_List)
     {
         this->type = Window;
         this->winStmt_List = winStmt_List;
@@ -865,21 +865,22 @@ class compositeCallNode : public Node
   public:
     string compName;
     list<Node *> *stream_List;
-    list<Node *> *param_List;
+    list<Node *> *inputs;
+    list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
     /*拷贝构造函数 */
     compositeCallNode(const compositeCallNode &node){
         this->compName=node.compName;
         this->stream_List=node.stream_List;
-        this->param_List=node.param_List;
+        this->inputs=node.inputs;
         this->actual_composite=node.actual_composite;
     }
-    compositeCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, compositeNode *actual_composite, Loc *loc)
+    compositeCallNode(list<Node *> *outputs,string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, Loc *loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
         this->compName = compName;
-        this->param_List = param_List;
+        this->inputs = inputs;
         this->actual_composite = actual_composite;
     }
     ~compositeCallNode() {}

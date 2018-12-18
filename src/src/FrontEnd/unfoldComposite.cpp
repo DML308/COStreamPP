@@ -67,7 +67,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     vector<string> streamName({"dup", "round"});
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *inputs = new list<Node *>();
-    list<winStmtNode *> *win_stmt = new list<winStmtNode *>();
+    list<Node *> *win_stmt = new list<Node *>();
     int len = call_List.size();
     inputs->push_back(input);
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
@@ -81,7 +81,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
         for (int i = 1; i < len; ++i)
             arguments->push_back(arg);
     }
-    cout << arguments->size() << endl;
+    //cout << "arguments->size()= "<<arguments->size() << endl;
     int cnt = 0;
     for (auto it : *(arguments))
     {
@@ -132,6 +132,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
+    list<Node*> *tempList=new list<Node*>();
     operatorNode *spiltOperator = NULL, *joinOperator = NULL;
     /* arg_list表示split roundrobin(size);的size参数列表 */
     list<Node *> *arg_list = ((roundrobinNode *)node->split->dup_round)->arg_list;
@@ -141,7 +142,14 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     compHeadNode *head = new compHeadNode(comName, inout);
     assert(inputs != NULL && outputs != NULL);
     //cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
+    //1.构建splitoperator，构建输出输入流 与composite调用关联
     operatorNode *splitOperator = MakeSplitOperator(inputs->front(), arg_list, 1);
+    tempList=splitOperator->outputs;
+    auto iter=tempList->begin();
+    for(auto it:call_List){
+
+
+    }
     call_List.clear();
     return tmp;
 }

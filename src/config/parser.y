@@ -558,10 +558,10 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                  $$ = new compositeCallNode(*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1));
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1));
             }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                  $$ = new compositeCallNode(*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1));
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1));
             }
         ;
 
@@ -812,6 +812,12 @@ exp:      exp.assignable                    {
                                     ((splitjoinNode*)$3)->outputs=outputs;
                                     ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldPipeline((splitjoinNode*)$3);
                               }
+                              else if($3->type==CompositeCall){
+                                    ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
+                              }
+                              else if($3->type==Operator_){
+                                     ((operatorNode*)$3)->outputs=new list<Node*>({$1});
+                              }
                         }
         | IDENTIFIER '(' argument.expression.list ')'         {   line("Line:%-3d",@1.first_line);debug ("exp ::= function ( exp.list )\n"); 
                                                                   $$ = new callNode(*($1),$3,(Loc*)&(@1)) ; 
@@ -834,19 +840,19 @@ exp:      exp.assignable                    {
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(*($1),NULL,$5,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$5,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(*($1),$3,$6,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$3,$6,S.LookupCompositeSymbol(*($1)),(Loc*)&(@1)) ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
