@@ -1,5 +1,5 @@
 #include "unfoldComposite.h"
-
+extern SymbolTable S;
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void UnfoldComposite::setCallList(list<Node *> *stmts)
 {
@@ -110,6 +110,12 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     return res;
 }
 
+operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments){
+    operatorNode *res = NULL;
+
+    return res;
+}
+
 compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
@@ -132,24 +138,43 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
-    list<Node*> *tempList=new list<Node*>();
-    operatorNode *spiltOperator = NULL, *joinOperator = NULL;
+    list<Node *> *tempList = new list<Node *>();
+    operatorNode *splitOperator = NULL, *joinOperator = NULL;
     /* arg_list表示split roundrobin(size);的size参数列表 */
     list<Node *> *arg_list = ((roundrobinNode *)node->split->dup_round)->arg_list;
-    list<Node *> *inputs = node->inputs;
+    list<Node *> *inputs_split = node->inputs;
     list<Node *> *outputs = node->outputs;
-    ComInOutNode *inout = new ComInOutNode(inputs, outputs, NULL);
+    list<Node *> *inputs_join = NULL;
+    list<Node *> *call_outputs = NULL;
+    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
+    ComInOutNode *inout = new ComInOutNode(inputs_split, outputs, NULL);
     compHeadNode *head = new compHeadNode(comName, inout);
-    assert(inputs != NULL && outputs != NULL);
+    assert(inputs_split != NULL && outputs != NULL);
     //cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
     //1.构建splitoperator，构建输出输入流 与composite调用关联
-    operatorNode *splitOperator = MakeSplitOperator(inputs->front(), arg_list, 1);
-    tempList=splitOperator->outputs;
-    auto iter=tempList->begin();
-    for(auto it:call_List){
-
-
+    splitOperator = MakeSplitOperator(inputs_split->front(), arg_list, 1);
+    tempList = splitOperator->outputs;
+    auto iter = tempList->begin();
+    int cnt = 0;
+    for (auto it : call_List)
+    {
+        assert(it->type == CompositeCall);
+        string name = (((compositeCallNode *)it)->compName);
+        string tempName = name + (to_string(cnt++));
+        idNode *id = new idNode(tempName, NULL);
+        //compositeCall的输出流是join节点的输入流s
+        inputs_join->push_back(id);
+        list<Node *> *outputs = new list<Node *>({id});
+        //compositeCall的输入流
+        list<Node *> *inputs = new list<Node *>({*iter});
+        compositeNode *comp = S.LookupCompositeSymbol(name);
+        assert(comp != NULL);
+        compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, comp, NULL);
+        comCallList->push_back(call);
+        iter++;
     }
+    //cout<<"comCallList->size()= "<<comCallList->size()<<endl;
+
     call_List.clear();
     return tmp;
 }

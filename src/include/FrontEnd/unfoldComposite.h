@@ -1,6 +1,7 @@
 #ifndef _UNFOLD_COMPOSITE_H
 #define _UNFOLD_COMPOSITE_H
 #include "node.h"
+#include "symbol.h"
 class UnfoldComposite
 {
   public:
@@ -19,6 +20,7 @@ class UnfoldComposite
     compositeNode *UnfoldPipeline(Node *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
     operatorNode  *MakeSplitOperator(Node *input, list<Node*> *arguments, int style);
+    operatorNode  *MakeJoinOperator(Node *output, list<Node*> *inputs,list<Node*> *arguments);
 
 };
 #endif
