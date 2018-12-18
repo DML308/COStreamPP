@@ -15,6 +15,8 @@ public:
   map<FlatNode *, int> mapInitWork2FlatNode;   // 存放各个operator的workestimate（初态）
   // 构建SDF图，初始化flatNodes, mapEdge2FlatNode
   void GenerateFlatNodes(operatorNode *u, Node *oldComposite,compositeNode *newComposite);
+  void AddOutEdges(FlatNode* dest);
+  void AddInEdges(FlatNode *src);
 };
 void GraphToOperators(compositeNode *composite, Node *oldComposite);
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite);

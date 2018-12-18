@@ -23,3 +23,16 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite,co
     }
 
 }
+
+
+void FlatNode::AddOutEdges(FlatNode* dest)
+{
+	outFlatNodes.push_back(dest);
+	++nOut;
+}
+
+void FlatNode::AddInEdges(FlatNode *src)
+{
+	inFlatNodes.push_back(src);
+	++nIn;
+}
