@@ -39,7 +39,7 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
             constantNode *con_cond = (constantNode *)(cond_b->right);
             assert(con_cond->style == "interger");
             condition = con_cond->llval;
-            cout << "init= " << initial << " cond= " << condition << endl;
+            //cout << "init= " << initial << " cond= " << condition << endl;
             assert(initial != MAX_INF && condition != MAX_INF);
             /* 不一定是block */
             assert(node->stmt->type == Block);
@@ -73,7 +73,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
     Node *arg = arguments->front();
     /* arg的type可以为constatnt后者id 但是id必须是个常量（需要常量传播） */
-    cout << "arg.type= " << arg->type << endl;
+    //cout << "arg.type= " << arg->type << endl;
     // if(arg->type==1)
     // cout<<"idName= "<<((idNode*)arg)->name<<endl;
 
@@ -114,14 +114,43 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, NULL, window);
     res = new operatorNode(outputs, operName[style], inputs, body);
-    cout<<"-----------------split end---------------------"<<endl;
+    cout << "-----------------split end---------------------" << endl;
     return res;
 }
 
 operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments)
 {
     operatorNode *res = NULL;
+    windowNode *window = NULL;
+    operBodyNode *body = NULL;
+    string operName = "join";
+    int len = call_List.size();
 
+    list<Node *> *outputs = new list<Node *>();
+    list<Node *> *win_stmt = new list<Node *>();
+    //assert(arguments->size() == 1);
+    Node *arg = arguments->front();
+    outputs->push_back(output);
+    if (arguments->size() == 1)
+    {
+        for (int i = 1; i < len; ++i)
+            arguments->push_back(arg);
+    }
+    assert(inputs->size() == arguments->size());
+    auto iter = inputs->begin();
+    //cout<<"iter->type="<<(*iter)->type<<endl;
+    for (auto it : *(arguments))
+    {
+        cout << ((idNode *)*iter)->name << endl;
+        slidingNode *slid = new slidingNode(new list<Node *>({it}), NULL);
+        winStmtNode *win = new winStmtNode(((idNode *)*iter)->name, slid, NULL);
+        win_stmt->push_back(win);
+        iter++;
+    }
+    window = new windowNode(win_stmt);
+    body = new operBodyNode(NULL, NULL, NULL, window);
+    res = new operatorNode(outputs, operName, inputs, body);
+    cout << "-----------------join end---------------------" << endl;
     return res;
 }
 
@@ -158,6 +187,9 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
     ComInOutNode *inout = new ComInOutNode(inputs_split, outputs, NULL);
     compHeadNode *head = new compHeadNode(comName, inout);
+    compBodyNode *body = NULL;
+    /* comp_stmt_List表示所构建的compositeNode语句 */
+    list<Node *> *comp_stmt_List=new list<Node *>();
     assert(inputs_split != NULL && outputs != NULL);
     //cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
     //1.构建splitoperator，构建输出输入流 与composite调用关联
@@ -184,8 +216,15 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         cnt++;
     }
     //cout<<"comCallList->size()= "<<comCallList->size()<<endl;
-    joinOperator=MakeJoinOperator(outputs->front(),inputs_join,arg_list);
-    
+    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
+    comp_stmt_List->push_back(splitOperator);
+    for(auto it:*comCallList){
+        comp_stmt_List->push_back(it);
+    }
+    comp_stmt_List->push_back(joinOperator);
+    //cout<<"comp_stmt_List->size()= "<<comp_stmt_List->size()<<endl;
+    body=new compBodyNode(NULL,comp_stmt_List);
+    tmp=new compositeNode(head,body);
     call_List.clear();
     return tmp;
 }
