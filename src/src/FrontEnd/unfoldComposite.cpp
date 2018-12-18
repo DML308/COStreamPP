@@ -20,12 +20,7 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
             Node *init = node->init;
             expNode *cond = node->cond;
             expNode *next = node->next;
-            /* 不一定是block */
-            assert(node->stmt->type == Block);
-            list<Node *> *stmts = ((blockNode *)(node->stmt))->stmt_List;
-            assert(stmts->size() == 1);
-            auto ptr = stmts->front();
-            assert(ptr->type == Add);
+            list<Node *> *stmts = NULL;
             binopNode *init_b = NULL, *cond_b = NULL, *next_b = NULL;
             if (init->type == Decl)
             {
@@ -45,7 +40,13 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
             assert(con_cond->style == "interger");
             condition = con_cond->llval;
             cout << "init= " << initial << " cond= " << condition << endl;
-            assert(initial!=MAX_INF && condition!=MAX_INF);
+            assert(initial != MAX_INF && condition != MAX_INF);
+            /* 不一定是block */
+            assert(node->stmt->type == Block);
+            stmts = ((blockNode *)(node->stmt))->stmt_List;
+            assert(stmts->size() == 1);
+            auto ptr = stmts->front();
+            assert(ptr->type == Add);
             for (long long i = initial; i < condition; ++i)
             {
                 if (((addNode *)ptr)->content->type == CompositeCall)
@@ -60,14 +61,52 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
 operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *arguments, int style)
 {
     operatorNode *res = NULL;
+    windowNode *window = NULL;
+    operBodyNode *body = NULL;
     vector<string> operName({"Duplicate", "Roundrobin"});
-    vector<Node*> outputs;
-    int len=call_List.size();
-
-    //operBodyNode *body=new operBodyNode(NULL,NULL,NULL,windows);
-
-    //operatorNode *res=new operatorNode();
-
+    vector<string> streamName({"dup", "round"});
+    list<Node *> *outputs = new list<Node *>();
+    list<Node *> *inputs = new list<Node *>();
+    list<winStmtNode *> *win_stmt = new list<winStmtNode *>();
+    int len = call_List.size();
+    inputs->push_back(input);
+    assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
+    Node *arg = arguments->front();
+    /* arg的type可以为constatnt后者id 但是id必须是个常量（需要常量传播） */
+    cout << "arg.type= " << arg->type << endl;
+    // if(arg->type==1)
+    // cout<<"idName= "<<((idNode*)arg)->name<<endl;
+    if (arguments->size() == 1)
+    {
+        for (int i = 1; i < len; ++i)
+            arguments->push_back(arg);
+    }
+    cout << arguments->size() << endl;
+    int cnt = 0;
+    for (auto it : *(arguments))
+    {
+        string tempName = streamName[style] + to_string(cnt);
+        cnt++;
+        idNode *id = new idNode(tempName, NULL);
+        outputs->push_back(id);
+        if (style == 1)
+        {
+            tumblingNode *tum = new tumblingNode(new list<Node *>({it}), NULL);
+            winStmtNode *win = new winStmtNode(tempName, tum, NULL);
+            win_stmt->push_back(win);
+        }
+        else if (style == 0)
+        {
+            slidingNode *slid = new slidingNode(new list<Node *>({it}), NULL);
+            winStmtNode *win = new winStmtNode(tempName, slid, NULL);
+            win_stmt->push_back(win);
+        }
+    }
+    //cout<<"win_stmt.size()= "<<win_stmt->size()<<endl;
+    //cout<<"outputs.size()= "<<outputs->size()<<endl;
+    window = new windowNode(win_stmt);
+    body = new operBodyNode(NULL, NULL, NULL, window);
+    res = new operatorNode(outputs, operName[style], inputs, body);
     return res;
 }
 
@@ -82,7 +121,11 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
         tmp = UnfoldRoundrobin(comName, node);
     }
     else
+    {
+        setCallList(node->bodyStmt_List);
         tmp = UnfoldDuplicate(comName, node);
+    }
+
     return tmp;
 }
 
@@ -97,8 +140,8 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     ComInOutNode *inout = new ComInOutNode(inputs, outputs, NULL);
     compHeadNode *head = new compHeadNode(comName, inout);
     assert(inputs != NULL && outputs != NULL);
-    cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
-
+    //cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
+    operatorNode *splitOperator = MakeSplitOperator(inputs->front(), arg_list, 1);
     call_List.clear();
     return tmp;
 }

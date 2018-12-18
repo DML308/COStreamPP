@@ -696,8 +696,8 @@ class winStmtNode : public Node
 class windowNode : public Node
 {
   public:
-    list<Node *> *winStmt_List;
-    windowNode(list<Node *> *winStmt_List)
+    list<winStmtNode *> *winStmt_List;
+    windowNode(list<winStmtNode *> *winStmt_List)
     {
         this->type = Window;
         this->winStmt_List = winStmt_List;

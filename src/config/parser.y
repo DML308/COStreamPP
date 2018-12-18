@@ -235,14 +235,12 @@ stream.declaration.list:
         | stream.declaration.list ',' type.specifier IDENTIFIER {
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s \n",$4->c_str());
-                                        ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,NULL);
-                                        $$ = $1 ;
+                                        ((strdclNode*)($$))->append((primNode*)$3,(idNode*)$4,NULL);
                                     }
         | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
                                         line("Line:%-3d",@1.first_line);
                                         debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier %s array.declarator \n",$4->c_str());
-                                        ((strdclNode*)($1))->append((primNode*)$3,(idNode*)$4,(adclNode*)$5);
-                                        $$ = $1 ;
+                                        ((strdclNode*)($$))->append((primNode*)$3,(idNode*)$4,(adclNode*)$5);
                                     }
         ;
 
