@@ -18,7 +18,7 @@ extern int WarningLevel;
 //全局函数
 
 //报错+输出源文件的一行
-void Error(const char * msg, int line, int column = 0);
-void Warning(const char * msg, int line, int column = 0);
+void Error(string msg, int line, int column = 0);
+void Warning(string msg, int line, int column = 0);
 
 #endif

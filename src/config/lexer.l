@@ -109,6 +109,8 @@ roundrobin   { return ROUNDROBIN; }
 "]"          { return *yytext; }
 "{"          { return *yytext; }
 "}"          { return *yytext; }
+"\""         { return *yytext; }
+"'"          { return *yytext; }
 ","          { return *yytext; }
 "#"          { return *yytext; }
 
@@ -152,7 +154,7 @@ roundrobin   { return ROUNDROBIN; }
 "|="         { return ORassign; }
 
 . {
-  error("Line:%d,不支持的字符: %s\n",yylineno,yytext);
+  Error(string("不支持的字符:")+string(yytext),yylineno,yycolumn);
 }
                         
 %%

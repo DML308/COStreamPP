@@ -38,10 +38,10 @@ static void printWaveLine(int column)
  * @param line      出错行号
  * @param column    需要强调的标识符的列号
  */
-void Error(const char *msg, int line, int column)
+void Error(string msg, int line, int column)
 {
     assert(temp_name.c_str());
-    error("[%s:%d]  error: %s", infile_name.c_str(), line, msg);
+    error("[%s:%d]  error: %s", infile_name.c_str(), line, msg.c_str());
     if(temp_name != "stdin"){
         show_line(line, temp_name.c_str());
         printWaveLine(column);
@@ -50,9 +50,9 @@ void Error(const char *msg, int line, int column)
     }
 }
 /** 和上面函数类似,处理 Warning **/
-void Warning(const char *msg, int line, int column)
+void Warning(string msg, int line, int column)
 {
-    warning("[%s:%d]  warning: %s", infile_name.c_str(), line, msg);
+    warning("[%s:%d]  warning: %s", infile_name.c_str(), line, msg.c_str());
     if (string(temp_name.c_str()) != "stdin" || Level >= WarningLevel)
     {
         show_line(line, temp_name.c_str());
