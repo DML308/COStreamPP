@@ -263,7 +263,7 @@ class castNode : public Node
     }
     ~castNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 /* switch() case: */

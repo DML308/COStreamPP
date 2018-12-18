@@ -58,7 +58,13 @@ string unaryNode::toString()
     else
         return op + exp->toString();
 }
+
 string parenNode::toString()
 {
-    return "("+exp->toString()+")";
+    return "(" + exp->toString() + ")";
+}
+
+string castNode::toString()
+{
+    return "(" + prim->toString() + ")" + exp->toString();
 }

@@ -694,10 +694,7 @@ exp:      exp.assignable                    { $$ = $1 ; }
         |  exp ICR        { $$ = new unaryNode("POSTINC",(expNode*)$1,@2) ; }
         |  exp DECR       { $$ = new unaryNode("POSTDEC",(expNode*)$1,@2) ; }
         |  '(' exp ')'    { $$ = new parenNode((expNode*)$2,@2) ; }
-        | '(' basic.type.name ')' exp     { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= ( type ) exp\n");
-                              $$ = new castNode((primNode*)$2,(expNode*)$4,@3); 
-                        }
+        | '(' basic.type.name ')' exp     { $$ = new castNode((primNode*)$2,(expNode*)$4,@3); }
         | exp assignment.operator exp     { 
                               line("Line:%-4d",@1.first_line);
                               debug ("exp ::= exp.assignable assignment.operator exp\n"); 
