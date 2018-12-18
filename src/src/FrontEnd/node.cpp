@@ -47,5 +47,18 @@ string ternaryNode::toString()
 
 string unaryNode::toString()
 {
-    return op + exp->toString();
+    if (op == "PREINC")
+        return "++" + exp->toString();
+    else if (op == "PREDEC")
+        return "--" + exp->toString();
+    else if (op == "POSTINC")
+        return exp->toString() + "++";
+    else if (op == "POSTDEC")
+        return exp->toString() + "++";
+    else
+        return op + exp->toString();
+}
+string parenNode::toString()
+{
+    return "("+exp->toString()+")";
 }

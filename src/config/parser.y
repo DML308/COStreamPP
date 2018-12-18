@@ -684,47 +684,16 @@ exp:      exp.assignable                    { $$ = $1 ; }
         | exp GE exp      { $$ = new binopNode((expNode*)$1,">=",(expNode*)$3,@2) ;}
         | exp EQ exp      { $$ = new binopNode((expNode*)$1,"==",(expNode*)$3,@2) ;}
         | exp NE exp      { $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,@2) ;}
-        | exp '?' exp ':' exp { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp ? exp : exp\n"); 
-                              $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,@4);
-                        }
-        | '+' exp       { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= + exp\n"); 
-                              $$ = new unaryNode("+",(expNode*)$2,@2) ; 
-                        }
-        | '-' exp       { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= - exp\n"); 
-                              $$ = new unaryNode("-",(expNode*)$2,@2) ; 
-                        }
-        | '~' exp       {     
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= ~ exp\n");
-                              $$ = new unaryNode("~",(expNode*)$2,@2) ; 
-                        }
-        | '!' exp       { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= ! exp\n"); 
-                              $$ = new unaryNode("!",(expNode*)$2,@2) ; 
-                        }
-        |  ICR exp      {     
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= ++ exp\n");
-                              $$ = new unaryNode("PREINC",(expNode*)$2,@2) ; 
-                        }
-        |  DECR exp     {
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= -- exp\n");
-                              $$ = new unaryNode("PREDEC",(expNode*)$2,@2) ; 
-                        }
-        |  exp ICR      { 
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp ++ \n");
-                              $$ = new unaryNode("POSTINC",(expNode*)$1,@2) ; 
-                        }
-        |  exp DECR     {     
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= exp --\n");
-                              $$ = new unaryNode("POSTDEC",(expNode*)$1,@2) ; 
-                        }
-        |  '(' exp ')'  {     
-                              line("Line:%-4d",@1.first_line);debug ("exp ::= ( exp )\n"); 
-                              ((expNode*)$2)->parenthesized=true;
-                              $$=$2;
-                        }
+        | exp '?' exp ':' exp { $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,@4); }
+        | '+' exp         { $$ = new unaryNode("+",(expNode*)$2,@2) ; }
+        | '-' exp         { $$ = new unaryNode("-",(expNode*)$2,@2) ; }
+        | '~' exp         { $$ = new unaryNode("~",(expNode*)$2,@2) ; }
+        | '!' exp         { $$ = new unaryNode("!",(expNode*)$2,@2) ; }
+        |  ICR exp        { $$ = new unaryNode("PREINC",(expNode*)$2,@2) ; }
+        |  DECR exp       { $$ = new unaryNode("PREDEC",(expNode*)$2,@2) ; }
+        |  exp ICR        { $$ = new unaryNode("POSTINC",(expNode*)$1,@2) ; }
+        |  exp DECR       { $$ = new unaryNode("POSTDEC",(expNode*)$1,@2) ; }
+        |  '(' exp ')'    { $$ = new parenNode((expNode*)$2,@2) ; }
         | '(' basic.type.name ')' exp     { 
                               line("Line:%-4d",@1.first_line);debug ("exp ::= ( type ) exp\n");
                               $$ = new castNode((primNode*)$2,(expNode*)$4,@3); 

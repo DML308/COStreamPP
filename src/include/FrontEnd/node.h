@@ -13,11 +13,6 @@ class Node
     NodeType type;
     YYLTYPE *loc;
     short pass;
-    /* parenthesized is set on expressions which were parenthesized
-	   in the original source:  e.g., (x+y)*(w+z) would have
-	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
-	   on both MULT nodes. */
-    bool parenthesized;
     Node() {
         loc = new YYLTYPE();
     }
@@ -87,13 +82,7 @@ class idNode : public Node
     }
     ~idNode() {}
     void print() {}
-    string toString()
-    {
-        string str = "name:" + name;
-        str += "  level:" + to_string(level);
-        str += "  version:" + to_string(version);
-        return str.c_str();
-    }
+    string toString(){ return name.c_str(); }
 };
 
 class initNode : public Node
@@ -243,6 +232,19 @@ class ternaryNode : public Node
         this->third = third;
     }
     ~ternaryNode() {}
+    void print() {}
+    string toString();
+};
+class parenNode: public Node
+{
+  public:
+    expNode *exp;
+    parenNode(expNode *exp, YYLTYPE loc)
+    {
+        setLoc(loc);
+        this->exp = exp;
+    }
+    ~parenNode() {}
     void print() {}
     string toString();
 };
