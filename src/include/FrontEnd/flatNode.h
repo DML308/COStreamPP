@@ -19,10 +19,11 @@
 class  FlatNode
 {
 public:
-	string name; // opeator名字
+	string operName; // opeator名字
 	string PreName;//cwb记录Operator被重命名前的名字
 
-	operatorNode *contents;	//指向原有的operatorNode
+	operatorNode *contents;	//指向operator(经常量传播后的).
+	operatorNode *oldContents; // 指向原始operator
 
 	int nOut; // 输 出 边个数
 	int nIn; // 输 入 边个数
@@ -54,7 +55,7 @@ public:
 	// opeator在ssg的flatnodes中的顺序编号
 	int num;
 public:
-	FlatNode(operatorNode *node, compositeNode *com, compositeNode *newCom);
+	FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom);
 	//FlatNode(operatorNode *node);//重载构造函数，为了以后在构造新的节点的时候使用
 	void AddOutEdges(FlatNode *dest);
 	void AddInEdges(FlatNode *src);

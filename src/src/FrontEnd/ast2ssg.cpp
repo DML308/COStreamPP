@@ -1,8 +1,9 @@
 #include "staticStreamGragh.h"
 static StaticStreamGraph *ssg = NULL;
 
-//对composite节点展开成数据流图
-void GraphToOperators(compositeNode *composite)
+//对composite节点展开成数据流图 oldComposite表示原来的compositecall,对于splitjoin，pipeline结构无区别
+/* 暂时不清楚oldComposite的作用 用node*表示*/
+void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
     /* 获取compositebody内的statementNode */
     list<Node *> body_stmt = *(composite->body->stmt_List);
@@ -23,12 +24,13 @@ void GraphToOperators(compositeNode *composite)
             else if (exp->type == CompositeCall)
             {
                 cout << "compositeCall" << endl;
-                GraphToOperators(((compositeCallNode *)(exp))->actual_composite);
+                GraphToOperators(((compositeCallNode *)(exp))->actual_composite,exp);
             }
             else if (exp->type == SplitJoin)
             {
                 
                 cout << "SplitJoin" << endl;
+                GraphToOperators(((splitjoinNode *)(exp))->replace_composite,((splitjoinNode *)(exp))->replace_composite);
                 
             }
             else if (exp->type == Pipeline)
@@ -45,12 +47,13 @@ void GraphToOperators(compositeNode *composite)
         case CompositeCall:
         {
             cout << "compositeCall" << endl;
-            GraphToOperators(((compositeCallNode *)it)->actual_composite);
+            GraphToOperators(((compositeCallNode *)it)->actual_composite,it);
             break;
         }
         case SplitJoin:
         {
             cout << "SplitJoin" << endl;
+            GraphToOperators(((splitjoinNode *)(it))->replace_composite,((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
@@ -66,6 +69,6 @@ void GraphToOperators(compositeNode *composite)
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
-    GraphToOperators(mainComposite);
+    GraphToOperators(mainComposite,mainComposite);
     return ssg;
 }

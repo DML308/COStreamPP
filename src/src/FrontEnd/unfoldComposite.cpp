@@ -203,7 +203,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         string name = (((compositeCallNode *)it)->compName);
         string tempName = name + (to_string(cnt));
         idNode *id = new idNode(tempName, NULL);
-        //compositeCall的输出流是join节点的输入流s
+        //compositeCall的输出流是join节点的输入流
         inputs_join->push_back(id);
         list<Node *> *outputs = new list<Node *>({id});
         //compositeCall的输入流
