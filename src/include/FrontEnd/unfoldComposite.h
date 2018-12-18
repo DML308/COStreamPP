@@ -5,10 +5,9 @@ class UnfoldComposite
 {
   public:
     int compNum;
-    list<compositeCallNode*>* call_List;
+    vector<Node*> call_List;
     UnfoldComposite() {
         compNum=0;
-       call_List=NULL;
     }
     /* 给与每一个不同的splitjoin或者pipeline节点不同的名字 */
     inline string MakeCompositeName(string name){

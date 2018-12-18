@@ -27,11 +27,11 @@ class Node
     bool parenthesized;
     Node()
     {
-        loc = new Loc();
+        loc=new Loc();
     }
     virtual ~Node()
     {
-        delete loc;
+       delete loc;
     }
     void setLoc(Loc *loc)
     {
@@ -583,7 +583,7 @@ class splitjoinNode : public Node
 class addNode : public Node
 {
   public:
-    /* content可以为pipeline，splitjoin或者composite调用 */
+    /* content可以为pipeline，splitjoin或者compositeCall */
     Node *content;
     addNode(Node *content, Loc *loc)
     {
@@ -867,6 +867,13 @@ class compositeCallNode : public Node
     list<Node *> *stream_List;
     list<Node *> *param_List;
     compositeNode *actual_composite; //保存composite展开节点
+    /*拷贝构造函数 */
+    compositeCallNode(const compositeCallNode &node){
+        this->compName=node.compName;
+        this->stream_List=node.stream_List;
+        this->param_List=node.param_List;
+        this->actual_composite=node.actual_composite;
+    }
     compositeCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, compositeNode *actual_composite, Loc *loc)
     {
         this->setLoc(loc);

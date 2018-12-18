@@ -60,24 +60,6 @@ composite IntSource(output stream<double x,int y> Out)
 	};
 }
 
-/*
-composite SplitSource(output stream<double x> Out,input stream<double x> In)
-{
-	param
-		int size;
-	Out = IntSource(In)
-	{
-		int i;
-		split roundrobin(size);
-		for (i = 0; i < size; i++)
-		{
-
-		}
-		join roundrobin(size);
-	};
-}
-*/
-
 composite Quantification(output stream<double x> Out,input stream<double x> In)
 {
 	Out = Quantification(In)
@@ -156,7 +138,7 @@ composite DCT_X(output stream<double x>Out,input stream<double x>In)
 	{
 		int i;
 		split roundrobin(size);
-		for (i = 0; i < size; i++)
+		for (i = 0; i < 8; i++)
 		{
 			add DCT_1D(size);
 		}
@@ -172,7 +154,7 @@ composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 	{
 		int i;
 		split roundrobin(1);
-		for (i = 0; i < size; i++)
+		for (i = 0; i < 8; i++)
 		{
 			add DCT_1D(size);
 		}
