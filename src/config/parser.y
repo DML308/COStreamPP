@@ -69,13 +69,13 @@ extern void yyerror (const char *msg);
 %type<node> expression.statement  selection.statement   iteration.statement jump.statement
 /* 语法分析器自己的结构 4.exp 计算表达式头节点  */
 %type<str>  assignment.operator
-%type<node> exp exp.assignable
+%type<node> exp
 %type<node> operator.selfdefine.body  operator.selfdefine.body.init operator.selfdefine.body.work
 %type<node> operator.selfdefine.body.window.list operator.selfdefine.window
 %type<list> operator.selfdefine.window.list 
 %type<node> window.type
 /* 语法分析器自己的结构 5.basic 从词法TOKEN直接归约得到的节点 */
-%type<node>constant type.specifier basic.type.name  
+%type<node>constant type.specifier basic.type.name idNode
 %type<num> integerConstant
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
@@ -160,44 +160,21 @@ declaration:
                                 }
     ;
 declaring.list:
-          type.specifier      IDENTIFIER       initializer.opt  {
-              line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->c_str());
-              idNode *id=new idNode(*($2),@2);
-              id->init = $3;
+          type.specifier      idNode       initializer.opt  {
+              (static_cast<idNode*>$2)->init = $3;
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primNode*)$1,id,@2) ;
-              //error ("%s\n",name.c_str());
-        }
-        | type.specifier 	IDENTIFIER array.declarator initializer.opt{
+              $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
               line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) array.declarator initializer.opt \n",$1->toString().c_str(),$2->c_str());
-              idNode *id=new idNode(*($2),@2);
-              id->arg_list = (static_cast<arrayNode*>$3)->arg_list;
-              id->init = $4;
-              //if(S[*($2)]==NULL) S.InsertSymbol(id);
-              $$ = new declareNode((primNode*)$1,id,@2);
-              
-        }
-        | declaring.list 	',' 	IDENTIFIER initializer.opt{
-              line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) initializer.opt \n",$3->c_str());
-              idNode *id=new idNode(*($3),@2);
-              id->init = $4;
+              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
+          }
+        | declaring.list 	',' idNode        initializer.opt{
+              (static_cast<idNode*>$3)->init = $4;
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
-              ((declareNode*)$1)->id_list.push_back(id);
+              ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
-        }
-        | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
               line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) array.declarator initializer.opt \n",$3->c_str());
-              idNode *id=new idNode(*($3),@2);
-              id->arg_list = (static_cast<arrayNode*>$4)->arg_list;
-              id->init = $5;
-              //if(S[*($3)]==NULL) S.InsertSymbol(id);
-              ((declareNode*)$1)->id_list.push_back(id);
-              $$=$1;
-        }
+              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) initializer.opt \n",$3->toString().c_str());
+          }
         ;
 stream.declaring.list:
           stream.type.specifier IDENTIFIER    {
@@ -220,36 +197,19 @@ stream.declaring.list:
 stream.type.specifier:
           STREAM '<' stream.declaration.list '>'{
                                                     line("Line:%-4d",@1.first_line);
-                                                    debug ("stream.type.specifier ::=  STREAM '<' stream.declaration.list '>' \n");
+                                                    debug ("stream.type.specifier ::=  STREAM '<' stream.declaration.list(%s) '>' \n",$3->toString().c_str());
                                                     $$ = $3 ;
                                                 }
         ;
 stream.declaration.list:
-          type.specifier IDENTIFIER {
-                                        line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  type.specifier(%s) IDENTIFIER(%s) \n",$1->toString().c_str(),$2->c_str());
+          type.specifier idNode     {
                                         /* 需要添加符号表查找操作*/
-                                        $$ = new strdclNode(new idNode($2,@2),@1) ;
+                                        (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
+                                        $$ = new strdclNode((idNode*)$2,@1) ;
                                     }
-        | type.specifier IDENTIFIER array.declarator{
-                                        line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  type.specifier(%s) IDENTIFIER(%s) array.declarator \n",$1->toString().c_str(),$2->c_str());
-                                        idNode * id = new idNode($2,@2);
-                                        id->arg_list = (static_cast<arrayNode*>$3)->arg_list;
-                                        $$ = new strdclNode(id,@2) ;
-                                    }
-        | stream.declaration.list ',' type.specifier IDENTIFIER {
-                                        line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER(%s) \n",$4->c_str());
-                                        (static_cast<strdclNode*>$1)->id_list.push_back(new idNode($4,@4));
-                                        $$ = $1 ;
-                                    }
-        | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator{
-                                        line("Line:%-4d",@1.first_line);
-                                        debug ("stream.declaration.list ::=  stream.declaration.list ',' type.specifier IDENTIFIER(%s) array.declarator \n",$4->c_str());
-                                        idNode * id = new idNode($4,@4);
-                                        id->arg_list = (static_cast<arrayNode*>$5)->arg_list;
-                                        (static_cast<strdclNode*>$1)->id_list.push_back(id);
+        | stream.declaration.list ',' type.specifier idNode {
+                                        (static_cast<idNode*>$4)->valType = (static_cast<primNode*>$3)->name;
+                                        (static_cast<strdclNode*>$1)->id_list.push_back((idNode*)$4);
                                         $$ = $1 ;
                                     }
         ;
@@ -259,18 +219,18 @@ stream.declaration.list:
 /*************************************************************************/
 array.declarator:
           '[' ']'   {
-                            line("Line:%-4d",@1.first_line);
-                            debug ("array.declarator ::= '[' ']' \n");
+                            //line("Line:%-4d",@1.first_line);
+                            //debug ("array.declarator ::= '[' ']' \n");
                             $$ = new arrayNode(NULL, @1) ;
                     }
         | '[' exp ']' {
-                            line("Line:%-4d",@1.first_line);
-                            debug ("array.declarator ::= '[' exp ']' \n");
+                            // line("Line:%-4d",@1.first_line);
+                            // debug ("array.declarator ::= '[' exp ']' \n");
                             $$ = new arrayNode((expNode*)$2, @1) ;
                     }
         | array.declarator '[' exp ']'  {
-                            line("Line:%-4d",@1.first_line);
-                            debug ("array.declarator ::= array.declarator '[' exp ']' \n");
+                            // line("Line:%-4d",@1.first_line);
+                            // debug ("array.declarator ::= array.declarator '[' exp ']' \n");
                             (static_cast<arrayNode*>$1)->arg_list.push_back((expNode*)$3); $$ = $1;
                     }
         | array.declarator '[' ']'{
@@ -315,48 +275,32 @@ initializer.list:
 /*************************************************************************/
 function.definition:
           type.specifier IDENTIFIER '(' ')' function.body {
+                $$ = new funcDclNode((primNode*)$1,$2,NULL,(funcBodyNode*)$5) ;
                 line("Line:%-4d",@1.first_line);
-                debug ("function.definition ::= type.specifier(%s) IDENTIFIER(%s) '(' ')' function.body \n",$1->toString().c_str(),$2->c_str());
-                idNode *id = new idNode(*($2),@2);
-                $$ = new funcDclNode((primNode*)$1,id,NULL,(funcBodyNode*)$5) ;
+                debug ("function.definition ::=  %s\n",$$->toString().c_str());
         }
         | type.specifier IDENTIFIER '(' parameter.list ')' function.body  {
+                $$ = new funcDclNode((primNode*)$1,$2,$4,(funcBodyNode*)$6) ;
                 line("Line:%-4d",@1.first_line);
-                debug ("function.definition ::= type.specifier(%s) IDENTIFIER(%s) '(' parameter.list ')' function.body \n",$1->toString().c_str(),$2->c_str());
-                idNode *id = new idNode(*($2),@2);
-                $$ = new funcDclNode((primNode*)$1,id,$4,(funcBodyNode*)$6) ;
+                debug ("function.definition ::=  %s\n",$$->toString().c_str());
+                
         }
         ;
 
 parameter.list:
-          parameter.declaration   {
-                line("Line:%-4d",@1.first_line);
-                debug ("parameter.list ::= parameter.declaration \n");
-                $$=new list<Node*>({$1});
-          }
-        | parameter.list ',' parameter.declaration {
-                line("Line:%-4d",@1.first_line);
-                debug ("parameter.list ::= parameter.list ',' parameter.declaration \n");
-                $$->push_back($3);
-          }
-        | parameter.declaration '=' initializer {
+          parameter.declaration                    { $$ = new list<Node*>({$1}); }
+        | parameter.list ',' parameter.declaration { $$->push_back($3); }
+        | parameter.list '=' initializer {
                 //函数参数里不支持初始化
-                Error( "Line:%-3d parameter.list in function definations cannot have initializers\n",@1.first_line,@3.first_column);
+                yyerror( "parameter.list in function definations cannot have initializers\n");
                 exit(-1);
           }
         | parameter.list ',' error
         ;
 parameter.declaration:
-          type.specifier IDENTIFIER {
-                                          line("Line:%-4d",@1.first_line);
-                                          debug ("parameter.declaration ::= type.specifier(%s) IDENTIFIER(%s) \n",$1->toString().c_str(),$2->c_str());
-                                          $$ = new idNode($2,@2);
-                                    }
-        | type.specifier IDENTIFIER array.declarator  {
-                                          line("Line:%-4d",@1.first_line);
-                                          debug ("parameter.declaration ::= type.specifier(%s) IDENTIFIER(%s) array.declarator \n",$1->toString().c_str(),$2->c_str());
-                                          $$ = new idNode($2,@2);
-                                          (static_cast<idNode*>$$)->arg_list = (static_cast<arrayNode*>$3)->arg_list;
+          type.specifier idNode     {
+                                          (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
+                                          $$ = $2;
                                     }
         ;
 function.body:
@@ -644,34 +588,9 @@ assignment.operator:
         | ERassign        { $$ = new string("^=") ; }
         | ORassign        { $$ = new string("|=") ; }
         ;
-exp.assignable:
-          IDENTIFIER                        
-            { 
-                  //if(S[*($1)]==NULL) error("IDENTIFIER undeclared");
-                  $$ = new idNode(*($1),@1);
-            }
-        | IDENTIFIER  array.declarator      
-            { 
-                  $$ = new idNode(*($1),@1);
-                  (static_cast<idNode*>$$)->arg_list = (static_cast<arrayNode*>$2)->arg_list;
-            }  
-        ; 
-exp:      exp.assignable                    { $$ = $1 ; }
-        | exp.assignable '.' IDENTIFIER     {  
-                                              line("Line:%-4d",@1.first_line);
-                                              debug ("exp ::= exp.assignable(%s) '.' IDENTIFIER(%s)\n",$1->toString().c_str(),$3->c_str()); 
-                                              idNode *id=new idNode(*($3),@3);
-                                              $$ = new pointNode($1,id,@2) ; 
-                                            }
-        | exp.assignable '.' IDENTIFIER array.declarator 
-                                            { 
-                                              line("Line:%-4d",@1.first_line);
-                                              debug ("exp ::= exp.assignable '.' %s array.declarator\n",$3->c_str()); 
-                                              idNode * id = new idNode($3,@3);
-                                              id->arg_list = (static_cast<arrayNode*>$4)->arg_list;
-                                              $$ = new pointNode($1,id,@2) ; 
-                                            }
+exp:      idNode          { $$ = $1 ; }
         | constant        { $$ = $1 ; }
+        | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
         | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
         | exp '*' exp     { $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@2) ; }
@@ -838,6 +757,17 @@ basic.type.name:
         | DOUBLE      { $$ = new primNode("double",@1 ); }
         | STRING      { $$ = new primNode("string",@1 ); }
         ;
+
+idNode:
+          IDENTIFIER  { 
+                        $$ = new idNode($1,@1);
+                      }
+        | IDENTIFIER  array.declarator { 
+                        $$ = new idNode($1,@1);
+                        ((idNode*)$$)->isArray = 1;
+                        (static_cast<idNode*>$$)->arg_list = (static_cast<arrayNode*>$2)->arg_list;
+                      }  
+        ; 
 %%
 /* ----语法树结束----*/
 void yyerror (const char *msg)

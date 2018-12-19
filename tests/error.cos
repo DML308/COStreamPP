@@ -2,8 +2,13 @@
 //int aaa[8] = {1,2,3,4,5,6,7,8};
 int b = a[10][0];
 int i = 1+2*3/4 ? 99 :100;
+int a[0] = 1+2*3/(5-4) + b.a*2 + 2*c.c;
+int a[] = {1,2,3,4,5};
 int sum(){
     int a = (double)123;
+}
+int sum2(int a ,int b =2){
+    return a+b[1];
 }
 composite B(output stream<int x>Out,input stream<int x>In)
 {

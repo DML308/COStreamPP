@@ -28,10 +28,10 @@ string constantNode::toString()
 
 string initNode::toString()
 {
-    string str = "";
+    string str = "{";
     for (auto i : value)
         str = str + i->toString() + ',';
-    return str;
+    return str + "}";
 }
 
 string binopNode::toString()
@@ -89,11 +89,44 @@ string operatorNode::toString()
     return str + ')' + operBody->toString();
 }
 
-string idNode::toString(){
+string idNode::toString()
+{
     string str = name;
-    for (auto i : arg_list)
+    if (isArray)
     {
-        str += '['+i->toString()+']';
+        if (arg_list.size() == 0) // int sum(int a[])特殊情况,是数组但是无 arg_list
+            str += "[]";
+        else
+        {
+            for (auto i : arg_list)
+            {
+                str += '[' + i->toString() + ']';
+            }
+        }
     }
+    return str;
+}
+
+string strdclNode::toString()
+{
+    string str = "";
+    for (auto i : id_list)
+    {
+        str += i->valType + ' ' + i->toString() + ',';
+    }
+    return str;
+}
+
+string funcDclNode::toString()
+{
+    string str = "type.specifier(" + prim->name + ")";
+    str += " IDENTIFIER(" + name + ")";
+    str += " parameter.list(";
+    for (auto i : param_list)
+    {
+        assert(i);
+        str += ((idNode *)i)->valType + " " + ((idNode *)i)->toString() + ",";
+    }
+    str += ") function.body";
     return str;
 }
