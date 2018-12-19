@@ -19,7 +19,7 @@
 class  FlatNode
 {
 public:
-	string operName; // opeator名字
+	string name; // opeator名字
 	string PreName;//cwb记录Operator被重命名前的名字
 
 	operatorNode *contents;	//指向operator(经常量传播后的).

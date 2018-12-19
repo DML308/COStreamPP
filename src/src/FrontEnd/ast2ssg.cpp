@@ -30,7 +30,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             else if (exp->type == SplitJoin)
             {
-
                 //cout << "SplitJoin" << endl;
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
@@ -75,5 +74,9 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
     GraphToOperators(mainComposite, mainComposite);
+    ssg->SetTopLevel();
+    /* 将每个composite重命名 */
+    ssg->ResetFlatNodeNames();
+
     return ssg;
 }

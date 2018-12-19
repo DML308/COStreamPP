@@ -19,7 +19,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         //cout<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
-    //cout<<"mapEdge2UpFlatNode.size()= "<<mapEdge2UpFlatNode.size()<<endl;
+    cout<<"mapEdge2UpFlatNode.size()= "<<mapEdge2UpFlatNode.size()<<endl;
     flatNodes.push_back(src);
     //mapOper2FlatNode.insert(make_pair(u,src));
     dest = src; //边变了
@@ -40,14 +40,13 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     //cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
 }
 
-void FlatNode::AddOutEdges(FlatNode *dest)
-{
-    outFlatNodes.push_back(dest);
-    ++nOut;
-}
 
-void FlatNode::AddInEdges(FlatNode *src)
-{
-    inFlatNodes.push_back(src);
-    ++nIn;
+void StaticStreamGraph::ResetFlatNodeNames(){
+    for (int i = 0; i < flatNodes.size(); i++)
+	{
+		stringstream newName;
+		newName << flatNodes[i]->name << "_" << i;
+		flatNodes[i]->name = newName.str();
+		cout<<flatNodes[i]->name<<endl;
+	}
 }
