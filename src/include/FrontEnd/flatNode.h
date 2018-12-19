@@ -36,12 +36,10 @@ public:
 	vector<FlatNode *> outFlatNodes; // 输 出 边各operator
 	vector<FlatNode *> inFlatNodes; // 输 入 边各operator
 	
-	//vector<int> AddPopAtCodeGen;//	zww:20120313,一般情况下为零，但采用Horizontalfission时会产生额外的pop值，用此数据来记录
 	vector<int> outPushWeights; // 输 出 边各权重
 	vector<int> inPopWeights; // 输 入 边各权重
 	vector<int> inPeekWeights; // 输 入 边各权重
 
-	// 为类模板代码生成方案添加
 	vector<string> outPushString; 
 	vector<string> inPopString; 
 	vector<string> inPeekString;
@@ -56,10 +54,12 @@ public:
 	int num;
 public:
 	FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom);
-	//FlatNode(operatorNode *node);//重载构造函数，为了以后在构造新的节点的时候使用
 	void AddOutEdges(FlatNode *dest);
 	void AddInEdges(FlatNode *src);
-	string GetOperatorName(); // 获取该flatnode结点的operator的name
+	// 获取该flatnode结点的operator的name
+	string GetOperatorName(){
+		return name;
+	} 
 	
 };
 

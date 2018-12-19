@@ -21,6 +21,7 @@ public:
   {
     topNode = flatNodes[0];
   }
+  void SetFlatNodesWeights();
   void ResetFlatNodeNames();
 };
 void GraphToOperators(compositeNode *composite, Node *oldComposite);
