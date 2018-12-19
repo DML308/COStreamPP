@@ -128,7 +128,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
 
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *win_stmt = new list<Node *>();
-    assert(arguments->size() == 1 || arguments->size()==8);
+    assert(arguments->size() == 1 || arguments->size() == 8);
     Node *arg = arguments->front();
     outputs->push_back(output);
     if (arguments->size() == 1)
@@ -158,15 +158,13 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
-
+    setCallList(node->bodyStmt_List);
     if (node->split->dup_round->type == RoundRobin)
     {
-        setCallList(node->bodyStmt_List);
         tmp = UnfoldRoundrobin(comName, node);
     }
     else
     {
-        setCallList(node->bodyStmt_List);
         tmp = UnfoldDuplicate(comName, node);
     }
 
@@ -175,6 +173,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
+    string streamName="Rstream";
     compositeNode *roundrobin = NULL;
     list<Node *> *tempList = new list<Node *>();
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
@@ -189,7 +188,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
     /* comp_stmt_List表示所构建的compositeNode语句 */
-    list<Node *> *comp_stmt_List=new list<Node *>();
+    list<Node *> *comp_stmt_List = new list<Node *>();
     assert(inputs_split != NULL && outputs != NULL);
     //cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
     //1.构建splitoperator，构建输出输入流 与composite调用关联
@@ -218,13 +217,14 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     //cout<<"comCallList->size()= "<<comCallList->size()<<endl;
     joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
     comp_stmt_List->push_back(splitOperator);
-    for(auto it:*comCallList){
+    for (auto it : *comCallList)
+    {
         comp_stmt_List->push_back(it);
     }
     comp_stmt_List->push_back(joinOperator);
     //cout<<"comp_stmt_List->size()= "<<comp_stmt_List->size()<<endl;
-    body=new compBodyNode(NULL,comp_stmt_List);
-    roundrobin=new compositeNode(head,body);
+    body = new compBodyNode(NULL, comp_stmt_List);
+    roundrobin = new compositeNode(head, body);
     call_List.clear();
     return roundrobin;
 }
@@ -245,7 +245,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
     /* comp_stmt_List表示所构建的compositeNode语句 */
-    list<Node *> *comp_stmt_List=new list<Node *>();
+    list<Node *> *comp_stmt_List = new list<Node *>();
     assert(inputs_split != NULL && outputs != NULL);
     //cout << "inputs.size()= " << inputs->size() << " outputs.size()= " << outputs->size() << endl;
     //1.构建splitoperator，构建输出输入流 与composite调用关联
@@ -274,19 +274,22 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     //cout<<"comCallList->size()= "<<comCallList->size()<<endl;
     joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
     comp_stmt_List->push_back(splitOperator);
-    for(auto it:*comCallList){
+    for (auto it : *comCallList)
+    {
         comp_stmt_List->push_back(it);
     }
     comp_stmt_List->push_back(joinOperator);
     //cout<<"comp_stmt_List->size()= "<<comp_stmt_List->size()<<endl;
-    body=new compBodyNode(NULL,comp_stmt_List);
-    dup=new compositeNode(head,body);
+    body = new compBodyNode(NULL, comp_stmt_List);
+    dup = new compositeNode(head, body);
     call_List.clear();
     return dup;
 }
 
 compositeNode *UnfoldComposite::UnfoldPipeline(Node *node)
 {
-    compositeNode *tmp = NULL;
-    return tmp;
+    compositeNode *pipeline = NULL;
+
+
+    return pipeline;
 }

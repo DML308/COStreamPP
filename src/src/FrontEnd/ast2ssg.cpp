@@ -19,19 +19,20 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                cout << "Operator_" << endl;
+                //cout << "Operator_" << endl;
+                //oper_List->push_back((operatorNode*)exp);
+                ssg->GenerateFlatNodes((operatorNode*)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                cout << "compositeCall" << endl;
-                GraphToOperators(((compositeCallNode *)(exp))->actual_composite,exp);
+                //cout << "compositeCall" << endl;
+                GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
             {
-                
-                cout << "SplitJoin" << endl;
-                GraphToOperators(((splitjoinNode *)(exp))->replace_composite,((splitjoinNode *)(exp))->replace_composite);
-                
+
+                //cout << "SplitJoin" << endl;
+                GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
@@ -41,19 +42,21 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
-            cout << "Operator_" << endl;
+            //cout << "Operator_" << endl;
+            //oper_List->push_back((operatorNode*)it);
+            ssg->GenerateFlatNodes((operatorNode*)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            cout << "compositeCall" << endl;
-            GraphToOperators(((compositeCallNode *)it)->actual_composite,it);
+            //cout << "compositeCall" << endl;
+            GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
-            cout << "SplitJoin" << endl;
-            GraphToOperators(((splitjoinNode *)(it))->replace_composite,((splitjoinNode *)(it))->replace_composite);
+            //cout << "SplitJoin" << endl;
+            GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
@@ -61,6 +64,8 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             cout << "Pipeline" << endl;
             break;
         }
+        default:
+            break;
         }
     }
     return;
@@ -69,6 +74,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
-    GraphToOperators(mainComposite,mainComposite);
+    GraphToOperators(mainComposite, mainComposite);
     return ssg;
 }
