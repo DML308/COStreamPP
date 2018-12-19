@@ -79,9 +79,10 @@ class idNode : public Node
     Node *init;
     int level;
     int version;
+    int isArray;  //是否为数组, 主要用于 int a[] 这种 arg_list 为空的场景
     int isStream; //是否为 Stream 复杂类型.后续待处理
     int isParam;  //是否为function 或 composite 的输入参数
-    idNode(string name, YYLTYPE loc) : name(name), isStream(0),isParam(0)
+    idNode(string name, YYLTYPE loc) : name(name), isArray(0), isStream(0), isParam(0)
     {
         this->type = Id;
         setLoc(loc);
@@ -91,7 +92,7 @@ class idNode : public Node
     }
     idNode(string *name, YYLTYPE loc)
     {
-        idNode(*name,loc);
+        new (this) idNode(*name, loc);
     }
     ~idNode() {}
     void print() {}
@@ -143,7 +144,6 @@ class arrayNode : public Node
     string toString() { return string("arrayNode"); }
 };
 
-
 class declareNode : public Node
 {
   public:
@@ -154,7 +154,7 @@ class declareNode : public Node
         this->setLoc(loc);
         this->type = Decl;
         this->prim = prim;
-        if(id)
+        if (id)
             this->id_list.push_back(id);
     }
     ~declareNode() {}
@@ -176,25 +176,6 @@ class unaryNode : public Node
     ~unaryNode() {}
     void print() {}
     string toString();
-};
-/*  这里pointNode可以和binopnode可以合成一个，但是需要将binopNode的expnode改为node
-    因此在这里单独处理
-*/
-class pointNode : public Node
-{
-  public:
-    Node *assign;
-    Node *id;
-    pointNode(Node *assign, Node *id, YYLTYPE loc)
-    {
-        this->setLoc(loc);
-        this->type = Point;
-        this->assign = assign;
-        this->id = id;
-    }
-    ~pointNode() {}
-    void print() {}
-    string toString() {}
 };
 
 class binopNode : public Node
@@ -450,14 +431,14 @@ class forNode : public Node
 class blockNode : public Node
 {
   public:
-    list<Node *> *stmt_List;
+    list<Node *> *stmt_list;
     YYLTYPE right;
-    blockNode(list<Node *> *stmt_List, YYLTYPE left, YYLTYPE right)
+    blockNode(list<Node *> *stmt_list, YYLTYPE left, YYLTYPE right)
     {
         this->setLoc(left);
         this->right = right;
         this->type = Block;
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
     }
     ~blockNode() {}
     void print() {}
@@ -467,12 +448,12 @@ class blockNode : public Node
 class pipelineNode : public Node
 {
   public:
-    list<Node *> *split_pipe_stmt_List;
-    pipelineNode(list<Node *> *split_pipe_stmt_List, YYLTYPE loc)
+    list<Node *> *split_pipe_stmt_list;
+    pipelineNode(list<Node *> *split_pipe_stmt_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Pipeline;
-        this->split_pipe_stmt_List = split_pipe_stmt_List;
+        this->split_pipe_stmt_list = split_pipe_stmt_list;
     }
     ~pipelineNode() {}
     void print() {}
@@ -545,15 +526,15 @@ class splitjoinNode : public Node
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
-    list<Node *> *split_pipe_stmt_List;
-    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_List, joinNode *join, YYLTYPE loc)
+    list<Node *> *split_pipe_stmt_list;
+    splitjoinNode(splitNode *split, list<Node *> *stmt_list, list<Node *> *split_pipe_stmt_list, joinNode *join, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = SplitJoin;
         this->split = split;
         this->join = join;
         this->stmt_list = stmt_list;
-        this->split_pipe_stmt_List = split_pipe_stmt_List;
+        this->split_pipe_stmt_list = split_pipe_stmt_list;
     }
     ~splitjoinNode() {}
     void print() {}
@@ -610,13 +591,13 @@ class OperdclNode : public Node
 {
   public:
     string name;
-    list<Node *> *arg_List;
-    OperdclNode(string name, list<Node *> *arg_List, YYLTYPE loc)
+    list<Node *> *arg_list;
+    OperdclNode(string name, list<Node *> *arg_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = Operdcl;
         this->name = name;
-        this->arg_List = arg_List;
+        this->arg_list = arg_list;
     }
     ~OperdclNode() {}
     void print() {}
@@ -630,12 +611,12 @@ class strdclNode : public Node
     strdclNode(idNode *id, YYLTYPE loc)
     {
         this->setLoc(loc);
-        if(id)
+        if (id)
             id_list.push_back(id);
     }
     ~strdclNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class winStmtNode : public Node
@@ -659,11 +640,11 @@ class winStmtNode : public Node
 class windowNode : public Node
 {
   public:
-    list<Node *> *winStmt_List;
-    windowNode(list<Node *> *winStmt_List)
+    list<Node *> *winStmt_list;
+    windowNode(list<Node *> *winStmt_list)
     {
         this->type = Window;
-        this->winStmt_List = winStmt_List;
+        this->winStmt_list = winStmt_list;
     }
     ~windowNode() {}
     void print() {}
@@ -675,14 +656,14 @@ class operBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *stmt_List;
+    list<Node *> *stmt_list;
     Node *init;
     Node *work;
     windowNode *win;
-    operBodyNode(list<Node *> *stmt_List, Node *init, Node *work, windowNode *win)
+    operBodyNode(list<Node *> *stmt_list, Node *init, Node *work, windowNode *win)
     {
         this->type = OperBody;
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
         this->init = init;
         this->work = work;
         this->win = win;
@@ -729,14 +710,14 @@ class inOutdeclNode : public Node
 class ComInOutNode : public Node
 {
   public:
-    list<Node *> *input_List;
-    list<Node *> *output_List;
-    ComInOutNode(list<Node *> *input_List, list<Node *> *output_List, YYLTYPE loc)
+    list<Node *> *input_list;
+    list<Node *> *output_list;
+    ComInOutNode(list<Node *> *input_list, list<Node *> *output_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = ComInOut;
-        this->input_List = input_List;
-        this->output_List = output_List;
+        this->input_list = input_list;
+        this->output_list = output_list;
     }
     ~ComInOutNode() {}
     void print() {}
@@ -762,11 +743,11 @@ class paramDeclNode : public Node
 class paramNode : public Node
 {
   public:
-    list<Node *> *param_List;
-    paramNode(list<Node *> *param_List)
+    list<Node *> *param_list;
+    paramNode(list<Node *> *param_list)
     {
         this->type = Param;
-        this->param_List = param_List;
+        this->param_list = param_list;
     }
     ~paramNode() {}
     void print() {}
@@ -776,10 +757,10 @@ class paramNode : public Node
 class funcBodyNode : public Node
 {
   public:
-    list<Node *> *stmt_List;
-    funcBodyNode(list<Node *> *stmt_List)
+    list<Node *> *stmt_list;
+    funcBodyNode(list<Node *> *stmt_list)
     {
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
     }
     ~funcBodyNode() {}
     void print() {}
@@ -790,12 +771,12 @@ class compBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *stmt_List;
-    compBodyNode(paramNode *param, list<Node *> *stmt_List)
+    list<Node *> *stmt_list;
+    compBodyNode(paramNode *param, list<Node *> *stmt_list)
     {
         this->type = CompBody;
         this->param = param;
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
     }
     ~compBodyNode() {}
     void print() {}
@@ -806,20 +787,21 @@ class funcDclNode : public Node
 {
   public:
     primNode *prim;
-    idNode *id;
-    list<Node *> *param_List;
+    string name;
+    list<Node *> param_list;
     funcBodyNode *funcBody;
-    funcDclNode(primNode *prim, idNode *id, list<Node *> *param_List, funcBodyNode *funcBody)
+    funcDclNode(primNode *prim, string *name, list<Node *> *param_list, funcBodyNode *funcBody)
     {
         this->type = FuncDcl;
         this->prim = prim;
-        this->id = id;
-        this->param_List = param_List;
+        this->name = *name;
+        if (param_list)
+            this->param_list = *param_list;
         this->funcBody = funcBody;
     }
     ~funcDclNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class compositeNode;
@@ -827,15 +809,15 @@ class compsiteCallNode : public Node
 {
   public:
     string compName;
-    list<Node *> *stream_List;
-    list<Node *> *param_List;
+    list<Node *> *stream_list;
+    list<Node *> *param_list;
     compositeNode *actual_composite; //保存composite展开节点
-    compsiteCallNode(string compName, list<Node *> *stream_List, list<Node *> *param_List, YYLTYPE loc)
+    compsiteCallNode(string compName, list<Node *> *stream_list, list<Node *> *param_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
         this->compName = compName;
-        this->param_List = param_List;
+        this->param_list = param_list;
     }
     ~compsiteCallNode() {}
     void print() {}

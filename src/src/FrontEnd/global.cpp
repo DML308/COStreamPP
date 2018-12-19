@@ -25,9 +25,9 @@ static void show_line(int line, const char *file_name)
 static void printWaveLine(int column)
 {
     int i = 0;
-    for (i = 1; i < column; i++)
+    for (i = 1; i < column-2; i++)
         fprintf(stdout," ");
-    fprintf(stdout, "\033[32m%s\033[0m", "^");
+    fprintf(stdout, "\033[32m%s\033[0m", "^^^");
     for (i = 0; i < 5; i++)
         fprintf(stdout, "\033[32m%s\033[0m", "~");
     fprintf(stdout, "\n");
