@@ -170,13 +170,13 @@ declaring.list:
               //error ("%s\n",name.c_str());
         }
         | type.specifier 	IDENTIFIER array.declarator initializer.opt{
-              line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) array.declarator initializer.opt \n",$1->toString().c_str(),$2->c_str());
               idNode *id=new idNode(*($2),@2);
               id->arg_list = (static_cast<arrayNode*>$3)->arg_list;
               id->init = $4;
               //if(S[*($2)]==NULL) S.InsertSymbol(id);
               $$ = new declareNode((primNode*)$1,id,@2);
+              line("Line:%-4d",@1.first_line);
+              debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) array.declarator initializer.opt \n",$1->toString().c_str(),id->toString().c_str());
               
         }
         | declaring.list 	',' 	IDENTIFIER initializer.opt{
@@ -189,14 +189,14 @@ declaring.list:
               $$=$1;
         }
         | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt{
-              line("Line:%-4d",@1.first_line);
-              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) array.declarator initializer.opt \n",$3->c_str());
               idNode *id=new idNode(*($3),@2);
               id->arg_list = (static_cast<arrayNode*>$4)->arg_list;
               id->init = $5;
               //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->id_list.push_back(id);
               $$=$1;
+              line("Line:%-4d",@1.first_line);
+              debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) array.declarator initializer.opt \n",id->toString().c_str());
         }
         ;
 stream.declaring.list:
