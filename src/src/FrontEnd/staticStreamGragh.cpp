@@ -1,5 +1,4 @@
 #include "staticStreamGragh.h"
-
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
     FlatNode *src = NULL, *dest = NULL;
@@ -61,6 +60,7 @@ void StaticStreamGraph::ResetFlatNodeNames()
 (3)若该window为tumbling风格，则inPeekWeights和inPopWeights相等均由第一个count决定
 (4)由于是静态计算，因此不对window的排空和触发策略为time类型做计算，只限于count类型的window策略
 */
+// 计算每个节点的push，pop，peek值
 void StaticStreamGraph::SetFlatNodesWeights()
 {
     for (int i = 0; i < flatNodes.size(); i++)
@@ -70,7 +70,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
         operatorNode *contents = flatNode->contents;
         list<Node *> *win_stmts = contents->operBody->win->winStmt_List;
         // if(win_stmts!=NULL)
-        // cout<<"win_stmt.size()= "<<win_stmts->size()<<endl;
+         cout<<"win_stmt.size()= "<<win_stmts->size()<<endl;
         for (int j = 0; j < flatNode->nIn; j++)
         {
             // 在inPeekWeights为空的情况下，不能使用数组下标（inPeekWeights[j]）访问，否则出现断言错误，以下类同

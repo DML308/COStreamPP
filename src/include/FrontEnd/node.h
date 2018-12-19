@@ -27,11 +27,11 @@ class Node
     bool parenthesized;
     Node()
     {
-        loc=new Loc();
+        loc = new Loc();
     }
     virtual ~Node()
     {
-       delete loc;
+        delete loc;
     }
     void setLoc(Loc *loc)
     {
@@ -835,6 +835,12 @@ class compBodyNode : public Node
         this->param = param;
         this->stmt_List = stmt_List;
     }
+    compBodyNode(compBodyNode &body)
+    {
+        this->type = CompBody;
+        this->param = body.param;
+        this->stmt_List = body.stmt_List;
+    }
     ~compBodyNode() {}
     void print() {}
     const char *toString() {}
@@ -869,13 +875,14 @@ class compositeCallNode : public Node
     list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
     /*拷贝构造函数 */
-    compositeCallNode(const compositeCallNode &node){
-        this->compName=node.compName;
-        this->stream_List=node.stream_List;
-        this->inputs=node.inputs;
-        this->actual_composite=node.actual_composite;
+    compositeCallNode(const compositeCallNode &node)
+    {
+        this->compName = node.compName;
+        this->stream_List = node.stream_List;
+        this->inputs = node.inputs;
+        this->actual_composite = node.actual_composite;
     }
-    compositeCallNode(list<Node *> *outputs,string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, Loc *loc)
+    compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, Loc *loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
@@ -927,12 +934,12 @@ class operatorNode : public Node
   public:
     string operName;
     list<Node *> *inputs;
-    list<Node*> *outputs;
+    list<Node *> *outputs;
     operBodyNode *operBody;
-    operatorNode(list<Node*> *outputs,string operName, list<Node *> *inputs, operBodyNode *operBody)
+    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
     {
         this->type = Operator_;
-        this->outputs=outputs;
+        this->outputs = outputs;
         this->operName = operName;
         this->inputs = inputs;
         this->operBody = operBody;
