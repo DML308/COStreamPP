@@ -6,21 +6,23 @@ class UnfoldComposite
 {
   public:
     int compNum;
-    vector<Node*> call_List;
-    UnfoldComposite() {
-        compNum=0;
+    vector<Node *> call_List;
+    UnfoldComposite()
+    {
+        compNum = 0;
     }
     /* 给与每一个不同的splitjoin或者pipeline节点不同的名字 */
-    inline string MakeCompositeName(string name){
-        return name+to_string(compNum);
+    inline string MakeCompositeName(string name)
+    {
+        return name + to_string(compNum);
     }
-    void setCallList(list<Node*> *stmt);
+    void setCallList(list<Node *> *stmt);
     compositeNode *UnfoldRoundrobin(string comName, splitjoinNode *node);
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
     compositeNode *UnfoldPipeline(Node *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
-    operatorNode  *MakeSplitOperator(Node *input, list<Node*> *arguments, int style);
-    operatorNode  *MakeJoinOperator(Node *output, list<Node*> *inputs,list<Node*> *arguments);
-
+    operatorNode *MakeSplitOperator(Node *input, list<Node *> *arguments, int style);
+    operatorNode *MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments);
+    compositeNode *streamReplace(compositeNode *comp, list<Node *> *input, list<Node *> *output);
 };
 #endif

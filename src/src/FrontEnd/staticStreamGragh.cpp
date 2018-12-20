@@ -3,7 +3,6 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
 {
     FlatNode *src = NULL, *dest = NULL;
     src = new FlatNode(u, oldComposite, newComposite);
-
     list<Node *> *outputs = NULL;
     list<Node *> *inputs = NULL;
     outputs = (u->outputs != NULL) ? u->outputs : new list<Node *>();
@@ -13,20 +12,18 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *outputs)
     {
         src->nOut++;
-        //cout<<it->type<<endl;
-        //cout<<((idNode*)it)->name<<endl;
+        cout<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
     //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     flatNodes.push_back(src);
     //mapOper2FlatNode.insert(make_pair(u,src));
     dest = src; //边变了
-    //搜索节点的输入流，建立节点流输入输出关系
+    //搜索节点的输入边，建立节点流输入输出关系
     for (auto it : *inputs)
     {
         src->nIn++;
         //将“有向边”与其“下”端operator绑定
-        //cout<<it->type<<endl;
         mapEdge2DownFlatNode.insert(make_pair(it, dest));
         //这里不应该是it（输入节点） 应该是本节点
         // auto pos = mapEdge2UpFlatNode.find(it);
@@ -70,7 +67,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
         operatorNode *contents = flatNode->contents;
         list<Node *> *win_stmts = contents->operBody->win->winStmt_List;
         // if(win_stmts!=NULL)
-         cout<<"win_stmt.size()= "<<win_stmts->size()<<endl;
+        // cout<<"win_stmt.size()= "<<win_stmts->size()<<endl;
         for (int j = 0; j < flatNode->nIn; j++)
         {
             // 在inPeekWeights为空的情况下，不能使用数组下标（inPeekWeights[j]）访问，否则出现断言错误，以下类同
@@ -91,6 +88,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
         {
             for (auto it : *win_stmts)
             {
+
             }
         }
     }

@@ -835,12 +835,6 @@ class compBodyNode : public Node
         this->param = param;
         this->stmt_List = stmt_List;
     }
-    compBodyNode(compBodyNode &body)
-    {
-        this->type = CompBody;
-        this->param = body.param;
-        this->stmt_List = body.stmt_List;
-    }
     ~compBodyNode() {}
     void print() {}
     const char *toString() {}
@@ -905,6 +899,11 @@ class compHeadNode : public Node
         this->type = CompHead;
         this->compName = compName;
         this->inout = inout;
+    }
+    compHeadNode(compHeadNode &comp) {
+        this->type = CompHead;
+        this->compName = comp.compName;
+        this->inout = comp.inout;
     }
     ~compHeadNode() {}
     void print() {}

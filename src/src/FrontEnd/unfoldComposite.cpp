@@ -136,7 +136,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, NULL, window);
     res = new operatorNode(outputs, operName[style], inputs, body);
-    cout << "-----------------split end---------------------" << endl;
+    //cout << "-----------------split end---------------------" << endl;
     return res;
 }
 
@@ -152,7 +152,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     long long sum = 0;
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *win_stmt = new list<Node *>();
-    assert(arguments->size() == 1 || arguments->size() == 8);
+    assert(arguments->size() == 1 || arguments->size() == len);
     Node *arg = arguments->front();
     outputs->push_back(output);
     if (arguments->size() == 1)
@@ -167,22 +167,22 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     for (auto it : *(arguments))
     {
         sum += ((constantNode *)it)->llval;
-        cout << ((idNode *)*iter)->name << endl;
+        //cout << ((idNode *)*iter)->name << endl;
         slidingNode *slid = new slidingNode(new list<Node *>({it}), NULL);
         winStmtNode *win = new winStmtNode(((idNode *)*iter)->name, slid, NULL);
         win_stmt->push_back(win);
         iter++;
     }
-    //添加join节点输入窗口
+    /*添加join节点输出窗口*/
     constantNode *constNode = new constantNode("integer", sum, NULL);
     tumblingNode *tum = new tumblingNode(new list<Node *>({constNode}), NULL);
     winStmtNode *win = new winStmtNode(output_name, tum, NULL);
     win_stmt->push_back(win);
-
+    /*end*/
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, NULL, window);
     res = new operatorNode(outputs, operName, inputs, body);
-    cout << "-----------------join end---------------------" << endl;
+    //cout << "-----------------join end---------------------" << endl;
     return res;
 }
 
@@ -206,6 +206,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
     string streamName = "Rstream";
+    static int number = 0;
     compositeNode *roundrobin = NULL;
     list<Node *> *tempList = new list<Node *>();
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
@@ -232,16 +233,18 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     {
         assert(it->type == CompositeCall);
         string name = (((compositeCallNode *)it)->compName);
-        string tempName = streamName + (to_string(cnt));
+        string tempName = streamName + to_string(number) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName, NULL);
         //compositeCall的输出流是join节点的输入流
         inputs_join->push_back(id);
         list<Node *> *outputs = new list<Node *>({id});
         //compositeCall的输入流
         list<Node *> *inputs = new list<Node *>({*iter});
-        compositeNode *actual_composite = S.LookupCompositeSymbol(name);
+        compositeNode *comp = S.LookupCompositeSymbol(name);
+        assert(comp != NULL);
+        /*完成输入流,输出流的替换*/
+        compositeNode *actual_composite = streamReplace(comp, inputs, outputs);
         // 修改composite调用的输入输出流
-        assert(actual_composite != NULL);
         compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite, NULL);
         comCallList->push_back(call);
         iter++;
@@ -258,6 +261,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     //cout<<"comp_stmt_List->size()= "<<comp_stmt_List->size()<<endl;
     body = new compBodyNode(NULL, comp_stmt_List);
     roundrobin = new compositeNode(head, body);
+    ++number;
     call_List.clear();
     return roundrobin;
 }
@@ -265,6 +269,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
 compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *node)
 {
     compositeNode *dup = NULL;
+    static int number = 0;
     list<Node *> *tempList = new list<Node *>();
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
     /* arg_list表示split roundrobin(size);的size参数列表 */
@@ -290,7 +295,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     {
         assert(it->type == CompositeCall);
         string name = (((compositeCallNode *)it)->compName);
-        string tempName = name + (to_string(cnt));
+        string tempName = name + to_string(number) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName, NULL);
         //compositeCall的输出流是join节点的输入流
         inputs_join->push_back(id);
@@ -315,6 +320,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     //cout<<"comp_stmt_List->size()= "<<comp_stmt_List->size()<<endl;
     body = new compBodyNode(NULL, comp_stmt_List);
     dup = new compositeNode(head, body);
+    ++number;
     call_List.clear();
     return dup;
 }
@@ -324,4 +330,38 @@ compositeNode *UnfoldComposite::UnfoldPipeline(Node *node)
     compositeNode *pipeline = NULL;
 
     return pipeline;
+}
+
+compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
+{
+    //cout<<((idNode*)(outputs->front()))->name<<endl;
+    compositeNode *tmp = NULL;
+    compHeadNode *head = new compHeadNode(*(comp->head));
+    list<Node *> *stmts = new list<Node *>();
+    for (auto it : *(comp->body->stmt_List))
+    {
+        stmts->push_back(it);
+    }
+    assert(stmts != NULL);
+    for (auto it : *stmts)
+    {
+        if (it->type == Binop)
+        {
+            expNode *exp = ((binopNode *)it)->right;
+            if (exp->type == Operator_)
+            {
+                ((operatorNode *)exp)->inputs = new list<Node*>();
+                for(auto it:*inputs){
+                    ((operatorNode *)exp)->inputs->push_back(it);
+                }
+                ((operatorNode *)exp)->outputs =  new list<Node*>();
+                for(auto it:*outputs){
+                    ((operatorNode *)exp)->outputs->push_back(it);
+                }
+            }
+        }
+    }
+    compBodyNode *body = new compBodyNode(NULL, stmts);
+    tmp = new compositeNode(head, body);
+    return tmp;
 }
