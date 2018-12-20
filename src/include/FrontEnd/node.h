@@ -46,21 +46,21 @@ class constantNode : public Node
 {
   public:
     /* 判断是double/long或者string类型 */
-    string name;
+    string valueType;
     string sval;
     double dval;
     long long llval;
-    constantNode(string type, string str, YYLTYPE loc) : name(type), sval(str)
+    constantNode(string type, string str, YYLTYPE loc) : valueType(type), sval(str)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, long long l, YYLTYPE loc) : name(type), llval(l)
+    constantNode(string type, long long l, YYLTYPE loc) : valueType(type), llval(l)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, double d, YYLTYPE loc) : name(type), dval(d)
+    constantNode(string type, double d, YYLTYPE loc) : valueType(type), dval(d)
     {
         setLoc(loc);
         this->type = constant;

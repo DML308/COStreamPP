@@ -26,9 +26,9 @@ string primNode::toString()
 
 string constantNode::toString()
 {
-    if (name == "double")
+    if (valueType == "double")
         return to_string(dval);
-    else if (name == "interger")
+    else if (valueType == "interger")
         return to_string(llval);
     else
         return sval;
