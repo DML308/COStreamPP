@@ -383,7 +383,7 @@ composite.body.statement.list:
                                                                         $$=new list<Node *>();
                                                                         if($1!=NULL) $$->push_back($1);
                                                                       }
-        | composite.body.statement.list costream.composite.statement  { $$ ->push_back($2); }
+        | composite.body.statement.list costream.composite.statement  { if($2!=NULL) $$->push_back($2); }
         ;
 costream.composite.statement:
           composite.body.operator   {
@@ -509,7 +509,7 @@ operator.default.call:
 /*************************************************************************/
 statement:
           labeled.statement
-        | compound.statement   {debug("statement::=compound.statement\n");}         /* 复合类型声明  */
+        | compound.statement   { line("Line:%-4d",@1.first_line);debug("statement::=compound.statement\n");}
         | expression.statement
         | selection.statement
         | iteration.statement
