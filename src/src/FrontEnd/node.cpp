@@ -26,9 +26,9 @@ string primNode::toString()
 
 string constantNode::toString()
 {
-    if (name == "double")
+    if (style == "double")
         return to_string(dval);
-    else if (name == "interger")
+    else if (style == "interger")
         return to_string(llval);
     else
         return sval;
@@ -84,9 +84,8 @@ string callNode::toString()
 
 string operatorNode::toString()
 {
-    return operName + '(' + listToString(arg_list) + ')' + operBody->toString();
+    return "operatorNode";
 }
-
 string idNode::toString()
 {
     string str = name;
@@ -131,8 +130,5 @@ string funcDclNode::toString()
 
 string compositeCallNode::toString()
 {
-    int k = 0;
-    string str = name + "(" + listToString(stream_list) + ")";
-    str += "(" + listToString(param_list) + ")";
-    return str;
+    return "compositeCallNode";
 }

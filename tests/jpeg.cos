@@ -15,9 +15,6 @@ int standard[64]={
         72,92,95,98,112,100,103,99,
     };
 const int  PI = 3.141592;
-//int c[];
-//typedef void(*ptr)(int ) ;
-
 double pi = 3.14159265358979323846;
 
 stream<double x,int y>S;
@@ -29,20 +26,7 @@ composite IntSource(output stream<double x,int y> Out)
 	{
 		work
 		{
-			//ptr p1;不支持函数指针的定义
 			int a;
-			//enum{mon,tue,wed} n;
-			//myInt lll=1;
-			const  int asss=1;
-			//inline int sfsf=1;
-			//int double sss=1;
-			//auto num=12.3;
-			//int costream1,costream1;
-			//int ass=123lul;
-			//people p1;
-			//p1.id=1;
-			//p1.name="jack";
-			//println("");
 			int i,j;
 			int k =0;
 			double ddd=(double) k;
@@ -59,24 +43,6 @@ composite IntSource(output stream<double x,int y> Out)
 		}
 	};
 }
-
-/*
-composite SplitSource(output stream<double x> Out,input stream<double x> In)
-{
-	param
-		int size;
-	Out = IntSource(In)
-	{
-		int i;
-		split roundrobin(size);
-		for (i = 0; i < size; i++)
-		{
-
-		}
-		join roundrobin(size);
-	};
-}
-*/
 
 composite Quantification(output stream<double x> Out,input stream<double x> In)
 {
@@ -148,22 +114,6 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 	};
 }
 
-composite DCT_X(output stream<double x>Out,input stream<double x>In)
-{
-	param
-		int size;
-	Out=splitjoin(In)
-	{
-		int i;
-		split roundrobin(size);
-		for (i = 0; i < size; i++)
-		{
-			add DCT_1D(size);
-		}
-		join roundrobin(size);
-	};
-}
-
 composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 {
 	param
@@ -172,12 +122,28 @@ composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 	{
 		int i;
 		split roundrobin(1);
-		for (i = 0; i < size; i++)
+		for (i = 0; i < 8; i++)
 		{
 			add DCT_1D(size);
 		}
 		join roundrobin(1);
 
+	};
+}
+
+composite DCT_X(output stream<double x>Out,input stream<double x>In)
+{
+	param
+		int size;
+	Out=splitjoin(In)
+	{
+		int i;
+		split roundrobin(8);
+		for (i = 0; i < 8; i++)
+		{
+			add DCT_1D(8);
+		}
+		join roundrobin(8);
 	};
 }
 
@@ -190,13 +156,11 @@ composite Sink(input stream<int x> In)
 		work
 		{
 			int i;
-			//println("");
 			for(i = 0;i<size;i++){
 				print(In[i].x);
 				print(" ");
 			}
 			println("");
-			//println(fun(1));
 		}
 		window{
 			In sliding(size,size);

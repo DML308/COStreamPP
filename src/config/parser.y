@@ -1,12 +1,14 @@
 %{
-#define DEBUG
+//#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
 #include "nodetype.h"
+#include "unfoldComposite.h"
 
 extern SymbolTable S;
 extern list<Node*> *Program;
+UnfoldComposite *unfold=new UnfoldComposite();
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -332,14 +334,14 @@ composite.definition:
                                           line("Line:%-4d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
                                           $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2) ;
+                                          S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
                                     }
     ;
 composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'   {
             line("Line:%-4d",@1.first_line);
             debug ("composite.head ::= COMPOSITE %s '(' composite.head.inout ')' \n",$2->c_str());
-            idNode *id = new idNode(*($2),@2);
-            $$ = new compHeadNode(id,(ComInOutNode*)$4) ;
+            $$ = new compHeadNode(*($2),(ComInOutNode*)$4) ;
       }
     ;
 composite.head.inout:
@@ -436,7 +438,7 @@ operator.add:
         | ADD operator.default.call {
                                           line("Line:%-4d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.default.call \n");
-                                          $$ = new addNode((OperdclNode*)$2,@1) ;
+                                          $$ = new addNode((compositeCallNode*)$2,@1) ;
                                     }
         ;
 operator.pipeline:
@@ -466,10 +468,10 @@ splitjoinPipeline.statement.list:
         ;
 operator.splitjoin:
           SPLITJOIN lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock     {
-                   $$=new splitjoinNode((splitNode*)$3,NULL,$4,(joinNode*)$5,@1);
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$3,NULL,$4,(joinNode*)$5,@1);
             }
         | SPLITJOIN lblock statement.list split.statement splitjoinPipeline.statement.list join.statement rblock  {
-                   $$=new splitjoinNode((splitNode*)$4,$3,$5,(joinNode*)$6,@1);
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$4,$3,$5,(joinNode*)$6,@1);
             }
         ;
 split.statement:
@@ -493,15 +495,11 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                                                              $$ = new OperdclNode(*($1),NULL,@1); 
-                                                              /*需要查找符号表*/
-                                                            }
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1);
+            }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                                                              /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
-                                                              ///*DEBUG*/printf("have found operator.default.call\n");
-                                                              $$ = new OperdclNode(*($1),$3,@1);
-                                                              /* 需要查找符号表 */
-                                                            }
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1);
+            }
         ;
 
 /*************************************************************************/
@@ -624,6 +622,23 @@ exp:      idNode          { $$ = $1 ; }
                               line("Line:%-4d",@1.first_line);
                               debug ("exp ::= exp(%s) assignment.operator(%s) exp(%s)\n",$1->toString().c_str(),$2->c_str(),$3->toString().c_str()); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
+                              //当类型为splitjoin，pipeline，operator，compositecall时设置输出流
+                              if($3->type==SplitJoin){
+                                    list<Node*> *outputs=new list<Node*>({$1});
+                                    ((splitjoinNode*)$3)->outputs=outputs;
+                                    ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldSplitJoin((splitjoinNode*)$3);
+                              }
+                              else if($3->type==Pipeline){
+                                    list<Node*> *outputs=new list<Node*>({$1});
+                                    ((splitjoinNode*)$3)->outputs=outputs;
+                                    ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldPipeline((splitjoinNode*)$3);
+                              }
+                              else if($3->type==CompositeCall){
+                                    ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
+                              }
+                              else if($3->type==Operator_){
+                                     ((operatorNode*)$3)->outputs=new list<Node*>({$1});
+                              }
                         }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
         | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@1) ; }
@@ -635,27 +650,45 @@ exp:      idNode          { $$ = $1 ; }
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-4d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  $$ = new operatorNode(*($1),NULL,(operBodyNode*)$4) ; 
+                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4) ; 
                   //error("%s",((operatorNode*)$$)->operName.c_str());
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = new operatorNode(*($1),$3,(operBodyNode*)$5) ; 
+                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5) ; 
             }
-        | IDENTIFIER '('  ')'  '(' ')'  { $$ = new compositeCallNode($1,NULL,NULL,@1) ; }
-        | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { $$ = new compositeCallNode($1,NULL,$5,@1) ; }
-        | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { $$ = new compositeCallNode($1,$3,NULL,@1) ; }
-        | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { $$ = new compositeCallNode($1,$3,$6,@1) ; }
+        | IDENTIFIER '('  ')'  '(' ')'  { 
+                  line("Line:%-3d",@1.first_line);
+                  debug ("exp ::= %s()()\n",$1->c_str()); 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
+        | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$5,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
+        | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
+        | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),$3,$6,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode((splitNode*)$6,NULL,$7,(joinNode*)$8,@1)  ; 
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$6,NULL,$7,(joinNode*)$8,@1)  ; 
+
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { 
                   /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode((splitNode*)$7,$6,$8,(joinNode*)$9,@1)  ;  
+                  
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,@1)  ; 
+                  
+
             }
-        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock                                                 {
+        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode($6,@1) ; 

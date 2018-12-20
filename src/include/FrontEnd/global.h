@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "defines.h"
 
+#define MAX_INF 2147483647
 #define MAX_SCOPE_DEPTH 100 //定义最大嵌套深度为100
 extern string infile_name;
 extern string outfile_name;
