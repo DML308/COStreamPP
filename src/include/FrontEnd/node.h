@@ -6,54 +6,40 @@
 #include <list>
 #include <vector>
 
-typedef struct
-{
-    int first_line;
-    int first_column;
-    int last_line;
-    int last_column;
-} Loc;
-
 class Node
 {
   public:
     NodeType type;
-    Loc *loc;
+    YYLTYPE *loc;
     short pass;
-    /* parenthesized is set on expressions which were parenthesized
-	   in the original source:  e.g., (x+y)*(w+z) would have
-	   parenthesized==TRUE on both PLUS nodes, and parenthesized==FALSE
-	   on both MULT nodes. */
-    bool parenthesized;
     Node()
     {
-        loc = new Loc();
+        loc = new YYLTYPE();
     }
     virtual ~Node()
     {
         delete loc;
     }
-    void setLoc(Loc *loc)
-    {
-        loc = loc;
-    }
+    void setLoc(YYLTYPE loc);
     virtual void print() = 0;
-    virtual const char *toString() = 0;
+    virtual string toString() = 0;
 };
+
+string listToString(list<Node *> list);
 
 class primNode : public Node
 {
   public:
     string name;
     bool isConst;
-    primNode(string str, Loc *loc) : name(str), isConst(false)
+    primNode(string str, YYLTYPE loc= YYLTYPE()) : name(str), isConst(false)
     {
         this->type = primary;
         setLoc(loc);
     }
     ~primNode() {}
     void print() { cout << "primNodeType :" << name << endl; }
-    const char *toString();
+    string toString();
 };
 
 class constantNode : public Node
@@ -64,62 +50,70 @@ class constantNode : public Node
     string sval;
     double dval;
     long long llval;
-    constantNode(string type, string str, Loc *loc) : style(type), sval(str)
+    constantNode(string type, string str, YYLTYPE loc= YYLTYPE()) : style(type), sval(str)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, long long l, Loc *loc) : style(type), llval(l)
+    constantNode(string type, long long l, YYLTYPE loc= YYLTYPE()) : style(type), llval(l)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, double d, Loc *loc) : style(type), dval(d)
+    constantNode(string type, double d, YYLTYPE loc= YYLTYPE()) : style(type), dval(d)
     {
         setLoc(loc);
         this->type = constant;
     }
     ~constantNode() {}
     void print() { cout << "constant :" << type << endl; }
-    const char *toString();
+    string toString();
 };
+/* expNode向前声明 */
+class expNode;
 
 class idNode : public Node
 {
   public:
     string name;
+    string valType;
+    list<Node *> arg_list;
+    Node *init;
     int level;
     int version;
-    idNode(string name, Loc *loc) : name(name)
+    int isArray;  //是否为数组, 主要用于 int a[] 这种 arg_list 为空的场景
+    int isStream; //是否为 Stream 复杂类型.后续待处理
+    int isParam;  //是否为function 或 composite 的输入参数
+    idNode(string name, YYLTYPE loc= YYLTYPE()) : name(name), isArray(0), isStream(0), isParam(0)
     {
         this->type = Id;
         setLoc(loc);
         this->level = Level;
         this->version = current_version[Level];
+        this->valType = "int";
+    }
+    idNode(string *name, YYLTYPE loc= YYLTYPE())
+    {
+        new (this) idNode(*name, loc);
     }
     ~idNode() {}
     void print() {}
-    const char *toString()
-    {
-        string str = "name:" + name;
-        str += "  level:" + to_string(level);
-        str += "  version:" + to_string(version);
-        return str.c_str();
-    }
+    string toString();
 };
 
 class initNode : public Node
 {
   public:
     list<Node *> value;
-    initNode(Loc *loc)
+    initNode(Node *node, YYLTYPE loc= YYLTYPE())
     {
-        setLoc(loc);
+        value.push_back(node);
         this->type = Initializer;
+        setLoc(loc);
     }
     ~initNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class functionNode : public Node
@@ -129,60 +123,45 @@ class functionNode : public Node
     ~functionNode() {}
 };
 
-/* expNode向前声明 */
-class expNode;
-class adclNode : public Node
-{
-  public:
-    string name;
-    int size; // 还未用到
-    expNode *dim;
-    NodeType valType;
-    /* 默认1维 */
-    adclNode(NodeType valType, expNode *eNode, Loc *loc)
-    {
-        this->setLoc(loc);
-        this->type = Adcl;
-        this->dim = eNode;
-        this->valType = valType;
-    }
-    ~adclNode() {}
-    void print() {}
-    const char *toString() {}
-};
-
 class expNode : public Node
 {
   public:
     expNode() {}
     ~expNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
+};
+class arrayNode : public Node
+{
+  public:
+    list<Node *> arg_list;
+    arrayNode(expNode *exp, YYLTYPE loc= YYLTYPE())
+    {
+        if (exp)
+            arg_list.push_back(exp);
+        setLoc(loc);
+    }
+    ~arrayNode() {}
+    void print() {}
+    string toString() { return string("arrayNode"); }
 };
 
 class declareNode : public Node
 {
   public:
     primNode *prim;
-    list<idNode *> id_List;
-    list<adclNode *> adcl_List;
-    list<initNode *> init_List;
-    declareNode(primNode *prim, idNode *id, adclNode *adcl, initNode *init, Loc *loc)
+    list<idNode *> id_list;
+    declareNode(primNode *prim, idNode *id, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Decl;
         this->prim = prim;
-        this->append(id, adcl, init);
-    }
-    void append(idNode *id, adclNode *adcl, initNode *init)
-    {
-        id_List.push_back(id);
-        adcl_List.push_back(adcl);
-        init_List.push_back(init);
+        if (id)
+            this->id_list.push_back(id);
     }
     ~declareNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class unaryNode : public Node
@@ -190,7 +169,7 @@ class unaryNode : public Node
   public:
     expNode *exp;
     string op;
-    unaryNode(string op, expNode *exp, Loc *loc)
+    unaryNode(string op, expNode *exp, YYLTYPE loc= YYLTYPE())
     {
         setLoc(loc);
         this->exp = exp;
@@ -198,26 +177,7 @@ class unaryNode : public Node
     }
     ~unaryNode() {}
     void print() {}
-    const char *toString() {}
-};
-/*  这里pointNode可以和binopnode可以合成一个，但是需要将binopNode的expnode改为node
-    因此在这里单独处理
-*/
-class pointNode : public Node
-{
-  public:
-    Node *assign;
-    Node *id;
-    pointNode(Node *assign, Node *id, Loc *loc)
-    {
-        this->setLoc(loc);
-        this->type = Point;
-        this->assign = assign;
-        this->id = id;
-    }
-    ~pointNode() {}
-    void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class binopNode : public Node
@@ -226,17 +186,17 @@ class binopNode : public Node
     expNode *left;
     expNode *right;
     string op;
-    binopNode(expNode *left, string op, expNode *right, Loc *loc)
+    binopNode(expNode *left, string op, expNode *right, YYLTYPE loc= YYLTYPE())
     {
         this->type = Binop;
         setLoc(loc);
         this->left = left;
         this->right = right;
-        op = op;
+        this->op = op;
     }
     ~binopNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class ternaryNode : public Node
@@ -245,7 +205,7 @@ class ternaryNode : public Node
     expNode *first;
     expNode *second;
     expNode *third;
-    ternaryNode(expNode *first, expNode *second, expNode *thrid, Loc *loc)
+    ternaryNode(expNode *first, expNode *second, expNode *third, YYLTYPE loc= YYLTYPE())
     {
         setLoc(loc);
         this->type = Ternary;
@@ -255,7 +215,20 @@ class ternaryNode : public Node
     }
     ~ternaryNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
+};
+class parenNode : public Node
+{
+  public:
+    expNode *exp;
+    parenNode(expNode *exp, YYLTYPE loc= YYLTYPE())
+    {
+        setLoc(loc);
+        this->exp = exp;
+    }
+    ~parenNode() {}
+    void print() {}
+    string toString();
 };
 
 class castNode : public Node
@@ -263,7 +236,7 @@ class castNode : public Node
   public:
     primNode *prim;
     expNode *exp;
-    castNode(primNode *prim, expNode *exp, Loc *loc)
+    castNode(primNode *prim, expNode *exp, YYLTYPE loc= YYLTYPE())
     {
         setLoc(loc);
         this->type = Cast;
@@ -272,7 +245,7 @@ class castNode : public Node
     }
     ~castNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 /* switch() case: */
@@ -282,7 +255,7 @@ class caseNode : public Node
   public:
     expNode *exp;
     statNode *stmt;
-    caseNode(expNode *exp, statNode *stmt, Loc *loc)
+    caseNode(expNode *exp, statNode *stmt, YYLTYPE loc= YYLTYPE())
     {
         setLoc(loc);
         this->type = Case;
@@ -291,14 +264,14 @@ class caseNode : public Node
     }
     ~caseNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class defaultNode : public Node
 {
   public:
     statNode *stmt;
-    defaultNode(statNode *stmt, Loc *loc)
+    defaultNode(statNode *stmt, YYLTYPE loc= YYLTYPE())
     {
         setLoc(loc);
         this->type = Default;
@@ -306,40 +279,40 @@ class defaultNode : public Node
     }
     ~defaultNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class continueNode : public Node
 {
   public:
-    continueNode(Loc *loc)
+    continueNode(YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Continue;
     }
     ~continueNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class breakNode : public Node
 {
   public:
-    breakNode(Loc *loc)
+    breakNode(YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Break;
     }
     ~breakNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class returnNode : public Node
 {
   public:
     expNode *exp;
-    returnNode(expNode *exp, Loc *loc)
+    returnNode(expNode *exp, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Return;
@@ -347,7 +320,7 @@ class returnNode : public Node
     }
     ~returnNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ifNode : public Node
@@ -355,7 +328,7 @@ class ifNode : public Node
   public:
     expNode *exp;
     Node *stmt;
-    ifNode(expNode *exp, Node *stmt, Loc *loc)
+    ifNode(expNode *exp, Node *stmt, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = If;
@@ -364,7 +337,7 @@ class ifNode : public Node
     }
     ~ifNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ifElseNode : public Node
@@ -373,7 +346,7 @@ class ifElseNode : public Node
     expNode *exp;
     Node *stmt1;
     Node *stmt2;
-    ifElseNode(expNode *exp, Node *stmt1, Node *stmt2, Loc *loc)
+    ifElseNode(expNode *exp, Node *stmt1, Node *stmt2, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = IfElse;
@@ -383,7 +356,7 @@ class ifElseNode : public Node
     }
     ~ifElseNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class switchNode : public Node
@@ -391,7 +364,7 @@ class switchNode : public Node
   public:
     expNode *exp;
     statNode *stat;
-    switchNode(expNode *exp, statNode *stat, Loc *loc)
+    switchNode(expNode *exp, statNode *stat, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Switch;
@@ -400,7 +373,7 @@ class switchNode : public Node
     }
     ~switchNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class whileNode : public Node
@@ -408,7 +381,7 @@ class whileNode : public Node
   public:
     expNode *exp;
     Node *stmt;
-    whileNode(expNode *exp, Node *stmt, Loc *loc)
+    whileNode(expNode *exp, Node *stmt, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = While;
@@ -417,7 +390,7 @@ class whileNode : public Node
     }
     ~whileNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class doNode : public Node
@@ -425,7 +398,7 @@ class doNode : public Node
   public:
     expNode *exp;
     Node *stmt;
-    doNode(Node *stmt, expNode *exp, Loc *loc)
+    doNode(Node *stmt, expNode *exp, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Do;
@@ -434,7 +407,7 @@ class doNode : public Node
     }
     ~doNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class forNode : public Node
@@ -445,7 +418,7 @@ class forNode : public Node
     expNode *cond;
     expNode *next;
     Node *stmt;
-    forNode(Node *init, expNode *cond, expNode *next, Node *stmt, Loc *loc)
+    forNode(Node *init, expNode *cond, expNode *next, Node *stmt, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = For;
@@ -455,24 +428,24 @@ class forNode : public Node
         this->stmt = stmt;
     }
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class blockNode : public Node
 {
   public:
-    list<Node *> *stmt_List;
-    Loc *right;
-    blockNode(list<Node *> *stmt_List, Loc *left, Loc *right)
+    list<Node *> *stmt_list;
+    YYLTYPE right;
+    blockNode(list<Node *> *stmt_list, YYLTYPE left, YYLTYPE right)
     {
         this->setLoc(left);
         this->right = right;
         this->type = Block;
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
     }
     ~blockNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compositeNode;
@@ -481,7 +454,7 @@ class pipelineNode : public Node
   public:
     list<Node *> *bodyStmt_List;
     compositeNode *replace_composite;
-    pipelineNode(list<Node *> *bodyStmt_List, Loc *loc)
+    pipelineNode(list<Node *> *bodyStmt_List, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Pipeline;
@@ -490,14 +463,14 @@ class pipelineNode : public Node
     }
     ~pipelineNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class roundrobinNode : public Node
 {
   public:
     list<Node *> *arg_list;
-    roundrobinNode(list<Node *> *arg_list, Loc *loc)
+    roundrobinNode(list<Node *> *arg_list, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = RoundRobin;
@@ -505,14 +478,14 @@ class roundrobinNode : public Node
     }
     ~roundrobinNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class duplicateNode : public Node
 {
   public:
     expNode *exp;
-    duplicateNode(expNode *exp, Loc *loc)
+    duplicateNode(expNode *exp, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Duplicate;
@@ -520,14 +493,14 @@ class duplicateNode : public Node
     }
     ~duplicateNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class splitNode : public Node
 {
   public:
     Node *dup_round;
-    splitNode(Node *dup_round, Loc *loc)
+    splitNode(Node *dup_round, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Split;
@@ -535,14 +508,14 @@ class splitNode : public Node
     }
     ~splitNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class joinNode : public Node
 {
   public:
     roundrobinNode *rdb;
-    joinNode(roundrobinNode *rdb, Loc *loc)
+    joinNode(roundrobinNode *rdb, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Join;
@@ -550,7 +523,7 @@ class joinNode : public Node
     }
     ~joinNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class splitjoinNode : public Node
@@ -563,7 +536,7 @@ class splitjoinNode : public Node
     list<Node *> *stmt_list;
     list<Node *> *bodyStmt_List;
     compositeNode *replace_composite;
-    splitjoinNode(list<Node *> *inputs, list<Node *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, Loc *loc)
+    splitjoinNode(list<Node *> *inputs, list<Node *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = SplitJoin;
@@ -577,7 +550,7 @@ class splitjoinNode : public Node
     }
     ~splitjoinNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class addNode : public Node
@@ -585,7 +558,7 @@ class addNode : public Node
   public:
     /* content可以为pipeline，splitjoin或者compositeCall */
     Node *content;
-    addNode(Node *content, Loc *loc)
+    addNode(Node *content, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Add;
@@ -593,14 +566,14 @@ class addNode : public Node
     }
     ~addNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class slidingNode : public Node
 {
   public:
     list<Node *> *arg_list;
-    slidingNode(list<Node *> *arg_list, Loc *loc)
+    slidingNode(list<Node *> *arg_list, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Sliding;
@@ -608,14 +581,14 @@ class slidingNode : public Node
     }
     ~slidingNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class tumblingNode : public Node
 {
   public:
     list<Node *> *arg_list;
-    tumblingNode(list<Node *> *arg_list, Loc *loc)
+    tumblingNode(list<Node *> *arg_list, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Tumbling;
@@ -623,7 +596,7 @@ class tumblingNode : public Node
     }
     ~tumblingNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 /*
@@ -633,7 +606,7 @@ class OperHeadNode : public Node
     string name;
     list<Node *> *inputs;
     list<Node *> *outputs;
-    OperHeadNode(string name, list<Node *> *inputs, list<Node *> *outputs, Loc *loc)
+    OperHeadNode(string name, list<Node *> *inputs, list<Node *> *outputs, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = OperHead;
@@ -643,36 +616,23 @@ class OperHeadNode : public Node
     }
     ~OperHeadNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 */
 
 class strdclNode : public Node
 {
   public:
-    list<primNode *> prim_List;
-    list<idNode *> id_List;
-    list<adclNode *> adcl_List;
-    list<idNode *> decl_List;
-    strdclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
+    list<idNode *> id_list;
+    strdclNode(idNode *id, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
-        this->type = StrDcl;
-        append(prim, id, adcl);
-    }
-    void append(primNode *prim, idNode *id, adclNode *adcl)
-    {
-        prim_List.push_back(prim);
-        id_List.push_back(id);
-        adcl_List.push_back(adcl);
-    }
-    void insert(idNode *decl)
-    {
-        decl_List.push_back(decl);
+        if (id)
+            id_list.push_back(id);
     }
     ~strdclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class winStmtNode : public Node
@@ -680,7 +640,7 @@ class winStmtNode : public Node
   public:
     Node *winType;
     string winName;
-    winStmtNode(string winName, Node *winType, Loc *loc)
+    winStmtNode(string winName, Node *winType, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = WindowStmt;
@@ -690,21 +650,21 @@ class winStmtNode : public Node
 
     ~winStmtNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class windowNode : public Node
 {
   public:
     list<Node *> *winStmt_List;
-    windowNode(list<Node *> *winStmt_List)
+    windowNode(list<Node *> *winStmt_list)
     {
         this->type = Window;
-        this->winStmt_List = winStmt_List;
+        this->winStmt_List = winStmt_list;
     }
     ~windowNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class paramNode;
@@ -712,38 +672,43 @@ class operBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *stmt_List;
+    list<Node *> *stmt_list;
     Node *init;
     Node *work;
     windowNode *win;
-    operBodyNode(list<Node *> *stmt_List, Node *init, Node *work, windowNode *win)
+    operBodyNode(list<Node *> *stmt_list, Node *init, Node *work, windowNode *win)
     {
         this->type = OperBody;
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
         this->init = init;
         this->work = work;
         this->win = win;
     }
     ~operBodyNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() { return "operBodyNode"; }
 };
 
 class callNode : public Node
 {
   public:
     string name;
-    list<Node *> *arg_List;
-    callNode(string name, list<Node *> *arg_List, Loc *loc)
+    list<Node *> arg_list;
+    callNode(string name, list<Node *> *arg_list, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Call;
         this->name = name;
-        this->arg_List = arg_List;
+        if (arg_list)
+            this->arg_list = *arg_list;
+    }
+    callNode(string *name, list<Node *> *arg_list, YYLTYPE loc= YYLTYPE())
+    {
+        new (this) callNode(*name, arg_list, loc);
     }
     ~callNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class inOutdeclNode : public Node
@@ -751,7 +716,7 @@ class inOutdeclNode : public Node
   public:
     Node *strType;
     idNode *id;
-    inOutdeclNode(Node *strType, idNode *id, Loc *loc)
+    inOutdeclNode(Node *strType, idNode *id, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = InOutdcl;
@@ -759,7 +724,7 @@ class inOutdeclNode : public Node
     }
     ~inOutdeclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class ComInOutNode : public Node
@@ -768,12 +733,12 @@ class ComInOutNode : public Node
     list<Node *> *input_List;
     list<Node *> *output_List;
     ComInOutNode(){}
-    ComInOutNode(list<Node *> *input_List, list<Node *> *output_List, Loc *loc)
+    ComInOutNode(list<Node *> *input_list, list<Node *> *output_list, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = ComInOut;
-        this->input_List = input_List;
-        this->output_List = output_List;
+        this->input_List = input_list;
+        this->output_List = output_list;
     }
     ComInOutNode(const ComInOutNode & inout){
         this->type = ComInOut;
@@ -785,7 +750,7 @@ class ComInOutNode : public Node
 
     ~ComInOutNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class paramDeclNode : public Node
@@ -793,44 +758,42 @@ class paramDeclNode : public Node
   public:
     primNode *prim;
     idNode *id;
-    adclNode *adcl;
-    paramDeclNode(primNode *prim, idNode *id, adclNode *adcl, Loc *loc)
+    paramDeclNode(idNode *id, arrayNode *adcl, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = ParamDcl;
         this->prim = prim;
         this->id = id;
-        this->adcl = adcl;
     }
     ~paramDeclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 class paramNode : public Node
 {
   public:
-    list<Node *> *param_List;
-    paramNode(list<Node *> *param_List)
+    list<Node *> *param_list;
+    paramNode(list<Node *> *param_list)
     {
         this->type = Param;
-        this->param_List = param_List;
+        this->param_list = param_list;
     }
     ~paramNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class funcBodyNode : public Node
 {
   public:
-    list<Node *> *stmt_List;
-    funcBodyNode(list<Node *> *stmt_List)
+    list<Node *> *stmt_list;
+    funcBodyNode(list<Node *> *stmt_list)
     {
-        this->stmt_List = stmt_List;
+        this->stmt_list = stmt_list;
     }
     ~funcBodyNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compBodyNode : public Node
@@ -838,11 +801,11 @@ class compBodyNode : public Node
   public:
     paramNode *param;
     list<Node *> *stmt_List;
-    compBodyNode(paramNode *param, list<Node *> *stmt_List)
+    compBodyNode(paramNode *param, list<Node *> *stmt_list)
     {
         this->type = CompBody;
         this->param = param;
-        this->stmt_List = stmt_List;
+        this->stmt_List = stmt_list;
     }
     compBodyNode(compBodyNode &body){
         this->type = CompBody;
@@ -852,27 +815,28 @@ class compBodyNode : public Node
     }
     ~compBodyNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class funcDclNode : public Node
 {
   public:
     primNode *prim;
-    idNode *id;
-    list<Node *> *param_List;
+    string name;
+    list<Node *> param_list;
     funcBodyNode *funcBody;
-    funcDclNode(primNode *prim, idNode *id, list<Node *> *param_List, funcBodyNode *funcBody)
+    funcDclNode(primNode *prim, string *name, list<Node *> *param_list, funcBodyNode *funcBody)
     {
         this->type = FuncDcl;
         this->prim = prim;
-        this->id = id;
-        this->param_List = param_List;
+        this->name = *name;
+        if (param_list)
+            this->param_list = *param_list;
         this->funcBody = funcBody;
     }
     ~funcDclNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class compositeCallNode : public Node
@@ -884,7 +848,7 @@ class compositeCallNode : public Node
     list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
     /*拷贝构造函数 */
-    compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, Loc *loc)
+    compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc= YYLTYPE())
     {
         this->setLoc(loc);
         this->type = CompositeCall;
@@ -894,7 +858,7 @@ class compositeCallNode : public Node
     }
     ~compositeCallNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 
 class compHeadNode : public Node
@@ -917,7 +881,7 @@ class compHeadNode : public Node
     }
     ~compHeadNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class compositeNode : public Node
@@ -935,7 +899,7 @@ class compositeNode : public Node
     }
     ~compositeNode() {}
     void print() {}
-    const char *toString() {}
+    string toString() {}
 };
 
 class operatorNode : public Node
@@ -955,6 +919,6 @@ class operatorNode : public Node
     }
     ~operatorNode() {}
     void print() {}
-    const char *toString() {}
+    string toString();
 };
 #endif

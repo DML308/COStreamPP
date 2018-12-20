@@ -13,7 +13,7 @@ void ExitScope(void);
 
 class SymbolTable{
 public:
-    
+
     SymbolTable(){}
     ~SymbolTable(){}
     bool LookupSymbol(string  name);
@@ -28,6 +28,6 @@ private:
     map<string,list<idNode*> >idTable;
     map<string,functionNode*> funcTable;
     map<string,compositeNode*> compTable;
-    
+
 };
 #endif

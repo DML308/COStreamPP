@@ -30,10 +30,8 @@ declaration:
     | stream.declaring.list ';' 
     ;
 declaring.list:
-          type.specifier      IDENTIFIER       initializer.opt  
-        | type.specifier 	IDENTIFIER array.declarator initializer.opt
-        | declaring.list 	',' 	IDENTIFIER initializer.opt
-        | declaring.list 	',' 	IDENTIFIER array.declarator initializer.opt
+          type.specifier      idNode     initializer.opt  
+        | declaring.list 	',' idNode     initializer.opt
         ;
 stream.declaring.list:
           stream.type.specifier IDENTIFIER    
@@ -43,10 +41,8 @@ stream.type.specifier:
           STREAM '<' stream.declaration.list '>'
         ;
 stream.declaration.list:
-          type.specifier IDENTIFIER 
-        | type.specifier IDENTIFIER array.declarator
-        | stream.declaration.list ',' type.specifier IDENTIFIER 
-        | stream.declaration.list ',' type.specifier IDENTIFIER array.declarator
+          type.specifier idNode 
+        | stream.declaration.list ',' type.specifier idNode 
         ;
 /*************************************************************************/
 /*                      1.1.3 array ( int a[] )                          */
@@ -85,12 +81,11 @@ function.definition:
 parameter.list:
           parameter.declaration   
         | parameter.list ',' parameter.declaration 
-        | parameter.declaration '=' initializer 
+        | parameter.list '=' initializer 
         | parameter.list ',' error
         ;
 parameter.declaration:
-          type.specifier IDENTIFIER 
-        | type.specifier IDENTIFIER array.declarator  
+          type.specifier idNode 
         ;
 function.body:
           lblock rblock                   
@@ -260,13 +255,10 @@ assignment.operator:
         | ERassign        
         | ORassign        
         ;
-exp.assignable:
-          IDENTIFIER                        
-        | IDENTIFIER  array.declarator      
-        ; 
-exp:      exp.assignable                    
-        | exp.assignable '.' IDENTIFIER     
-        | exp.assignable '.' IDENTIFIER array.declarator 
+
+exp:      idNode        
+        | constant       
+        | idNode '.' idNode 
         | constant        
         | exp '+' exp   
         | exp '-' exp   
@@ -359,5 +351,9 @@ basic.type.name:
         | DOUBLE
         | STRING
         ;
+idNode:
+          IDENTIFIER
+        | IDENTIFIER  array.declarator 
+        ; 
 %%
 /* ----语法树结束----*/

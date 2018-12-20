@@ -7,14 +7,12 @@
 #include "2.semCheck.h"
 #include "symbol.h"
 #include "global.h"
-#include "staticStreamGragh.h"
 
 extern FILE *yyin;                    // flex uses yyin as input file's pointer
 extern int yyparse();                 // parser.cc provides yyparse()
 string PhaseName = "undefined";       //阶段名
 list<Node *> *Program = NULL;         //用于存储语法树节点
 compositeNode *gMainComposite = NULL; //compositeMain
-StaticStreamGraph *SSG = NULL;
 SymbolTable S;
 
 //===----------------------------------------------------------------------===//
@@ -31,8 +29,11 @@ int main(int argc, char *argv[])
         return 0;
 
     // (1) 做第一遍扫描(当输入文件存在时)(函数和 composite 变量名存入符号表 S)
-    if (infile_name == NULL)
+    if (infile_name.size() == 0)
+    {
         infp = stdin;
+        infile_name = "stdin";
+    }
     else
     {
         infp = changeTabToSpace();
@@ -46,14 +47,13 @@ int main(int argc, char *argv[])
 
     // (3) 语义检查
     PhaseName = "SemCheck";
-    SemCheck::findMainComposite(Program);
+    //SemCheck::findMainComposite(Program);
 
     // (4) 打印抽象语法树
     PhaseName = "PrintAstTree";
 
     //（5）语法树到平面图 SSG 是 StaticStreamGraph 对象
     PhaseName = "AST2FlatSSG";
-    SSG = AST2FlatStaticStreamGraph(gMainComposite);
     //===----------------------------------------------------------------------===//
     // 编译前端 end
     //===----------------------------------------------------------------------===//
