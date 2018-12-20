@@ -33,9 +33,9 @@
 - 下一步工作
     - [ ] `Yang && Li`
       - [ ] `Node` 构建&测试:
-        - [x]主体部分 node 建立完成
-        - [x]以 exp 节点为主的 `toString`函数
-        - [ ]`dumpdot` 即打印语法树至 dot 文件
+        - [x] 主体部分 node 建立完成
+        - [x] 以 exp 节点为主的 `toString`函数
+        - [ ] `dumpdot` 即打印语法树至 dot 文件
       - [ ] 符号表`SymbolTable`处理
       - [ ] `splitjoin`节点的 Node拆分
 
