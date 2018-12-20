@@ -6,6 +6,7 @@ static StaticStreamGraph *ssg = NULL;
 void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
     /* 获取compositebody内的statementNode */
+    assert(composite!=NULL && oldComposite!=NULL);
     list<Node *> body_stmt = *(composite->body->stmt_List);
     //cout << "list.size()= " << list.size() << endl;
     for (auto it : body_stmt)

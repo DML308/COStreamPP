@@ -683,10 +683,7 @@ exp:      idNode          { $$ = $1 ; }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { 
                   /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  
                   $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,@1)  ; 
-                  
-
             }
         |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier

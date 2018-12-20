@@ -24,5 +24,6 @@ class UnfoldComposite
     operatorNode *MakeSplitOperator(Node *input, list<Node *> *arguments, int style);
     operatorNode *MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments);
     compositeNode *streamReplace(compositeNode *comp, list<Node *> *input, list<Node *> *output);
+    compositeNode *nodeCopy(compositeNode *composite,list<Node *> *input, list<Node *> *output);
 };
 #endif
