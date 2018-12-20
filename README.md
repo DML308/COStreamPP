@@ -26,15 +26,19 @@
       - [x] `tests/wang.cos`      文法测试通过
       - [x] `tests/jepg.cos`      文法测试通过
       - [x] `VocoderTopLevel.cos` 文法测试通过
+    - [x] 出错误时能显示源文件的对应行内容了
 - [ ] 生命周期
   - [x] `0.handle_options` 对命令行输入预处理
   - [x] `1.firstScan` 第一遍扫描 `\t 转4个空格`,函数和`composite`变量名识别
 - 下一步工作
     - [ ] `Yang && Li`
-      - [ ] `Node` 构建&测试:`toString` `PrintNode`
+      - [ ] `Node` 构建&测试:
+        - [x]主体部分 node 建立完成
+        - [x]以 exp 节点为主的 `toString`函数
+        - [ ]`dumpdot` 即打印语法树至 dot 文件
       - [ ] 符号表`SymbolTable`处理
-      - [ ] 语法树转数据流图
+      - [ ] `splitjoin`节点的 Node拆分
 
 目前效果:
 
-![yylineo](https://i.loli.net/2018/12/12/5c1110de39a60.png)
+![yylineo](https://i.loli.net/2018/12/20/5c1b84cabe32d.png)

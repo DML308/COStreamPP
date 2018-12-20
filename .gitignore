@@ -8,7 +8,7 @@ src/COStreamC
 *.output
 *~
 *.bak
-src/bin
+src/bin/*.o
 src/include/FrontEnd/token.h
 src/src/FrontEnd/parser.cpp
 src/src/FrontEnd/lexer.cpp

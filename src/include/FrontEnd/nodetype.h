@@ -3,32 +3,34 @@
 /* definition of Node data structure */
 typedef enum {
   /* expression nodes */
-  Const, Id, Binop, Unary, Cast, Comma, Ternary, Array, Call, Initializer,
+  constant, Id, Binop, Point,Unary, Cast, Comma, Ternary,Initializer,
   ImplicitCast,
   /* statement nodes */
-  Label, Switch, Case, Default, If, IfElse, While, Do, For, Goto, Continue,
+  Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
   Break, Return, Block,
   /* type nodes */
-  Prim, Tdef, Ptr, Adcl, Fdcl, Sdcl, Udcl, Edcl,
+  primary,
+  /* array */
+  Array,
   /* declaration node */
   Decl,
-  /* GCC __attribute__ extension */
-  Attrib,
-  /* procedure def node */
-  Proc,
-  /* random text and preprocessor command node */
-  Text,
+  /* function */
+  FuncDcl, Call,
   /*----------12----SPL node----------*/
-  STRdcl,		/*stream SPL*/
-  Comdcl,		/*composite SPL*/
+  StrDcl,		/*stream SPL*/
+  Compdcl,		/*composite SPL*/
   Composite,	/* composite def node SPL*/
   ComInOut,		/*composite SPL*/
-  ComBody,		/*composite.block SPL*/
+  InOutdcl,
+  CompHead,
+  CompBody,		/*composite.block SPL*/
   Param,		/*composite.body.param SPL*/
+  ParamDcl,
   OperBody,		/*operator SPL*/
   Operdcl,		/*operator SPL*/
   Operator_,	/* operator def node SPL*/
   Window,		/*operator.body.window SPL*/
+  WindowStmt,
   Sliding,		/*sliding window SPL*/
   Tumbling,		/*tumbling window SPL*/
 
@@ -42,7 +44,7 @@ typedef enum {
   Duplicate,
 
   /********1********新文法**********/
-  Add,Uncertainty
+  Add
   /*
   删除掉的节点： Var,Graph,StreamFor,StreamIf,StreamIfElse,Eviction,Trigger,logic
   修改过的节点： comBodyNode,PipelineNode,SplitJoinNode,slidingNode,tumblingNode

@@ -33,13 +33,12 @@ composite IntSource(output stream<double x,int y> Out)
 			int a;
 			//enum{mon,tue,wed} n;
 			//myInt lll=1;
-			const const const const  int asss=1;
-			inline int sfsf=1;
+			const  int asss=1;
+			//inline int sfsf=1;
 			//int double sss=1;
-			auto num=12.3;
+			//auto num=12.3;
 			//int costream1,costream1;
 			//int ass=123lul;
-
 			//people p1;
 			//p1.id=1;
 			//p1.name="jack";
