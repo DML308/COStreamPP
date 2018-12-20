@@ -12,9 +12,10 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *outputs)
     {
         src->nOut++;
-        cout<<((idNode*)it)->name<<endl;
+        //cout<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
+    //cout<<"---------------------------------------"<<endl;
     //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     flatNodes.push_back(src);
     //mapOper2FlatNode.insert(make_pair(u,src));
@@ -23,6 +24,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *inputs)
     {
         src->nIn++;
+        //cout<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
         mapEdge2DownFlatNode.insert(make_pair(it, dest));
         //这里不应该是it（输入节点） 应该是本节点

@@ -767,6 +767,7 @@ class ComInOutNode : public Node
   public:
     list<Node *> *input_List;
     list<Node *> *output_List;
+    ComInOutNode(){}
     ComInOutNode(list<Node *> *input_List, list<Node *> *output_List, Loc *loc)
     {
         this->setLoc(loc);
@@ -774,6 +775,14 @@ class ComInOutNode : public Node
         this->input_List = input_List;
         this->output_List = output_List;
     }
+    ComInOutNode(const ComInOutNode & inout){
+        this->type = ComInOut;
+        this->input_List=new list<Node*>();
+        this->output_List=new list<Node*>();
+        *(this->input_List)=*(inout.input_List);
+        *(this->output_List)=*(inout.output_List);
+    }
+
     ~ComInOutNode() {}
     void print() {}
     const char *toString() {}
@@ -834,6 +843,12 @@ class compBodyNode : public Node
         this->type = CompBody;
         this->param = param;
         this->stmt_List = stmt_List;
+    }
+    compBodyNode(compBodyNode &body){
+        this->type = CompBody;
+        this->param=body.param;
+        this->stmt_List=new list<Node*>();
+        *(this->stmt_List)=*(body.stmt_List);
     }
     ~compBodyNode() {}
     void print() {}
@@ -900,10 +915,12 @@ class compHeadNode : public Node
         this->compName = compName;
         this->inout = inout;
     }
+    
     compHeadNode(compHeadNode &comp) {
         this->type = CompHead;
         this->compName = comp.compName;
-        this->inout = comp.inout;
+        this->inout=new ComInOutNode;
+        *(this->inout) = *(comp.inout);
     }
     ~compHeadNode() {}
     void print() {}

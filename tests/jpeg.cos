@@ -114,22 +114,6 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 	};
 }
 
-composite DCT_X(output stream<double x>Out,input stream<double x>In)
-{
-	param
-		int size;
-	Out=splitjoin(In)
-	{
-		int i;
-		split roundrobin(8);
-		for (i = 0; i < 8; i++)
-		{
-			add DCT_1D(8);
-		}
-		join roundrobin(8);
-	};
-}
-
 composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 {
 	param
@@ -144,6 +128,22 @@ composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 		}
 		join roundrobin(1);
 
+	};
+}
+
+composite DCT_X(output stream<double x>Out,input stream<double x>In)
+{
+	param
+		int size;
+	Out=splitjoin(In)
+	{
+		int i;
+		split roundrobin(8);
+		for (i = 0; i < 8; i++)
+		{
+			add DCT_1D(8);
+		}
+		join roundrobin(8);
 	};
 }
 
