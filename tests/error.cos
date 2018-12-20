@@ -7,7 +7,7 @@ int a[] = {1,2,3,4,5};
 int sum(){
     int a = (double)123;
 }
-int sum2(int a ,int b =2){
+int sum2(int a ,int b){
     return a+b[1];
 }
 composite B(output stream<int x>Out,input stream<int x>In)

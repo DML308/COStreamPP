@@ -1,4 +1,13 @@
 #include "node.h"
+string listToString(list<Node *> list)
+{
+    int k = 0;
+    string str = "";
+    for (auto i : list)
+        str += (k++ > 0 ? "," : "") + i->toString();
+    return str;
+}
+
 void Node::setLoc(YYLTYPE loc)
 {
     this->loc->first_line = loc.first_line;
@@ -29,9 +38,7 @@ string constantNode::toString()
 string initNode::toString()
 {
     string str = "{";
-    for (auto i : value)
-        str = str + i->toString() + ',';
-    return str + "}";
+    return str + listToString(value) + "}";
 }
 
 string binopNode::toString()
@@ -72,21 +79,12 @@ string castNode::toString()
 string callNode::toString()
 {
     string str = name + '(';
-    for (auto i : arg_list)
-    {
-        str += i->toString();
-    }
-    return str + ')';
+    return str + listToString(arg_list) + ')';
 }
 
 string operatorNode::toString()
 {
-    string str = operName + '(';
-    for (auto i : arg_list)
-    {
-        str += i->toString();
-    }
-    return str + ')' + operBody->toString();
+    return operName + '(' + listToString(arg_list) + ')' + operBody->toString();
 }
 
 string idNode::toString()
@@ -128,5 +126,13 @@ string funcDclNode::toString()
         str += ((idNode *)i)->valType + " " + ((idNode *)i)->toString() + ",";
     }
     str += ") function.body";
+    return str;
+}
+
+string compositeCallNode::toString()
+{
+    int k = 0;
+    string str = name + "(" + listToString(stream_list) + ")";
+    str += "(" + listToString(param_list) + ")";
     return str;
 }

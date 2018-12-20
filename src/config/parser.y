@@ -622,7 +622,7 @@ exp:      idNode          { $$ = $1 ; }
         | '(' basic.type.name ')' exp     { $$ = new castNode((primNode*)$2,(expNode*)$4,@3); }
         | exp assignment.operator exp     { 
                               line("Line:%-4d",@1.first_line);
-                              debug ("exp ::= exp.assignable assignment.operator exp\n"); 
+                              debug ("exp ::= exp(%s) assignment.operator(%s) exp(%s)\n",$1->toString().c_str(),$2->c_str(),$3->toString().c_str()); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
                         }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
@@ -641,24 +641,10 @@ exp:      idNode          { $$ = $1 ; }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
                   $$ = new operatorNode(*($1),$3,(operBodyNode*)$5) ; 
             }
-        | IDENTIFIER '('  ')'  '(' ')'  { 
-                  line("Line:%-4d",@1.first_line);
-                  debug ("exp ::= %s()()\n",$1->c_str()); 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),NULL,NULL,@1) ; 
-            }
-        | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),NULL,$5,@1) ; 
-            }
-        | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),$3,NULL,@1) ; 
-            }
-        | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
-                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compsiteCallNode(*($1),$3,$6,@1) ; 
-            }
+        | IDENTIFIER '('  ')'  '(' ')'  { $$ = new compositeCallNode($1,NULL,NULL,@1) ; }
+        | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { $$ = new compositeCallNode($1,NULL,$5,@1) ; }
+        | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { $$ = new compositeCallNode($1,$3,NULL,@1) ; }
+        | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { $$ = new compositeCallNode($1,$3,$6,@1) ; }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */

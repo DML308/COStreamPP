@@ -25,6 +25,8 @@ class Node
     virtual string toString() = 0;
 };
 
+string listToString(list<Node *> list);
+
 class primNode : public Node
 {
   public:
@@ -75,7 +77,7 @@ class idNode : public Node
   public:
     string name;
     string valType;
-    list<expNode *> arg_list;
+    list<Node *> arg_list;
     Node *init;
     int level;
     int version;
@@ -132,7 +134,7 @@ class expNode : public Node
 class arrayNode : public Node
 {
   public:
-    list<expNode *> arg_list;
+    list<Node *> arg_list;
     arrayNode(expNode *exp, YYLTYPE loc)
     {
         if (exp)
@@ -599,6 +601,10 @@ class OperdclNode : public Node
         this->name = name;
         this->arg_list = arg_list;
     }
+    OperdclNode(string *name, list<Node *> *arg_list, YYLTYPE loc)
+    {
+        new (this) OperdclNode(*name, arg_list, loc);
+    }
     ~OperdclNode() {}
     void print() {}
     string toString() {}
@@ -685,6 +691,10 @@ class callNode : public Node
         this->name = name;
         if (arg_list)
             this->arg_list = *arg_list;
+    }
+    callNode(string *name, list<Node *> *arg_list, YYLTYPE loc)
+    {
+        new (this) callNode(*name, arg_list, loc);
     }
     ~callNode() {}
     void print() {}
@@ -805,23 +815,26 @@ class funcDclNode : public Node
 };
 
 class compositeNode;
-class compsiteCallNode : public Node
+class compositeCallNode : public Node
 {
   public:
-    string compName;
-    list<Node *> *stream_list;
-    list<Node *> *param_list;
+    string name;
+    list<Node *> stream_list;
+    list<Node *> param_list;
     compositeNode *actual_composite; //保存composite展开节点
-    compsiteCallNode(string compName, list<Node *> *stream_list, list<Node *> *param_list, YYLTYPE loc)
+    compositeCallNode(string *name, list<Node *> *stream_list, list<Node *> *param_list, YYLTYPE loc)
     {
         this->setLoc(loc);
         this->type = CompositeCall;
-        this->compName = compName;
-        this->param_list = param_list;
+        this->name = *name;
+        if (stream_list)
+            this->stream_list = *stream_list;
+        if (param_list)
+            this->param_list = *param_list;
     }
-    ~compsiteCallNode() {}
+    ~compositeCallNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class compHeadNode : public Node
