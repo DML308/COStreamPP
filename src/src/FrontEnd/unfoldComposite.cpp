@@ -256,12 +256,12 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite, NULL);
 
         comCallList.push_back(call);
-        // auto kkk = comCallList.front()->actual_composite;
-        // list<Node *> *stmts = kkk->body->stmt_List;
-        // Node *node = ((binopNode *)stmts->front())->right;
-        // list<Node *> *ss = ((operatorNode *)node)->outputs;
-        // list<Node *> *ss2 = ((operatorNode *)node)->inputs;
-        // cout << "output: " << ((idNode *)(ss->front()))->name << "  input: " << ((idNode *)(ss2->front()))->name << endl;
+        auto kkk = comCallList.front()->actual_composite;
+        list<Node *> *stmts = kkk->body->stmt_List;
+        Node *node = ((binopNode *)stmts->front())->right;
+        list<Node *> *ss = ((operatorNode *)node)->outputs;
+        list<Node *> *ss2 = ((operatorNode *)node)->inputs;
+        cout << "address: "<<&((idNode *)(ss->front()))->name<<"  output: " << ((idNode *)(ss->front()))->name << "  input: " << ((idNode *)(ss2->front()))->name << endl;
 
         iter++;
         cnt++;
@@ -272,7 +272,6 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     comp_stmt_List->push_back(splitOperator);
     for (auto it : comCallList)
     {
-
         comp_stmt_List->push_back(it);
     }
     comp_stmt_List->push_back(joinOperator);
@@ -356,7 +355,8 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     compositeNode *tmp = NULL;
     compHeadNode *head = new compHeadNode(*(comp->head));
     compBodyNode *body = new compBodyNode(*(comp->body));
-    list<Node *> *stmts = body->stmt_List;
+    list<Node *> *stmts = new list<Node*>();
+    *stmts=*(body->stmt_List);
     assert(stmts != NULL);
     for (auto it : *stmts)
     {
@@ -366,15 +366,9 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
             if (exp->type == Operator_)
             {
                 ((operatorNode *)exp)->inputs = new list<Node *>();
-                for (auto it : *inputs)
-                {
-                    ((operatorNode *)exp)->inputs->push_back(it);
-                }
+                *(((operatorNode *)exp)->inputs)=*inputs;
                 ((operatorNode *)exp)->outputs = new list<Node *>();
-                for (auto it : *outputs)
-                {
-                    ((operatorNode *)exp)->outputs->push_back(it);
-                }
+                *(((operatorNode *)exp)->outputs)=*outputs;
                 // cout<<((idNode*)(((operatorNode *)exp)->inputs->front()))->name<<endl;
                 // cout<<((idNode*)(((operatorNode *)exp)->outputs->front()))->name<<endl;
             }

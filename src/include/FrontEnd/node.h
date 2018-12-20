@@ -884,13 +884,6 @@ class compositeCallNode : public Node
     list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
     /*拷贝构造函数 */
-    compositeCallNode(const compositeCallNode &node)
-    {
-        this->compName = node.compName;
-        this->stream_List = node.stream_List;
-        this->inputs = node.inputs;
-        this->actual_composite = node.actual_composite;
-    }
     compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, Loc *loc)
     {
         this->setLoc(loc);
