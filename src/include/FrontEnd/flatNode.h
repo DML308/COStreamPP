@@ -39,6 +39,7 @@ public:
 	vector<int> outPushWeights; // 输 出 边各权重
 	vector<int> inPopWeights; // 输 入 边各权重
 	vector<int> inPeekWeights; // 输 入 边各权重
+	
 	vector<string> outPushString; 
 	vector<string> inPopString; 
 	vector<string> inPeekString;

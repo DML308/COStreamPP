@@ -536,7 +536,13 @@ class splitjoinNode : public Node
     list<Node *> *stmt_list;
     list<Node *> *bodyStmt_List;
     compositeNode *replace_composite;
-    splitjoinNode(list<Node *> *inputs, list<Node *> *outputs, splitNode *split, list<Node *> *stmt_list, list<Node *> *bodyStmt_List, joinNode *join, YYLTYPE loc = YYLTYPE())
+    splitjoinNode(  list<Node *> *inputs, 
+                    list<Node *> *outputs, 
+                    splitNode *split, 
+                    list<Node *> *stmt_list, 
+                    list<Node *> *bodyStmt_List, 
+                    joinNode *join, 
+                    YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = SplitJoin;

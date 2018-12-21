@@ -9,10 +9,11 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     outputs = (u->outputs != NULL) ? u->outputs : new list<Node *>();
     inputs = (u->inputs != NULL) ? u->inputs : new list<Node *>();
     /* 寻找输出流  建立节点的输入输出流关系*/
+    assert(inputs!=NULL);
     for (auto it : *outputs)
     {
         src->nOut++;
-        //cout<<((idNode*)it)->name<<endl;
+        //cout<<"output Name = "<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
     // for(auto it:mapEdge2UpFlatNode){
@@ -23,7 +24,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     flatNodes.push_back(src);
     dest = src; //边变了
     //搜索节点的输入边，建立节点流输入输出关系
-    for (auto it : *inputs)
+    for (auto it : (*inputs))
     {
 
         src->nIn++;

@@ -174,7 +174,7 @@ composite Main ()
 	stream<double x> Source,S1,S2,S3;
 	int size = 8;
 
-	Source = IntSource()(2*size);
+	Source = IntSource()(size);
 
 	S1 = DCT_Y(Source)(size);
 

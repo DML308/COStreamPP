@@ -8,7 +8,7 @@
 
 extern SymbolTable S;
 extern list<Node*> *Program;
-UnfoldComposite *unfold=new UnfoldComposite();
+extern UnfoldComposite *unfold;
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -498,7 +498,7 @@ operator.default.call:
                   $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1);
             }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1);
+                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
             }
         ;
 
@@ -635,6 +635,8 @@ exp:      idNode          { $$ = $1 ; }
                               }
                               else if($3->type==CompositeCall){
                                     ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
+                                    //compositeNode *comp = ((compositeCallNode*)$3)->actual_composite;
+                                    //((compositeCallNode*)$3)->actual_composite=unfold->streamReplace(comp, ((compositeCallNode*)$3)->inputs,((compositeCallNode*)$3)->outputs);
                               }
                               else if($3->type==Operator_){
                                      ((operatorNode*)$3)->outputs=new list<Node*>({$1});
@@ -664,15 +666,15 @@ exp:      idNode          { $$ = $1 ; }
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),NULL,$5,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$5,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
                   if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),$3,$6,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$6,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier

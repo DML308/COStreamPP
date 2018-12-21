@@ -246,7 +246,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         compositeNode *comp = S.LookupCompositeSymbol(name);
         assert(comp != NULL);
         /*修改composite节点的输入流,输出流*/
-        compositeNode *actual_composite = nodeCopy(comp, inputs, outputs);
+        compositeNode *actual_composite = compositeCallStreamReplace(comp, inputs, outputs);
         //修改compositeCall的输入输出流
         compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite);
         //cout<<"address: "<<&(call->inputs)<<endl;
@@ -343,56 +343,88 @@ compositeNode *UnfoldComposite::UnfoldPipeline(Node *node)
     return pipeline;
 }
 
-compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
+compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
-    //cout<<((idNode*)(outputs->front()))->name<<endl;
-    compositeNode *tmp = NULL;
-    compHeadNode *head = new compHeadNode(*(comp->head));
-    compBodyNode *body = new compBodyNode(*(comp->body));
-    list<Node *> *stmts = new list<Node *>();
-    for (auto it : *(body->stmt_List))
-    {
-        stmts->push_back(it);
-    }
-
-    assert(stmts != NULL);
-    for (auto it : *stmts)
+    compositeNode *copy = NULL;
+    list<Node *> *stmt_list = NULL;
+    stmt_list = new list<Node *>();
+    ComInOutNode *inout = new ComInOutNode(inputs, outputs);
+    compHeadNode *head = new compHeadNode(comp->compName, inout);
+    /* 取得compositeNode的operBody 指向同一块内存 替换输入输出流*/
+    for (auto it : *comp->body->stmt_List)
     {
         if (it->type == Binop)
         {
             expNode *exp = ((binopNode *)it)->right;
             if (exp->type == Operator_)
             {
-                ((operatorNode *)exp)->inputs = new list<Node *>();
-                *(((operatorNode *)exp)->inputs) = *inputs;
-                ((operatorNode *)exp)->outputs = new list<Node *>();
-                *(((operatorNode *)exp)->outputs) = *outputs;
-                // cout<<((idNode*)(((operatorNode *)exp)->inputs->front()))->name<<endl;
-                // cout<<((idNode*)(((operatorNode *)exp)->outputs->front()))->name<<endl;
+                operBodyNode *operBody = ((operatorNode *)exp)->operBody;
+                operatorNode *oper = new operatorNode(outputs, comp->compName, inputs, operBody);
+                stmt_list->push_back(oper);
             }
+            /* 未来可扩展splitjoin嵌套splitjoin的结构 */
         }
     }
-    tmp = new compositeNode(head, body);
-    return tmp;
-}
-
-compositeNode *UnfoldComposite::nodeCopy(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
-{
-    compositeNode *copy = NULL;
-    list<Node *> *stmt_list = NULL;
-    stmt_list=new list<Node*>();
-    ComInOutNode *inout = new ComInOutNode(inputs, outputs);
-    compHeadNode *head = new compHeadNode(comp->compName, inout);
-    operatorNode *oper=new operatorNode(outputs,comp->compName,inputs,NULL);
-    stmt_list->push_back(oper);
-    /*完成composite body中内容的拷贝*/
-    // for(auto it:*comp->body->stmt_List){
-    //     switch(it->type){
-            
-    //     }
-        
-    // }
     compBodyNode *body = new compBodyNode(NULL, stmt_list);
     copy = new compositeNode(head, body);
     return copy;
+}
+
+compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs)
+{
+    list<Node *> *stmt_list = NULL;
+    stmt_list = composite->body->stmt_List;
+    assert(stmt_list != NULL);
+    Node *top = stmt_list->front();
+    Node *back = stmt_list->back();
+    assert(top->type == Operator_ && back->type == Operator_);
+    ((operatorNode *)top)->inputs = inputs;
+    ((operatorNode *)back)->outputs = outputs;
+    return composite;
+}
+
+compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
+{
+    // if(inputs!=NULL){
+    //     for(auto it:*inputs){
+    //         cout<<it->type<<endl;
+    //     }
+    // }
+    // Node *nd1 = NULL, *nd2 = NULL;
+    // if (inputs != NULL && inputs->size() != 0)
+    // {
+    //     nd1 = inputs->front();
+    // }
+    // if (outputs != NULL && outputs->size() != 0)
+    // {
+    //     nd1 = inputs->front();
+    // }
+    
+    // if(nd1==NULL) cout<<"inputs : NULL  ";
+    // else cout<<"inputs : "<<((idNode*)nd1)->name<<"  ";
+    // if(nd2==NULL) cout<<"outputs : NULL  ";
+    // else cout<<"outputs : "<<((idNode*)nd2)->name<<"  ";
+
+    list<Node *> *stmt_list = NULL;
+    stmt_list = comp->body->stmt_List;
+    assert(stmt_list != NULL);
+    Node *top = stmt_list->front();
+    Node *back = stmt_list->back();
+    if (top->type == Binop)
+    {
+        expNode *exp = ((binopNode *)top)->right;
+        if (exp->type == Operator_)
+        {
+            ((operatorNode *)top)->inputs = (inputs != NULL) ? inputs : new list<Node *>();
+        }
+    }
+    if (back->type == Binop)
+    {
+        expNode *exp = ((binopNode *)top)->right;
+        if (exp->type == Operator_)
+        {
+            ((operatorNode *)back)->outputs = (outputs != NULL) ? outputs : new list<Node *>();
+        }
+    }
+    return comp;
 }

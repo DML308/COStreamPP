@@ -7,14 +7,17 @@
 #include "2.semCheck.h"
 #include "symbol.h"
 #include "global.h"
+#include "unfoldComposite.h"
 #include "staticStreamGragh.h"
 
 extern FILE *yyin;                    // flex uses yyin as input file's pointer
 extern int yyparse();                 // parser.cc provides yyparse()
 string PhaseName = "undefined";       //阶段名
+UnfoldComposite *unfold=new UnfoldComposite();
 list<Node *> *Program = NULL;         //用于存储语法树节点
 compositeNode *gMainComposite = NULL; //compositeMain
 StaticStreamGraph *SSG = NULL;
+
 SymbolTable S;
 
 //===----------------------------------------------------------------------===//
