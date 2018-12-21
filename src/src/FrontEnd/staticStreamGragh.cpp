@@ -9,7 +9,6 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     outputs = (u->outputs != NULL) ? u->outputs : new list<Node *>();
     inputs = (u->inputs != NULL) ? u->inputs : new list<Node *>();
     /* 寻找输出流  建立节点的输入输出流关系*/
-    assert(inputs!=NULL);
     for (auto it : *outputs)
     {
         src->nOut++;

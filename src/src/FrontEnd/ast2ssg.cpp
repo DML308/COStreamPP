@@ -26,19 +26,16 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             {
                 //cout << "compositeCall" << endl;
                 cout << "name= " << (((compositeCallNode *)exp)->compName) << endl;
-                ;
-                list<Node *> *outputs = (((compositeCallNode *)exp)->inputs);
+                list<Node *> *outputs = (((compositeCallNode *)exp)->outputs);
                 if (outputs != NULL)
                 {
                     for (auto it : *outputs)
                     {
-                        cout << it->type << endl;
+                        cout << ((idNode*)it)->name << endl;
                     }
                 }
-
                 // compositeNode *comp = ((compositeCallNode *)exp)->actual_composite;
                 // ((compositeCallNode *)exp)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)exp)->inputs, ((compositeCallNode *)exp)->outputs);
-
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)

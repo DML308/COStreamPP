@@ -399,7 +399,6 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     // {
     //     nd1 = inputs->front();
     // }
-    
     // if(nd1==NULL) cout<<"inputs : NULL  ";
     // else cout<<"inputs : "<<((idNode*)nd1)->name<<"  ";
     // if(nd2==NULL) cout<<"outputs : NULL  ";
