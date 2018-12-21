@@ -246,7 +246,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         compositeNode *comp = S.LookupCompositeSymbol(name);
         assert(comp != NULL);
         /*修改composite节点的输入流,输出流*/
-        compositeNode *actual_composite = streamReplace(comp, inputs, outputs);
+        compositeNode *actual_composite = nodeCopy(comp, inputs, outputs);
         //修改compositeCall的输入输出流
         compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite);
         //cout<<"address: "<<&(call->inputs)<<endl;
@@ -380,13 +380,18 @@ compositeNode *UnfoldComposite::nodeCopy(compositeNode *comp, list<Node *> *inpu
 {
     compositeNode *copy = NULL;
     list<Node *> *stmt_list = NULL;
+    stmt_list=new list<Node*>();
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
     compHeadNode *head = new compHeadNode(comp->compName, inout);
-    for(auto it:*comp->body->stmt_List){
+    operatorNode *oper=new operatorNode(outputs,comp->compName,inputs,NULL);
+    stmt_list->push_back(oper);
+    /*完成composite body中内容的拷贝*/
+    // for(auto it:*comp->body->stmt_List){
+    //     switch(it->type){
+            
+    //     }
         
-    }
-
-
+    // }
     compBodyNode *body = new compBodyNode(NULL, stmt_list);
     copy = new compositeNode(head, body);
     return copy;

@@ -11,7 +11,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     //cout << "list.size()= " << list.size() << endl;
     for (auto it : body_stmt)
     {
-        //cout << it->type << endl;
         // 当type为binop时候检查binop的右子节点是否为以下节点类型
         switch (it->type)
         {

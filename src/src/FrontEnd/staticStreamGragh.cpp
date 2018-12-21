@@ -1,6 +1,7 @@
 #include "staticStreamGragh.h"
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
+    //cout<<u->operName<<endl;
     FlatNode *src = NULL, *dest = NULL;
     src = new FlatNode(u, oldComposite, newComposite);
     list<Node *> *outputs = NULL;
@@ -8,23 +9,25 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     outputs = (u->outputs != NULL) ? u->outputs : new list<Node *>();
     inputs = (u->inputs != NULL) ? u->inputs : new list<Node *>();
     /* 寻找输出流  建立节点的输入输出流关系*/
-    //cout<<u->operName<<endl;
     for (auto it : *outputs)
     {
         src->nOut++;
         //cout<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
+    // for(auto it:mapEdge2UpFlatNode){
+    //     cout<<((idNode*)(it.first))->name<<endl;
+    // }
     //cout<<"---------------------------------------"<<endl;
     //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     flatNodes.push_back(src);
-    //mapOper2FlatNode.insert(make_pair(u,src));
     dest = src; //边变了
     //搜索节点的输入边，建立节点流输入输出关系
     for (auto it : *inputs)
     {
+
         src->nIn++;
-        //cout<<((idNode*)it)->name<<endl;
+        //cout<<"name= "<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
         mapEdge2DownFlatNode.insert(make_pair(it, dest));
         //这里不应该是it（输入节点） 应该是本节点
@@ -62,6 +65,7 @@ void StaticStreamGraph::ResetFlatNodeNames()
 // 计算每个节点的push，pop，peek值
 void StaticStreamGraph::SetFlatNodesWeights()
 {
+    /*
     for (int i = 0; i < flatNodes.size(); i++)
     {
         string tmpName = "";
@@ -94,4 +98,5 @@ void StaticStreamGraph::SetFlatNodesWeights()
             }
         }
     }
+    */
 }
