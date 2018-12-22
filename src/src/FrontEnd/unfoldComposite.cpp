@@ -248,7 +248,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         /*修改composite节点的输入流,输出流*/
         compositeNode *actual_composite = compositeCallStreamReplace(comp, inputs, outputs);
         //修改compositeCall的输入输出流
-        compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite);
+        compositeCallNode *call = new compositeCallNode(outputs, name, NULL, inputs, actual_composite);
         //cout<<"address: "<<&(call->inputs)<<endl;
         comCallList.push_back(call);
         // auto kkk = comCallList.front()->actual_composite;
@@ -316,6 +316,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         compositeNode *actual_composite = S.LookupCompositeSymbol(name);
         assert(actual_composite != NULL);
         compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite);
+        //cout<<"compName= "<<tempName<<endl;
         comCallList->push_back(call);
         iter++;
         cnt++;
@@ -372,6 +373,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
 
 compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs)
 {
+    cout<<"compName = "<<composite->compName<<endl;
     list<Node *> *stmt_list = NULL;
     stmt_list = composite->body->stmt_List;
     assert(stmt_list != NULL);
@@ -385,28 +387,12 @@ compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite,
 
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
-    // if(inputs!=NULL){
-    //     for(auto it:*inputs){
-    //         cout<<it->type<<endl;
-    //     }
-    // }
-    // Node *nd1 = NULL, *nd2 = NULL;
-    // if (inputs != NULL && inputs->size() != 0)
-    // {
-    //     nd1 = inputs->front();
-    // }
-    // if (outputs != NULL && outputs->size() != 0)
-    // {
-    //     nd1 = inputs->front();
-    // }
-    // if(nd1==NULL) cout<<"inputs : NULL  ";
-    // else cout<<"inputs : "<<((idNode*)nd1)->name<<"  ";
-    // if(nd2==NULL) cout<<"outputs : NULL  ";
-    // else cout<<"outputs : "<<((idNode*)nd2)->name<<"  ";
-
+    //cout<<"compName = "<<comp->compName<<endl;
     list<Node *> *stmt_list = NULL;
+    assert(comp->body!=NULL);
     stmt_list = comp->body->stmt_List;
     assert(stmt_list != NULL);
+    //cout<<"stmts.size()= "<<stmt_list->size();
     Node *top = stmt_list->front();
     Node *back = stmt_list->back();
     if (top->type == Binop)
@@ -414,15 +400,39 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         expNode *exp = ((binopNode *)top)->right;
         if (exp->type == Operator_)
         {
-            ((operatorNode *)top)->inputs = (inputs != NULL) ? inputs : new list<Node *>();
+            ((operatorNode *)exp)->inputs = (inputs != NULL) ? inputs : NULL;
+        }
+        else if (exp->type == SplitJoin)
+        {
+            ((splitjoinNode *)exp)->inputs = (inputs != NULL) ? inputs : NULL;
+        }
+        else if (exp->type == Pipeline)
+        {
         }
     }
+
     if (back->type == Binop)
     {
-        expNode *exp = ((binopNode *)top)->right;
+        expNode *exp = ((binopNode *)back)->right;
+        assert(exp!=NULL);
         if (exp->type == Operator_)
         {
-            ((operatorNode *)back)->outputs = (outputs != NULL) ? outputs : new list<Node *>();
+            ((operatorNode *)exp)->outputs = (outputs != NULL) ? outputs : new list<Node *>();
+            // list<Node *> *outputs = ((operatorNode *)back)->outputs;
+            // if (outputs != NULL)
+            // {
+            //     for (auto it : *outputs)
+            //     {
+            //         cout << "name= " << ((idNode *)it)->name << endl;
+            //     }
+            // }
+        }
+        else if (exp->type == SplitJoin)
+        {
+            ((splitjoinNode *)exp)->inputs = (inputs != NULL) ? inputs : new list<Node *>();
+        }
+        else if (exp->type == Pipeline)
+        {
         }
     }
     return comp;

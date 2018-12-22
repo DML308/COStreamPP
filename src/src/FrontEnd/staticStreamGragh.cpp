@@ -1,7 +1,8 @@
 #include "staticStreamGragh.h"
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
-    //cout<<u->operName<<endl;
+    //cout<<"-----------------"<<u->operName<<"--------------------"<<endl;
+
     FlatNode *src = NULL, *dest = NULL;
     src = new FlatNode(u, oldComposite, newComposite);
     list<Node *> *outputs = NULL;
@@ -12,7 +13,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *outputs)
     {
         src->nOut++;
-        //cout<<"output Name = "<<((idNode*)it)->name<<endl;
+        cout<<"output Name = "<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
     // for(auto it:mapEdge2UpFlatNode){
@@ -23,6 +24,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     flatNodes.push_back(src);
     dest = src; //边变了
     //搜索节点的输入边，建立节点流输入输出关系
+    assert(inputs!=NULL);
     for (auto it : (*inputs))
     {
 
@@ -39,6 +41,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     }
 
     //cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
+    //cout<<"-----------------operator end------------------------------"<<endl;
 }
 
 void StaticStreamGraph::ResetFlatNodeNames()
