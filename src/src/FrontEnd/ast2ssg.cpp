@@ -30,7 +30,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             else if (exp->type == SplitJoin)
             {
                 //cout << "SplitJoin" << endl;
-                ((splitjoinNode *)exp)->replace_composite=unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
+                ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
@@ -54,7 +54,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         case SplitJoin:
         {
             //cout << "SplitJoin" << endl;
-            ((splitjoinNode *)it)->replace_composite=unfold->UnfoldSplitJoin(((splitjoinNode *)it));
+            ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
@@ -72,7 +72,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
 
 void streamFlow(compositeNode *main)
 {
-    assert(main != NULL);
     list<Node *> body_stmt = *(main->body->stmt_List);
     for (auto it : body_stmt)
     {
@@ -103,7 +102,7 @@ void streamFlow(compositeNode *main)
         }
         case CompositeCall:
         {
-            compositeNode * comp=((compositeCallNode*)it)->actual_composite;
+            compositeNode *comp = ((compositeCallNode *)it)->actual_composite;
             ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs);
             break;
         }

@@ -207,6 +207,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
+
     string streamName = "Rstream";
     static int number = 0;
     vector<compositeCallNode *> comCallList;
@@ -217,6 +218,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     list<Node *> *arg_list = ((roundrobinNode *)node->split->dup_round)->arg_list;
     list<Node *> *inputs_split = node->inputs;
     list<Node *> *outputs = node->outputs;
+
     list<Node *> *inputs_join = new list<Node *>();
     list<Node *> *call_outputs = NULL;
     ComInOutNode *inout = new ComInOutNode(inputs_split, outputs);
@@ -380,31 +382,16 @@ compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite,
     assert(stmt_list != NULL);
     Node *top = stmt_list->front();
     Node *back = stmt_list->back();
-    
+
     assert(top->type == Operator_ && back->type == Operator_);
     ((operatorNode *)top)->inputs = inputs;
     ((operatorNode *)back)->outputs = outputs;
-    
+
     return composite;
 }
 
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
-    // if (inputs != NULL)
-    // {
-    //     for (auto it : *(inputs))
-    //     {
-    //         cout << "inputname = " << ((idNode *)it)->name << endl;
-    //     }
-    // }
-    // if (outputs != NULL)
-    // {
-    //     for (auto it : *(outputs))
-    //     {
-    //         cout << "outputname = " << ((idNode *)it)->name << endl;
-    //     }
-    // }
-
     //cout<<"compName = "<<comp->compName<<endl;
     list<Node *> *stmt_list = NULL;
     assert(comp->body != NULL);
@@ -413,6 +400,17 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     //cout<<"stmts.size()= "<<stmt_list->size();
     Node *top = stmt_list->front();
     Node *back = stmt_list->back();
+
+    if (top->type == Operator_)
+    {   
+        /*inputs:S3 outputs:NULL*/
+        ((operatorNode *)top)->inputs = inputs;
+    }
+    if (back->type == Operator_)
+    {
+        ((operatorNode *)back)->outputs = outputs;
+    }
+
     if (top->type == Binop)
     {
         expNode *exp = ((binopNode *)top)->right;
@@ -428,18 +426,16 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         {
         }
     }
-
     if (back->type == Binop)
     {
         expNode *exp = ((binopNode *)back)->right;
-        assert(exp != NULL);
         if (exp->type == Operator_)
         {
             ((operatorNode *)exp)->outputs = (outputs != NULL) ? outputs : NULL;
         }
         else if (exp->type == SplitJoin)
         {
-            ((splitjoinNode *)exp)->inputs = (inputs != NULL) ? inputs : NULL;
+            ((splitjoinNode *)exp)->outputs = (outputs != NULL) ? outputs : NULL;
         }
         else if (exp->type == Pipeline)
         {

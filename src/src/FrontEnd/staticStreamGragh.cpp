@@ -30,7 +30,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     {
 
         src->nIn++;
-        //cout<<"name= "<<((idNode*)it)->name<<endl;
+        cout<<"name= "<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
         mapEdge2DownFlatNode.insert(make_pair(it, dest));
         //这里不应该是it（输入节点） 应该是本节点
