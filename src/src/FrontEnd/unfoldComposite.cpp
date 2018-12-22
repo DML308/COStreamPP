@@ -374,32 +374,40 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
 compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs)
 {
     //cout<<"compName = "<<composite->compName<<endl;
-    if(inputs!=NULL){
-        for(auto it :*inputs){
-            cout<<"inputname = "<<((idNode* )it)->name<<endl;
-        }
-    }
-    if(inputs!=NULL){
-        for(auto it :*outputs){
-            cout<<"outputname = "<<((idNode* )it)->name<<endl;
-        }
-    }
+
     list<Node *> *stmt_list = NULL;
     stmt_list = composite->body->stmt_List;
     assert(stmt_list != NULL);
     Node *top = stmt_list->front();
     Node *back = stmt_list->back();
+    
     assert(top->type == Operator_ && back->type == Operator_);
     ((operatorNode *)top)->inputs = inputs;
     ((operatorNode *)back)->outputs = outputs;
+    
     return composite;
 }
 
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
+    // if (inputs != NULL)
+    // {
+    //     for (auto it : *(inputs))
+    //     {
+    //         cout << "inputname = " << ((idNode *)it)->name << endl;
+    //     }
+    // }
+    // if (outputs != NULL)
+    // {
+    //     for (auto it : *(outputs))
+    //     {
+    //         cout << "outputname = " << ((idNode *)it)->name << endl;
+    //     }
+    // }
+
     //cout<<"compName = "<<comp->compName<<endl;
     list<Node *> *stmt_list = NULL;
-    assert(comp->body!=NULL);
+    assert(comp->body != NULL);
     stmt_list = comp->body->stmt_List;
     assert(stmt_list != NULL);
     //cout<<"stmts.size()= "<<stmt_list->size();
@@ -424,22 +432,14 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     if (back->type == Binop)
     {
         expNode *exp = ((binopNode *)back)->right;
-        assert(exp!=NULL);
+        assert(exp != NULL);
         if (exp->type == Operator_)
         {
-            ((operatorNode *)exp)->outputs = (outputs != NULL) ? outputs : new list<Node *>();
-            // list<Node *> *outputs = ((operatorNode *)back)->outputs;
-            // if (outputs != NULL)
-            // {
-            //     for (auto it : *outputs)
-            //     {
-            //         cout << "name= " << ((idNode *)it)->name << endl;
-            //     }
-            // }
+            ((operatorNode *)exp)->outputs = (outputs != NULL) ? outputs : NULL;
         }
         else if (exp->type == SplitJoin)
         {
-            ((splitjoinNode *)exp)->inputs = (inputs != NULL) ? inputs : new list<Node *>();
+            ((splitjoinNode *)exp)->inputs = (inputs != NULL) ? inputs : NULL;
         }
         else if (exp->type == Pipeline)
         {

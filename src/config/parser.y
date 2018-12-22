@@ -626,12 +626,12 @@ exp:      idNode          { $$ = $1 ; }
                               if($3->type==SplitJoin){
                                     list<Node*> *outputs=new list<Node*>({$1});
                                     ((splitjoinNode*)$3)->outputs=outputs;
-                                    ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldSplitJoin((splitjoinNode*)$3);
+                                    //((splitjoinNode*)$3)->replace_composite=unfold->UnfoldSplitJoin((splitjoinNode*)$3);
                               }
                               else if($3->type==Pipeline){
                                     list<Node*> *outputs=new list<Node*>({$1});
                                     ((splitjoinNode*)$3)->outputs=outputs;
-                                    ((splitjoinNode*)$3)->replace_composite=unfold->UnfoldPipeline((splitjoinNode*)$3);
+                                    //((splitjoinNode*)$3)->replace_composite=unfold->UnfoldPipeline((splitjoinNode*)$3);
                               }
                               else if($3->type==CompositeCall){
                                     ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
