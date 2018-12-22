@@ -42,8 +42,22 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             else if (exp->type == SplitJoin)
             {
                 //cout << "SplitJoin" << endl;
-                compositeNode *comp = ((splitjoinNode *)exp)->replace_composite;
-                ((splitjoinNode*)exp)->replace_composite=unfold->splitJoinStreamReplace(comp, ((compositeCallNode*)exp)->inputs,((compositeCallNode*)exp)->outputs);
+                if (((splitjoinNode *)exp)->inputs != NULL)
+                {
+                    for (auto it : *(((splitjoinNode *)exp)->inputs))
+                    {
+                        cout << "inputname = " << ((idNode *)it)->name << endl;
+                    }
+                }
+                if (((splitjoinNode *)exp)->outputs != NULL)
+                {
+                    for (auto it : *(((splitjoinNode *)exp)->outputs))
+                    {
+                        cout << "outputname = " << ((idNode *)it)->name << endl;
+                    }
+                }
+                // compositeNode *comp = ((splitjoinNode *)exp)->replace_composite;
+                // ((splitjoinNode *)exp)->replace_composite = unfold->splitJoinStreamReplace(comp, ((compositeCallNode *)exp)->inputs, ((compositeCallNode *)exp)->outputs);
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)

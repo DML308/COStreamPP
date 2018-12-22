@@ -14,7 +14,7 @@ class UnfoldComposite
     /* 给与每一个不同的splitjoin或者pipeline节点不同的名字 */
     inline string MakeCompositeName(string name)
     {
-        return name + to_string(num);
+        return name +"_"+ to_string(num);
     }
     void setCallList(list<Node *> *stmt);
     compositeNode *UnfoldRoundrobin(string comName, splitjoinNode *node);

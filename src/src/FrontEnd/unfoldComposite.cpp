@@ -373,7 +373,17 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
 
 compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs)
 {
-    cout<<"compName = "<<composite->compName<<endl;
+    //cout<<"compName = "<<composite->compName<<endl;
+    if(inputs!=NULL){
+        for(auto it :*inputs){
+            cout<<"inputname = "<<((idNode* )it)->name<<endl;
+        }
+    }
+    if(inputs!=NULL){
+        for(auto it :*outputs){
+            cout<<"outputname = "<<((idNode* )it)->name<<endl;
+        }
+    }
     list<Node *> *stmt_list = NULL;
     stmt_list = composite->body->stmt_List;
     assert(stmt_list != NULL);

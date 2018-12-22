@@ -13,9 +13,10 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *outputs)
     {
         src->nOut++;
-        cout<<"output Name = "<<((idNode*)it)->name<<endl;
+        //cout<<"output Name = "<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(it, src));
     }
+    
     // for(auto it:mapEdge2UpFlatNode){
     //     cout<<((idNode*)(it.first))->name<<endl;
     // }
@@ -25,7 +26,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     dest = src; //边变了
     //搜索节点的输入边，建立节点流输入输出关系
     assert(inputs!=NULL);
-    for (auto it : (*inputs))
+    for (auto it : *inputs)
     {
 
         src->nIn++;
