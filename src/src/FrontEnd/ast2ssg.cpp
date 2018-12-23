@@ -125,11 +125,10 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
     GraphToOperators(mainComposite, mainComposite);
-    /*  打印为dot图的composite名字 
+    
     for(auto it:ssg->flatNodes){
         cout<<it->nIn<<" "<<it->nOut<<endl;
     }
-    */
     ssg->SetTopLevel();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();

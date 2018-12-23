@@ -12,36 +12,27 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     /* 寻找输出流  建立节点的输入输出流关系*/
     for (auto it : *outputs)
     {
-        src->nOut++;
         //cout<<"output Name = "<<((idNode*)it)->name<<endl;
-        mapEdge2UpFlatNode.insert(make_pair(it, src));
+        mapEdge2UpFlatNode.insert(make_pair(((idNode*)it)->name, src));
     }
-    
-    // for(auto it:mapEdge2UpFlatNode){
-    //     cout<<((idNode*)(it.first))->name<<endl;
-    // }
-    //cout<<"---------------------------------------"<<endl;
-    //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
+    cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     flatNodes.push_back(src);
     dest = src; //边变了
     //搜索节点的输入边，建立节点流输入输出关系
     assert(inputs!=NULL);
     for (auto it : *inputs)
     {
-
-        src->nIn++;
-        cout<<"name= "<<((idNode*)it)->name<<endl;
+        //cout<<"name= "<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
-        mapEdge2DownFlatNode.insert(make_pair(it, dest));
-        //这里不应该是it（输入节点） 应该是本节点
-        // auto pos = mapEdge2UpFlatNode.find(it);
-        // assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator
-        // src = pos->second;
-        // src->AddOutEdges(dest);
-        // dest->AddInEdges(src);
+        mapEdge2DownFlatNode.insert(make_pair(((idNode*)it)->name, dest));
+        auto pos = mapEdge2UpFlatNode.find(((idNode*)it)->name);
+        assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator
+        src = pos->second;
+        src->AddOutEdges(dest);
+        dest->AddInEdges(src);
     }
 
-    //cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
+    cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
     //cout<<"-----------------operator end------------------------------"<<endl;
 }
 
