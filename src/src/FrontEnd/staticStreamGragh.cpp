@@ -31,7 +31,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         src->AddOutEdges(dest);
         dest->AddInEdges(src);
     }
-    //cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
+    //cout << "mapEdge2DownFlatNode.size()= " << mapEdge2DownFlatNode.size() << endl;
     //cout<<"-----------------operator end------------------------------"<<endl;
 }
 
@@ -122,15 +122,33 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     else if (type == Tumbling)
                     {
                         Node *winType = ((winStmtNode *)it)->winType;
-                        Node *val=((tumblingNode *)winType)->arg_list->front();
-                        assert(val->type==constant);
-                        flatNode->inPeekWeights[j] = ((constantNode *)val)->llval;;
-						flatNode->inPopWeights[j] = flatNode->inPeekWeights[j];
+                        Node *val = ((tumblingNode *)winType)->arg_list->front();
+                        assert(val->type == constant);
+                        flatNode->inPeekWeights[j] = ((constantNode *)val)->llval;
+                        ;
+                        flatNode->inPopWeights[j] = flatNode->inPeekWeights[j];
                     }
                 }
                 // 说明该window指示的是push值
-                else{
-
+                else
+                {
+                    auto pos = mapEdge2DownFlatNode.find(edgeName);
+                    assert(pos != mapEdge2DownFlatNode.end());
+                    dest = pos->second;
+                    int j;
+                    for (j = 0; dest != flatNode->outFlatNodes[j]; j++)
+                        ; //找到对应的j,准备写入值
+                    NodeType type = ((winStmtNode *)it)->winType->type;
+                    if (type == Tumbling)
+                    {
+                        Node *winType = ((winStmtNode *)it)->winType;
+                        Node *val = ((tumblingNode *)winType)->arg_list->front();
+                        flatNode->outPushWeights[j] = ((constantNode *)val)->llval;
+                    }
+                    else if (type == Sliding)
+                    {
+                        flatNode->outPushWeights[j] = 0;
+                    }
                 }
             }
         }
