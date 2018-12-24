@@ -92,13 +92,13 @@ void StaticStreamGraph::SetFlatNodesWeights()
             {
                 assert(it->type==WindowStmt);
                 string edgeName=((winStmtNode *)it)->winName;
-                //cout<<"edgeName= "<<edgeName<<endl;
+                cout<<"edgeName= "<<edgeName<<endl;
                 // auto pos = mapEdge2UpFlatNode.find(edgeName);
 				// assert(pos != mapEdge2UpFlatNode.end());
 				// src = pos->second; // 每条边有且只有一个上端节点
 
             }
         }
-        //cout<<"-----------------------------"<<endl;
+        cout<<"-----------------------------"<<endl;
     }
 }

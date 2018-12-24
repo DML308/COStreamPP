@@ -87,7 +87,7 @@ void streamFlow(compositeNode *main)
             else if (right->type == CompositeCall)
             {
                 compositeNode *comp = ((compositeCallNode *)right)->actual_composite;
-                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs);
+                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs,1);
             }
             else if (right->type == SplitJoin)
             {
@@ -104,7 +104,7 @@ void streamFlow(compositeNode *main)
         case CompositeCall:
         {
             compositeNode *comp = ((compositeCallNode *)it)->actual_composite;
-            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs);
+            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs,1);
             break;
         }
         case SplitJoin:

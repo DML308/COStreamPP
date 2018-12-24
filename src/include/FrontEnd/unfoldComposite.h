@@ -23,7 +23,7 @@ class UnfoldComposite
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
     operatorNode *MakeSplitOperator(Node *input, list<Node *> *arguments, int style);
     operatorNode *MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments);
-    compositeNode *streamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode *streamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs,int flag);
     compositeNode *compositeCallStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs);
     void modifyWindowName(operatorNode *oper,list<Node*> *stream ,bool style );
 };
