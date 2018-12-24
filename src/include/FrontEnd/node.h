@@ -662,11 +662,11 @@ class winStmtNode : public Node
 class windowNode : public Node
 {
   public:
-    list<Node *> *winStmt_List;
-    windowNode(list<Node *> *winStmt_list)
+    list<Node *> *win_list;
+    windowNode(list<Node *> *win_list)
     {
         this->type = Window;
-        this->winStmt_List = winStmt_list;
+        this->win_list = win_list;
     }
     ~windowNode() {}
     void print() {}

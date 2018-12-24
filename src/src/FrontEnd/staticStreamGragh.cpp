@@ -15,14 +15,14 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         //cout<<"output Name = "<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(((idNode*)it)->name, src));
     }
-    cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
+    //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     flatNodes.push_back(src);
-    dest = src; //边变了
+    dest = src; 
     //搜索节点的输入边，建立节点流输入输出关系
     assert(inputs!=NULL);
     for (auto it : *inputs)
     {
-        //cout<<"name= "<<((idNode*)it)->name<<endl;
+        //cout<<"input name= "<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
         mapEdge2DownFlatNode.insert(make_pair(((idNode*)it)->name, dest));
         auto pos = mapEdge2UpFlatNode.find(((idNode*)it)->name);
@@ -32,7 +32,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         dest->AddInEdges(src);
     }
 
-    cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
+    //cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
     //cout<<"-----------------operator end------------------------------"<<endl;
 }
 
@@ -60,13 +60,13 @@ void StaticStreamGraph::ResetFlatNodeNames()
 // 计算每个节点的push，pop，peek值
 void StaticStreamGraph::SetFlatNodesWeights()
 {
-    /*
     for (int i = 0; i < flatNodes.size(); i++)
     {
         string tmpName = "";
+        FlatNode *src = NULL, *dest = NULL;
         FlatNode *flatNode = flatNodes[i];
         operatorNode *contents = flatNode->contents;
-        list<Node *> *win_stmts = contents->operBody->win->winStmt_List;
+        list<Node *> *win_stmts = contents->operBody->win->win_list;
         // if(win_stmts!=NULL)
         // cout<<"win_stmt.size()= "<<win_stmts->size()<<endl;
         for (int j = 0; j < flatNode->nIn; j++)
@@ -85,13 +85,20 @@ void StaticStreamGraph::SetFlatNodesWeights()
             tmpName = "nPush_" + to_string(j);
             flatNode->outPushString.push_back(tmpName);
         }
+        //cout<<"win_stmt.size() ="<<win_stmts->size()<< endl;
         if (win_stmts != NULL)
         {
             for (auto it : *win_stmts)
             {
+                assert(it->type==WindowStmt);
+                string edgeName=((winStmtNode *)it)->winName;
+                //cout<<"edgeName= "<<edgeName<<endl;
+                // auto pos = mapEdge2UpFlatNode.find(edgeName);
+				// assert(pos != mapEdge2UpFlatNode.end());
+				// src = pos->second; // 每条边有且只有一个上端节点
 
             }
         }
+        //cout<<"-----------------------------"<<endl;
     }
-    */
 }

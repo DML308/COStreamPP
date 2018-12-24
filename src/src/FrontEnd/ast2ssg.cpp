@@ -70,6 +70,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     return;
 }
 
+
 void streamFlow(compositeNode *main)
 {
     list<Node *> body_stmt = *(main->body->stmt_List);
@@ -126,9 +127,9 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     streamFlow(mainComposite);
     GraphToOperators(mainComposite, mainComposite);
     
-    for(auto it:ssg->flatNodes){
-        cout<<it->nIn<<" "<<it->nOut<<endl;
-    }
+    // for(auto it:ssg->flatNodes){
+    //     cout<<it->nIn<<" "<<it->nOut<<endl;
+    // }
     ssg->SetTopLevel();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();

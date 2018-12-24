@@ -345,7 +345,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(Node *node)
 
     return pipeline;
 }
-
+/* 专用于splitjoin或者pipeline中展开流的替换，这些compositeCall可以指向相同的init，work*/
 compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
     compositeNode *copy = NULL;
@@ -361,8 +361,22 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
             expNode *exp = ((binopNode *)it)->right;
             if (exp->type == Operator_)
             {
+                /* 除了window都可以指向一块内存 */
                 operBodyNode *operBody = ((operatorNode *)exp)->operBody;
-                operatorNode *oper = new operatorNode(outputs, comp->compName, inputs, operBody);
+
+                paramNode *param = operBody->param;
+                list<Node *> *stmts = operBody->stmt_list;
+                Node *init=operBody->init;
+                Node *work=operBody->work;
+                list<Node*> *win_list=new list<Node*>();
+                *win_list=*(operBody->win->win_list);
+                windowNode *win=new windowNode(win_list);
+                operBodyNode *body=new operBodyNode(stmts,init,work,win);
+
+                operatorNode *oper = new operatorNode(outputs, comp->compName, inputs, body);
+                
+                //modifyWindowName(oper,inputs,true);
+                //modifyWindowName(oper,outputs,false);
                 stmt_list->push_back(oper);
             }
             /* 未来可扩展splitjoin嵌套splitjoin的结构 */
@@ -372,7 +386,50 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
     copy = new compositeNode(head, body);
     return copy;
 }
+/* style标识输入流还是输出流 */
+void UnfoldComposite::modifyWindowName(operatorNode *oper, list<Node *> *stream, bool style)
+{
+    if (stream != NULL)
+    {
+        list<Node *> *inputs = NULL, *outputs = NULL;
+        assert(stream->front()->type == Id);
+        string replaceName = ((idNode *)stream->front())->name;
+        cout<<"repalceName = "<<replaceName<<endl;
+        list<Node *> *stmts = oper->operBody->win->win_list;
+        //operatorNode中只有一个输入流和一个输出流
+        switch (style)
+        {
+        case true:
+            inputs = oper->inputs;
+            if (inputs != NULL && inputs->size() != 0)
+            {
+                string name = ((idNode *)(inputs->front()))->name;
+                for (auto it : *stmts)
+                {
+                    assert(it->type == WindowStmt);
+                    if (((winStmtNode *)it)->winName == name)
+                        ((winStmtNode *)it)->winName = replaceName;
+                }
+            }
+            break;
+        case false:
+            outputs = oper->outputs;
+            if (outputs != NULL && outputs->size() != 0)
+            {
+                string name = ((idNode *)(outputs->front()))->name;
+                for (auto it : *stmts)
+                {
+                    assert(it->type == WindowStmt);
+                    if (((winStmtNode *)it)->winName == name)
+                        ((winStmtNode *)it)->winName = replaceName;
+                }
+            }
+            break;
+        }
+    }
+}
 
+/* 可修改一个compositeNode包含多个operator */
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
     //cout<<"compName = "<<comp->compName<<endl;
@@ -383,21 +440,17 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     //cout<<"stmts.size()= "<<stmt_list->size();
     Node *top = stmt_list->front();
     Node *back = stmt_list->back();
-
-    if (top->type == Operator_)
-    {   
+    switch (top->type)
+    {
+    case Operator_:
+        modifyWindowName(((operatorNode *)top), inputs, true);
         ((operatorNode *)top)->inputs = inputs;
-    }
-    if (back->type == Operator_)
-    {
-        ((operatorNode *)back)->outputs = outputs;
-    }
-
-    if (top->type == Binop)
-    {
+        break;
+    case Binop:
         expNode *exp = ((binopNode *)top)->right;
         if (exp->type == Operator_)
         {
+            modifyWindowName(((operatorNode *)exp), inputs, true);
             ((operatorNode *)exp)->inputs = inputs;
         }
         else if (exp->type == SplitJoin)
@@ -406,13 +459,23 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         }
         else if (exp->type == Pipeline)
         {
+            //((pipelineNode *)exp)->inputs = inputs;
         }
+        break;
     }
-    if (back->type == Binop)
+
+    switch (back->type)
+    {
+    case Operator_:
+        modifyWindowName(((operatorNode *)back), outputs, false);
+        ((operatorNode *)back)->outputs = outputs;
+        break;
+    case Binop:
     {
         expNode *exp = ((binopNode *)back)->right;
         if (exp->type == Operator_)
         {
+            modifyWindowName(((operatorNode *)exp), outputs, false);
             ((operatorNode *)exp)->outputs = outputs;
         }
         else if (exp->type == SplitJoin)
@@ -422,6 +485,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         else if (exp->type == Pipeline)
         {
         }
+    }
     }
     return comp;
 }

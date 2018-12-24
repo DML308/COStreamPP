@@ -25,5 +25,6 @@ class UnfoldComposite
     operatorNode *MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments);
     compositeNode *streamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode *compositeCallStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs);
+    void modifyWindowName(operatorNode *oper,list<Node*> *stream ,bool style );
 };
 #endif

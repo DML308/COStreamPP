@@ -25,7 +25,7 @@ public:
   void ResetFlatNodeNames();
 };
 
-void streamFlow(compositeNode *composite);
+void streamFlow(compositeNode *composite);  
 void GraphToOperators(compositeNode *composite, Node *oldComposite);
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite);
 
