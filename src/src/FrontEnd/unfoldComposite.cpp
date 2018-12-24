@@ -373,23 +373,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
     return copy;
 }
 
-compositeNode *UnfoldComposite::splitJoinStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs)
-{
-    //cout<<"compName = "<<composite->compName<<endl;
-
-    list<Node *> *stmt_list = NULL;
-    stmt_list = composite->body->stmt_List;
-    assert(stmt_list != NULL);
-    Node *top = stmt_list->front();
-    Node *back = stmt_list->back();
-
-    assert(top->type == Operator_ && back->type == Operator_);
-    ((operatorNode *)top)->inputs = inputs;
-    ((operatorNode *)back)->outputs = outputs;
-
-    return composite;
-}
-
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
     //cout<<"compName = "<<comp->compName<<endl;
@@ -403,7 +386,6 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
 
     if (top->type == Operator_)
     {   
-        /*inputs:S3 outputs:NULL*/
         ((operatorNode *)top)->inputs = inputs;
     }
     if (back->type == Operator_)
@@ -416,11 +398,11 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         expNode *exp = ((binopNode *)top)->right;
         if (exp->type == Operator_)
         {
-            ((operatorNode *)exp)->inputs = (inputs != NULL) ? inputs : NULL;
+            ((operatorNode *)exp)->inputs = inputs;
         }
         else if (exp->type == SplitJoin)
         {
-            ((splitjoinNode *)exp)->inputs = (inputs != NULL) ? inputs : NULL;
+            ((splitjoinNode *)exp)->inputs = inputs;
         }
         else if (exp->type == Pipeline)
         {
@@ -431,11 +413,11 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         expNode *exp = ((binopNode *)back)->right;
         if (exp->type == Operator_)
         {
-            ((operatorNode *)exp)->outputs = (outputs != NULL) ? outputs : NULL;
+            ((operatorNode *)exp)->outputs = outputs;
         }
         else if (exp->type == SplitJoin)
         {
-            ((splitjoinNode *)exp)->outputs = (outputs != NULL) ? outputs : NULL;
+            ((splitjoinNode *)exp)->outputs = outputs;
         }
         else if (exp->type == Pipeline)
         {

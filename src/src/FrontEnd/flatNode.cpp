@@ -13,11 +13,11 @@ FlatNode::FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom)
 void FlatNode::AddOutEdges(FlatNode *dest)
 {
     outFlatNodes.push_back(dest);
-    nIn++;
+    nOut++;
 }
 
 void FlatNode::AddInEdges(FlatNode *src)
 {
-    nOut++;
+    nIn++;
     inFlatNodes.push_back(src);
 }
