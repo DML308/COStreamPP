@@ -20,8 +20,7 @@ double pi = 3.14159265358979323846;
 stream<double x,int y>S;
 composite IntSource(output stream<double x,int y> Out)
 {
-	param
-		int size;
+
 	Out = IntSource()
 	{
 		work
@@ -71,20 +70,18 @@ composite Quantification(output stream<double x> Out,input stream<double x> In)
 
 composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 {
-	param
-		int size;
 	Out = DCT_1D(In)
 	{
-		double coeff[size][size];
+		double coeff[8][8];
 		int xi,u;
 		double Cu;
 		init
 		{
-			for (xi = 0; xi < size; xi++)
+			for (xi = 0; xi < 8; xi++)
 			{
 				Cu = 0.5;
 				if (xi == 0)Cu = sqrt(0.125);
-				for (u = 0; u < size; u++)
+				for (u = 0; u < 8; u++)
 				{
 					coeff[xi][u]= Cu * cos((pi/8.0)*xi*(u+0.5));
 				}
@@ -94,10 +91,10 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 		{
 			int xi, u;
 			double tmp;
-			for (xi = 0; xi < size; xi++)
+			for (xi = 0; xi < 8; xi++)
 			{
 				tmp = 0.0;
-				for (u = 0; u < size; u++)
+				for (u = 0; u < 8; u++)
 				{
 					tmp += (coeff[xi][u] * In[u].x);
 
@@ -108,23 +105,21 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 		}
 
 		window{
-			Out tumbling(size);
-			In  sliding(size,size);
+			Out tumbling(8);
+			In  sliding(8,8);
 		}
 	};
 }
 
 composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 {
-	param
-		int size;
 	Out = splitjoin(In)
 	{
 		int i;
 		split roundrobin(1);
 		for (i = 0; i < 8; i++)
 		{
-			add DCT_1D(size);
+			add DCT_1D(8);
 		}
 		join roundrobin(1);
 
@@ -133,8 +128,6 @@ composite DCT_Y(output stream<double x>Out,input stream<double x>In)
 
 composite DCT_X(output stream<double x>Out,input stream<double x>In)
 {
-	param
-		int size;
 	Out=splitjoin(In)
 	{
 		int i;
@@ -149,21 +142,20 @@ composite DCT_X(output stream<double x>Out,input stream<double x>In)
 
 composite Sink(input stream<int x> In)
 {
-	param
-		int size;
+
 	Sink(In)
 	{
 		work
 		{
 			int i;
-			for(i = 0;i<size;i++){
+			for(i = 0;i<8;i++){
 				print(In[i].x);
 				print(" ");
 			}
 			println("");
 		}
 		window{
-			In sliding(size,size);
+			In sliding(8,8);
 		}
 	};
 }
@@ -172,17 +164,16 @@ composite Sink(input stream<int x> In)
 composite Main ()
 {
 	stream<double x> Source,S1,S2,S3;
-	int size = 8;
 
-	Source = IntSource()(size);
+	Source = IntSource()(8);
 
-	S1 = DCT_Y(Source)(size);
+	S1 = DCT_Y(Source)(8);
 
-	S2 = DCT_X(S1)(size);
+	S2 = DCT_X(S1)(8);
 
 	S3 = Quantification(S2)();
 
-	Sink(S3)(size);
+	Sink(S3)(8);
 
 }
 

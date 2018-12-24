@@ -70,7 +70,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     return;
 }
 
-
 void streamFlow(compositeNode *main)
 {
     list<Node *> body_stmt = *(main->body->stmt_List);
@@ -81,38 +80,19 @@ void streamFlow(compositeNode *main)
         case Binop:
         {
             expNode *right = static_cast<binopNode *>(it)->right;
-            if (right->type == Operator_)
-            {
-            }
-            else if (right->type == CompositeCall)
+            if(right->type == CompositeCall)
             {
                 compositeNode *comp = ((compositeCallNode *)right)->actual_composite;
-                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs,1);
+                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, 
+                ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs,1);
             }
-            else if (right->type == SplitJoin)
-            {
-            }
-            else if (right->type == Pipeline)
-            {
-            }
-            break;
-        }
-        case Operator_:
-        {
             break;
         }
         case CompositeCall:
         {
             compositeNode *comp = ((compositeCallNode *)it)->actual_composite;
-            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs,1);
-            break;
-        }
-        case SplitJoin:
-        {
-            break;
-        }
-        case Pipeline:
-        {
+            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, 
+            ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs,1);
             break;
         }
         default:
@@ -126,7 +106,6 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
     GraphToOperators(mainComposite, mainComposite);
-    
     // for(auto it:ssg->flatNodes){
     //     cout<<it->nIn<<" "<<it->nOut<<endl;
     // }
@@ -134,6 +113,5 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();
     ssg->SetFlatNodesWeights();
-
     return ssg;
 }

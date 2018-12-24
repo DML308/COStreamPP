@@ -13,25 +13,24 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *outputs)
     {
         //cout<<"output Name = "<<((idNode*)it)->name<<endl;
-        mapEdge2UpFlatNode.insert(make_pair(((idNode*)it)->name, src));
+        mapEdge2UpFlatNode.insert(make_pair(((idNode *)it)->name, src));
     }
     //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     flatNodes.push_back(src);
-    dest = src; 
+    dest = src;
     //搜索节点的输入边，建立节点流输入输出关系
-    assert(inputs!=NULL);
+    assert(inputs != NULL);
     for (auto it : *inputs)
     {
         //cout<<"input name= "<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
-        mapEdge2DownFlatNode.insert(make_pair(((idNode*)it)->name, dest));
-        auto pos = mapEdge2UpFlatNode.find(((idNode*)it)->name);
+        mapEdge2DownFlatNode.insert(make_pair(((idNode *)it)->name, dest));
+        auto pos = mapEdge2UpFlatNode.find(((idNode *)it)->name);
         assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator
         src = pos->second;
         src->AddOutEdges(dest);
         dest->AddInEdges(src);
     }
-
     //cout<<"mapEdge2DownFlatNode.size()= "<<mapEdge2DownFlatNode.size()<<endl;
     //cout<<"-----------------operator end------------------------------"<<endl;
 }
@@ -90,15 +89,50 @@ void StaticStreamGraph::SetFlatNodesWeights()
         {
             for (auto it : *win_stmts)
             {
-                assert(it->type==WindowStmt);
-                string edgeName=((winStmtNode *)it)->winName;
-                cout<<"edgeName= "<<edgeName<<endl;
-                // auto pos = mapEdge2UpFlatNode.find(edgeName);
-				// assert(pos != mapEdge2UpFlatNode.end());
-				// src = pos->second; // 每条边有且只有一个上端节点
+                assert(it->type == WindowStmt);
+                string edgeName = ((winStmtNode *)it)->winName;
+                auto pos = mapEdge2UpFlatNode.find(edgeName);
+                assert(pos != mapEdge2UpFlatNode.end());
+                src = pos->second; // 每条边有且只有一个上端节点
+                // 说明该window指示的是peek和pop值
+                if (src != flatNode)
+                {
+                    NodeType type = ((winStmtNode *)it)->winType->type;
+                    assert(type == Tumbling || type == Sliding);
+                    int j;
+                    for (j = 0; src != flatNode->inFlatNodes[j]; j++)
+                        ; //找到对应的j,准备写入值
+                    if (type == Sliding)
+                    {
+                        Node *winType = ((winStmtNode *)it)->winType;
+                        list<Node *> *args = ((slidingNode *)winType)->arg_list;
+                        assert(args != NULL && args->size() == 2);
+                        Node *first = args->front();
+                        Node *second = args->back();
+                        long long first_val = ((constantNode *)first)->llval;
+                        long long second_val = ((constantNode *)second)->llval;
+                        if (first_val < second_val)
+                        {
+                            error("peek must be greater than pop!\npeek = %d, pop = %d\n", first_val, second_val);
+                            exit(-127);
+                        }
+                        flatNode->inPopWeights[j] = second_val;
+                        flatNode->inPeekWeights[j] = first_val;
+                    }
+                    else if (type == Tumbling)
+                    {
+                        Node *winType = ((winStmtNode *)it)->winType;
+                        Node *val=((tumblingNode *)winType)->arg_list->front();
+                        assert(val->type==constant);
+                        flatNode->inPeekWeights[j] = ((constantNode *)val)->llval;;
+						flatNode->inPopWeights[j] = flatNode->inPeekWeights[j];
+                    }
+                }
+                // 说明该window指示的是push值
+                else{
 
+                }
             }
         }
-        cout<<"-----------------------------"<<endl;
     }
 }

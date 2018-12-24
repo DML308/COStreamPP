@@ -101,6 +101,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
         cnt++;
         idNode *id = new idNode(tempName);
         outputs->push_back(id);
+        /* 此处可以抽出写为函数 */
         if (style == 1)
         {
             tumblingNode *tum = new tumblingNode(new list<Node *>({it}));
@@ -109,7 +110,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
         }
         else if (style == 0)
         {
-            slidingNode *slid = new slidingNode(new list<Node *>({it}));
+            slidingNode *slid = new slidingNode(new list<Node *>({it,it}));
             winStmtNode *win = new winStmtNode(tempName, slid);
             win_stmt->push_back(win);
         }
@@ -128,7 +129,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     }
     else if (style == 0)
     {
-        slidingNode *slid = new slidingNode(new list<Node *>({constNode}));
+        slidingNode *slid = new slidingNode(new list<Node *>({constNode,constNode}));
         winStmtNode *win = new winStmtNode(input_name, slid);
         win_stmt->push_back(win);
     }
@@ -170,7 +171,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     {
         sum += ((constantNode *)it)->llval;
         //cout << ((idNode *)*iter)->name << endl;
-        slidingNode *slid = new slidingNode(new list<Node *>({it}));
+        slidingNode *slid = new slidingNode(new list<Node *>({it,it}));
         winStmtNode *win = new winStmtNode(((idNode *)*iter)->name, slid);
         win_stmt->push_back(win);
         iter++;
@@ -315,7 +316,6 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         iter++;
         cnt++;
     }
-    //cout<<"comCallList->size()= "<<comCallList->size()<<endl;
     joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
     comp_stmt_List->push_back(splitOperator);
     for (auto it : *comCallList)
@@ -323,7 +323,6 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         comp_stmt_List->push_back(it);
     }
     comp_stmt_List->push_back(joinOperator);
-    //cout<<"comp_stmt_List->size()= "<<comp_stmt_List->size()<<endl;
     body = new compBodyNode(NULL, comp_stmt_List);
     dup = new compositeNode(head, body);
     ++number;
@@ -383,59 +382,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
     copy = new compositeNode(head, body);
     streamReplace(copy, inputs, outputs, 0);
     return copy;
-}
-/* style标识输入流还是输出流 */
-void UnfoldComposite::modifyWindowName(operatorNode *oper, list<Node *> *stream, bool style)
-{
-    if (stream != NULL)
-    {
-        list<Node *> *inputs = NULL, *outputs = NULL;
-        assert(stream->front()->type == Id);
-        string replaceName = ((idNode *)stream->front())->name;
-        list<Node *> *stmts = oper->operBody->win->win_list;
-
-        //operatorNode中只有一个输入流和一个输出流
-        switch (style)
-        {
-        case true:
-            inputs = oper->inputs;
-            if (inputs != NULL && inputs->size() != 0)
-            {
-                string name = ((idNode *)(inputs->front()))->name;
-                for (auto it : *stmts)
-                {
-                    assert(it->type == WindowStmt);
-                    //cout << "address : " << &(((winStmtNode *)it)->winName) << endl;
-                    //cout<<((winStmtNode *)it)->winName<<endl;
-                    if (((winStmtNode *)it)->winName == name)
-                    {
-
-                        ((winStmtNode *)it)->winName = replaceName;
-                        //cout << "inputName: " << name << "  currentName : " << replaceName << endl;
-                    }
-                }
-            }
-            break;
-        case false:
-            outputs = oper->outputs;
-            if (outputs != NULL && outputs->size() != 0)
-            {
-                string name = ((idNode *)(outputs->front()))->name;
-                for (auto it : *stmts)
-                {
-                    assert(it->type == WindowStmt);
-                    //cout<<((winStmtNode *)it)->winName<<"   "<<name<<endl;
-
-                    if (((winStmtNode *)it)->winName == name)
-                    {
-                        //cout << "outName: " << name << "  currentName : " << replaceName << endl;
-                        ((winStmtNode *)it)->winName = replaceName;
-                    }
-                }
-            }
-            break;
-        }
-    }
 }
 
 /* 可修改一个compositeNode包含多个operator */
@@ -501,4 +447,58 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     }
     }
     return comp;
+}
+
+/* style标识输入流还是输出流 */
+void UnfoldComposite::modifyWindowName(operatorNode *oper, list<Node *> *stream, bool style)
+{
+    if (stream != NULL)
+    {
+        list<Node *> *inputs = NULL, *outputs = NULL;
+        assert(stream->front()->type == Id);
+        string replaceName = ((idNode *)stream->front())->name;
+        list<Node *> *stmts = oper->operBody->win->win_list;
+
+        //operatorNode中只有一个输入流和一个输出流
+        switch (style)
+        {
+        case true:
+            inputs = oper->inputs;
+            if (inputs != NULL && inputs->size() != 0)
+            {
+                string name = ((idNode *)(inputs->front()))->name;
+                for (auto it : *stmts)
+                {
+                    assert(it->type == WindowStmt);
+                    //cout << "address : " << &(((winStmtNode *)it)->winName) << endl;
+                    //cout<<((winStmtNode *)it)->winName<<endl;
+                    if (((winStmtNode *)it)->winName == name)
+                    {
+
+                        ((winStmtNode *)it)->winName = replaceName;
+                        //cout << "inputName: " << name << "  currentName : " << replaceName << endl;
+                    }
+                }
+            }
+            break;
+        case false:
+            outputs = oper->outputs;
+            if (outputs != NULL && outputs->size() != 0)
+            {
+                string name = ((idNode *)(outputs->front()))->name;
+                for (auto it : *stmts)
+                {
+                    assert(it->type == WindowStmt);
+                    //cout<<((winStmtNode *)it)->winName<<"   "<<name<<endl;
+
+                    if (((winStmtNode *)it)->winName == name)
+                    {
+                        //cout << "outName: " << name << "  currentName : " << replaceName << endl;
+                        ((winStmtNode *)it)->winName = replaceName;
+                    }
+                }
+            }
+            break;
+        }
+    }
 }
