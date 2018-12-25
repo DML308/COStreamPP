@@ -125,7 +125,6 @@ void StaticStreamGraph::SetFlatNodesWeights()
                         Node *val = ((tumblingNode *)winType)->arg_list->front();
                         assert(val->type == constant);
                         flatNode->inPeekWeights[j] = ((constantNode *)val)->llval;
-                        ;
                         flatNode->inPopWeights[j] = flatNode->inPeekWeights[j];
                     }
                 }
@@ -153,4 +152,13 @@ void StaticStreamGraph::SetFlatNodesWeights()
             }
         }
     }
+}
+
+void StaticStreamGraph::AddInitWork(FlatNode *flat, int work)
+{
+    mapInitWork2FlatNode.insert(make_pair(flat, work));
+}
+void StaticStreamGraph::AddSteadyWork(FlatNode *flat, int work)
+{
+    mapSteadyWork2FlatNode.insert(make_pair(flat, work));
 }

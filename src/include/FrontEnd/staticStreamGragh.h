@@ -23,10 +23,14 @@ public:
   }
   void SetFlatNodesWeights();
   void ResetFlatNodeNames();
+  void AddSteadyWork(FlatNode *, int); // 存放稳态调度工作量
+	void AddInitWork(FlatNode *, int); // 存放初态调度工作量
 };
 
-void streamFlow(compositeNode *composite);  
+void streamFlow(compositeNode *composite);  /**/
 void GraphToOperators(compositeNode *composite, Node *oldComposite);
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite);
+void WorkEstimate(StaticStreamGraph *ssg);
+
 
 #endif

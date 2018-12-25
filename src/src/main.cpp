@@ -10,14 +10,13 @@
 #include "unfoldComposite.h"
 #include "staticStreamGragh.h"
 
-extern FILE *yyin;                    // flex uses yyin as input file's pointer
-extern int yyparse();                 // parser.cc provides yyparse()
-string PhaseName = "undefined";       //阶段名
-UnfoldComposite *unfold=new UnfoldComposite();
-list<Node *> *Program = NULL;         //用于存储语法树节点
-compositeNode *gMainComposite = NULL; //compositeMain
+extern FILE *yyin;                               // flex uses yyin as input file's pointer
+extern int yyparse();                            // parser.cc provides yyparse()
+string PhaseName = "undefined";                  //阶段名
+UnfoldComposite *unfold = new UnfoldComposite(); //用于展开splitjoin，pipeline节点
+list<Node *> *Program = NULL;                    //用于存储语法树节点
+compositeNode *gMainComposite = NULL;            //compositeMain
 StaticStreamGraph *SSG = NULL;
-
 SymbolTable S;
 
 //===----------------------------------------------------------------------===//
@@ -60,6 +59,11 @@ int main(int argc, char *argv[])
     //（5）语法树到平面图 SSG 是 StaticStreamGraph 对象
     PhaseName = "AST2FlatSSG";
     SSG = AST2FlatStaticStreamGraph(gMainComposite);
+
+    // (6) 对静态数据流图各节点进行工作量估计
+    PhaseName = "WorkEstimate";
+    WorkEstimate(SSG);
+
     //===----------------------------------------------------------------------===//
     // 编译前端 end
     //===----------------------------------------------------------------------===//
