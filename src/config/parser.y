@@ -524,12 +524,12 @@ labeled.statement:
           CASE exp ':' statement                    {
                                                           line("Line:%-4d",@1.first_line);
                                                           debug ("labeled.statement ::= CASE exp ':' statement \n");
-                                                          $$ = new caseNode((expNode*)$2,(statNode*)$4,@3) ;
+                                                          $$ = new caseNode((expNode*)$2,$4,@3) ;
                                                     }
         | DEFAULT ':' statement                     {
                                                           line("Line:%-4d",@1.first_line);
                                                           debug ("labeled.statement ::= DEFAULT ':' statement \n");
-                                                          $$ = new defaultNode((statNode*)$3,@2) ;
+                                                          $$ = new defaultNode($3,@2) ;
                                                     }
         ;
 compound.statement:
@@ -549,7 +549,7 @@ selection.statement:
                                                           debug ("selection.statement ::= if(exp) costream.composite.statement else ...\n");
                                                           $$ = new ifElseNode((expNode*)$3,$5,$7,@1);
                                                         }
-        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,(statNode*)$5,@1); }
+        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,$5,@1); }
         ;
 iteration.statement:
           WHILE '(' exp ')' costream.composite.statement                          {  $$ = new whileNode((expNode*)$3,$5,@1) ; }

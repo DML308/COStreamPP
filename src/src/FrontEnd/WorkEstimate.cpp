@@ -40,6 +40,9 @@ int workEstimate_steady(operBodyNode *body, int w_steady)
 
 void workCompute(Node *node)
 {
+    int tmp = 0;
+    int newWork = 0;
+    int oldWork = 0;
     switch (node->type)
     {
     case OperBody:
@@ -96,20 +99,74 @@ void workCompute(Node *node)
         work += MEMORY_OP;
         break;
     case Unary:
+        WEST_astwalk(node);
+        {
+            expNode *exp = static_cast<unaryNode *>(node)->exp;
+            if (exp->type == constant)
+            {
+                if (((constantNode *)exp)->style == "double")
+                {
+                    tmp = FLOAT_ARITH_OP;
+                }
+                else if (((constantNode *)exp)->style == "integer")
+                {
+                    tmp = INT_ARITH_OP;
+                }
+                work += tmp;
+            }
+        }
         break;
+
     case Binop:
+        if (static_cast<binopNode *>(node)->op != "=" && static_cast<binopNode *>(node)->op != ".")
+        {   
+            {
+            expNode *left = static_cast<binopNode *>(node)->left;
+            expNode *right = static_cast<binopNode *>(node)->right;
+            if (right->type == constant)
+            {
+                if (((constantNode *)right)->style == "double")
+                {
+                    tmp = FLOAT_ARITH_OP;
+                    if (static_cast<binopNode *>(node)->op == "/") //仅当浮点的除法需要x16
+                        tmp *= 16;
+                }
+                else if (((constantNode *)right)->style == "integer")
+                {
+                    tmp = INT_ARITH_OP;
+                }
+            }
+        }
+        }
+        else if (static_cast<binopNode *>(node)->op == "="){
+			tmp = 0;
+		}
+		else if (static_cast<binopNode *>(node)->op == "."){
+			workCompute(static_cast<binopNode *>(node)->left);//如果是点操作，则仅取左边表达式计算
+			break;
+		}
+        work+=tmp;
+        WEST_astwalk(node);
         break;
     case Ternary:
+        WEST_astwalk(node);
         break;
     case For:
         break;
     case If:
-        break;
     case IfElse:
+        oldWork = work;
+        WEST_astwalk(node);
+        newWork = work;
+        work += (newWork - oldWork) / 2;
+        work += IF;
         break;
     case Do:
-        break;
     case While:
+        oldWork = work;
+        WEST_astwalk(node);
+        newWork = work;
+        work = oldWork + LOOP_COUNT * (newWork - oldWork);
         break;
     case Cast:
         WEST_astwalk(node);
@@ -238,38 +295,69 @@ void WEST_astwalk(Node *node)
         workCompute(static_cast<unaryNode *>(node)->exp);
         break;
     case Cast:
+        workCompute(static_cast<caseNode *>(node)->exp);
         break;
     case Array:
+        workCompute(node);
         break;
     case Call:
+        if (static_cast<callNode *>(node)->arg_list.size() != 0)
+        {
+            for (auto it : static_cast<callNode *>(node)->arg_list)
+                workCompute(it);
+        }
         break;
     case Initializer:
+        if (static_cast<initNode *>(node)->value.size() != 0)
+        {
+            for (auto it : static_cast<initNode *>(node)->value)
+                workCompute(it);
+        }
         break;
-    case ImplicitCast:
-        break;
+    // case ImplicitCast:
+    //     break;
     case Label:
         break;
     case Switch:
+        workCompute(static_cast<switchNode *>(node)->exp);
+        workCompute(static_cast<switchNode *>(node)->stat);
         break;
     case Case:
+        workCompute(static_cast<caseNode *>(node)->exp);
+        workCompute(static_cast<caseNode *>(node)->stmt);
         break;
     case Default:
+        workCompute(static_cast<defaultNode *>(node)->stmt);
         break;
     case If:
+        workCompute(static_cast<ifNode *>(node)->exp);
+        workCompute(static_cast<ifNode *>(node)->stmt);
         break;
     case IfElse:
+        workCompute(static_cast<ifElseNode *>(node)->exp);
+        workCompute(static_cast<ifElseNode *>(node)->stmt1);
+        workCompute(static_cast<ifElseNode *>(node)->stmt2);
         break;
     case While:
+        workCompute(static_cast<whileNode *>(node)->exp);
+        workCompute(static_cast<whileNode *>(node)->stmt);
         break;
     case Do:
+        workCompute(static_cast<doNode *>(node)->exp);
+        workCompute(static_cast<doNode *>(node)->stmt);
         break;
     case For:
+        workCompute(static_cast<forNode *>(node)->init);
+        workCompute(static_cast<forNode *>(node)->cond);
+        workCompute(static_cast<forNode *>(node)->next);
+        workCompute(static_cast<forNode *>(node)->stmt);
         break;
     case Continue:
         break;
     case Break:
         break;
     case Return:
+        workCompute(static_cast<returnNode *>(node)->exp);
         break;
     case Block:
         if (static_cast<blockNode *>(node)->stmt_list != NULL)

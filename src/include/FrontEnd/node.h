@@ -249,13 +249,12 @@ class castNode : public Node
 };
 
 /* switch() case: */
-class statNode;
 class caseNode : public Node
 {
   public:
     expNode *exp;
-    statNode *stmt;
-    caseNode(expNode *exp, statNode *stmt, YYLTYPE loc = YYLTYPE())
+    Node *stmt;
+    caseNode(expNode *exp, Node *stmt, YYLTYPE loc = YYLTYPE())
     {
         setLoc(loc);
         this->type = Case;
@@ -270,8 +269,8 @@ class caseNode : public Node
 class defaultNode : public Node
 {
   public:
-    statNode *stmt;
-    defaultNode(statNode *stmt, YYLTYPE loc = YYLTYPE())
+    Node *stmt;
+    defaultNode(Node *stmt, YYLTYPE loc = YYLTYPE())
     {
         setLoc(loc);
         this->type = Default;
@@ -363,8 +362,8 @@ class switchNode : public Node
 {
   public:
     expNode *exp;
-    statNode *stat;
-    switchNode(expNode *exp, statNode *stat, YYLTYPE loc = YYLTYPE())
+    Node *stat;
+    switchNode(expNode *exp, Node *stat, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Switch;
