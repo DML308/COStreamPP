@@ -3,7 +3,6 @@
 
 #include "flatNode.h"
 /* 保存所有的展开 operator */
-static list<operatorNode *> *oper_List = new list<operatorNode *>();
 class StaticStreamGraph
 {
 public:
@@ -11,10 +10,10 @@ public:
   StaticStreamGraph() {}
   vector<FlatNode *> flatNodes; // 静态数据流图所有节点集合
   //map<operatorNode *, FlatNode *> mapOper2FlatNode;
-  map<string , FlatNode *> mapEdge2UpFlatNode;   // 将有向边与其上端绑定
+  map<string, FlatNode *> mapEdge2UpFlatNode;   // 将有向边与其上端绑定
   map<string, FlatNode *> mapEdge2DownFlatNode; //将有向边与其下端绑定
-  map<FlatNode *, int> mapSteadyWork2FlatNode;       // 存放各个operator的workestimate（稳态工作量估计）
-  map<FlatNode *, int> mapInitWork2FlatNode;         // 存放各个operator的workestimate（初态）
+  map<FlatNode *, int> mapSteadyWork2FlatNode;  // 存放各个operator的workestimate（稳态工作量估计）
+  map<FlatNode *, int> mapInitWork2FlatNode;    // 存放各个operator的workestimate（初态）
   // 构建SDF图，初始化flatNodes, mapEdge2FlatNode
   void GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite);
   void SetTopLevel()
@@ -24,13 +23,12 @@ public:
   void SetFlatNodesWeights();
   void ResetFlatNodeNames();
   void AddSteadyWork(FlatNode *, int); // 存放稳态调度工作量
-	void AddInitWork(FlatNode *, int); // 存放初态调度工作量
+  void AddInitWork(FlatNode *, int);   // 存放初态调度工作量
 };
 
-void streamFlow(compositeNode *composite);  /**/
+void streamFlow(compositeNode *composite); /**/
 void GraphToOperators(compositeNode *composite, Node *oldComposite);
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite);
 void WorkEstimate(StaticStreamGraph *ssg);
-
 
 #endif

@@ -9,6 +9,7 @@
 #include "global.h"
 #include "unfoldComposite.h"
 #include "staticStreamGragh.h"
+#include "schedulerSSG.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -17,6 +18,7 @@ UnfoldComposite *unfold = new UnfoldComposite(); //用于展开splitjoin，pipel
 list<Node *> *Program = NULL;                    //用于存储语法树节点
 compositeNode *gMainComposite = NULL;            //compositeMain
 StaticStreamGraph *SSG = NULL;
+SchedulerSSG *SSSG = NULL;
 SymbolTable S;
 
 //===----------------------------------------------------------------------===//
@@ -63,21 +65,24 @@ int main(int argc, char *argv[])
     // (6) 对静态数据流图各节点进行工作量估计
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);
-    // for(auto it:SSG->mapInitWork2FlatNode){
-    //     cout<<it.second<<endl;
-    // }
-    // cout<<"-------------------"<<endl;
-    // for(auto it:SSG->mapSteadyWork2FlatNode){
-    //     cout<<it.second<<endl;
-    // }
-
-
+    /* 
+    打印初态和稳态工作量
+    for(auto it:SSG->mapInitWork2FlatNode){
+        cout<<it.second<<endl;
+    }
+    cout<<"-------------------"<<endl;
+    for(auto it:SSG->mapSteadyWork2FlatNode){
+        cout<<it.second<<endl;
+    }
+    */
     //===----------------------------------------------------------------------===//
     // 编译前端 end
     //===----------------------------------------------------------------------===//
     //===----------------------------------------------------------------------===//
     // 编译后端 begin
     //===----------------------------------------------------------------------===//
+    PhaseName = "schedulerSSG";
+    SSSG = SchedulingSSG(SSG);
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
