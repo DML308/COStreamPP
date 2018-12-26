@@ -1,7 +1,7 @@
 
 #ifndef _SCHEDULER_SSG_H_
 #define _SCHEDULER_SSG_H_
-#include "/root/COStreamPP/src/include/FrontEnd/staticStreamGragh.h"
+#include "staticStreamGragh.h"
 
 class SchedulerSSG : public StaticStreamGraph
 {
@@ -26,6 +26,6 @@ public:
 };
 
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg);
-//GLOBAL void DumpStreamGraph(SchedulerSSG *ssg,const char *fileName);
+void DumpStreamGraph(SchedulerSSG *ssg,string fileName);
 
 #endif

@@ -22,6 +22,7 @@ public:
   }
   void SetFlatNodesWeights();
   void ResetFlatNodeNames();
+  void ResetFlatNodeVisitTimes(); // 重置每个flastnode的visit times值
   void AddSteadyWork(FlatNode *, int); // 存放稳态调度工作量
   void AddInitWork(FlatNode *, int);   // 存放初态调度工作量
 };

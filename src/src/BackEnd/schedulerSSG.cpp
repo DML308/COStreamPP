@@ -8,7 +8,7 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
     if (sssg->SteadyScheduling())
     {
         sssg->InitScheduling();
-#if 1
+#if 0
         std::map<FlatNode *, int>::iterator pos;
         cout << "稳态调度序列:" << endl;
         for (pos = sssg->mapSteadyCount2FlatNode.begin(); pos != sssg->mapSteadyCount2FlatNode.end(); ++pos)
@@ -43,11 +43,9 @@ bool SchedulerSSG::SteadyScheduling()
     list<FlatNode *> flatNodeList;
     std::map<FlatNode *, int>::iterator pos;
     // 默认第一个节点是源，也就是说peek和pop均为0,在图的表示上暂不允许有多个源，但可以有多个peek = pop = 0节点
-
     FlatNode *up = topNode, *down = NULL;
     int nPush = 0, nPop = 0, nLcm = 0;
     int x, y, i, j;
-
     // 现在考虑的是只有一个输入口的情况
     while (1)
     {
@@ -84,9 +82,9 @@ bool SchedulerSSG::SteadyScheduling()
                     }
                     mapSteadyCount2FlatNode.insert(make_pair(down, nLcm / nPop));
                 }
-                else // 对push(0)作处理 
+                else // 对push(0)作处理
                 {
-                    // 取 1 值 
+                    // 取 1 值
                     mapSteadyCount2FlatNode.insert(make_pair(down, 1));
                 }
                 // 将down加入listNode是为了对down的输出节点进行调度,相当于遍历

@@ -162,3 +162,11 @@ void StaticStreamGraph::AddSteadyWork(FlatNode *flat, int work)
 {
     mapSteadyWork2FlatNode.insert(make_pair(flat, work));
 }
+/*重置ssg结点flatnodes内所有flatnode内的visttimes*/
+void StaticStreamGraph::ResetFlatNodeVisitTimes()
+{
+	for (int i = 0; i < flatNodes.size(); i++)
+	{
+		this->flatNodes[i]->ResetVistTimes();
+	}
+}

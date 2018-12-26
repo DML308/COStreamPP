@@ -21,3 +21,13 @@ void FlatNode::AddInEdges(FlatNode *src)
     nIn++;
     inFlatNodes.push_back(src);
 }
+
+void FlatNode::VisitNode()
+{
+	visitTimes++;
+}
+
+void FlatNode::ResetVistTimes()
+{
+	visitTimes = 0;
+}
