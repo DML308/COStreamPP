@@ -119,39 +119,126 @@ void workCompute(Node *node)
 
     case Binop:
         if (static_cast<binopNode *>(node)->op != "=" && static_cast<binopNode *>(node)->op != ".")
-        {   
+        {
             {
-            expNode *left = static_cast<binopNode *>(node)->left;
-            expNode *right = static_cast<binopNode *>(node)->right;
-            if (right->type == constant)
-            {
-                if (((constantNode *)right)->style == "double")
+                expNode *left = static_cast<binopNode *>(node)->left;
+                expNode *right = static_cast<binopNode *>(node)->right;
+                /*暂时缺乏对左操作树的工作量估计*/
+                if (right->type == constant)
                 {
-                    tmp = FLOAT_ARITH_OP;
-                    if (static_cast<binopNode *>(node)->op == "/") //仅当浮点的除法需要x16
-                        tmp *= 16;
-                }
-                else if (((constantNode *)right)->style == "integer")
-                {
-                    tmp = INT_ARITH_OP;
+                    if (((constantNode *)right)->style == "double")
+                    {
+                        tmp = FLOAT_ARITH_OP;
+                        if (static_cast<binopNode *>(node)->op == "/") //仅当浮点的除法需要x16
+                            tmp *= 16;
+                    }
+                    else if (((constantNode *)right)->style == "integer")
+                    {
+                        tmp = INT_ARITH_OP;
+                    }
                 }
             }
         }
+        else if (static_cast<binopNode *>(node)->op == "=")
+        {
+            tmp = 0;
         }
-        else if (static_cast<binopNode *>(node)->op == "="){
-			tmp = 0;
-		}
-		else if (static_cast<binopNode *>(node)->op == "."){
-			workCompute(static_cast<binopNode *>(node)->left);//如果是点操作，则仅取左边表达式计算
-			break;
-		}
-        work+=tmp;
+        else if (static_cast<binopNode *>(node)->op == ".")
+        {
+            workCompute(static_cast<binopNode *>(node)->left); //如果是点操作，则仅取左边表达式计算
+            break;
+        }
+        work += tmp;
         WEST_astwalk(node);
         break;
     case Ternary:
         WEST_astwalk(node);
         break;
     case For:
+        workCompute(static_cast<forNode *>(node)->init);
+        oldWork = work;
+        {
+            int condition = MAX_INF, init = MAX_INF, step = 0;
+            Node *init_exp = static_cast<forNode *>(node)->init;
+            expNode *cond_exp = static_cast<forNode *>(node)->cond;
+            expNode *next_exp = static_cast<forNode *>(node)->next;
+            tmp = LOOP_COUNT;
+            /* for的init部分 */
+            if (init_exp->type == Decl)
+            {
+                list<idNode *> id_list = static_cast<declareNode *>(init_exp)->id_list;
+                idNode *first = id_list.front();
+                Node *f_init = first->init;
+                if (f_init->type == Initializer)
+                {
+                    list<Node *> value = static_cast<initNode *>(f_init)->value;
+                    Node *val = value.front();
+                    if (val->type == constant)
+                    {
+                        init = static_cast<constantNode *>(val)->llval;
+                    }
+                }
+            }
+            else if (init_exp->type = Binop)
+            {
+                expNode *init_r = ((binopNode *)(init_exp))->right;
+                if (init_r->type == constant)
+                    init = ((constantNode *)init_r)->llval;
+            }
+            /* for的cond部分 */
+            if (cond_exp->type == Binop)
+            {
+                expNode *left = ((binopNode *)(cond_exp))->left;
+                expNode *right = ((binopNode *)(cond_exp))->right;
+                if (left->type == constant || right->type == constant)
+                {
+                    if (left->type == constant)
+                    {
+                        condition = ((constantNode *)(left))->llval;
+                    }
+                    if (right->type == constant)
+                    {
+                        condition = ((constantNode *)(right))->llval;
+                    }
+                }
+                if (init != MAX_INF && condition != MAX_INF)
+                {
+                    tmp = abs(condition - init);
+                }
+                if (((binopNode *)cond_exp)->op == "<" || ((binopNode *)cond_exp)->op == ">")
+                    tmp += 0;
+                else
+                    tmp += 1;
+            }
+            /* for的next部分 */
+            if (next_exp->type == Binop)
+            {
+                string op = ((binopNode *)next_exp)->op;
+                if (op == "*=")
+                {
+                    if (condition >= init)
+                        tmp = condition / init;
+                    else
+                        tmp = init / condition;
+                    tmp = log(tmp) / log(step);
+                }
+                else if (op == "/=")
+                {
+                    if (condition >= init)
+                        tmp = condition / init;
+                    else
+                        tmp = init / condition;
+                    tmp = log(tmp) / log(step);
+                }
+                else
+                    tmp = (tmp + step - 1) / step;
+            }
+            if (init == MAX_INF || condition == MAX_INF)
+                tmp = LOOP_COUNT;
+        }
+        WEST_astwalk(node);
+        newWork = work;
+        work = oldWork + tmp * (newWork - oldWork);
         break;
     case If:
     case IfElse:

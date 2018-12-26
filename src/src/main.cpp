@@ -66,6 +66,10 @@ int main(int argc, char *argv[])
     // for(auto it:SSG->mapInitWork2FlatNode){
     //     cout<<it.second<<endl;
     // }
+    // cout<<"-------------------"<<endl;
+    // for(auto it:SSG->mapSteadyWork2FlatNode){
+    //     cout<<it.second<<endl;
+    // }
 
 
     //===----------------------------------------------------------------------===//
