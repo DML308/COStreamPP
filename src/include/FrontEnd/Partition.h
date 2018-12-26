@@ -13,5 +13,8 @@ class Partition
     virtual void SssgPartition(SchedulerSSG *sssg, int level) = 0; //划分成员方法，具体实现由子类实现
     int findID(SchedulerSSG *sssg, FlatNode *flatnode);            //根据flatnode找到其下标号 如source_0中的0
     void setCpuCoreNum(int, SchedulerSSG *);                       //设置place数目（即进程数目）
+    int findPartitionNumForFlatNode(FlatNode *flatnode);//根据节点返回其所在划分区的编号(节点->编号) for dot
     int getParts();                                                //返回划分个数mnparts
 };
+
+void DumpStreamGraph(SchedulerSSG *ssg,Partition *mp,string fileName);

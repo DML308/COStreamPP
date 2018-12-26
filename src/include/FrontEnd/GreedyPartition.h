@@ -25,11 +25,18 @@ class GreedyPartition : public Partition
     void doPartition(SchedulerSSG *sssg, int k);
     int chooseMaxGain(SchedulerSSG *sssg, vector<FlatNode *> &S, vector<FlatNode *> &Xi, vector<FlatNode *> &X0);
     void updateCandidate(SchedulerSSG *sssg, vector<FlatNode *> &X0, vector<FlatNode *> &S, int index);
+    int getTotalEdge(SchedulerSSG *sssg, int k);
+    void upDateFlatNodeState(FlatNode *p);
+    FlatNodeState getFlatNodeState(FlatNode *p);
+    void doTabuSearch(SchedulerSSG *sssg, int k);
+    void errorDecrease(SchedulerSSG *sssg, int k);
+    void errorDecrease2(SchedulerSSG *sssg, int k);
+    int orderPartitionResult();
+    void setActorWorkload(SchedulerSSG *sssg);
     int getPartEdge(int index)
     {
         return edge[index];
     }
-    int getTotalEdge(SchedulerSSG *sssg, int k);
     int getPart(FlatNode *p)
     {
         for (int i = 0; i < X.size(); i++)
@@ -42,14 +49,6 @@ class GreedyPartition : public Partition
     {
         return w[index];
     }
-
-    void upDateFlatNodeState(FlatNode *p);
-    FlatNodeState getFlatNodeState(FlatNode *p);
-    void doTabuSearch(SchedulerSSG *sssg, int k);
-    void errorDecrease(SchedulerSSG *sssg, int k);
-    void errorDecrease2(SchedulerSSG *sssg, int k);
-    int orderPartitionResult();
-    void setActorWorkload(SchedulerSSG *sssg);
 
   private:
     vector<vector<FlatNode *>> X;                   //划分的结果

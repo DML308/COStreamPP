@@ -19,3 +19,12 @@ int Partition::findID(SchedulerSSG *sssg,FlatNode *flatnode)
 		if(sssg->GetFlatNodes()[i]->name==flatnode->name)
 			return i;
 }
+
+int Partition::findPartitionNumForFlatNode(FlatNode *flatnode)
+{
+	map<FlatNode *,int>::iterator iter=FlatNode2PartitionNum.find(flatnode);
+	if (iter==FlatNode2PartitionNum.end())
+		return -1;
+	else
+		return iter->second;
+}

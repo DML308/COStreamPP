@@ -581,7 +581,7 @@ void GreedyPartition::doTabuSearch(SchedulerSSG *sssg, int k)
         for (int j = 0; j < X[i].size(); j++)
         {
             FlatNodeState p = getFlatNodeState(X[i][j]);
-            //FlatNodeToState.insert({ X[i][j], p });
+            FlatNodeToState.insert({ X[i][j], p });
             if (p == ALONE)
             {
                 aloneVec.push_back(X[i][j]);
@@ -687,7 +687,7 @@ void GreedyPartition::doTabuSearch(SchedulerSSG *sssg, int k)
             X[part].erase(iter);
             w[part] -= vwgt[index];
 
-            //upDateFlatNodeState(p);
+            upDateFlatNodeState(p);
             aloneVec.clear();
             for (int i = 0; i < X.size(); i++)
             { //得到每个节点的状态

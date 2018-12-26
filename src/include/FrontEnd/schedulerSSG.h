@@ -2,7 +2,7 @@
 #ifndef _SCHEDULER_SSG_H_
 #define _SCHEDULER_SSG_H_
 #include "staticStreamGragh.h"
-
+//#include "Partition.h"
 class SchedulerSSG : public StaticStreamGraph
 {
 public:
@@ -21,6 +21,6 @@ public:
 };
 
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg);
-void DumpStreamGraph(SchedulerSSG *ssg,string fileName);
+
 
 #endif

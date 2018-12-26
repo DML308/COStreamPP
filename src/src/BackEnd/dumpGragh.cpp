@@ -1,6 +1,8 @@
 #include "schedulerSSG.h"
+#include "Partition.h"
 static stringstream buf;
 static SchedulerSSG *ssg;
+static Partition *mpp;
 //146种颜色，划分部分大于给定颜色种类则无法表示
 static string color[] = {"aliceblue", "antiquewhite", "yellowgreen", "aquamarine", "azure",
                          "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid",
@@ -57,6 +59,11 @@ void MyVisitNode(FlatNode *node)
         if (node->nOut != 0)
             buf << "\\n";
         buf << "\"";
+        if(mpp != NULL)//Partition后则对节点着色
+		{		
+			buf<<" color=\""<<color[mpp->findPartitionNumForFlatNode(node)]<<"\""; 
+			buf<<" style=\"filled\" "; 	
+		}
         buf << "]";
     }
     //假如当前遇到的node是一个多输入的结点，该结点的链接边如下处理
@@ -96,9 +103,10 @@ void toBuildOutPutString(FlatNode *node)
     }
 }
 
-void DumpStreamGraph(SchedulerSSG *sssg, string fileName)
+void DumpStreamGraph(SchedulerSSG *sssg, Partition *mp,string fileName)
 {
     ssg = sssg;
+    mpp = mp;
     buf.str("");
     buf << "digraph Flattend {\n";
     toBuildOutPutString(ssg->topNode);
