@@ -9,7 +9,7 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
     {
         sssg->InitScheduling();
 #if 0
-        std::map<FlatNode *, int>::iterator pos;
+        map<FlatNode *, int>::iterator pos;
         cout << "稳态调度序列:" << endl;
         for (pos = sssg->mapSteadyCount2FlatNode.begin(); pos != sssg->mapSteadyCount2FlatNode.end(); ++pos)
             cout << pos->first->name << "\t" << pos->second << endl;
@@ -41,7 +41,7 @@ SchedulerSSG::SchedulerSSG(StaticStreamGraph *ssg)
 bool SchedulerSSG::SteadyScheduling()
 {
     list<FlatNode *> flatNodeList;
-    std::map<FlatNode *, int>::iterator pos;
+    map<FlatNode *, int>::iterator pos;
     // 默认第一个节点是源，也就是说peek和pop均为0,在图的表示上暂不允许有多个源，但可以有多个peek = pop = 0节点
     FlatNode *up = topNode, *down = NULL;
     int nPush = 0, nPop = 0, nLcm = 0;
@@ -115,7 +115,7 @@ bool SchedulerSSG::SteadyScheduling()
 bool SchedulerSSG::InitScheduling()
 {
     list<FlatNode *> flatNodeList;
-    std::map<FlatNode *, int>::iterator pos;
+    map<FlatNode *, int>::iterator pos;
     FlatNode *down = NULL, *up = NULL;
     int nPush = 0, nPop = 0, nPeek = 0;
     int x, y, i, j, n, num = 0;
@@ -226,7 +226,7 @@ int SchedulerSSG::lcm(int a, int b)
 
 int SchedulerSSG::GetSteadyCount(FlatNode *node)
 {
-	std::map<FlatNode *, int> ::iterator pos;
+	map<FlatNode *, int> ::iterator pos;
 	pos = mapSteadyCount2FlatNode.find(node);
 	assert(pos!=mapSteadyCount2FlatNode.end());
 	return pos->second;
