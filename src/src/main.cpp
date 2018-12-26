@@ -10,6 +10,7 @@
 #include "unfoldComposite.h"
 #include "staticStreamGragh.h"
 #include "schedulerSSG.h"
+#include "GreedyPartition.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -26,6 +27,8 @@ SymbolTable S;
 //===----------------------------------------------------------------------===//
 int main(int argc, char *argv[])
 {
+    Partition *mp = NULL;
+    int CpuCoreNum = 4;/*默认初始化为1一台机器中核的数目*/
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
     //===----------------------------------------------------------------------===//
@@ -87,7 +90,15 @@ int main(int argc, char *argv[])
 
     // （2）用XML文本的形式描述SDF图
     PhaseName = "SSG2Graph";
-    DumpStreamGraph(SSSG,"flatgraph.dot");
+    DumpStreamGraph(SSSG, "flatgraph.dot");
+
+    // （3）对节点进行调度划分
+    PhaseName = "Partition";
+    mp = new GreedyPartition(SSSG);
+    /* CpuCoreNum需要从argv中读取然后赋值，暂时未做，采用初始值 */
+    mp->setCpuCoreNum(CpuCoreNum, SSSG);
+    mp->SssgPartition(SSSG, 1);
+    
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//

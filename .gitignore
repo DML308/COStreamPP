@@ -15,3 +15,5 @@ src/src/FrontEnd/lexer.cpp
 src/a
 .vscode
 *.temp
+*.png
+*.dot

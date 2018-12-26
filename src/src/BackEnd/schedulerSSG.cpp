@@ -223,3 +223,11 @@ int SchedulerSSG::lcm(int a, int b)
 
     return product / gcd(a, b);
 }
+
+int SchedulerSSG::GetSteadyCount(FlatNode *node)
+{
+	std::map<FlatNode *, int> ::iterator pos;
+	pos = mapSteadyCount2FlatNode.find(node);
+	assert(pos!=mapSteadyCount2FlatNode.end());
+	return pos->second;
+}

@@ -21,7 +21,7 @@ class FlatNode
   public:
 	string name;			   // opeator名字
 	string PreName;			   //cwb记录Operator被重命名前的名字
-	int visitTimes;			   // 表示该结点是否已经被访问过
+	int visitTimes;			   // 表示该结点是否已经被访问过,与dumpdot有关
 	operatorNode *contents;	//指向operator(经常量传播后的).
 	operatorNode *oldContents; // 指向原始operator
 
@@ -66,4 +66,4 @@ class FlatNode
 	}
 };
 
-#endif /* _FLAT_NODE_H_ */
+#endif 

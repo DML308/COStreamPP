@@ -20,6 +20,10 @@ public:
   {
     topNode = flatNodes[0];
   }
+  inline vector<FlatNode *> GetFlatNodes()
+	{
+		return flatNodes;
+	}
   void SetFlatNodesWeights();
   void ResetFlatNodeNames();
   void ResetFlatNodeVisitTimes(); // 重置每个flastnode的visit times值

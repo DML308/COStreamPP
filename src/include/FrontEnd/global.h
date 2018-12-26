@@ -2,7 +2,7 @@
 #define _GLOBAL_HH_
 #include <stdio.h>
 #include "defines.h"
-
+#define INT_MIN -2147483648
 #define MAX_INF 2147483647
 #define MAX_SCOPE_DEPTH 100 //定义最大嵌套深度为100
 extern string infile_name;
