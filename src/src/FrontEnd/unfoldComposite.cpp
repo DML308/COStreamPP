@@ -76,7 +76,6 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
     primNode *prim = new primNode("int");
     declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
     auto pos = outputs->begin();
-    
     for (auto arg : *arguments)
     {
         init = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
@@ -93,6 +92,44 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
         stmt = new binopNode((expNode *)left, "=", (expNode *)right);
         for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
          
+        stmts->push_back(for_node);
+        pos++;
+    }
+    work=new blockNode(stmts);
+    return work;
+}
+
+Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node*> *outputs){
+    list<Node *> *stmts=new list<Node *>();
+    Node *work = NULL, *for_node = NULL;
+    Node *init = NULL, *cond = NULL, *next_i = NULL, *next_j = NULL, *stmt = NULL;
+    Node *output = outputs->front();
+    assert(output->type == Id);
+    constantNode *const_zero = new constantNode("integer", (long long)0);
+    constantNode *const_i = new constantNode("integer", (long long)0);
+    constantNode *const_j = new constantNode("integer", (long long)0);
+    initNode *init_i = new initNode(const_i);
+    initNode *init_j = new initNode(const_j);
+    idNode *id_i = new idNode("i"), *id_j = new idNode("j");
+    id_i->init = init_i;
+    id_j->init = init_j;
+    primNode *prim = new primNode("int");
+    declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    auto pos = inputs->begin();
+    for (auto arg : *arguments)
+    {
+        init = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
+        cond = new binopNode((expNode *)id_i, "<", (expNode *)arg);
+        next_i = new unaryNode("PREINC", (expNode *)id_i);
+        next_j = new unaryNode("POSTINC", (expNode *)id_j);
+        idNode *left = new idNode(static_cast<idNode *>(output)->name);
+        left->isArray = 1;
+        left->arg_list.push_back(id_i);
+        idNode *right = new idNode((static_cast<idNode *>(*pos))->name);
+        right->isArray = 1;
+        right->arg_list.push_back(next_j);
+        stmt = new binopNode((expNode *)left, "=", (expNode *)right);
+        for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
         stmts->push_back(for_node);
         pos++;
     }
@@ -226,8 +263,9 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     winStmtNode *win = new winStmtNode(output_name, tum);
     win_stmt->push_back(win);
     /*end*/
+    work = MakeJoinWork(inputs, arguments, outputs);
     window = new windowNode(win_stmt);
-    body = new operBodyNode(NULL, NULL, NULL, window);
+    body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName, inputs, body);
     //cout << "-----------------join end---------------------" << endl;
     return res;

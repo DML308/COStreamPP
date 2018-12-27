@@ -114,6 +114,8 @@ void workCompute(Node *node)
                 }
                 work += tmp;
             }
+            else
+                work += INT_ARITH_OP;
         }
         break;
 
@@ -137,6 +139,8 @@ void workCompute(Node *node)
                         tmp = INT_ARITH_OP;
                     }
                 }
+                else
+                    tmp = FLOAT_ARITH_OP;
             }
         }
         else if (static_cast<binopNode *>(node)->op == "=")
