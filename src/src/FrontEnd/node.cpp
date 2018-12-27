@@ -28,7 +28,7 @@ string constantNode::toString()
 {
     if (style == "double")
         return to_string(dval);
-    else if (style == "interger")
+    else if (style == "integer")
         return to_string(llval);
     else
         return sval;

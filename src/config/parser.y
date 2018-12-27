@@ -753,7 +753,7 @@ rblock: '}'  { ExitScope();  /* 退出一个块级作用域    */ }
 
 constant:
           doubleConstant    { $$ = new constantNode("double",$1,@1) ; }
-        | integerConstant   { $$ = new constantNode("interger",$1,@1) ; }
+        | integerConstant   { $$ = new constantNode("integer",$1,@1) ; }
         | stringConstant    { $$ = new constantNode("string",*($1),@1) ; }
         ;
 type.specifier:

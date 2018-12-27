@@ -31,14 +31,14 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
                 init_b = (binopNode *)init;
                 assert(init_b->right->type == constant);
                 constantNode *con_init = (constantNode *)(init_b->right);
-                assert(con_init->style == "interger");
+                assert(con_init->style == "integer");
                 initial = con_init->llval;
             }
             assert(cond->type == Binop);
             cond_b = (binopNode *)cond;
             assert(cond_b->right->type == constant);
             constantNode *con_cond = (constantNode *)(cond_b->right);
-            assert(con_cond->style == "interger");
+            assert(con_cond->style == "integer");
             condition = con_cond->llval;
             //cout << "init= " << initial << " cond= " << condition << endl;
             assert(initial != MAX_INF && condition != MAX_INF);
@@ -58,9 +58,10 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
         }
     }
 }
+
 Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
 {
-    list<Node *> *stmts=new list<Node *>();
+    list<Node *> *stmts = new list<Node *>();
     Node *work = NULL, *for_node = NULL;
     Node *init = NULL, *cond = NULL, *next_i = NULL, *next_j = NULL, *stmt = NULL;
     Node *input = inputs->front();
@@ -88,19 +89,20 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
         idNode *right = new idNode(static_cast<idNode *>(input)->name);
         right->isArray = 1;
         right->arg_list.push_back(next_j);
-       
+
         stmt = new binopNode((expNode *)left, "=", (expNode *)right);
         for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
-         
+
         stmts->push_back(for_node);
         pos++;
     }
-    work=new blockNode(stmts);
+    work = new blockNode(stmts);
     return work;
 }
 
-Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node*> *outputs){
-    list<Node *> *stmts=new list<Node *>();
+Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
+{
+    list<Node *> *stmts = new list<Node *>();
     Node *work = NULL, *for_node = NULL;
     Node *init = NULL, *cond = NULL, *next_i = NULL, *next_j = NULL, *stmt = NULL;
     Node *output = outputs->front();
@@ -133,7 +135,7 @@ Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *argument
         stmts->push_back(for_node);
         pos++;
     }
-    work=new blockNode(stmts);
+    work = new blockNode(stmts);
     return work;
 }
 operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *arguments, int style)
@@ -155,15 +157,10 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     inputs->push_back(input);
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
     Node *arg = arguments->front();
-    /* arg的type可以为constatnt后者id 但是id必须是个常量（需要常量传播） */
-    //cout << "arg.type= " << arg->type << endl;
-    // if(arg->type==1)
-    // cout<<"idName= "<<((idNode*)arg)->name<<endl;
-
     /*若split roundroubin()参数为空 默认赋值一个数据大小*/
     if (arguments->size() == 0)
     {
-        constantNode *nd = new constantNode("interger", (long long)1);
+        constantNode *nd = new constantNode("integer", (long long)1);
         arguments->push_back(nd);
     }
     if (arguments->size() == 1)
@@ -225,7 +222,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
 
 operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments)
 {
-    Node *work=NULL;
+    Node *work = NULL;
     operatorNode *res = NULL;
     windowNode *window = NULL;
     operBodyNode *body = NULL;
