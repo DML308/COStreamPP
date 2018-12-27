@@ -2,7 +2,6 @@
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
     //cout<<"-----------------"<<u->operName<<"--------------------"<<endl;
-
     FlatNode *src = NULL, *dest = NULL;
     src = new FlatNode(u, oldComposite, newComposite);
     list<Node *> *outputs = NULL;
@@ -42,7 +41,6 @@ void StaticStreamGraph::ResetFlatNodeNames()
         stringstream newName;
         newName << flatNodes[i]->name << "_" << i;
         flatNodes[i]->name = newName.str();
-        //cout << flatNodes[i]->name << endl;
     }
 }
 

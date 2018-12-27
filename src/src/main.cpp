@@ -11,6 +11,7 @@
 #include "unfoldComposite.h"
 #include "staticStreamGragh.h"
 #include "schedulerSSG.h"
+#include "ActorStageAssignment.h"
 #include "GreedyPartition.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
@@ -29,6 +30,7 @@ SymbolTable S;
 int main(int argc, char *argv[])
 {
     Partition *mp = NULL;
+    StageAssignment *pSA = NULL;
     int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
@@ -91,7 +93,7 @@ int main(int argc, char *argv[])
 
     // （2）用XML文本的形式描述SDF图
     PhaseName = "SSG2Graph";
-    DumpStreamGraph(SSSG, (Partition *)NULL, "flatgraph.dot");
+    DumpStreamGraph(SSSG, NULL, "flatgraph.dot");
 
     // （3）对节点进行调度划分
     PhaseName = "Partition";
@@ -107,6 +109,16 @@ int main(int argc, char *argv[])
     /* 此处ccfilename需要从argv中读取，后续再写 */
     string ccfilename = "jpeg.cos";
     ComputeSpeedup(SSSG, mp, ccfilename, "workEstimate.txt", "GAPartition");
+
+    // (6) 阶段赋值
+    PhaseName = "StageAssignment";
+    //存储阶段赋值的结果
+    pSA = new StageAssignment();
+    //第一步首先根据SDF图的输入边得到拓扑序列，并打印输出
+    pSA->actorTopologicalorder(SSSG->GetFlatNodes());
+    //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
+    pSA->actorStageMap(mp->GetFlatNode2PartitionNum());
+
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
