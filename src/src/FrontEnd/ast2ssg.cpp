@@ -109,7 +109,7 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     // for(auto it:ssg->flatNodes){
     //     cout<<it->nIn<<" "<<it->nOut<<endl;
     // }
-    ssg->SetTopLevel();
+    ssg->SetTopNode();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();
     ssg->SetFlatNodesWeights();

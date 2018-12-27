@@ -131,6 +131,7 @@ class expNode : public Node
     void print() {}
     string toString() {}
 };
+
 class arrayNode : public Node
 {
   public:
@@ -435,7 +436,7 @@ class blockNode : public Node
   public:
     list<Node *> *stmt_list;
     YYLTYPE right;
-    blockNode(list<Node *> *stmt_list, YYLTYPE left, YYLTYPE right)
+    blockNode(list<Node *> *stmt_list, YYLTYPE left= YYLTYPE(), YYLTYPE right= YYLTYPE())
     {
         this->setLoc(left);
         this->right = right;

@@ -3,6 +3,7 @@ extern SymbolTable S;
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void UnfoldComposite::setCallList(list<Node *> *stmts)
 {
+
     /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到call_List中*/
     for (auto it : *(stmts))
     {
@@ -57,10 +58,51 @@ void UnfoldComposite::setCallList(list<Node *> *stmts)
         }
     }
 }
-
+Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
+{
+    list<Node *> *stmts=new list<Node *>();
+    Node *work = NULL, *for_node = NULL;
+    Node *init = NULL, *cond = NULL, *next_i = NULL, *next_j = NULL, *stmt = NULL;
+    Node *input = inputs->front();
+    assert(input->type == Id);
+    constantNode *const_zero = new constantNode("integer", (long long)0);
+    constantNode *const_i = new constantNode("integer", (long long)0);
+    constantNode *const_j = new constantNode("integer", (long long)0);
+    initNode *init_i = new initNode(const_i);
+    initNode *init_j = new initNode(const_j);
+    idNode *id_i = new idNode("i"), *id_j = new idNode("j");
+    id_i->init = init_i;
+    id_j->init = init_j;
+    primNode *prim = new primNode("int");
+    declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    auto pos = outputs->begin();
+    
+    for (auto arg : *arguments)
+    {
+        init = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
+        cond = new binopNode((expNode *)id_i, "<", (expNode *)arg);
+        next_i = new unaryNode("PREINC", (expNode *)id_i);
+        next_j = new unaryNode("POSTINC", (expNode *)id_j);
+        idNode *left = new idNode((static_cast<idNode *>(*pos))->name);
+        left->isArray = 1;
+        left->arg_list.push_back(id_i);
+        idNode *right = new idNode(static_cast<idNode *>(input)->name);
+        right->isArray = 1;
+        right->arg_list.push_back(next_j);
+       
+        stmt = new binopNode((expNode *)left, "=", (expNode *)right);
+        for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
+         
+        stmts->push_back(for_node);
+        pos++;
+    }
+    work=new blockNode(stmts);
+    return work;
+}
 operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *arguments, int style)
 {
     operatorNode *res = NULL;
+    Node *work = NULL;
     windowNode *window = NULL;
     operBodyNode *body = NULL;
     vector<string> operName({"Duplicate", "Roundrobin"});
@@ -110,7 +152,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
         }
         else if (style == 0)
         {
-            slidingNode *slid = new slidingNode(new list<Node *>({it,it}));
+            slidingNode *slid = new slidingNode(new list<Node *>({it, it}));
             winStmtNode *win = new winStmtNode(tempName, slid);
             win_stmt->push_back(win);
         }
@@ -129,14 +171,15 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     }
     else if (style == 0)
     {
-        slidingNode *slid = new slidingNode(new list<Node *>({constNode,constNode}));
+        slidingNode *slid = new slidingNode(new list<Node *>({constNode, constNode}));
         winStmtNode *win = new winStmtNode(input_name, slid);
         win_stmt->push_back(win);
     }
     // cout<<"win_stmt.size()= "<<win_stmt->size()<<endl;
     // cout<<"outputs.size()= "<<outputs->size()<<endl;
+    work = MakeRoundrobinWork(inputs, arguments, outputs);
     window = new windowNode(win_stmt);
-    body = new operBodyNode(NULL, NULL, NULL, window);
+    body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName[style], inputs, body);
     number++;
     //cout << "-----------------split end---------------------" << endl;
@@ -145,6 +188,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
 
 operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments)
 {
+    Node *work=NULL;
     operatorNode *res = NULL;
     windowNode *window = NULL;
     operBodyNode *body = NULL;
@@ -171,7 +215,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     {
         sum += ((constantNode *)it)->llval;
         //cout << ((idNode *)*iter)->name << endl;
-        slidingNode *slid = new slidingNode(new list<Node *>({it,it}));
+        slidingNode *slid = new slidingNode(new list<Node *>({it, it}));
         winStmtNode *win = new winStmtNode(((idNode *)*iter)->name, slid);
         win_stmt->push_back(win);
         iter++;
@@ -361,11 +405,12 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 Node *init = operBody->init;
                 Node *work = operBody->work;
                 list<Node *> *win_list = new list<Node *>();
-                for(auto it:*operBody->win->win_list){
-                    assert(it->type==WindowStmt);
-                    Node *winType=((winStmtNode*)it)->winType;
-                    string winName=((winStmtNode*)it)->winName;
-                    winStmtNode *stmt_node=new winStmtNode(winName,winType);
+                for (auto it : *operBody->win->win_list)
+                {
+                    assert(it->type == WindowStmt);
+                    Node *winType = ((winStmtNode *)it)->winType;
+                    string winName = ((winStmtNode *)it)->winName;
+                    winStmtNode *stmt_node = new winStmtNode(winName, winType);
                     win_list->push_back(stmt_node);
                 }
                 windowNode *win = new windowNode(win_list);

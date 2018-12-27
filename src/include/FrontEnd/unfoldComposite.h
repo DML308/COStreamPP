@@ -6,7 +6,7 @@ class UnfoldComposite
 {
   public:
     int num;
-    vector<Node *> call_List;
+    vector<Node *> call_List; //存储splitjoin/pipeline中的compositeCall
     UnfoldComposite()
     {
         num = 0;
@@ -21,6 +21,8 @@ class UnfoldComposite
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
     compositeNode *UnfoldPipeline(Node *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
+    Node *MakeRoundrobinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
+    Node *MakeJoinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     operatorNode *MakeSplitOperator(Node *input, list<Node *> *arguments, int style);
     operatorNode *MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments);
     compositeNode *streamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs,int flag);
