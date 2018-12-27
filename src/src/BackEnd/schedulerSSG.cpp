@@ -1,7 +1,5 @@
 #include "schedulerSSG.h"
 
-using namespace std;
-
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
 {
     SchedulerSSG *sssg = new SchedulerSSG(ssg);

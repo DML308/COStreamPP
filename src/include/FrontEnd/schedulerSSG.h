@@ -2,7 +2,6 @@
 #ifndef _SCHEDULER_SSG_H_
 #define _SCHEDULER_SSG_H_
 #include "staticStreamGragh.h"
-//#include "Partition.h"
 class SchedulerSSG : public StaticStreamGraph
 {
 public:

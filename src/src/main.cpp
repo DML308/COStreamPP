@@ -7,6 +7,7 @@
 #include "2.semCheck.h"
 #include "symbol.h"
 #include "global.h"
+#include "speedup.h"
 #include "unfoldComposite.h"
 #include "staticStreamGragh.h"
 #include "schedulerSSG.h"
@@ -103,7 +104,9 @@ int main(int argc, char *argv[])
 
     //（5）打印理论加速比
     PhaseName = "Speedup";
-
+    /* 此处ccfilename需要从argv中读取，后续再写 */
+    string ccfilename = "jpeg.cos";
+    ComputeSpeedup(SSSG, mp, ccfilename, "workEstimate.txt", "GAPartition");
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//

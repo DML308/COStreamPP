@@ -24,6 +24,22 @@ public:
 	{
 		return flatNodes;
 	}
+  inline map<string, FlatNode *>  GetMapEdge2UpFlatNode()
+	{
+		return mapEdge2UpFlatNode;
+	}
+	inline map<string, FlatNode *>  GetMapEdge2DownFlatNode()
+	{
+		return mapEdge2DownFlatNode;
+	}
+  inline map<FlatNode *, int> GetSteadyWorkMap(void)
+	{
+		return mapSteadyWork2FlatNode;
+	}
+  inline map<FlatNode *, int> GetInitWorkMap(void)
+	{
+		return mapInitWork2FlatNode;
+	}
   void SetFlatNodesWeights();
   void ResetFlatNodeNames();
   void ResetFlatNodeVisitTimes(); // 重置每个flastnode的visit times值
