@@ -3,7 +3,7 @@
 /* definition of Node data structure */
 typedef enum {
   /* expression nodes */
-  constant, Id, Binop, Point,Unary, Cast, Ternary,Initializer,
+  constant=1, Id, Binop, Point,Unary, Cast, Ternary,Initializer,
   ImplicitCast,
   /* statement nodes */
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,

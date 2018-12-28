@@ -216,7 +216,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
-    compositeCallFlow(node->bodyStmt_List);
+    compositeCallFlow(node->body_stmts);
     if (node->split->dup_round->type == RoundRobin)
     {
         tmp = UnfoldRoundrobin(comName, node);
@@ -353,9 +353,11 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     return dup;
 }
 
-compositeNode *UnfoldComposite::UnfoldPipeline(Node *node)
+compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
     compositeNode *pipeline = NULL;
+    string comName = MakeCompositeName("pipeline");
+    //compositeCallFlow(node->body_stmts);
 
     return pipeline;
 }
@@ -408,7 +410,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
     return copy;
 }
 
-/* 可修改一个compositeNode包含多个operator */
+/* 对于composite节点内的operatorNode进行流替换 可修改一个compositeNode包含多个operator */
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs, int flag)
 {
     //cout<<"compName = "<<comp->compName<<endl;

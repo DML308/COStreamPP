@@ -1,5 +1,5 @@
 %{
-//#define DEBUG
+#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
@@ -184,6 +184,7 @@ stream.declaring.list:
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
                                                   /* 需要添加符号表插入操作 */
+                                                  //$$=new list<Node*> ({$1});
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -687,6 +688,11 @@ exp:      idNode          { $$ = $1 ; }
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode($6,@1) ; 
+                  //error("%d",((pipelineNode*)$$)->body_stmts->size());
+                  for(auto it:*((pipelineNode*)$$)->body_stmts){
+                        error("%d\n",it->type);
+                  }
+            
             }
         ;
 

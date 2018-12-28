@@ -54,8 +54,6 @@ composite Combine(output stream<double x>Out, input stream<double x>In)
 
 composite SecondSource(output stream<double x>Out, input stream<double x>In)
 {
-	param
-	    int N;
 	Out = AssignmentX(In)
 	{
 		work
@@ -81,8 +79,7 @@ composite SecondSource(output stream<double x>Out, input stream<double x>In)
 //正确性待验证（3、14验证正确，与fft5的结果一致，但未理解输入输出数据
 composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 {
-	param
-		int n;
+
 	Out = FFTReorderSimpleX(In)
 	{
 		work
@@ -116,8 +113,7 @@ composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 
 composite CombineDFT(output stream<double x>Out, input stream<double x>In)
 {
-	param
-		int n;
+
 	Out = pipeline(In)
 	{
 		int j;
@@ -148,9 +144,9 @@ composite Main()
 		}
 	};
 	CDFT = pipeline(Source){
-	    add SecondSource(8);
-		add FFTReorder(8);
-		add CombineDFT(8);
+	    add SecondSource();
+		add FFTReorder();
+		add CombineDFT();
 	};
 	FloatSink(CDFT)
 	{

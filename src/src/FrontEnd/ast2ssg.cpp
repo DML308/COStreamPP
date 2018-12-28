@@ -20,12 +20,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                //cout << "Operator_" << endl;
+                cout << "Operator_" << endl;
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                //cout<<"compositeCall"<<endl;
+                cout<<"compositeCall"<<endl;
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
@@ -36,19 +36,21 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             else if (exp->type == Pipeline)
             {
-                //cout << "Pipeline" << endl;
+                cout<<"pipeline"<<endl;
+                ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
+                GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
             break;
         }
         case Operator_:
         {
-            //cout << "Operator_" << endl;
+            cout << "Operator_" << endl;
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            //cout << "compositeCall" << endl;
+            cout << "compositeCall" << endl;
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
@@ -61,7 +63,9 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Pipeline:
         {
-            //cout << "Pipeline" << endl;
+            cout << "Pipeline" << endl;
+            ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
+            GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;
         }
         default:
@@ -70,8 +74,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     }
     return;
 }
-
-
 
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
@@ -88,21 +90,21 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     /* 测试peek，pop，push值 */
 
     // for (auto it : ssg->flatNodes){
-	// 	cout << "push: ";
-	// 	for (auto it2 : it->outPushWeights){
-	// 		cout << it2 << " ";
-	// 	}
-	// 	cout << endl;
-	// 	cout << "pop: ";
-	// 	for (auto it3 : it->inPopWeights){
-	// 		cout << it3 << " ";
-	// 	}
-	// 	cout << endl;
-	// 	cout << "peek: ";
-	// 	for (auto it4 : it->inPeekWeights){
-	// 		cout << it4 << " ";
-	// 	}
-	// 	cout << endl << endl;
-	// }
+    // 	cout << "push: ";
+    // 	for (auto it2 : it->outPushWeights){
+    // 		cout << it2 << " ";
+    // 	}
+    // 	cout << endl;
+    // 	cout << "pop: ";
+    // 	for (auto it3 : it->inPopWeights){
+    // 		cout << it3 << " ";
+    // 	}
+    // 	cout << endl;
+    // 	cout << "peek: ";
+    // 	for (auto it4 : it->inPeekWeights){
+    // 		cout << it4 << " ";
+    // 	}
+    // 	cout << endl << endl;
+    // }
     return ssg;
 }

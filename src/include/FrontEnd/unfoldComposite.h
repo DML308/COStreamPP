@@ -17,7 +17,7 @@ class UnfoldComposite
     }
     compositeNode *UnfoldRoundrobin(string comName, splitjoinNode *node);
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
-    compositeNode *UnfoldPipeline(Node *node);
+    compositeNode *UnfoldPipeline(pipelineNode *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
     Node *MakeRoundrobinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     Node *MakeJoinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);

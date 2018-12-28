@@ -452,13 +452,13 @@ class compositeNode;
 class pipelineNode : public Node
 {
   public:
-    list<Node *> *bodyStmt_List;
+    list<Node *> *body_stmts;
     compositeNode *replace_composite;
-    pipelineNode(list<Node *> *bodyStmt_List, YYLTYPE loc = YYLTYPE())
+    pipelineNode(list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Pipeline;
-        this->bodyStmt_List = bodyStmt_List;
+        this->body_stmts = body_stmts;
         this->replace_composite = NULL;
     }
     ~pipelineNode() {}
@@ -534,13 +534,13 @@ class splitjoinNode : public Node
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
-    list<Node *> *bodyStmt_List;
+    list<Node *> *body_stmts;
     compositeNode *replace_composite;
     splitjoinNode(  list<Node *> *inputs, 
                     list<Node *> *outputs, 
                     splitNode *split, 
                     list<Node *> *stmt_list, 
-                    list<Node *> *bodyStmt_List, 
+                    list<Node *> *body_stmts, 
                     joinNode *join, 
                     YYLTYPE loc = YYLTYPE())
     {
@@ -551,7 +551,7 @@ class splitjoinNode : public Node
         this->split = split;
         this->join = join;
         this->stmt_list = stmt_list;
-        this->bodyStmt_List = bodyStmt_List;
+        this->body_stmts = body_stmts;
         this->replace_composite = NULL;
     }
     ~splitjoinNode() {}
@@ -633,6 +633,7 @@ class strdclNode : public Node
     strdclNode(idNode *id, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
+        this->type= StrDcl;
         if (id)
             id_list.push_back(id);
     }
