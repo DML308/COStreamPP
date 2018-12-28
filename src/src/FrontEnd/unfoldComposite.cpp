@@ -1,63 +1,7 @@
 #include "unfoldComposite.h"
+#include "compositeFlow.h"
 extern SymbolTable S;
-/* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
-void UnfoldComposite::setCallList(list<Node *> *stmts)
-{
-
-    /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到call_List中*/
-    for (auto it : *(stmts))
-    {
-        //cout << it->type << endl;
-        if (it->type == Add)
-        {
-            if (((addNode *)it)->content->type == CompositeCall)
-                call_List.push_back(((addNode *)it)->content);
-        }
-        else if (it->type == For)
-        {
-            long long initial = MAX_INF;
-            long long condition = MAX_INF;
-            forNode *node = (forNode *)it;
-            Node *init = node->init;
-            expNode *cond = node->cond;
-            expNode *next = node->next;
-            list<Node *> *stmts = NULL;
-            binopNode *init_b = NULL, *cond_b = NULL, *next_b = NULL;
-            if (init->type == Decl)
-            {
-            }
-            else if (init->type == Binop)
-            {
-                init_b = (binopNode *)init;
-                assert(init_b->right->type == constant);
-                constantNode *con_init = (constantNode *)(init_b->right);
-                assert(con_init->style == "integer");
-                initial = con_init->llval;
-            }
-            assert(cond->type == Binop);
-            cond_b = (binopNode *)cond;
-            assert(cond_b->right->type == constant);
-            constantNode *con_cond = (constantNode *)(cond_b->right);
-            assert(con_cond->style == "integer");
-            condition = con_cond->llval;
-            //cout << "init= " << initial << " cond= " << condition << endl;
-            assert(initial != MAX_INF && condition != MAX_INF);
-            /* 不一定是block */
-            assert(node->stmt->type == Block);
-            stmts = ((blockNode *)(node->stmt))->stmt_list;
-            assert(stmts->size() == 1);
-            auto ptr = stmts->front();
-            assert(ptr->type == Add);
-            for (long long i = initial; i < condition; ++i)
-            {
-                if (((addNode *)ptr)->content->type == CompositeCall)
-                {
-                    call_List.push_back(((addNode *)ptr)->content);
-                }
-            }
-        }
-    }
-}
+vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
 
 Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
 {
@@ -151,7 +95,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     list<Node *> *win_stmt = new list<Node *>();
     assert(input->type == Id);
     string input_name = ((idNode *)input)->name;
-    int len = call_List.size();
+    int len = compositeCall_list.size();
     static int number = 0;
     long long sum = 0;
     inputs->push_back(input);
@@ -229,7 +173,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     string operName = "join";
     assert(output->type == Id);
     string output_name = ((idNode *)output)->name;
-    int len = call_List.size();
+    int len = compositeCall_list.size();
     long long sum = 0;
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *win_stmt = new list<Node *>();
@@ -272,7 +216,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
-    setCallList(node->bodyStmt_List);
+    compositeCallFlow(node->bodyStmt_List);
     if (node->split->dup_round->type == RoundRobin)
     {
         tmp = UnfoldRoundrobin(comName, node);
@@ -314,7 +258,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     tempList = splitOperator->outputs;
     auto iter = tempList->begin();
     int cnt = 0;
-    for (auto it : call_List)
+    for (auto it : compositeCall_list)
     {
         assert(it->type == CompositeCall);
         string name = (((compositeCallNode *)it)->compName);
@@ -347,7 +291,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     body = new compBodyNode(NULL, comp_stmt_List);
     roundrobin = new compositeNode(head, body);
     ++number;
-    call_List.clear();
+    compositeCall_list.clear();
     return roundrobin;
 }
 
@@ -376,7 +320,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     tempList = splitOperator->outputs;
     auto iter = tempList->begin();
     int cnt = 0;
-    for (auto it : call_List)
+    for (auto it : compositeCall_list)
     {
         assert(it->type == CompositeCall);
         string name = (((compositeCallNode *)it)->compName);
@@ -405,7 +349,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     body = new compBodyNode(NULL, comp_stmt_List);
     dup = new compositeNode(head, body);
     ++number;
-    call_List.clear();
+    compositeCall_list.clear();
     return dup;
 }
 

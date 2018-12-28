@@ -4,8 +4,6 @@ double PI =  3.141592654;
 //对应中文版算法导论513页RECURSIVE-FFT(a)函数
 composite Combine(output stream<double x>Out, input stream<double x>In)
 {
-	param
-		int 8;
 
 	Out = CombineDFTX(In)
 	{

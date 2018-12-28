@@ -6,7 +6,6 @@ composite B(output stream<int x>Out,input stream<int x>In)
 		int size1,int size2;
 	Out = B(In)
 	{
-
 		work
 		{
 			int i,j;

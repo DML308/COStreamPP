@@ -1,7 +1,61 @@
 digraph Flattend {
 
-Source_0[ label = "Source_0\ninit Mult: 0 steady Mult: 1\ninit work: 108 steady work:96\n push: 8\n"]Source_0 -> B_1[label="8"];
+IntSource_0[ label = "IntSource_0\ninit Mult: 0 steady Mult: 1\ninit work: 0 steady work:2770\n push: 256\n"]IntSource_0 -> Roundrobin_1[label="256"];
 
-B_1[ label = "B_1\ninit Mult: 0 steady Mult: 8\ninit work: 0 steady work:130050\n peek: 1\n pop: 1\n push: 1\n"]B_1 -> Sink_2[label="1"];
+Roundrobin_1[ label = "Roundrobin_1\ninit Mult: 0 steady Mult: 32\ninit work: 0 steady work:268\n peek: 8\n pop: 8\n push: 1 push: 1 push: 1 push: 1 push: 1 push: 1 push: 1 push: 1\n"]Roundrobin_1 -> DCT_1D_2[label="1"];
+Roundrobin_1 -> DCT_1D_3[label="1"];
+Roundrobin_1 -> DCT_1D_4[label="1"];
+Roundrobin_1 -> DCT_1D_5[label="1"];
+Roundrobin_1 -> DCT_1D_6[label="1"];
+Roundrobin_1 -> DCT_1D_7[label="1"];
+Roundrobin_1 -> DCT_1D_8[label="1"];
+Roundrobin_1 -> DCT_1D_9[label="1"];
 
-Sink_2[ label = "Sink_2\ninit Mult: 0 steady Mult: 8\ninit work: 0 steady work:92\n peek: 1\n pop: 1\n"]}
+DCT_1D_2[ label = "DCT_1D_2\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+join_10[ label = "join_10\ninit Mult: 0 steady Mult: 32\ninit work: 0 steady work:268\n peek: 1 peek: 1 peek: 1 peek: 1 peek: 1 peek: 1 peek: 1 peek: 1\n pop: 1 pop: 1 pop: 1 pop: 1 pop: 1 pop: 1 pop: 1 pop: 1\n push: 8\n"]DCT_1D_2 -> join_10[label="1"];
+DCT_1D_3 -> join_10[label="1"];
+DCT_1D_4 -> join_10[label="1"];
+DCT_1D_5 -> join_10[label="1"];
+DCT_1D_6 -> join_10[label="1"];
+DCT_1D_7 -> join_10[label="1"];
+DCT_1D_8 -> join_10[label="1"];
+DCT_1D_9 -> join_10[label="1"];
+join_10 -> Roundrobin_11[label="8"];
+
+Roundrobin_11[ label = "Roundrobin_11\ninit Mult: 0 steady Mult: 4\ninit work: 0 steady work:772\n peek: 64\n pop: 64\n push: 8 push: 8 push: 8 push: 8 push: 8 push: 8 push: 8 push: 8\n"]Roundrobin_11 -> DCT_1D_12[label="8"];
+Roundrobin_11 -> DCT_1D_13[label="8"];
+Roundrobin_11 -> DCT_1D_14[label="8"];
+Roundrobin_11 -> DCT_1D_15[label="8"];
+Roundrobin_11 -> DCT_1D_16[label="8"];
+Roundrobin_11 -> DCT_1D_17[label="8"];
+Roundrobin_11 -> DCT_1D_18[label="8"];
+Roundrobin_11 -> DCT_1D_19[label="8"];
+
+DCT_1D_12[ label = "DCT_1D_12\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+join_20[ label = "join_20\ninit Mult: 0 steady Mult: 4\ninit work: 0 steady work:772\n peek: 8 peek: 8 peek: 8 peek: 8 peek: 8 peek: 8 peek: 8 peek: 8\n pop: 8 pop: 8 pop: 8 pop: 8 pop: 8 pop: 8 pop: 8 pop: 8\n push: 64\n"]DCT_1D_12 -> join_20[label="1"];
+DCT_1D_13 -> join_20[label="1"];
+DCT_1D_14 -> join_20[label="1"];
+DCT_1D_15 -> join_20[label="1"];
+DCT_1D_16 -> join_20[label="1"];
+DCT_1D_17 -> join_20[label="1"];
+DCT_1D_18 -> join_20[label="1"];
+DCT_1D_19 -> join_20[label="1"];
+join_20 -> Quantification_21[label="64"];
+
+Quantification_21[ label = "Quantification_21\ninit Mult: 0 steady Mult: 256\ninit work: 2 steady work:69\n peek: 1\n pop: 1\n push: 1\n"]Quantification_21 -> Sink_22[label="1"];
+
+Sink_22[ label = "Sink_22\ninit Mult: 0 steady Mult: 32\ninit work: 0 steady work:1270\n peek: 8\n pop: 8\n"]
+DCT_1D_13[ label = "DCT_1D_13\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_14[ label = "DCT_1D_14\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_15[ label = "DCT_1D_15\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_16[ label = "DCT_1D_16\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_17[ label = "DCT_1D_17\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_18[ label = "DCT_1D_18\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_19[ label = "DCT_1D_19\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_3[ label = "DCT_1D_3\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_4[ label = "DCT_1D_4\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_5[ label = "DCT_1D_5\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_6[ label = "DCT_1D_6\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_7[ label = "DCT_1D_7\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_8[ label = "DCT_1D_8\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]
+DCT_1D_9[ label = "DCT_1D_9\ninit Mult: 0 steady Mult: 4\ninit work: 13106 steady work:608\n peek: 8\n pop: 8\n push: 8\n"]}

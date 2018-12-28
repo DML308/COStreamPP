@@ -1,5 +1,6 @@
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
+#include "compositeFlow.h"
 static StaticStreamGraph *ssg = NULL;
 extern UnfoldComposite *unfold;
 //对composite节点展开成数据流图 oldComposite表示原来的compositecall,对于splitjoin，pipeline结构无区别
@@ -70,36 +71,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     return;
 }
 
-void streamFlow(compositeNode *main)
-{
-    list<Node *> body_stmt = *(main->body->stmt_List);
-    for (auto it : body_stmt)
-    {
-        switch (it->type)
-        {
-        case Binop:
-        {
-            expNode *right = static_cast<binopNode *>(it)->right;
-            if(right->type == CompositeCall)
-            {
-                compositeNode *comp = ((compositeCallNode *)right)->actual_composite;
-                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, 
-                ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs,1);
-            }
-            break;
-        }
-        case CompositeCall:
-        {
-            compositeNode *comp = ((compositeCallNode *)it)->actual_composite;
-            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, 
-            ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs,1);
-            break;
-        }
-        default:
-            break;
-        }
-    }
-}
+
 
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
