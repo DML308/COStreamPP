@@ -358,28 +358,57 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
     compositeCallFlow(node->body_stmts);
+    vector<compositeCallNode *> comCallList;
     compositeNode *pipeline = NULL;
     string streamName = "Pstream";
-    static int number3 = 0;
+    static int num = 0;
     string comName = MakeCompositeName("pipeline");
     list<Node *> *inputs = node->inputs;
     list<Node *> *outputs = node->outputs;
+    //cout<<"input name ="<<((idNode*)inputs->front())->name<<endl;
+    //cout<<"output name = "<<((idNode*)outputs->front())->name<<endl;
+
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
     assert(inputs != NULL && outputs != NULL);
-    
     list<Node *> *comp_stmts = new list<Node *>();
-    
     /* 构造pipeline内的节点的输入输出流 */
-    int cnt=0;
-    for (auto it : compositeCall_list)
+    int cnt = 0;
+    list<Node *> *temp_stream = inputs;
+    for (auto it = compositeCall_list.begin(); it != compositeCall_list.end(); ++it)
     {
-        string name = (((compositeCallNode *)it)->compName);
-        string tempName = streamName + to_string(number3) + "_" + (to_string(cnt));
+        string name = (((compositeCallNode *)*it)->compName);
+        string tempName = streamName + to_string(num) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName);
-    }
+        /* pipeline中第一个composite节点 */
+        //compositeCall的输入流
+        list<Node *> *call_inputs = new list<Node *>({temp_stream->front()});
+        list<Node *> *call_outputs = new list<Node *>({id});
+        /*将现在的输出流作为下一次的输入流*/
+        temp_stream->pop_back();
+        temp_stream->push_back(id);
 
+        /*  pipeline中最后一个composite节点那么输出流应该为pipeline的输出流 */
+        if (it == --compositeCall_list.end())
+        {
+            call_outputs->pop_back();
+            call_outputs->push_back(outputs->front());
+        }
+        compositeNode *comp = S.LookupCompositeSymbol(name);
+        assert(comp != NULL);
+        /*修改composite节点的输入流,输出流*/
+        compositeNode *actual_composite = compositeCallStreamReplace(comp, inputs, outputs);
+        compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
+        
+        comCallList.push_back(call);
+    }
+    for (auto nd : comCallList)
+        comp_stmts->push_back(nd);
+    body = new compBodyNode(NULL, comp_stmts);
+    pipeline = new compositeNode(head, body);
+    ++num;
+    compositeCall_list.clear();
     return pipeline;
 }
 /* 专用于splitjoin或者pipeline中展开流的替换，这些compositeCall可以指向相同的init，work*/
@@ -396,6 +425,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
         if (it->type == Binop)
         {
             expNode *exp = ((binopNode *)it)->right;
+            cout<<exp->type<<endl;
             if (exp->type == Operator_)
             {
                 /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
@@ -422,9 +452,17 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 modifyWindowName(oper, outputs, false);
                 stmt_list->push_back(oper);
             }
+            /* 暂时还未处理compsoite内为pipeline和splitjoin的情况 */
+            else if(exp->type==Pipeline){
+
+            }
+            else if(exp->type==SplitJoin){
+
+            }
             /* 未来可扩展splitjoin嵌套splitjoin的结构 */
         }
     }
+    cout<<"length = "<<stmt_list->size()<<endl;
     compBodyNode *body = new compBodyNode(NULL, stmt_list);
     copy = new compositeNode(head, body);
     streamReplace(copy, inputs, outputs, 0);
