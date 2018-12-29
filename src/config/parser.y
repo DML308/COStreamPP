@@ -1,5 +1,5 @@
 %{
-#define DEBUG
+//#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
@@ -443,7 +443,7 @@ operator.add:
                                     }
         ;
 operator.pipeline:
-          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode($3,@1) ; }
+          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
@@ -630,7 +630,7 @@ exp:      idNode          { $$ = $1 ; }
                               }
                               else if($3->type==Pipeline){
                                     list<Node*> *outputs=new list<Node*>({$1});
-                                    ((splitjoinNode*)$3)->outputs=outputs;
+                                    ((pipelineNode*)$3)->outputs=outputs;
                               }
                               else if($3->type==CompositeCall){
                                     ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
@@ -687,12 +687,7 @@ exp:      idNode          { $$ = $1 ; }
         |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new pipelineNode($6,@1) ; 
-                  //error("%d",((pipelineNode*)$$)->body_stmts->size());
-                  for(auto it:*((pipelineNode*)$$)->body_stmts){
-                        error("%d\n",it->type);
-                  }
-            
+                  $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
         ;
 

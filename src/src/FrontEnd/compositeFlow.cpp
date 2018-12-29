@@ -85,13 +85,6 @@ void streamFlow(compositeNode *main)
                 ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, 
                 ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs,1);
             }
-            if(right->type==Pipeline){
-                cout<<"body.size()= "<<((pipelineNode*)right)->body_stmts->size()<<endl;
-                for(auto it:*((pipelineNode*)right)->body_stmts){
-                    cout<<it->type<<endl;
-                }
-            }
-            
             break;
         }
         case CompositeCall:

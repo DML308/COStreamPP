@@ -20,12 +20,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                cout << "Operator_" << endl;
+                //cout << "Operator_" << endl;
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                cout<<"compositeCall"<<endl;
+                //cout<<"compositeCall"<<endl;
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
@@ -36,7 +36,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             else if (exp->type == Pipeline)
             {
-                cout<<"pipeline"<<endl;
+                //cout<<"pipeline"<<endl;
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
@@ -44,13 +44,13 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
-            cout << "Operator_" << endl;
+            //cout << "Operator_" << endl;
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            cout << "compositeCall" << endl;
+            //cout << "compositeCall" << endl;
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
@@ -63,7 +63,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Pipeline:
         {
-            cout << "Pipeline" << endl;
+            //cout << "Pipeline" << endl;
             ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;

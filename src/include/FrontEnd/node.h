@@ -436,7 +436,7 @@ class blockNode : public Node
   public:
     list<Node *> *stmt_list;
     YYLTYPE right;
-    blockNode(list<Node *> *stmt_list, YYLTYPE left= YYLTYPE(), YYLTYPE right= YYLTYPE())
+    blockNode(list<Node *> *stmt_list, YYLTYPE left = YYLTYPE(), YYLTYPE right = YYLTYPE())
     {
         this->setLoc(left);
         this->right = right;
@@ -452,9 +452,11 @@ class compositeNode;
 class pipelineNode : public Node
 {
   public:
+    list<Node *> *outputs;
+    list<Node *> *inputs;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
-    pipelineNode(list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
+    pipelineNode(list<Node *> *outputs,list<Node *> *body_stmts, list<Node *> *inputs,YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Pipeline;
@@ -536,13 +538,13 @@ class splitjoinNode : public Node
     list<Node *> *stmt_list;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
-    splitjoinNode(  list<Node *> *inputs, 
-                    list<Node *> *outputs, 
-                    splitNode *split, 
-                    list<Node *> *stmt_list, 
-                    list<Node *> *body_stmts, 
-                    joinNode *join, 
-                    YYLTYPE loc = YYLTYPE())
+    splitjoinNode(list<Node *> *inputs,
+                  list<Node *> *outputs,
+                  splitNode *split,
+                  list<Node *> *stmt_list,
+                  list<Node *> *body_stmts,
+                  joinNode *join,
+                  YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = SplitJoin;
@@ -633,7 +635,7 @@ class strdclNode : public Node
     strdclNode(idNode *id, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
-        this->type= StrDcl;
+        this->type = StrDcl;
         if (id)
             id_list.push_back(id);
     }
@@ -820,7 +822,7 @@ class compBodyNode : public Node
         this->type = CompBody;
         this->param = body.param;
         this->stmt_List = new list<Node *>();
-        *(this->stmt_List)=*(body.stmt_List);
+        *(this->stmt_List) = *(body.stmt_List);
     }
     ~compBodyNode() {}
     void print() {}

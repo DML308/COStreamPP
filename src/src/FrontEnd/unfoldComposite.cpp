@@ -357,7 +357,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
     compositeNode *pipeline = NULL;
     string comName = MakeCompositeName("pipeline");
-    //compositeCallFlow(node->body_stmts);
+    compositeCallFlow(node->body_stmts);
 
     return pipeline;
 }
