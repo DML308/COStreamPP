@@ -401,7 +401,6 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
         /*修改composite节点的输入流,输出流*/
         // cout<<"input: "<<((idNode*)call_inputs->front())->name<<endl;
         // cout<<"output: "<<((idNode*)call_outputs->front())->name<<endl;
-
         compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
         compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
         
