@@ -1,6 +1,6 @@
 #include "0.handle_options.h"
 
-float VersionNumber = 0.30;
+float VersionNumber = 0.40;
 const char *const CompiledDate = __DATE__;
 int WarningLevel = 99; //大于99级作用域 Level 后不报警告,即默认大部分情况都报警告
 

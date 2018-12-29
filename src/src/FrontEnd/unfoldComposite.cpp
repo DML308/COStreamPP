@@ -401,6 +401,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
         /*修改composite节点的输入流,输出流*/
         // cout<<"input: "<<((idNode*)call_inputs->front())->name<<endl;
         // cout<<"output: "<<((idNode*)call_outputs->front())->name<<endl;
+
         compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
         compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
         
@@ -458,9 +459,10 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
             }
             /* 暂时还未处理compsoite内为pipeline和splitjoin的情况 */
             else if(exp->type==Pipeline){
-
+                return comp;
             }
             else if(exp->type==SplitJoin){
+                return comp;
 
             }
             /* 未来可扩展splitjoin嵌套splitjoin的结构 */
