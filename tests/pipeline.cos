@@ -68,15 +68,12 @@ composite SecondSource(output stream<double x>Out, input stream<double x>In)
 			println('\n');
 		}
 		window {
-	    In  sliding(1,1);
-		Out	tumbling(16);
+	    	In  sliding(1,1);
+			Out	tumbling(16);
 	    }
 	};
 }
 
-//对应《算法导论》518页BIT-REVERSE_COPY函数.
-//参考http://blog.csdn.net/jakee304/article/details/2152655的第三种算法，略加修改
-//正确性待验证（3、14验证正确，与fft5的结果一致，但未理解输入输出数据
 composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 {
 
@@ -111,18 +108,6 @@ composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 	};
 }
 
-composite CombineDFT(output stream<double x>Out, input stream<double x>In)
-{
-
-	Out = pipeline(In)
-	{
-		int j;
-		for(j=2; j<=8; j*=2){
-			add Combine(j);
-		}
-	};
-}
-
 composite Main()
 {
     
@@ -147,13 +132,15 @@ composite Main()
 	CDFT = pipeline(Source){
 	    add SecondSource();
 		add FFTReorder();
-		//add CombineDFT();
 	};
 	FloatSink(CDFT)
 	{
 		work
 		{
 			println(CDFT[0].x);
+		}
+		window{
+			CDFT sliding(1,1);
 		}
 	};
 }
