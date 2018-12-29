@@ -460,6 +460,8 @@ class pipelineNode : public Node
     {
         this->setLoc(loc);
         this->type = Pipeline;
+        this->outputs=outputs;
+        this->inputs=inputs;
         this->body_stmts = body_stmts;
         this->replace_composite = NULL;
     }

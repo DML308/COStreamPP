@@ -233,7 +233,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
 {
 
     string streamName = "Rstream";
-    static int number = 0;
+    static int number1 = 0;
     vector<compositeCallNode *> comCallList;
     compositeNode *roundrobin = NULL;
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
@@ -262,7 +262,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     {
         assert(it->type == CompositeCall);
         string name = (((compositeCallNode *)it)->compName);
-        string tempName = streamName + to_string(number) + "_" + (to_string(cnt));
+        string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName);
         //compositeCall的输出流是join节点的输入流
         inputs_join->push_back(id);
@@ -290,7 +290,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     comp_stmt_List->push_back(joinOperator);
     body = new compBodyNode(NULL, comp_stmt_List);
     roundrobin = new compositeNode(head, body);
-    ++number;
+    ++number1;
     compositeCall_list.clear();
     return roundrobin;
 }
@@ -298,7 +298,8 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
 compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *node)
 {
     compositeNode *dup = NULL;
-    static int number = 0;
+    string streamName = "Dstream";
+    static int number2 = 0;
     list<Node *> *tempList = new list<Node *>();
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
     /* arg_list表示split roundrobin(size);的size参数列表 */
@@ -322,17 +323,18 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     int cnt = 0;
     for (auto it : compositeCall_list)
     {
-        assert(it->type == CompositeCall);
         string name = (((compositeCallNode *)it)->compName);
-        string tempName = name + to_string(number) + "_" + (to_string(cnt));
+        string tempName = streamName + to_string(number2) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName);
         //compositeCall的输出流是join节点的输入流
         inputs_join->push_back(id);
         list<Node *> *outputs = new list<Node *>({id});
         //compositeCall的输入流
         list<Node *> *inputs = new list<Node *>({*iter});
-        compositeNode *actual_composite = S.LookupCompositeSymbol(name);
-        assert(actual_composite != NULL);
+        compositeNode *comp = S.LookupCompositeSymbol(name);
+        assert(comp != NULL);
+        /*修改composite节点的输入流,输出流*/
+        compositeNode *actual_composite = compositeCallStreamReplace(comp, inputs, outputs);
         compositeCallNode *call = new compositeCallNode(outputs, tempName, NULL, inputs, actual_composite);
         //cout<<"compName= "<<tempName<<endl;
         comCallList->push_back(call);
@@ -348,16 +350,35 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     comp_stmt_List->push_back(joinOperator);
     body = new compBodyNode(NULL, comp_stmt_List);
     dup = new compositeNode(head, body);
-    ++number;
+    ++number2;
     compositeCall_list.clear();
     return dup;
 }
 
 compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
-    compositeNode *pipeline = NULL;
-    string comName = MakeCompositeName("pipeline");
     compositeCallFlow(node->body_stmts);
+    compositeNode *pipeline = NULL;
+    string streamName = "Pstream";
+    static int number3 = 0;
+    string comName = MakeCompositeName("pipeline");
+    list<Node *> *inputs = node->inputs;
+    list<Node *> *outputs = node->outputs;
+    ComInOutNode *inout = new ComInOutNode(inputs, outputs);
+    compHeadNode *head = new compHeadNode(comName, inout);
+    compBodyNode *body = NULL;
+    assert(inputs != NULL && outputs != NULL);
+    
+    list<Node *> *comp_stmts = new list<Node *>();
+    
+    /* 构造pipeline内的节点的输入输出流 */
+    int cnt=0;
+    for (auto it : compositeCall_list)
+    {
+        string name = (((compositeCallNode *)it)->compName);
+        string tempName = streamName + to_string(number3) + "_" + (to_string(cnt));
+        idNode *id = new idNode(tempName);
+    }
 
     return pipeline;
 }

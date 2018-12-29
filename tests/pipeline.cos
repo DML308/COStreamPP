@@ -117,8 +117,10 @@ composite CombineDFT(output stream<double x>Out, input stream<double x>In)
 	Out = pipeline(In)
 	{
 		int j;
-		for(j=2; j<=8; j*=2)
+		for(j=2; j<=8; j*=2){
 			add Combine(j);
+		}
+			
 	};
 }
 

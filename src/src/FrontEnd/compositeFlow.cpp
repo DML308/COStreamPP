@@ -115,12 +115,17 @@ void compositeCallFlow(list<Node *> *stmts)
             /* for循环中只有一条语句 */
             if (for_nd->stmt->type != Block)
             {
-                
+                Node *for_stmts=for_nd->stmt;
+                if(for_stmts->type==IfElse){
+
+                }
+                else if(for_stmts->type==Add){
+
+                }
             }
             else
             {
                 stmts = ((blockNode *)(for_nd->stmt))->stmt_list;
-                assert(stmts->size() == 1);
                 auto ptr = stmts->front();
                 assert(ptr->type == Add);
                 // cout << "init = "<<initial << endl;
