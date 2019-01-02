@@ -108,19 +108,17 @@ composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 	};
 }
 
-<<<<<<< HEAD
 composite CombineDFT(output stream<double x>Out, input stream<double x>In)
 {
 	Out = pipeline(In)
 	{
 		int j;
-		for(j=2; j<=8; j*=2)
+		for(j=2; j<=8; j*=2){
 			add Combine();
+		}
 	};
 }
 
-=======
->>>>>>> 881d0a425e577993213f65c0b4227899552f418a
 composite Main()
 {
     
@@ -145,6 +143,7 @@ composite Main()
 	CDFT = pipeline(Source){
 	    add SecondSource();
 		add FFTReorder();
+		add CombineDFT();
 	};
 	FloatSink(CDFT)
 	{

@@ -6,9 +6,11 @@ extern vector<Node *> compositeCall_list;
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void compositeCallFlow(list<Node *> *stmts)
 {
+    //cout<<"stmts.size() = "<<stmts->size()<<endl;
     /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到compositeCall_list中*/
     for (auto nd : *(stmts))
     {
+
         if (nd->type == Add)
         {
             /* add composite()的情况 */
@@ -89,12 +91,13 @@ void compositeCallFlow(list<Node *> *stmts)
                     {
                         for (int i = initial; i < condition; i *= step)
                             cnt++;
-                        initial=0;
-                        condition=cnt;
+                        initial = 0;
+                        condition = cnt;
                     }
-                    else{
-                        initial=0;
-                        condition=0;
+                    else
+                    {
+                        initial = 0;
+                        condition = 0;
                     }
                 }
                 else if (next_b->op == "/=")
@@ -104,23 +107,31 @@ void compositeCallFlow(list<Node *> *stmts)
                     {
                         for (int i = initial; i < condition; i /= step)
                             cnt++;
-                        initial=0;
-                        condition=cnt;
+                        initial = 0;
+                        condition = cnt;
                     }
-                    else{
-                        cout<<" infinite loop "<<endl;
+                    else
+                    {
+                        cout << " infinite loop " << endl;
                     }
                 }
             }
             /* for循环中只有一条语句 */
             if (for_nd->stmt->type != Block)
             {
-                Node *for_stmts=for_nd->stmt;
-                if(for_stmts->type==IfElse){
-
+                Node *for_stmts = for_nd->stmt;
+                if (for_stmts->type == IfElse)
+                {
                 }
-                else if(for_stmts->type==Add){
-
+                else if (for_stmts->type == Add)
+                {
+                    for (long long i = initial; i < condition; ++i)
+                    {
+                        if (((addNode *)for_stmts)->content->type == CompositeCall)
+                        {
+                            compositeCall_list.push_back(((addNode *)for_stmts)->content);
+                        }
+                    }
                 }
             }
             else

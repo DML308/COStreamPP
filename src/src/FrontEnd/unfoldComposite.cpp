@@ -375,8 +375,9 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
     list<Node *> *comp_stmts = new list<Node *>();
     /* 构造pipeline内的节点的输入输出流 */
     int cnt = 0;
-    list<Node *> *temp_stream = new list<Node*>({inputs->front()});
-
+    list<Node *> *temp_stream = new list<Node *>({inputs->front()});
+    /* 遍历所有的compositeCall，生成对应输入输出流的compositecallnode */
+    //cout<<"compositeCall_list= "<<compositeCall_list.size()<<endl;
     for (auto it = compositeCall_list.begin(); it != compositeCall_list.end(); ++it)
     {
         string name = (((compositeCallNode *)*it)->compName);
@@ -403,9 +404,11 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
         // cout<<"output: "<<((idNode*)call_outputs->front())->name<<endl;
         compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
         compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
-        
+        //cout<<"actual composite name ="<<actual_composite->compName<<endl;
+
         comCallList.push_back(call);
     }
+    //cout<<"comCallList.size( )= "<<comCallList.size()<<endl;
     for (auto nd : comCallList)
         comp_stmts->push_back(nd);
     body = new compBodyNode(NULL, comp_stmts);
@@ -417,7 +420,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 /* 专用于splitjoin或者pipeline中展开流的替换，这些compositeCall可以指向相同的init，work*/
 compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
-    
+
     compositeNode *copy = NULL;
     list<Node *> *stmt_list = NULL;
     stmt_list = new list<Node *>();
@@ -429,12 +432,15 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
         if (it->type == Binop)
         {
             expNode *exp = ((binopNode *)it)->right;
+            //cout<<"exp->type ="<<exp->type<<endl;
             if (exp->type == Operator_)
             {
                 /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
                 operBodyNode *operBody = ((operatorNode *)exp)->operBody;
                 list<Node *> *preInputs = ((operatorNode *)exp)->inputs;
                 list<Node *> *preOutputs = ((operatorNode *)exp)->outputs;
+                string operName=((operatorNode *)exp)->operName;
+                assert(operBody != NULL);
                 paramNode *param = operBody->param;
                 list<Node *> *stmts = operBody->stmt_list;
                 Node *init = operBody->init;
@@ -442,7 +448,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 list<Node *> *win_list = new list<Node *>();
                 for (auto it : *operBody->win->win_list)
                 {
-                    assert(it->type == WindowStmt);
+                    //assert(it->type == WindowStmt);
                     Node *winType = ((winStmtNode *)it)->winType;
                     string winName = ((winStmtNode *)it)->winName;
                     winStmtNode *stmt_node = new winStmtNode(winName, winType);
@@ -450,25 +456,21 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 }
                 windowNode *win = new windowNode(win_list);
                 operBodyNode *body = new operBodyNode(stmts, init, work, win);
-                operatorNode *oper = new operatorNode(preOutputs, comp->compName, preInputs, body);
+                operatorNode *oper = new operatorNode(preOutputs, operName, preInputs, body);
                 /* 修改输入输出的流名 */
                 modifyWindowName(oper, inputs, true);
                 modifyWindowName(oper, outputs, false);
                 stmt_list->push_back(oper);
+                compBodyNode *com_body = new compBodyNode(NULL, stmt_list);
+                copy = new compositeNode(head, com_body);
             }
             /* 暂时还未处理compsoite内为pipeline和splitjoin的情况 */
-            else if(exp->type==Pipeline){
-                return comp;
+            else if (exp->type == Pipeline ||exp->type == SplitJoin)
+            {
+                copy=comp;
             }
-            else if(exp->type==SplitJoin){
-                return comp;
-
-            }
-            /* 未来可扩展splitjoin嵌套splitjoin的结构 */
         }
     }
-    compBodyNode *body = new compBodyNode(NULL, stmt_list);
-    copy = new compositeNode(head, body);
     streamReplace(copy, inputs, outputs, 0);
     return copy;
 }
@@ -477,7 +479,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs, int flag)
 {
     //cout<<"compName = "<<comp->compName<<endl;
-    
 
     list<Node *> *stmt_list = NULL;
     assert(comp->body != NULL);
