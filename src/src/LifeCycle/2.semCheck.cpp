@@ -1,4 +1,9 @@
 #include "2.semCheck.h"
+/*
+* 功能：找到Main composite
+* 输入参数：语法树单元program
+* 输出：全局边量gMainComposite保存Main Composite
+*/
 void SemCheck::findMainComposite(list<Node *> *program)
 {
     int numOfMain = 0;

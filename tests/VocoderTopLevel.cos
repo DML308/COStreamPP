@@ -463,7 +463,7 @@ composite FloatVoid(output stream<float x>Out, input stream<float x>In)
 	Out = FloatVoid(In)
 	{
 		work
-		{//ÊÇ¿Õ		
+		{
 		
 		}
 		window
@@ -483,7 +483,7 @@ composite SumReals(output stream<float x>Out, input stream<float x>In)
 		split roundrobin(1,1);
 		add SumRealsRealHandler(DFTLen);
 		add FloatVoid();
-		join roundrobin(1,0);//RoundrobinÖÐÓÐÒ»¸ö²ÎÊýÎª0£¬¼´push=0µÄÇé¿ö
+		join roundrobin(1,0);//Roundrobinï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª0ï¿½ï¿½ï¿½ï¿½push=0ï¿½ï¿½ï¿½ï¿½ï¿½
 	};
 }
 

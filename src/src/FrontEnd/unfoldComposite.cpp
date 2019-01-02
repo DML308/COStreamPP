@@ -439,8 +439,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 operBodyNode *operBody = ((operatorNode *)exp)->operBody;
                 list<Node *> *preInputs = ((operatorNode *)exp)->inputs;
                 list<Node *> *preOutputs = ((operatorNode *)exp)->outputs;
-                string operName=((operatorNode *)exp)->operName;
-                assert(operBody != NULL);
+                string operName = ((operatorNode *)exp)->operName;
                 paramNode *param = operBody->param;
                 list<Node *> *stmts = operBody->stmt_list;
                 Node *init = operBody->init;
@@ -448,7 +447,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 list<Node *> *win_list = new list<Node *>();
                 for (auto it : *operBody->win->win_list)
                 {
-                    //assert(it->type == WindowStmt);
                     Node *winType = ((winStmtNode *)it)->winType;
                     string winName = ((winStmtNode *)it)->winName;
                     winStmtNode *stmt_node = new winStmtNode(winName, winType);
@@ -465,10 +463,8 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 copy = new compositeNode(head, com_body);
             }
             /* 暂时还未处理compsoite内为pipeline和splitjoin的情况 */
-            else if (exp->type == Pipeline ||exp->type == SplitJoin)
-            {
-                copy=comp;
-            }
+            else if (exp->type == Pipeline || exp->type == SplitJoin)
+                copy = comp;
         }
     }
     streamReplace(copy, inputs, outputs, 0);
@@ -479,7 +475,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
 compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs, int flag)
 {
     //cout<<"compName = "<<comp->compName<<endl;
-
     list<Node *> *stmt_list = NULL;
     assert(comp->body != NULL);
     stmt_list = comp->body->stmt_List;

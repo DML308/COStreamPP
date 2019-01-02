@@ -153,16 +153,18 @@ void compositeCallFlow(list<Node *> *stmts)
     }
 }
 
+/*
+*   功能：对所有Main composite的composite调用进行实际流边量名的替换
+*   输入参数：gMaincomposite
+*/
 void streamFlow(compositeNode *main)
 {
     list<Node *> body_stmt = *(main->body->stmt_List);
-
     for (auto it : body_stmt)
     {
         //cout<<it->type<<endl;
         switch (it->type)
         {
-
         case Binop:
         {
             expNode *right = static_cast<binopNode *>(it)->right;

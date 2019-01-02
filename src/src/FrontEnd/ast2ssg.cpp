@@ -3,8 +3,11 @@
 #include "compositeFlow.h"
 static StaticStreamGraph *ssg = NULL;
 extern UnfoldComposite *unfold;
-//对composite节点展开成数据流图 oldComposite表示原来的compositecall,对于splitjoin，pipeline结构无区别
-/* 暂时不清楚oldComposite的作用 用node*表示*/
+/*
+* 功能：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
+* 输入参数：composite
+* 输出：设置静态数据流图的对应flatNode节点，完成数据流边到flatNode节点的映射
+*/
 void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
     /* 获取compositebody内的statementNode */
@@ -75,19 +78,21 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     return;
 }
 
-/**
- * 
- * 
- * 
+/*
+ *  功能：将抽象语法树转为平面图 
+ *  输入参数：gMaincomposite
+ *  streamFlow：对所有Main composite的composite调用进行实际流边量名的替换
+ *  GraphToOperators：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
+ *  SetTopNode：设置顶层节点
+ *  ResetFlatNodeNames：给所有的图节点重命名
+ *  SetFlatNodesWeights：设置静态数据流图的peek，pop，push值
+ *  输出：静态数据流图ssg
  */
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
     GraphToOperators(mainComposite, mainComposite);
-    // for(auto it:ssg->flatNodes){
-    //     cout<<it->nIn<<" "<<it->nOut<<endl;
-    // }
     ssg->SetTopNode();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();
