@@ -24,6 +24,20 @@ string primNode::toString()
     return str + name;
 }
 
+string declareNode::toString()
+{
+    string str = "";
+    str += prim->toString() + " ";
+    for (auto iter : id_list)
+    {
+        str += iter->toString();
+        if (iter->init != NULL)
+            str += " = " + iter->init->toString();
+        str += ";";
+    }
+    return str;
+}
+
 string constantNode::toString()
 {
     if (style == "double")
@@ -101,6 +115,7 @@ string idNode::toString()
             }
         }
     }
+
     return str;
 }
 

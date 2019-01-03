@@ -99,6 +99,7 @@ class idNode : public Node
     ~idNode() {}
     void print() {}
     string toString();
+    string CodeGenerate();
 };
 
 class initNode : public Node
@@ -162,7 +163,7 @@ class declareNode : public Node
     }
     ~declareNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class unaryNode : public Node

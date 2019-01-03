@@ -1,5 +1,5 @@
 #include "x86CodeGenaration.h"
-X86CodeGenerate::X86CodeGenerate(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
+X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
     sssg_ = sssg;
@@ -33,4 +33,24 @@ X86CodeGenerate::X86CodeGenerate(int cpuCoreNum, SchedulerSSG *sssg, const char 
         }
         mapNum2Stage.insert(make_pair(i, tempstageset));
     }
+}
+/* 遍历语法树，找到所有为declareNode,调用toString（）方法，写入生成文件 */
+void X86CodeGeneration::CGGlobalvar()
+{
+    stringstream buf;
+    buf << "#include \"GlobalVar.h\"\n";
+    for (auto iter : *Program)
+    {
+        if (iter->type == Decl)
+        {
+            buf << iter->toString();
+            buf << "\n";
+        }
+    }
+    ofstream out("GlobalVar.cpp");
+    out << buf.str();
+}
+
+void X86CodeGeneration::CGGlobalvarHeader(){
+    
 }

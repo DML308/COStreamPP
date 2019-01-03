@@ -4,13 +4,15 @@
 #include "ActorStageAssignment.h"
 #include "Partition.h"
 #include <set>
-
-class X86CodeGenerate
+extern list<Node*> *Program;
+class X86CodeGeneration
 {
 public:
   /******************构造函数*******************/
-  X86CodeGenerate(int, SchedulerSSG *, const char *, StageAssignment *, Partition *);
+  X86CodeGeneration(int, SchedulerSSG *, const char *, StageAssignment *, Partition *);
   /********************************************/
+  void CGGlobalvar();
+  void CGGlobalvarHeader();
 private:
   StageAssignment *psa_;
   Partition *mp_;
