@@ -123,7 +123,8 @@ int main(int argc, char *argv[])
 
     // (7) 输入为SDF图，输出为目标代码
     /* 第二个参数根据输入文件修改 暂时还未完成*/
-    CodeGeneration(SSSG, "jpeg", pSA, mp);
+    string path="jpeg";
+    CodeGeneration(CpuCoreNum,SSSG, path, pSA, mp);
 
     //===----------------------------------------------------------------------===//
     // 编译后端 end
