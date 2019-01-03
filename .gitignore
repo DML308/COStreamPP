@@ -12,9 +12,12 @@ src/bin/*.o
 src/include/FrontEnd/token.h
 src/src/FrontEnd/parser.cpp
 src/src/FrontEnd/lexer.cpp
+src/StaticDistCode/*
+src/StaticDistCode
 src/a
 .vscode
 *.temp
 *.png
 *.dot
 *.txt
+

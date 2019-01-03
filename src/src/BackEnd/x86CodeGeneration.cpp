@@ -42,15 +42,24 @@ void X86CodeGeneration::CGGlobalvar()
     for (auto iter : *Program)
     {
         if (iter->type == Decl)
-        {
-            buf << iter->toString();
-            buf << "\n";
-        }
+            buf << iter->toString() << "\n";
     }
     ofstream out("GlobalVar.cpp");
     out << buf.str();
 }
 
-void X86CodeGeneration::CGGlobalvarHeader(){
-    
+void X86CodeGeneration::CGGlobalvarHeader()
+{
+    stringstream buf,res;
+    buf << "#ifndef GLOBALVAL_H\n";
+    buf << "#define GLOBALVAL_H\n";
+    for (auto iter : *Program)
+    {
+        if (iter->type == Decl)
+            buf << "extern " + iter->toString() << "\n";
+    }
+    buf << "#endif";
+    /* 使用正则表达式将=...;分号之间的替换，只需要声明不需要定义*/
+    ofstream out("GlobalVar.h");
+    out << buf.str();
 }
