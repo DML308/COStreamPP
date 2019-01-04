@@ -20,4 +20,6 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     X86Code->CGMakefile();        //生成Makefile文件
     X86Code->CGGlobalvar();       //生成流程序引入的全局变量定义文件 GlobalVar.cpp
     X86Code->CGGlobalvarHeader(); //生成流程序引入的全局变量的声明文件 GlobalVar.h
+    X86Code->CGGlobal();          //生成流程序的所有缓冲区信息Global.cpp
+    X86Code->CGGlobalHeader();    //生成流程序的所有缓冲区声明Global.h
 }

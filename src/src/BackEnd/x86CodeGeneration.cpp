@@ -56,7 +56,7 @@ void X86CodeGeneration::CGMakefile()
     buf << "install: $(PROGRAM)\n";
     buf << "\tcp $(PROGRAM) ./bin/";
     ofstream out("Makefile");
-    out<<buf.str();
+    out << buf.str();
 }
 /* 遍历语法树，找到所有为declareNode,调用toString（）方法，写入生成文件 */
 void X86CodeGeneration::CGGlobalvar()
@@ -112,6 +112,20 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#include <math.h>\n";
     buf << "#include <string>\n";
     buf << "using namespace std;\n";
+    //结构体中的数据还未完成 需要遍历语法树节点
+    buf<<"struct streamData{\n";
+    buf<<"};\n";
+    for (auto iter1:flatNodes_) 
+    {
+        for (auto iter2:iter1->outFlatNodes)
+        {
+            string edgename = iter1->name + "_" + iter2->name;
+            buf << "extern Buffer<"<< "streamData"<< "> " << edgename << ";" << endl;
+        }
+    }
+    buf<<"#endif\n";
+    ofstream out("Global.h");
+    out << buf.str();
 }
 
 /*全局变量，用于存储边的信息*/
@@ -122,4 +136,6 @@ void X86CodeGeneration::CGGlobal()
     buf << "#include \"global.h\"\n";
     buf << "#include <vector>\n";
     buf << "using namespace std;\n";
+    ofstream out("Global.cpp");
+    out << buf.str();
 }
