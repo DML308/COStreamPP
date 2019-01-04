@@ -1,22 +1,34 @@
 #ifndef _CONSUMER_H
 #define _CONSUMER_H
 #include "Buffer.h"
-template<typename T>
-class Consumer{
+#include <memory.h>
+template <typename T>
+class Consumer
+{
 public:
-	Consumer(Buffer<T>& conBuffer):conBuffer(conBuffer){
+	Consumer(Buffer<T> &conBuffer) : conBuffer(conBuffer)
+	{
 		head = 0;
 	}
-	T& operator[](int index){
-		if(head+index<conBuffer.bufferSize)
-			return conBuffer[head+index];
-		return conBuffer[head+index-conBuffer.bufferSize];
+	T &operator[](int index)
+	{
+		return conBuffer.buffer[head + index];
 	}
-	void updatehead(int offset){
-		head = head+offset>=conBuffer.bufferSize?head+offset-conBuffer.bufferSize:head+offset;
+	void updatehead(int offset)
+	{
+		head += offset;
 	}
+	void resetHead()
+	{
+		if (head >= conBuffer.bufferSize - conBuffer.copySize)
+		{
+			memcpy(conBuffer.buffer + conBuffer.copyStartPos, conBuffer.buffer + (conBuffer.bufferSize - conBuffer.copySize), sizeof(T) * conBuffer.copySize);
+			head = conBuffer.copyStartPos;
+		}
+	}
+
 private:
-	Buffer<T>& conBuffer;
+	Buffer<T> &conBuffer;
 	int head;
 };
 #endif

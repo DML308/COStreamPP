@@ -11,6 +11,7 @@ public:
   /******************构造函数*******************/
   X86CodeGeneration(int, SchedulerSSG *, const char *, StageAssignment *, Partition *);
   /********************************************/
+  void CGMakefile();
   void CGGlobalvar();
   void CGGlobalvarHeader();
   void CGGlobal();

@@ -18,7 +18,7 @@ const int  PI = 3.141592;
 double pi = 3.14159265358979323846;
 
 stream<double x,int y>S;
-composite IntSource(output stream<double x,int y> Out)
+composite IntSource(output stream<double x> Out)
 {
 
 	Out = IntSource()
@@ -140,7 +140,7 @@ composite DCT_X(output stream<double x>Out,input stream<double x>In)
 	};
 }
 
-composite Sink(input stream<int x> In)
+composite Sink(input stream<double x> In)
 {
 
 	Sink(In)

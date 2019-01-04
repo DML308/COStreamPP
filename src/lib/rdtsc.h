@@ -41,18 +41,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define COUNTER_HI(a) ((a).int32.hi)
 #define COUNTER_VAL(a) ((a).int64)
 
-#define COUNTER(a,b) \
-	(((double)COUNTER_VAL(a))/(b))
+#define COUNTER(a, b) \
+	(((double)COUNTER_VAL(a)) / (b))
 
-#define COUNTER_DIFF(a,b,c) \
-	(COUNTER(a,c)-COUNTER(b,c))
+#define COUNTER_DIFF(a, b, c) \
+	(COUNTER(a, c) - COUNTER(b, c))
 
-#define CYCLES		1
-#define OPERATIONS	1
-#define SEC		PROCESSOR_FREQ
-#define MILI_SEC	(SEC/1E3)
-#define MICRO_SEC	(SEC/1E6)
-#define NANO_SEC	(SEC/1E9)
+#define CYCLES 1
+#define OPERATIONS 1
+#define SEC PROCESSOR_FREQ
+#define MILI_SEC (SEC / 1E3)
+#define MICRO_SEC (SEC / 1E6)
+#define NANO_SEC (SEC / 1E9)
 
 /* ==================== GNU C and possibly other UNIX compilers ===================== */
 #if !defined(_WIN32) && !defined(_WIN64)
@@ -63,70 +63,86 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 /* we can at least hope the following works, it probably won't */
 #define ASM asm
-#define VOLATILE 
+#define VOLATILE
 #endif
 
 #define myInt64 unsigned long long
 #define INT32 unsigned int
 
-typedef union
-{       myInt64 int64;
-        struct {INT32 lo, hi;} int32;
+typedef union {
+	myInt64 int64;
+	struct
+	{
+		INT32 lo, hi;
+	} int32;
 } tsc_counter;
 
 #if defined(__ia64__)
-	#if defined(__INTEL_COMPILER)
-		#define RDTSC(tsc) (tsc).int64=__getReg(3116)
-	#else
-		#define RDTSC(tsc) ASM VOLATILE ("mov %0=ar.itc" : "=r" ((tsc).int64) )
-	#endif
-
-	#define CPUID() do{/*No need for serialization on Itanium*/}while(0)
+#if defined(__INTEL_COMPILER)
+#define RDTSC(tsc) (tsc).int64 = __getReg(3116)
 #else
-	#define RDTSC(cpu_c) \
-		ASM VOLATILE ("rdtsc" : "=a" ((cpu_c).int32.lo), "=d"((cpu_c).int32.hi))
-	#define CPUID() \
-		ASM VOLATILE ("cpuid" : : "a" (0) : "bx", "cx", "dx" )
+#define RDTSC(tsc) ASM VOLATILE("mov %0=ar.itc" \
+								: "=r"((tsc).int64))
 #endif
 
-	#define rdtsc_works() {\
-		tsc_counter t0,t1;\
-		RDTSC(t0);\
-		RDTSC(t1);\
-		return COUNTER_DIFF(t1,t0,1) > 0;\
+#define CPUID()                                \
+	do                                         \
+	{ /*No need for serialization on Itanium*/ \
+	} while (0)
+#else
+#define RDTSC(cpu_c)     \
+	ASM VOLATILE("rdtsc" \
+				 : "=a"((cpu_c).int32.lo), "=d"((cpu_c).int32.hi))
+#define CPUID()           \
+	ASM VOLATILE("cpuid"  \
+				 :        \
+				 : "a"(0) \
+				 : "bx", "cx", "dx")
+#endif
+
+#define rdtsc_works()                       \
+	{                                       \
+		tsc_counter t0, t1;                 \
+		RDTSC(t0);                          \
+		RDTSC(t1);                          \
+		return COUNTER_DIFF(t1, t0, 1) > 0; \
 	}
 
 /* ======================== WIN32 ======================= */
 #else
 
-	#define myInt64 signed __int64
-	#define INT32 unsigned __int32
+#define myInt64 signed __int64
+#define INT32 unsigned __int32
 
-	typedef union
-	{       myInt64 int64;
-			struct {INT32 lo, hi;} int32;
-	} tsc_counter;
+typedef union {
+	myInt64 int64;
+	struct
+	{
+		INT32 lo, hi;
+	} int32;
+} tsc_counter;
 
-	#define RDTSC(cpu_c)   \
-	{       __asm rdtsc    \
-			__asm mov (cpu_c).int32.lo,eax  \
-			__asm mov (cpu_c).int32.hi,edx  \
+#define RDTSC(cpu_c)                                                              \
+	{                                                                             \
+		__asm rdtsc __asm mov(cpu_c).int32.lo, eax __asm mov(cpu_c).int32.hi, edx \
 	}
 
-	#define CPUID() \
-	{ \
-		__asm mov eax, 0 \
-		__asm cpuid \
+#define CPUID()                      \
+	{                                \
+		__asm mov eax, 0 __asm cpuid \
 	}
 
-	#define rdtsc_works()\
-	{\
-		__try {\
-			__asm rdtsc\
-		} __except ( 1) {\
-		return 0;\
-		}\
-		return 1;\
+#define rdtsc_works()   \
+	{                   \
+		__try           \
+		{               \
+			__asm rdtsc \
+		}               \
+		__except (1)    \
+		{               \
+			return 0;   \
+		}               \
+		return 1;       \
 	}
 #endif
 

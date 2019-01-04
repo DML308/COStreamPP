@@ -34,6 +34,30 @@ X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const c
         mapNum2Stage.insert(make_pair(i, tempstageset));
     }
 }
+
+void X86CodeGeneration::CGMakefile()
+{
+    stringstream buf;
+    buf << "PROGRAM := a.out\n";
+    buf << "SOURCES := $(wildcard ./*.cpp)\n";
+    buf << "SOURCES += $(wildcard ./src/*.cpp)\n";
+    buf << "OBJS    := $(patsubst %.cpp,%.o,$(SOURCES))\n";
+    buf << "CC      := g++\n";
+    buf << "CFLAGS  := -ggdb -Wall \n";
+    buf << "INCLUDE := -I .\n";
+    buf << "LIB     := -lpthread -ldl\n\n";
+    buf << ".PHONY: clean install\n\n";
+    buf << "$(PROGRAM): $(OBJS)\n";
+    buf << "\t$(CC) -o $@ $^ $(LIB)\n";
+    buf << "%.o: %.c\n";
+    buf << "\t$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDE)\n\n";
+    buf << "clean:\n";
+    buf << "\trm $(OBJS) $(PROGRAM) -f\n";
+    buf << "install: $(PROGRAM)\n";
+    buf << "\tcp $(PROGRAM) ./bin/";
+    ofstream out("Makefile");
+    out<<buf.str();
+}
 /* 遍历语法树，找到所有为declareNode,调用toString（）方法，写入生成文件 */
 void X86CodeGeneration::CGGlobalvar()
 {
@@ -85,7 +109,7 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#ifndef _GLOBAL_H\n";
     buf << "#define _GLOBAL_H\n";
     buf << "#include \"Buffer.h\"\n";
-    buf << "#include \"MathExtension.h\"\n";
+    buf << "#include <math.h>\n";
     buf << "#include <string>\n";
     buf << "using namespace std;\n";
 }
@@ -98,6 +122,4 @@ void X86CodeGeneration::CGGlobal()
     buf << "#include \"global.h\"\n";
     buf << "#include <vector>\n";
     buf << "using namespace std;\n";
-
-    
 }
