@@ -13,6 +13,9 @@ public:
   /********************************************/
   void CGGlobalvar();
   void CGGlobalvarHeader();
+  void CGGlobal();
+  void CGGlobalHeader();
+
 private:
   StageAssignment *psa_;
   Partition *mp_;

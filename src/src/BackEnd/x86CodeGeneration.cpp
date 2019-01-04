@@ -47,7 +47,7 @@ void X86CodeGeneration::CGGlobalvar()
     ofstream out("GlobalVar.cpp");
     out << buf.str();
 }
-
+/* 生成全局变量的声明 */
 void X86CodeGeneration::CGGlobalvarHeader()
 {
     stringstream buf, res;
@@ -75,4 +75,29 @@ void X86CodeGeneration::CGGlobalvarHeader()
     }
     ofstream out("GlobalVar.h");
     out << res.str();
+}
+
+//生成stream流类型和全局数据流缓存区的声明
+/*边的命名规则：A_B,其中A->B*/
+void X86CodeGeneration::CGGlobalHeader()
+{
+    stringstream buf;
+    buf << "#ifndef _GLOBAL_H\n";
+    buf << "#define _GLOBAL_H\n";
+    buf << "#include \"Buffer.h\"\n";
+    buf << "#include \"MathExtension.h\"\n";
+    buf << "#include <string>\n";
+    buf << "using namespace std;\n";
+}
+
+/*全局变量，用于存储边的信息*/
+void X86CodeGeneration::CGGlobal()
+{
+    stringstream buf;
+    buf << "#include \"Buffer.h\"\n";
+    buf << "#include \"global.h\"\n";
+    buf << "#include <vector>\n";
+    buf << "using namespace std;\n";
+
+    
 }
