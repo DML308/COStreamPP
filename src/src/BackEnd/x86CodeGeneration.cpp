@@ -50,7 +50,7 @@ void X86CodeGeneration::CGGlobalvar()
 
 void X86CodeGeneration::CGGlobalvarHeader()
 {
-    stringstream buf,res;
+    stringstream buf, res;
     buf << "#ifndef GLOBALVAL_H\n";
     buf << "#define GLOBALVAL_H\n";
     for (auto iter : *Program)
@@ -59,7 +59,20 @@ void X86CodeGeneration::CGGlobalvarHeader()
             buf << "extern " + iter->toString() << "\n";
     }
     buf << "#endif";
-    /* 使用正则表达式将=...;分号之间的替换，只需要声明不需要定义*/
+    string line;
+    bool flag = false;
+    while (getline(buf, line))
+    {
+        string str;
+        auto pos = line.find("=");
+        if (pos != string::npos)
+        {
+            str = line.substr(0, pos) + ";";
+        }
+        else
+            str = line;
+        res << str << "\n";
+    }
     ofstream out("GlobalVar.h");
-    out << buf.str();
+    out << res.str();
 }
