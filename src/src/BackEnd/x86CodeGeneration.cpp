@@ -6,6 +6,7 @@ X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const c
     mp_ = mp;
     flatNodes_ = sssg->GetFlatNodes();
     nCpucore_ = cpuCoreNum;
+    nActors_ = flatNodes_.size();
     //建立mapActor2InEdge，mapActor2OutEdge
     for (auto iter1 : flatNodes_)
     {
@@ -179,7 +180,7 @@ void X86CodeGeneration::CGGlobal()
     buf << "#include \"Global.h\"\n";
     buf << "#include <vector>\n";
     buf << "using namespace std;\n";
-    int init1,init2;//发送actor和接受actor初态调度产生和接受的数据量
+    int init1, init2;                                                            //发送actor和接受actor初态调度产生和接受的数据量
     for (auto iter_1 = flatNodes_.begin(); iter_1 != flatNodes_.end(); ++iter_1) //遍历所有结点
     {
         for (auto iter_2 = (*iter_1)->outFlatNodes.begin(); iter_2 != (*iter_1)->outFlatNodes.end(); iter_2++)
@@ -194,9 +195,9 @@ void X86CodeGeneration::CGGlobal()
             for (int inEdgeIndex = 0; inEdgeIndex < (*iter_2)->inFlatNodes.size(); inEdgeIndex++)
                 if ((*iter_2)->inFlatNodes.at(inEdgeIndex) == (*iter_1))
                 {
-                    int perWorkPeekCount = (*iter_2)->inPeekWeights[inEdgeIndex];                            //接收边actor每次peek的个数,b
-                    int perWorkPopCount = (*iter_2)->inPopWeights[inEdgeIndex];                              //接收边actor每次调用work需要pop的个数,c
-                    init1 = sssg_->GetInitCount(*iter_1) * (*iter_1)->outPushWeights.at(edgePos);            //发送actor调用initwork产生的数据量
+                    int perWorkPeekCount = (*iter_2)->inPeekWeights[inEdgeIndex];                 //接收边actor每次peek的个数,b
+                    int perWorkPopCount = (*iter_2)->inPopWeights[inEdgeIndex];                   //接收边actor每次调用work需要pop的个数,c
+                    init1 = sssg_->GetInitCount(*iter_1) * (*iter_1)->outPushWeights.at(edgePos); //发送actor调用initwork产生的数据量
                     init2 = sssg_->GetInitCount(*iter_2) * perWorkPopCount;
                     size = init1 + perSteadyPushCount * (stageminus + 2);
                     if (perWorkPeekCount == perWorkPopCount) //peek == pop
@@ -208,7 +209,7 @@ void X86CodeGeneration::CGGlobal()
                         }
                     }
                     //peek != pop
-                    else 
+                    else
                     {
                         int leftnum = ((init1 - init2) % perSteadyPushCount + perSteadyPushCount - (perWorkPeekCount - perWorkPopCount) % perSteadyPushCount) % perSteadyPushCount;
                         copySize = leftnum + perWorkPeekCount - perWorkPopCount;
@@ -216,11 +217,59 @@ void X86CodeGeneration::CGGlobal()
                         copyStartPos = init2 % perSteadyPushCount;
                         size += addtime * perSteadyPushCount;
                     }
-                    buf << "Buffer<" << "streamData"<< "> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                    buf << "Buffer<"
+                        << "streamData"
+                        << "> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
                     break;
                 }
         }
     }
     ofstream out("Global.cpp");
     out << buf.str();
+}
+
+void X86CodeGeneration::CGactors()
+{
+    //生成各个类的计算函数
+    for (int i = 0; i < nActors_; ++i)
+    {
+        stringstream buf;
+        string className = flatNodes_[i]->name;
+        buf << "#ifndef _" << className << "_\n";
+        buf << "#define " << className << " \n";
+        buf << "#include <string>\n";
+        buf << "#include <iostream>\n";
+        buf << "#include \"Buffer.h\"\n";
+        buf << "#include \"Consumer.h\"\n";
+        buf << "#include \"Producer.h\"\n";
+        buf << "#include \"Global.h\"\n";
+        buf << "#include \"GlobalVar.h\"\n";
+        buf << "using namespace std;\n";
+        buf << "class " << className << "{\n"; // 类块开始
+        //获取节点类的输入输出边的名字
+        string inputEdgeName = "";
+        string outputEdgeName = "";
+        auto oper = flatNodes_[i]->contents;
+        list<Node *> *inputs = oper->inputs;
+        list<Node *> *outputs = oper->outputs;
+        if (inputs != NULL)
+        {
+            Node *top = inputs->front();
+            inputEdgeName = ((idNode *)top)->name;
+        }
+        if (outputs != NULL)
+        {
+            Node *top = outputs->front();
+            outputEdgeName = ((idNode *)top)->name;
+        }
+        //写入构造函数
+        buf << "public:\n";
+        buf << "\t" << className << "(";
+        if (inputEdgeName != "")
+        buf<<"Buffer<streamData>& "<<inputEdgeName;
+    }
+}
+
+void X86CodeGeneration::CGThreads()
+{
 }
