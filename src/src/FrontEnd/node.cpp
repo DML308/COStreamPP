@@ -121,10 +121,11 @@ string idNode::toString()
 
 string strdclNode::toString()
 {
-    string str = "";
-    for (auto i : id_list)
+    auto top=id_list.front();
+    string str = top->valType+' '+top->toString();
+    for (auto iter=++id_list.begin();iter!=id_list.end();++iter)
     {
-        str += i->valType + ' ' + i->toString() + ',';
+        str += (*iter)->valType + ' ' + (*iter)->toString() + ',';
     }
     return str;
 }

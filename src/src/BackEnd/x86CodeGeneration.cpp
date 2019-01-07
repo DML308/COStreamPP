@@ -112,18 +112,60 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#include <math.h>\n";
     buf << "#include <string>\n";
     buf << "using namespace std;\n";
-    //结构体中的数据还未完成 需要遍历语法树节点
-    buf<<"struct streamData{\n";
-    buf<<"};\n";
-    for (auto iter1:flatNodes_) 
+    //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
+    set<string> typeSet;
+    for (auto iter1 : *Program)
     {
-        for (auto iter2:iter1->outFlatNodes)
+        if (iter1->type == Composite)
         {
-            string edgename = iter1->name + "_" + iter2->name;
-            buf << "extern Buffer<"<< "streamData"<< "> " << edgename << ";" << endl;
+            compositeNode *comNode = static_cast<compositeNode *>(iter1);
+            compHeadNode *head = comNode->head;
+            ComInOutNode *inout = head->inout;
+            if (inout != NULL)
+            {
+                list<Node *> *inputs = inout->input_List;
+                list<Node *> *outputs = inout->output_List;
+                if (inputs != NULL)
+                {
+                    for (auto it : *inputs)
+                    {
+                        auto nd = static_cast<inOutdeclNode *>(it)->strType;
+                        string temp = static_cast<strdclNode *>(nd)->toString();
+                        string str = temp.substr(0, temp.find(' '));
+                        typeSet.insert(str);
+                    }
+                }
+                if (outputs != NULL)
+                {
+                    for (auto it : *outputs)
+                    {
+                        auto nd = static_cast<inOutdeclNode *>(it)->strType;
+                        string temp = static_cast<strdclNode *>(nd)->toString();
+                        string str = temp.substr(0, temp.find(' '));
+                        typeSet.insert(str);
+                    }
+                }
+            }
         }
     }
-    buf<<"#endif\n";
+    //写入数据流数据类型结构体
+    buf << "struct streamData{\n";
+    int cnt=1;
+    for(auto it:typeSet){
+        buf<<"\t"<<it<<" "<<it[0]<<to_string(cnt++)<<";\n";
+    }
+    buf << "};\n";
+    for (auto iter1 : flatNodes_)
+    {
+        for (auto iter2 : iter1->outFlatNodes)
+        {
+            string edgename = iter1->name + "_" + iter2->name;
+            buf << "extern Buffer<"
+                << "streamData"
+                << "> " << edgename << ";" << endl;
+        }
+    }
+    buf << "#endif\n";
     ofstream out("Global.h");
     out << buf.str();
 }
