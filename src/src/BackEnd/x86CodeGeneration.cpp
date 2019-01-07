@@ -150,9 +150,10 @@ void X86CodeGeneration::CGGlobalHeader()
     }
     //写入数据流数据类型结构体
     buf << "struct streamData{\n";
-    int cnt=1;
-    for(auto it:typeSet){
-        buf<<"\t"<<it<<" "<<it[0]<<to_string(cnt++)<<";\n";
+    int cnt = 1;
+    for (auto it : typeSet)
+    {
+        buf << "\t" << it << " " << it[0] << to_string(cnt++) << ";\n";
     }
     buf << "};\n";
     for (auto iter1 : flatNodes_)
@@ -175,9 +176,51 @@ void X86CodeGeneration::CGGlobal()
 {
     stringstream buf;
     buf << "#include \"Buffer.h\"\n";
-    buf << "#include \"global.h\"\n";
+    buf << "#include \"Global.h\"\n";
     buf << "#include <vector>\n";
     buf << "using namespace std;\n";
+    int init1,init2;//发送actor和接受actor初态调度产生和接受的数据量
+    for (auto iter_1 = flatNodes_.begin(); iter_1 != flatNodes_.end(); ++iter_1) //遍历所有结点
+    {
+        for (auto iter_2 = (*iter_1)->outFlatNodes.begin(); iter_2 != (*iter_1)->outFlatNodes.end(); iter_2++)
+        {
+            int stageminus;                                                                                  //stageminus表示两个actor所分配的阶段差
+            int size;                                                                                        //缓冲区的大小
+            string edgename = (*iter_1)->name + "_" + (*iter_2)->name;                                       //边的名称
+            stageminus = psa_->FindStage(*iter_2) - psa_->FindStage(*iter_1);                                //发送方和接受方的软件流水阶段差
+            int edgePos = iter_2 - (*iter_1)->outFlatNodes.begin();                                          //iter_2在iter_1的输出边的序号
+            int perSteadyPushCount = sssg_->GetSteadyCount(*iter_1) * (*iter_1)->outPushWeights.at(edgePos); //发送actor每次调用steadywork需要push的个数,nc
+            int copySize = 0, copyStartPos = 0;                                                              //拷贝的数据大小，copy存放的开始位置
+            for (int inEdgeIndex = 0; inEdgeIndex < (*iter_2)->inFlatNodes.size(); inEdgeIndex++)
+                if ((*iter_2)->inFlatNodes.at(inEdgeIndex) == (*iter_1))
+                {
+                    int perWorkPeekCount = (*iter_2)->inPeekWeights[inEdgeIndex];                            //接收边actor每次peek的个数,b
+                    int perWorkPopCount = (*iter_2)->inPopWeights[inEdgeIndex];                              //接收边actor每次调用work需要pop的个数,c
+                    init1 = sssg_->GetInitCount(*iter_1) * (*iter_1)->outPushWeights.at(edgePos);            //发送actor调用initwork产生的数据量
+                    init2 = sssg_->GetInitCount(*iter_2) * perWorkPopCount;
+                    size = init1 + perSteadyPushCount * (stageminus + 2);
+                    if (perWorkPeekCount == perWorkPopCount) //peek == pop
+                    {
+                        if (perSteadyPushCount)
+                        {
+                            copySize = (init1 - init2) % perSteadyPushCount;
+                            copyStartPos = init2 % perSteadyPushCount;
+                        }
+                    }
+                    //peek != pop
+                    else 
+                    {
+                        int leftnum = ((init1 - init2) % perSteadyPushCount + perSteadyPushCount - (perWorkPeekCount - perWorkPopCount) % perSteadyPushCount) % perSteadyPushCount;
+                        copySize = leftnum + perWorkPeekCount - perWorkPopCount;
+                        int addtime = copySize % perSteadyPushCount ? copySize / perSteadyPushCount + 1 : copySize / perSteadyPushCount;
+                        copyStartPos = init2 % perSteadyPushCount;
+                        size += addtime * perSteadyPushCount;
+                    }
+                    buf << "Buffer<" << "streamData"<< "> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                    break;
+                }
+        }
+    }
     ofstream out("Global.cpp");
     out << buf.str();
 }
