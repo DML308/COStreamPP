@@ -265,10 +265,46 @@ void X86CodeGeneration::CGactors()
         buf << "public:\n";
         //写入构造函数
         CGactorsConstructor(flatNodes_[i], buf, className, inputEdgeName, outputEdgeName);
-        buf<<"};\n";
-        buf<<"#endif";
+        //写入成员变量
+        buf << "private:\n";
+        buf << "\tProducer<streamData> " << outputEdgeName << ";\n";
+        buf << "\tConsumer<streamData> " << inputEdgeName << ";\n";
+        buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
+        buf << "\tint initScheduleCount;\n";
+        //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
+        operBodyNode *body = oper->operBody;
+        list<Node *> *stmts = body->stmt_list;
+        if (stmts != NULL)
+        {
+            for (auto it : *stmts)
+            {
+                string str = it->toString();
+                /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
+                string temp = "";
+                bool flag = 1;
+                for (auto c : str)
+                {
+                    if (c == ',' || c == ';')
+                        flag = true;
+                    if (c != '=' && flag)
+                        temp += c;
+                    else
+                    {
+                        flag = false;
+                    }
+                }
+                buf << "\t" << temp << "\n";
+            }
+        }
+        //写入init部分前的statement赋值
+        buf<<"\tvoid initVarAndState() {\n";
+        buf<<"\t\t\n";
+        buf<<"\t}\n";
 
-        className+=".h";
+        buf << "};\n";
+        buf << "#endif";
+
+        className += ".h";
         ofstream out(className);
         out << buf.str();
     }

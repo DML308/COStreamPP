@@ -28,13 +28,18 @@ string declareNode::toString()
 {
     string str = "";
     str += prim->toString() + " ";
-    for (auto iter : id_list)
+    str += id_list.front()->toString();
+    if (id_list.front()->init != NULL)
+        str += " = " + id_list.front()->init->toString();
+    for (auto iter=++id_list.begin();iter!=id_list.end();++iter)
     {
-        str += iter->toString();
-        if (iter->init != NULL)
-            str += " = " + iter->init->toString();
-        str += ";";
+        str+=",";
+        str += (*iter)->toString();
+        if ((*iter)->init != NULL)
+            str += " = " + (*iter)->init->toString();
+        
     }
+    str += ";";
     return str;
 }
 
@@ -121,9 +126,9 @@ string idNode::toString()
 
 string strdclNode::toString()
 {
-    auto top=id_list.front();
-    string str = top->valType+' '+top->toString();
-    for (auto iter=++id_list.begin();iter!=id_list.end();++iter)
+    auto top = id_list.front();
+    string str = top->valType + ' ' + top->toString();
+    for (auto iter = ++id_list.begin(); iter != id_list.end(); ++iter)
     {
         str += (*iter)->valType + ' ' + (*iter)->toString() + ',';
     }

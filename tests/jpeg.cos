@@ -47,7 +47,7 @@ composite Quantification(output stream<double x> Out,input stream<double x> In)
 {
 	Out = Quantification(In)
 	{
-		int i,t;
+		int i,t=1;
 		double d;
 		init{
 			i = 0;
