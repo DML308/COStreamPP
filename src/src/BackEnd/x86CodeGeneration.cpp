@@ -236,7 +236,7 @@ void X86CodeGeneration::CGactors()
         stringstream buf;
         string className = flatNodes_[i]->name;
         buf << "#ifndef _" << className << "_\n";
-        buf << "#define " << className << " \n";
+        buf << "#define _" << className << "_\n";
         buf << "#include <string>\n";
         buf << "#include <iostream>\n";
         buf << "#include \"Buffer.h\"\n";
@@ -262,12 +262,45 @@ void X86CodeGeneration::CGactors()
             Node *top = outputs->front();
             outputEdgeName = ((idNode *)top)->name;
         }
-        //写入构造函数
         buf << "public:\n";
-        buf << "\t" << className << "(";
-        if (inputEdgeName != "")
-        buf<<"Buffer<streamData>& "<<inputEdgeName;
+        //写入构造函数
+        CGactorsConstructor(flatNodes_[i], buf, className, inputEdgeName, outputEdgeName);
+        buf<<"};\n";
+        buf<<"#endif";
+
+        className+=".h";
+        ofstream out(className);
+        out << buf.str();
     }
+}
+
+//actors constructor
+void X86CodeGeneration::CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, string inputEdgeName, string outputEdgeName)
+{
+    buf << "\t" << className << "(";
+    if (outputEdgeName != "" && inputEdgeName != "")
+    {
+        buf << "Buffer<streamData>& " << outputEdgeName << ",";
+        buf << "Buffer<streamData>& " << inputEdgeName;
+    }
+    else if (outputEdgeName != "")
+        buf << "Buffer<streamData>& " << outputEdgeName;
+    else if (inputEdgeName != "")
+        buf << "Buffer<streamData>& " << inputEdgeName;
+    buf << "):";
+    if (outputEdgeName != "" && inputEdgeName != "")
+    {
+        buf << outputEdgeName << "(" << outputEdgeName << "),";
+        buf << inputEdgeName << "(" << inputEdgeName << ")";
+    }
+    else if (outputEdgeName != "")
+        buf << outputEdgeName << "(" << outputEdgeName << ")";
+    else if (inputEdgeName != "")
+        buf << inputEdgeName << "(" << inputEdgeName << ")";
+    buf << "{\n";
+    buf << "\t\tsteadyScheduleCount = " << sssg_->GetSteadyCount(actor) << ";\n";
+    buf << "\t\tinitScheduleCount = " << sssg_->GetInitCount(actor) << ";\n";
+    buf << "\t}\n";
 }
 
 void X86CodeGeneration::CGThreads()
