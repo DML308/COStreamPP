@@ -11,18 +11,24 @@ public:
   /******************构造函数*******************/
   X86CodeGeneration(int, SchedulerSSG *, const char *, StageAssignment *, Partition *);
   /********************************************/
-  void CGMakefile();                                                                                                                     //生成Makefile文件
-  void CGGlobalvar();                                                                                                                    //生成流程序引入的全局变量定义文件 GlobalVar.cpp
-  void CGGlobalvarHeader();                                                                                                              //生成流程序引入的全局变量的声明文件 GlobalVar.h
-  void CGGlobal();                                                                                                                       //生成流程序的所有缓冲区信息Global.cpp
-  void CGGlobalHeader();                                                                                                                 //生成流程序的所有缓冲区声明Global.h
+  void CGMakefile();        //生成Makefile文件
+  void CGGlobalvar();       //生成流程序引入的全局变量定义文件 GlobalVar.cpp
+  void CGGlobalvarHeader(); //生成流程序引入的全局变量的声明文件 GlobalVar.h
+  void CGGlobal();          //生成流程序的所有缓冲区信息Global.cpp
+  void CGGlobalHeader();    //生成流程序的所有缓冲区声明Global.h
+  /******************生成actor类的定义*****************/
   void CGactors();                                                                                                                       //生成以类表示的计算单元actor
   void CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, vector<string> inEdgeName, vector<string> outEdgeName); //actor 构造函数
   void CGactorsRunInitScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName);                            //actor runInitScheduleWork()函数
   void CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName);                          //actor runSteadyScheduleWork()函数
-  void CGactorsPopToken(stringstream &buf, FlatNode *actor, vector<string> inEdgeName);                                                          //actor popToken函数
-  void CGactorsPushToken(stringstream &buf, FlatNode *actor, vector<string> outEdgeName);                                                        //actor pushToken函数
-  void CGThreads();                                                                                                                      //生成所有线程
+  void CGactorsPopToken(stringstream &buf, FlatNode *actor, vector<string> inEdgeName);                                                  //actor popToken函数
+  void CGactorsPushToken(stringstream &buf, FlatNode *actor, vector<string> outEdgeName);                                                //actor pushToken函数
+  void CGactorsStmts(stringstream &buf,list<Node *> *stmts);//actor 写入init部分前的statement定义
+  void CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts);                                                                  //actor initVarAndState函数
+  void CGactorsInit(stringstream &buf, Node *init);                                                                                      //actor init函数
+  void CGactorsWork(stringstream &buf, Node *work);                                                                                      //actor work函数
+  /***************************************************/
+  void CGThreads(); //生成所有线程
 
 private:
   StageAssignment *psa_;                             //阶段赋值

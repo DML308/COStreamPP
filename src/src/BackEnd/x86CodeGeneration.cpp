@@ -217,9 +217,7 @@ void X86CodeGeneration::CGGlobal()
                         copyStartPos = init2 % perSteadyPushCount;
                         size += addtime * perSteadyPushCount;
                     }
-                    buf << "Buffer<"
-                        << "streamData"
-                        << "> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                    buf << "Buffer<streamData> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
                     break;
                 }
         }
@@ -249,6 +247,10 @@ void X86CodeGeneration::CGactors()
         vector<string> inEdgeName;
         vector<string> outEdgeName;
         auto oper = flatNodes_[i]->contents;
+        operBodyNode *body = oper->operBody;
+        list<Node *> *stmts = body->stmt_list;
+        Node *init = body->init;
+        Node *work = body->work;
         list<Node *> *inputs = oper->inputs;
         list<Node *> *outputs = oper->outputs;
         if (inputs != NULL)
@@ -275,51 +277,16 @@ void X86CodeGeneration::CGactors()
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
-        operBodyNode *body = oper->operBody;
-        list<Node *> *stmts = body->stmt_list;
-        if (stmts != NULL)
-        {
-            for (auto it : *stmts)
-            {
-                string str = it->toString();
-                /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
-                string temp = "";
-                bool flag = 1;
-                for (auto c : str)
-                {
-                    if (c == ',' || c == ';')
-                        flag = true;
-                    if (c != '=' && flag)
-                        temp += c;
-                    else
-                    {
-                        flag = false;
-                    }
-                }
-                buf << "\t" << temp << "\n";
-            }
-        }
+        CGactorsStmts(buf, stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
         CGactorsPushToken(buf, flatNodes_[i], outEdgeName);
         //init部分前的statement赋值
-        buf << "\tvoid initVarAndState() {\n";
-        buf << "\t\t\n";
-        buf << "\t}\n";
+        CGactorsinitVarAndState(buf, stmts);
         /* composite 中init函数 */
-        buf << "\tvoid init(){ \n";
-        Node *init = body->init;
-        if (init != NULL)
-            buf << init->toString();
-        buf << "\t}\n";
+        CGactorsInit(buf, init);
         /* composite中work函数 */
-        buf << "\tvoid work(){ \n";
-        Node *work = body->work;
-        if (work != NULL)
-            //buf << work->toString();
-        buf<<"\t\tpushToken();\n";
-        buf<<"\t\tpopToken();\n";
-        buf << "\t}\n";
-
+        CGactorsWork(buf, work);
+        /* 类体结束*/
         buf << "};\n";
         buf << "#endif";
 
@@ -330,7 +297,6 @@ void X86CodeGeneration::CGactors()
 }
 
 //actors constructor
-
 void X86CodeGeneration::CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, vector<string> inEdgeName, vector<string> outEdgeName)
 {
     vector<string> svec(outEdgeName);
@@ -383,7 +349,31 @@ void X86CodeGeneration::CGactorsRunSteadyScheduleWork(stringstream &buf, vector<
             buf << "\t\t" << in << ".resetHead();\n";
     buf << "\t}\n";
 }
-
+void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
+{
+    if (stmts != NULL)
+    {
+        for (auto it : *stmts)
+        {
+            string str = it->toString();
+            /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
+            string temp = "";
+            bool flag = 1;
+            for (auto c : str)
+            {
+                if (c == ',' || c == ';')
+                    flag = true;
+                if (c != '=' && flag)
+                    temp += c;
+                else
+                {
+                    flag = false;
+                }
+            }
+            buf << "\t" << temp << "\n";
+        }
+    }
+}
 void X86CodeGeneration::CGactorsPopToken(stringstream &buf, FlatNode *actor, vector<string> inEdgeName)
 {
     buf << "\tvoid popToken() {\n";
@@ -411,6 +401,29 @@ void X86CodeGeneration::CGactorsPushToken(stringstream &buf, FlatNode *actor, ve
         }
     }
 
+    buf << "\t}\n";
+}
+void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts)
+{
+    buf << "\tvoid initVarAndState() {\n";
+    buf << "\t\t\n";
+    buf << "\t}\n";
+}
+void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)
+{
+    buf << "\tvoid init(){ \n";
+    if (init != NULL)
+        buf << init->toString();
+    buf << "\t}\n";
+}
+void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
+{
+    buf << "\tvoid work(){ \n";
+    /* work中的还含有流形式参数需要被替换 */
+    if (work != NULL)
+        //buf << work->toString();
+        buf << "\t\tpushToken();\n";
+    buf << "\t\tpopToken();\n";
     buf << "\t}\n";
 }
 
