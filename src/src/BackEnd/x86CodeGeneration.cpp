@@ -406,7 +406,42 @@ void X86CodeGeneration::CGactorsPushToken(stringstream &buf, FlatNode *actor, ve
 void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts)
 {
     buf << "\tvoid initVarAndState() {\n";
-    buf << "\t\t\n";
+    if (stmts != NULL)
+    {
+        for (auto it : *stmts)
+        {
+            string str = it->toString();
+            vector<string> svec;
+            /*解析逗号和等号,类似int i=0,j;形式变成i=0;的形式,初始化stmts*/
+            string temp = "";
+            for (auto c : str)
+            {
+                if (c != ',' && c != ';')
+                    temp += c;
+                else
+                {
+                    //过滤不含等号的字符串
+                    temp+=';';
+                    if (temp.find('=') != string::npos)
+                        svec.push_back(temp);
+                    temp = "";
+                }
+            }
+            if (temp != "" && temp.find('=') != string::npos)
+                svec.push_back(temp);
+            //解析空格 去除类型 eg int i=1;==> i=1
+            for (auto it : svec)
+            {
+                if (it.find(' ') != string::npos)
+                {
+                    it = it.substr(it.find(' '), it.size() - 1);
+                    buf << "\t\t" << it << "\n";
+                }
+                else
+                    buf << "\t\t" << it << "\n";
+            }
+        }
+    }
     buf << "\t}\n";
 }
 void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)

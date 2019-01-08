@@ -30,13 +30,13 @@ string declareNode::toString()
     str += prim->toString() + " ";
     str += id_list.front()->toString();
     if (id_list.front()->init != NULL)
-        str += " = " + id_list.front()->init->toString();
+        str += "=" + id_list.front()->init->toString();
     for (auto iter = ++id_list.begin(); iter != id_list.end(); ++iter)
     {
         str += ",";
         str += (*iter)->toString();
         if ((*iter)->init != NULL)
-            str += " = " + (*iter)->init->toString();
+            str += "=" + (*iter)->init->toString();
     }
     str += ";";
     return str;
