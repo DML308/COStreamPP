@@ -265,7 +265,7 @@ class caseNode : public Node
     }
     ~caseNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class defaultNode : public Node
@@ -280,7 +280,7 @@ class defaultNode : public Node
     }
     ~defaultNode() {}
     void print() {}
-    string toString() {}
+    string toString() ;
 };
 
 class continueNode : public Node
@@ -293,7 +293,7 @@ class continueNode : public Node
     }
     ~continueNode() {}
     void print() {}
-    string toString() {}
+    string toString() {return "continue;";}
 };
 
 class breakNode : public Node
@@ -306,7 +306,7 @@ class breakNode : public Node
     }
     ~breakNode() {}
     void print() {}
-    string toString() {}
+    string toString() {return "break;";}
 };
 
 class returnNode : public Node
@@ -338,7 +338,7 @@ class ifNode : public Node
     }
     ~ifNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class ifElseNode : public Node
@@ -357,7 +357,7 @@ class ifElseNode : public Node
     }
     ~ifElseNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class switchNode : public Node
@@ -429,7 +429,7 @@ class forNode : public Node
         this->stmt = stmt;
     }
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class blockNode : public Node
@@ -446,7 +446,7 @@ class blockNode : public Node
     }
     ~blockNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class compositeNode;

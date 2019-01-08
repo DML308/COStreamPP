@@ -306,12 +306,18 @@ void X86CodeGeneration::CGactors()
         buf << "\t\t\n";
         buf << "\t}\n";
         /* composite 中init函数 */
-        buf << "\tvoid init() {\n";
-        buf << "\t\t\n";
+        buf << "\tvoid init(){ \n";
+        Node *init = body->init;
+        if (init != NULL)
+            buf << init->toString();
         buf << "\t}\n";
         /* composite中work函数 */
-        buf << "\tvoid work() {\n";
-        buf << "\t\t\n";
+        buf << "\tvoid work(){ \n";
+        Node *work = body->work;
+        if (work != NULL)
+            //buf << work->toString();
+        buf<<"\t\tpushToken();\n";
+        buf<<"\t\tpopToken();\n";
         buf << "\t}\n";
 
         buf << "};\n";
@@ -398,7 +404,8 @@ void X86CodeGeneration::CGactorsPushToken(stringstream &buf, FlatNode *actor, ve
     auto push = actor->outPushWeights.begin();
     if (outEdgeName.size() != 0)
     {
-        for (auto out : outEdgeName){
+        for (auto out : outEdgeName)
+        {
             buf << "\t\t" << out << ".updatetail(" << *push << ");\n";
             ++push;
         }

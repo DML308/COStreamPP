@@ -31,13 +31,12 @@ string declareNode::toString()
     str += id_list.front()->toString();
     if (id_list.front()->init != NULL)
         str += " = " + id_list.front()->init->toString();
-    for (auto iter=++id_list.begin();iter!=id_list.end();++iter)
+    for (auto iter = ++id_list.begin(); iter != id_list.end(); ++iter)
     {
-        str+=",";
+        str += ",";
         str += (*iter)->toString();
         if ((*iter)->init != NULL)
             str += " = " + (*iter)->init->toString();
-        
     }
     str += ";";
     return str;
@@ -62,6 +61,8 @@ string initNode::toString()
 
 string binopNode::toString()
 {
+    if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/=")
+        return left->toString() + op + right->toString() + ";";
     return left->toString() + op + right->toString();
 }
 
@@ -149,7 +150,65 @@ string funcDclNode::toString()
     return str;
 }
 
+string caseNode::toString()
+{
+    string str = "case " + exp->toString() + ":\n";
+    str += "\t" + stmt->toString();
+    return str;
+}
+string defaultNode::toString()
+{
+    string str = "default:\n\t";
+    str += stmt->toString();
+    return str;
+}
+
 string compositeCallNode::toString()
 {
     return "compositeCallNode";
+}
+
+string ifNode::toString()
+{
+    string str = "if(";
+    str += exp->toString();
+    str += ")";
+    str += "\t" + stmt->toString();
+    return str;
+}
+string ifElseNode::toString()
+{
+    string str = "if(";
+    str += exp->toString();
+    str += ")";
+    str += "\t" + stmt1->toString();
+    str += "else";
+    str += "\t" + stmt2->toString();
+    return str;
+}
+string forNode::toString()
+{
+    string str = "for(";
+    str += init->toString();
+    str += cond->toString();
+    str += ";";
+    str += next->toString();
+    str += ")";
+    str += "\t\t" + stmt->toString();
+    return str;
+}
+
+string blockNode::toString()
+{
+    string str = "\t{\n";
+    if (stmt_list != NULL)
+    {
+        for (auto stmt : *stmt_list)
+        {
+            str += "\t\t" + stmt->toString();
+            str += "\n";
+        }
+    }
+    str += "\t}";
+    return str;
 }
