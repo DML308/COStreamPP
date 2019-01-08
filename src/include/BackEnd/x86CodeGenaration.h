@@ -11,14 +11,16 @@ public:
   /******************构造函数*******************/
   X86CodeGeneration(int, SchedulerSSG *, const char *, StageAssignment *, Partition *);
   /********************************************/
-  void CGMakefile();                                                                                    //生成Makefile文件
-  void CGGlobalvar();                                                                                   //生成流程序引入的全局变量定义文件 GlobalVar.cpp
-  void CGGlobalvarHeader();                                                                             //生成流程序引入的全局变量的声明文件 GlobalVar.h
-  void CGGlobal();                                                                                      //生成流程序的所有缓冲区信息Global.cpp
-  void CGGlobalHeader();                                                                                //生成流程序的所有缓冲区声明Global.h
-  void CGactors();                                                                                      //生成以类表示的计算单元actor
-  void CGactorsConstructor(FlatNode *actor,stringstream &buf, string className, string inEdgeName, string outEdgeName); //actor构造函数
-  void CGThreads();                                                                                     //生成所有线程
+  void CGMakefile();                                                                                                     //生成Makefile文件
+  void CGGlobalvar();                                                                                                    //生成流程序引入的全局变量定义文件 GlobalVar.cpp
+  void CGGlobalvarHeader();                                                                                              //生成流程序引入的全局变量的声明文件 GlobalVar.h
+  void CGGlobal();                                                                                                       //生成流程序的所有缓冲区信息Global.cpp
+  void CGGlobalHeader();                                                                                                 //生成流程序的所有缓冲区声明Global.h
+  void CGactors();                                                                                                       //生成以类表示的计算单元actor
+  void CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, string inEdgeName, string outEdgeName); //actor构造函数
+  void CGactorsRunInitScheduleWork(stringstream &buf, string inEdgeName, string outEdgeName);                            //actor runInitScheduleWork()函数
+  void CGactorsrunSteadyScheduleWork(stringstream &buf, string inEdgeName, string outEdgeName);                          //actor runSteadyScheduleWork()函数
+  void CGThreads();                                                                                                      //生成所有线程
 
 private:
   StageAssignment *psa_;                             //阶段赋值

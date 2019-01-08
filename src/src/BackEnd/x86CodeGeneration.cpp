@@ -263,9 +263,11 @@ void X86CodeGeneration::CGactors()
             outputEdgeName = ((idNode *)top)->name;
         }
         buf << "public:\n";
-        //写入构造函数
+        /*写入类成员函数*/
         CGactorsConstructor(flatNodes_[i], buf, className, inputEdgeName, outputEdgeName);
-        //写入成员变量
+        CGactorsRunInitScheduleWork(buf, inputEdgeName, outputEdgeName);
+        CGactorsrunSteadyScheduleWork(buf, inputEdgeName, outputEdgeName);
+        /*写入类成员变量*/
         buf << "private:\n";
         buf << "\tProducer<streamData> " << outputEdgeName << ";\n";
         buf << "\tConsumer<streamData> " << inputEdgeName << ";\n";
@@ -297,9 +299,9 @@ void X86CodeGeneration::CGactors()
             }
         }
         //写入init部分前的statement赋值
-        buf<<"\tvoid initVarAndState() {\n";
-        buf<<"\t\t\n";
-        buf<<"\t}\n";
+        buf << "\tvoid initVarAndState() {\n";
+        buf << "\t\t\n";
+        buf << "\t}\n";
 
         buf << "};\n";
         buf << "#endif";
@@ -336,6 +338,31 @@ void X86CodeGeneration::CGactorsConstructor(FlatNode *actor, stringstream &buf, 
     buf << "{\n";
     buf << "\t\tsteadyScheduleCount = " << sssg_->GetSteadyCount(actor) << ";\n";
     buf << "\t\tinitScheduleCount = " << sssg_->GetInitCount(actor) << ";\n";
+    buf << "\t}\n";
+}
+
+void X86CodeGeneration::CGactorsRunInitScheduleWork(stringstream &buf, string inEdgeName, string outEdgeName)
+{
+    buf << "\tvoid runInitScheduleWork() {\n";
+    buf << "\t\tinitVarAndState();\n";
+    buf << "\t\tinit();\n";
+    buf << "\t\tfor(int i=0;i<initScheduleCount;i++)\n";
+    buf << "\t\t\twork();\n";
+    if (outEdgeName != "")
+        buf << "\t\t" << outEdgeName << ".resetTail();\n";
+    if (inEdgeName != "")
+        buf << "\t\t" << inEdgeName << ".resetHead();\n";
+    buf << "\t}\n";
+}
+void X86CodeGeneration::CGactorsrunSteadyScheduleWork(stringstream &buf, string inEdgeName, string outEdgeName)
+{
+    buf << "\tvoid runSteadyScheduleWork() {\n";
+    buf << "\t\tfor(int i=0;i<steadyScheduleCount;i++)\n";
+    buf << "\t\t\twork();\n";
+    if (outEdgeName != "")
+        buf << "\t\t" << outEdgeName << ".resetTail();\n";
+    if (inEdgeName != "")
+        buf << "\t\t" << inEdgeName << ".resetHead();\n";
     buf << "\t}\n";
 }
 

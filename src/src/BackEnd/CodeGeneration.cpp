@@ -8,6 +8,7 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     /* 获取当前文件目录 用于拼接文件目录，暂时未实现*/
     char buf[1024];
     char *path = getcwd(buf, 1024);
+    chdir("../");
     strcat(buf, "\/StaticDistCode_Linux");
     mkdir("StaticDistCode", 777);
     //更改文件目录
