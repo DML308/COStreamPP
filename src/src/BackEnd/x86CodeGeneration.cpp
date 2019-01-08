@@ -246,31 +246,32 @@ void X86CodeGeneration::CGactors()
         buf << "#include \"GlobalVar.h\"\n";
         buf << "using namespace std;\n";
         buf << "class " << className << "{\n"; // 类块开始
-        //获取节点类的输入输出边的名字
-        string inputEdgeName = "";
-        string outputEdgeName = "";
+        vector<string> inEdgeName;
+        vector<string> outEdgeName;
         auto oper = flatNodes_[i]->contents;
         list<Node *> *inputs = oper->inputs;
         list<Node *> *outputs = oper->outputs;
         if (inputs != NULL)
         {
-            Node *top = inputs->front();
-            inputEdgeName = ((idNode *)top)->name;
+            for (auto it : *inputs)
+                inEdgeName.push_back(((idNode *)it)->name);
         }
         if (outputs != NULL)
         {
-            Node *top = outputs->front();
-            outputEdgeName = ((idNode *)top)->name;
+            for (auto it : *outputs)
+                outEdgeName.push_back(((idNode *)it)->name);
         }
         buf << "public:\n";
         /*写入类成员函数*/
-        CGactorsConstructor(flatNodes_[i], buf, className, inputEdgeName, outputEdgeName);
-        CGactorsRunInitScheduleWork(buf, inputEdgeName, outputEdgeName);
-        CGactorsrunSteadyScheduleWork(buf, inputEdgeName, outputEdgeName);
+        CGactorsConstructor(flatNodes_[i], buf, className, inEdgeName, outEdgeName);
+        CGactorsRunInitScheduleWork(buf, inEdgeName, outEdgeName);
+        CGactorsRunSteadyScheduleWork(buf, inEdgeName, outEdgeName);
         /*写入类成员变量*/
         buf << "private:\n";
-        buf << "\tProducer<streamData> " << outputEdgeName << ";\n";
-        buf << "\tConsumer<streamData> " << inputEdgeName << ";\n";
+        for (auto out : outEdgeName)
+            buf << "\tProducer<streamData> " << out << ";\n";
+        for (auto in : inEdgeName)
+            buf << "\tConsumer<streamData> " << in << ";\n";
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
@@ -298,8 +299,18 @@ void X86CodeGeneration::CGactors()
                 buf << "\t" << temp << "\n";
             }
         }
-        //写入init部分前的statement赋值
+        CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
+        CGactorsPushToken(buf, flatNodes_[i], outEdgeName);
+        //init部分前的statement赋值
         buf << "\tvoid initVarAndState() {\n";
+        buf << "\t\t\n";
+        buf << "\t}\n";
+        /* composite 中init函数 */
+        buf << "\tvoid init() {\n";
+        buf << "\t\t\n";
+        buf << "\t}\n";
+        /* composite中work函数 */
+        buf << "\tvoid work() {\n";
         buf << "\t\t\n";
         buf << "\t}\n";
 
@@ -313,56 +324,86 @@ void X86CodeGeneration::CGactors()
 }
 
 //actors constructor
-void X86CodeGeneration::CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, string inputEdgeName, string outputEdgeName)
+
+void X86CodeGeneration::CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, vector<string> inEdgeName, vector<string> outEdgeName)
 {
+    vector<string> svec(outEdgeName);
+    svec.insert(svec.end(), inEdgeName.begin(), inEdgeName.end());
     buf << "\t" << className << "(";
-    if (outputEdgeName != "" && inputEdgeName != "")
+    if (svec.size() != 0)
     {
-        buf << "Buffer<streamData>& " << outputEdgeName << ",";
-        buf << "Buffer<streamData>& " << inputEdgeName;
+        buf << "Buffer<streamData>& " << svec.front();
+        for (auto edge = ++svec.begin(); edge != svec.end(); ++edge)
+            buf << ",Buffer<streamData>& " << *edge;
     }
-    else if (outputEdgeName != "")
-        buf << "Buffer<streamData>& " << outputEdgeName;
-    else if (inputEdgeName != "")
-        buf << "Buffer<streamData>& " << inputEdgeName;
     buf << "):";
-    if (outputEdgeName != "" && inputEdgeName != "")
+    if (svec.size() != 0)
     {
-        buf << outputEdgeName << "(" << outputEdgeName << "),";
-        buf << inputEdgeName << "(" << inputEdgeName << ")";
+        buf << svec.front() << "(" << svec.front() << ")";
+        for (auto edge = ++svec.begin(); edge != svec.end(); ++edge)
+            buf << "," << *edge << "(" << *edge << ")";
     }
-    else if (outputEdgeName != "")
-        buf << outputEdgeName << "(" << outputEdgeName << ")";
-    else if (inputEdgeName != "")
-        buf << inputEdgeName << "(" << inputEdgeName << ")";
     buf << "{\n";
     buf << "\t\tsteadyScheduleCount = " << sssg_->GetSteadyCount(actor) << ";\n";
     buf << "\t\tinitScheduleCount = " << sssg_->GetInitCount(actor) << ";\n";
     buf << "\t}\n";
 }
 
-void X86CodeGeneration::CGactorsRunInitScheduleWork(stringstream &buf, string inEdgeName, string outEdgeName)
+void X86CodeGeneration::CGactorsRunInitScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName)
 {
     buf << "\tvoid runInitScheduleWork() {\n";
     buf << "\t\tinitVarAndState();\n";
     buf << "\t\tinit();\n";
     buf << "\t\tfor(int i=0;i<initScheduleCount;i++)\n";
     buf << "\t\t\twork();\n";
-    if (outEdgeName != "")
-        buf << "\t\t" << outEdgeName << ".resetTail();\n";
-    if (inEdgeName != "")
-        buf << "\t\t" << inEdgeName << ".resetHead();\n";
+    if (outEdgeName.size() != 0)
+        for (auto out : outEdgeName)
+            buf << "\t\t" << out << ".resetTail();\n";
+    if (inEdgeName.size() != 0)
+        for (auto in : inEdgeName)
+            buf << "\t\t" << in << ".resetHead();\n";
     buf << "\t}\n";
 }
-void X86CodeGeneration::CGactorsrunSteadyScheduleWork(stringstream &buf, string inEdgeName, string outEdgeName)
+void X86CodeGeneration::CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName)
 {
     buf << "\tvoid runSteadyScheduleWork() {\n";
     buf << "\t\tfor(int i=0;i<steadyScheduleCount;i++)\n";
     buf << "\t\t\twork();\n";
-    if (outEdgeName != "")
-        buf << "\t\t" << outEdgeName << ".resetTail();\n";
-    if (inEdgeName != "")
-        buf << "\t\t" << inEdgeName << ".resetHead();\n";
+    if (outEdgeName.size() != 0)
+        for (auto out : outEdgeName)
+            buf << "\t\t" << out << ".resetTail();\n";
+    if (inEdgeName.size() != 0)
+        for (auto in : inEdgeName)
+            buf << "\t\t" << in << ".resetHead();\n";
+    buf << "\t}\n";
+}
+
+void X86CodeGeneration::CGactorsPopToken(stringstream &buf, FlatNode *actor, vector<string> inEdgeName)
+{
+    buf << "\tvoid popToken() {\n";
+    auto pop = actor->inPopWeights.begin();
+    if (inEdgeName.size() != 0)
+    {
+        for (auto in : inEdgeName)
+        {
+            buf << "\t\t" << in << ".updatehead(" << *pop << ");\n";
+            ++pop;
+        }
+    }
+    buf << "\t}\n";
+}
+void X86CodeGeneration::CGactorsPushToken(stringstream &buf, FlatNode *actor, vector<string> outEdgeName)
+{
+    buf << "\tvoid pushToken() {\n";
+    auto push = actor->outPushWeights.begin();
+    if (outEdgeName.size() != 0)
+    {
+        for (auto out : outEdgeName){
+            buf << "\t\t" << out << ".updatetail(" << *push << ");\n";
+            ++push;
+        }
+    }
+
     buf << "\t}\n";
 }
 
