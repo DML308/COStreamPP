@@ -123,3 +123,27 @@ int StageAssignment::FindStage(FlatNode *actor)
 	else
 		return -1;
 }
+
+int StageAssignment::MaxStageNum()
+{
+	int maxStage = 0;
+	for (auto it : Stage2Actor)
+	{
+		if (it.first + 1 > maxStage)
+			maxStage = it.first + 1;
+	}
+	return maxStage;
+}
+
+vector<FlatNode *> StageAssignment::FindActor(int stage)
+{
+	vector<FlatNode *> flatVec;
+	pair<multimap<int, FlatNode *>::iterator, multimap<int, FlatNode *>::iterator> pos = Stage2Actor.equal_range(stage);
+	while (pos.first != pos.second)
+	{
+		flatVec.push_back(pos.first->second);
+		ActorSet.push_back(pos.first->second);
+		++pos.first;
+	}
+	return flatVec;
+}

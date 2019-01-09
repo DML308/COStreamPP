@@ -13,7 +13,7 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     mkdir("StaticDistCode", 777);
     //更改文件目录
     chdir("StaticDistCode");
-    mkdir(fileName.c_str(),777);
+    mkdir(fileName.c_str(), 777);
     chdir(fileName.c_str());
     //取得命令行指定的place个数，若无指定则设置成与程序actor个数一致
     int nCpucore = CpuCoreNum > 0 ? CpuCoreNum : sssg->GetFlatNodes().size();
@@ -24,5 +24,6 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     X86Code->CGGlobal();          //生成流程序的所有缓冲区信息Global.cpp
     X86Code->CGGlobalHeader();    //生成流程序的所有缓冲区声明Global.h
     X86Code->CGactors();          //生成以类表示的计算单元actor
-    X86Code->CGThreads();		  //生成所有线程
+    X86Code->CGAllActorHeader();  //生成所有actor节点头文件
+    X86Code->CGThreads();         //生成所有线程
 }

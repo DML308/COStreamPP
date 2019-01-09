@@ -225,10 +225,9 @@ void X86CodeGeneration::CGGlobal()
     ofstream out("Global.cpp");
     out << buf.str();
 }
-
+/* 生成各个类的计算函数 */
 void X86CodeGeneration::CGactors()
 {
-    //生成各个类的计算函数
     for (int i = 0; i < nActors_; ++i)
     {
         stringstream buf;
@@ -289,7 +288,6 @@ void X86CodeGeneration::CGactors()
         /* 类体结束*/
         buf << "};\n";
         buf << "#endif";
-
         className += ".h";
         ofstream out(className);
         out << buf.str();
@@ -421,7 +419,7 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
                 else
                 {
                     //过滤不含等号的字符串
-                    temp+=';';
+                    temp += ';';
                     if (temp.find('=') != string::npos)
                         svec.push_back(temp);
                     temp = "";
@@ -454,7 +452,7 @@ void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)
 void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
 {
     buf << "\tvoid work(){ \n";
-    /* work中的还含有流形式参数需要被替换 */
+    /* work中的还含有流形式参数需要被替换 等符号表实现*/
     if (work != NULL)
         //buf << work->toString();
         buf << "\t\tpushToken();\n";
@@ -464,4 +462,101 @@ void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
 
 void X86CodeGeneration::CGThreads()
 {
+
+    for (int i = 0; i < nCpucore_; ++i)
+    {
+        stringstream buf;
+        buf << "/*该文件定义各thread的入口函数，在函数内部完成软件流水迭代*/\n";
+        int MaxStageNum = psa_->MaxStageNum(); //最大阶段号
+        buf << "#include \"Buffer.h\"\n";
+        buf << "#include \"Producer.h\"\n";
+        buf << "#include \"Consumer.h\"\n";
+        buf << "#include \"Global.h\"\n";
+        buf << "#include \"AllActorHeader.h\"\t//包含所有actor的头文件\n";
+        buf << "#include \"lock_free_barrier.h\"\t//包含barrier函数\n";
+        buf << "#include \"rdtsc.h\"\n";
+        buf << "#include <fstream>\n";
+        buf << "extern int MAX_ITER;\n"; //执行次数，用作迭代上限
+        if (i)                           //除线程0外，其他线程调用workSync等待线程0，线程0进行累计其他线程是否结束，并设置标志位
+        {
+            buf << "void thread_" << i << "_fun()\n{\n";
+            buf << "\tworkerSync(" << i << ");\n";
+        }
+        else
+        {
+            buf << "void thread_" << i << "_fun()\n{\n";
+            buf << "\tmasterSync(" << nCpucore_ << ");\n";
+        }
+        vector<FlatNode *> actorSet = mp_->findNodeSetInPartition(i); //actorSet存放线程index上所有actor的集合
+        //遍历actorSet所有actor，生成其类型实例
+        for (auto iter = actorSet.begin(); iter != actorSet.end(); ++iter)
+        {
+            buf << "\t" << (*iter)->name << " " << (*iter)->name << "_obj("; //定义actor对象，actor->name_obj,调用构造函数，参数为输入输出边的全局变量
+            //mapActor2InEdge和mapActor2OutEdge存放该actor所对应的输入输出边buffer的名称
+            auto pos1 = mapActor2InEdge.equal_range(*iter);
+            auto pos2 = mapActor2OutEdge.equal_range(*iter);
+            while (pos2.first != pos2.second)
+            {
+                buf << pos2.first->second << ",";
+                ++pos2.first;
+            }
+            while (pos1.first != pos1.second)
+            {
+                buf << pos1.first->second << ",";
+                ++pos1.first;
+            }
+            //稳态iad
+            buf.seekp((int)buf.tellp() - 1);
+            buf << ");\n";
+        }
+        //stage表示阶段号数组，初始除0外都为0
+        buf << "\tchar stage[" << MaxStageNum << "]={0};\n";
+        buf << "\tstage[0]=1;\n";
+        //遍历该线程上的所有的阶段号，在对应的阶段号内调用每个actor的initwork
+        buf << "\tfor(int _stageNum=0;_stageNum<" << MaxStageNum << ";_stageNum++)\n";
+        buf << "\t{\n";
+        set<int> stageSet = mapNum2Stage.find(i)->second; //查找该thread对应的阶段号集合
+
+        for (int stage = MaxStageNum - 1; stage >= 0; stage--) //迭代stage Num
+        {
+            auto stageiter = stageSet.find(stage); //查找该线程对应在阶段i是否有actor
+            if (stageiter != stageSet.end())
+            { //该stage在该thread上
+                buf << "\t\tif(" << stage << "==_stageNum)\n\t\t{\n";
+                vector<FlatNode *> flatVec = psa_->FindActor(stage);                //取得在该阶段的所有actor集合
+                for (auto iter1 = flatVec.begin(); iter1 != flatVec.end(); ++iter1) //遍历actor，调用初态initScheduleWork
+                {
+                    if (stage == mp_->findPartitionNumForFlatNode(*iter1))
+                    {
+                        buf << "\t\t\t" << (*iter1)->name << "_obj.runInitScheduleWork();\n";
+                    }
+                }
+                buf << "\t\t}\n";
+            }
+        }
+        if (i)
+            buf << "\t\n\t\tworkerSync(" << i << ");\n";
+        else
+            buf << "\t\n\t\tmasterSync(" << nCpucore_ << ");\n";
+        //初态调度完成
+        buf << "\t}\n";
+
+
+
+
+
+        buf<<"}\n";
+        string filename = "thread_" + to_string(i) + ".cpp";
+        ofstream out(filename);
+        out << buf.str();
+    }
+}
+
+void X86CodeGeneration::CGAllActorHeader()
+{
+    stringstream buf;
+    for (auto it : flatNodes_)
+        buf << "#include \"" << it->name << ".h\"\n";
+    ofstream out("AllActorHeader.h");
+    out << buf.str();
 }

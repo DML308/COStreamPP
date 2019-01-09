@@ -23,12 +23,13 @@ public:
   void CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName);                          //actor runSteadyScheduleWork()函数
   void CGactorsPopToken(stringstream &buf, FlatNode *actor, vector<string> inEdgeName);                                                  //actor popToken函数
   void CGactorsPushToken(stringstream &buf, FlatNode *actor, vector<string> outEdgeName);                                                //actor pushToken函数
-  void CGactorsStmts(stringstream &buf,list<Node *> *stmts);//actor 写入init部分前的statement定义
+  void CGactorsStmts(stringstream &buf, list<Node *> *stmts);                                                                            //actor 写入init部分前的statement定义
   void CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts);                                                                  //actor initVarAndState函数
   void CGactorsInit(stringstream &buf, Node *init);                                                                                      //actor init函数
   void CGactorsWork(stringstream &buf, Node *work);                                                                                      //actor work函数
   /***************************************************/
-  void CGThreads(); //生成所有线程
+  void CGThreads();        //生成所有线程
+  void CGAllActorHeader(); //所有actor节点头文件
 
 private:
   StageAssignment *psa_;                             //阶段赋值
