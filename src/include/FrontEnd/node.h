@@ -99,7 +99,6 @@ class idNode : public Node
     ~idNode() {}
     void print() {}
     string toString();
-    string CodeGenerate();
 };
 
 class initNode : public Node
@@ -321,7 +320,7 @@ class returnNode : public Node
     }
     ~returnNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class ifNode : public Node
@@ -374,7 +373,7 @@ class switchNode : public Node
     }
     ~switchNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class whileNode : public Node
@@ -391,7 +390,7 @@ class whileNode : public Node
     }
     ~whileNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class doNode : public Node
@@ -408,7 +407,7 @@ class doNode : public Node
     }
     ~doNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class forNode : public Node
@@ -610,27 +609,6 @@ class tumblingNode : public Node
     string toString() {}
 };
 
-/*
-class OperHeadNode : public Node
-{
-  public:
-    string name;
-    list<Node *> *inputs;
-    list<Node *> *outputs;
-    OperHeadNode(string name, list<Node *> *inputs, list<Node *> *outputs, YYLTYPE loc= YYLTYPE())
-    {
-        this->setLoc(loc);
-        this->type = OperHead;
-        this->name = name;
-        this->inputs = inputs;
-        this->outputs = outputs;
-    }
-    ~OperHeadNode() {}
-    void print() {}
-    string toString() {}
-};
-*/
-
 class strdclNode : public Node
 {
   public:
@@ -796,7 +774,7 @@ class funcBodyNode : public Node
     }
     ~funcBodyNode() {}
     void print() {}
-    string toString() {}
+    string toString() ;
 };
 
 class compBodyNode : public Node

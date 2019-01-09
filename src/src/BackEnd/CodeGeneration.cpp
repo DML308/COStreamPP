@@ -28,7 +28,6 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     X86Code->CGThreads();         //生成所有线程
     X86Code->CGMain();            //生成线程启动的main文件
     /* 拷贝程序运行所需要的库文件 */
-    const char *command="cp ../../src/lib/* .";
+    const char *command = "cp ../../src/lib/* .";
     system(command);
-    
 }

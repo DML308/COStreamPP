@@ -176,5 +176,3 @@ composite Main ()
 	Sink(S3)(8);
 
 }
-
-

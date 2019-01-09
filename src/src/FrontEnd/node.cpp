@@ -212,3 +212,45 @@ string blockNode::toString()
     str += "\t}";
     return str;
 }
+
+string returnNode::toString()
+{
+    string str = "return ";
+    str += exp->toString();
+    return str;
+}
+
+string switchNode::toString()
+{
+    string str = "switch";
+    str += "(" + exp->toString() + ")\n";
+    str += "{\n" + stat->toString() + "\n}";
+    return str;
+}
+
+string whileNode::toString()
+{
+    string str = "while";
+    str += "(" + exp->toString() + ")\n";
+    str += "{\n" + stmt->toString() + "\n}";
+    return str;
+}
+
+string doNode::toString()
+{
+    string str = "do\n";
+    str += stmt->toString() + "\n";
+    str += "while(" + exp->toString() + ");";
+    return str;
+}
+
+string funcBodyNode::toString()
+{
+    string str = "";
+    if (stmt_list != NULL)
+    {
+        for (auto it : *stmt_list)
+            str += it->toString() + "\n";
+    }
+    return str;
+}
