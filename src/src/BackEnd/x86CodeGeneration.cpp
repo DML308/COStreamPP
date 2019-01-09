@@ -555,7 +555,7 @@ void X86CodeGeneration::CGThreads()
             buf << "\t\n\t\tworkerSync(" << i << ");\n";
         else
             buf << "\t\n\t\tmasterSync(" << nCpucore_ << ");\n";
-        buf << "\t}\n"; 
+        buf << "\t}\n";
         /*稳态调度截止*/
         buf << "}\n";
         string filename = "thread_" + to_string(i) + ".cpp";
@@ -563,12 +563,67 @@ void X86CodeGeneration::CGThreads()
         out << buf.str();
     }
 }
-
+/*所有actor节点头文件*/
 void X86CodeGeneration::CGAllActorHeader()
 {
     stringstream buf;
     for (auto it : flatNodes_)
         buf << "#include \"" << it->name << ".h\"\n";
     ofstream out("AllActorHeader.h");
+    out << buf.str();
+}
+/****************生成main文件*************************/
+void X86CodeGeneration::CGMain()
+{
+    stringstream buf;
+    buf << "#include <iostream>\n";
+    buf << "#include <stdlib.h>\n";
+    buf << "#include <pthread.h>\n";
+    buf << "#include \"setCpu.h\"\n";
+    buf << "#include \"lock_free_barrier.h\"	//包含barrier函数\n";
+    buf << "#include \"Global.h\"\n";
+    buf << "using namespace std;\n";
+    buf << "int MAX_ITER=1;//默认的执行次数是1\n";
+    for (int i = 0; i < nCpucore_; i++)
+    {
+        buf << "extern void thread_" << i << "_fun();\n";
+    }
+
+    for (int i = 1; i < nCpucore_; i++)
+    {
+        buf << "void* thread_" << i << "_fun_start(void *)\n"
+            << "{\n\t"
+            << "set_cpu(" << i << ");\n\t"
+            << "thread_" << i << "_fun();\n\t"
+            << "return 0;\n"
+            << "}\n";
+    }
+    buf << "int main(int argc,char **argv)\n{\n";
+    buf << "\tvoid setRunIterCount(int,char**);\n";
+    buf << "\tsetRunIterCount(argc,argv);\n";
+    buf << "\tset_cpu(0);\n";
+    buf << "\tallocBarrier(" << nCpucore_ << ");\n";
+    buf << "\tpthread_t tid[" << nCpucore_ - 1 << "];\n";
+    for (int i = 1; i < nCpucore_; i++)
+    {
+        buf << "\tpthread_create (&tid[" << i - 1 << "], NULL, thread_" << i << "_fun_start, (void*)NULL);\n";
+    }
+    buf << "\tthread_0_fun();\n";
+    buf << "\treturn 0;\n";
+    buf << "}\n";
+    buf << "\/\/设置运行次数\n";
+    buf << "void setRunIterCount(int argc,char **argv)\n{\n";
+    buf << "\tint oc;\n";
+    buf << "\tchar *b_opt_arg;\n";
+    buf << "\twhile((oc=getopt(argc,argv,\"i:\"))!=-1)\n";
+    buf << "\t{\n";
+    buf << "\t\tswitch(oc)\n";
+    buf << "\t\t{\n";
+    buf << "\t\t\tcase 'i':\n";
+    buf << "\t\t\t\tMAX_ITER=atoi(optarg);\n";
+    buf << "\t\t\t\tbreak;\n";
+    buf << "\t\t}\n";
+    buf << "\t}\n";
+    ofstream out("main.cpp");
     out << buf.str();
 }

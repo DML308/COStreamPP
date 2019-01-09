@@ -27,9 +27,14 @@ public:
   void CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts);                                                                  //actor initVarAndState函数
   void CGactorsInit(stringstream &buf, Node *init);                                                                                      //actor init函数
   void CGactorsWork(stringstream &buf, Node *work);                                                                                      //actor work函数
-  /***************************************************/
+  /****************************************************/
+  /*****************生成线程文件************************/
   void CGThreads();        //生成所有线程
   void CGAllActorHeader(); //所有actor节点头文件
+  /****************************************************/
+  /****************生成main文件*************************/
+  void CGMain();
+  /****************************************************/
 
 private:
   StageAssignment *psa_;                             //阶段赋值
@@ -38,7 +43,6 @@ private:
   vector<FlatNode *> flatNodes_;                     //节点集合
   int nCpucore_;                                     //设置cpu核的数量
   int nActors_;                                      //节点总数量
-  map<FlatNode *, int> mapFlatNode2Place;            // 存放各 FlatNode 对应的 place序号
   map<operatorNode *, string> mapOperator2ClassName; // 存放各 class 对应的 composite
   multimap<FlatNode *, string> mapActor2InEdge;      //actor对应输入边的名称
   multimap<FlatNode *, string> mapActor2OutEdge;     //actor对应输出边的名称
