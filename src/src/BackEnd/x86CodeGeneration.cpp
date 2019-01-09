@@ -459,10 +459,9 @@ void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
     buf << "\t\tpopToken();\n";
     buf << "\t}\n";
 }
-
+/* 生成所有线程文件 */
 void X86CodeGeneration::CGThreads()
 {
-
     for (int i = 0; i < nCpucore_; ++i)
     {
         stringstream buf;
@@ -519,18 +518,14 @@ void X86CodeGeneration::CGThreads()
 
         for (int stage = MaxStageNum - 1; stage >= 0; stage--) //迭代stage Num
         {
-            auto stageiter = stageSet.find(stage); //查找该线程对应在阶段i是否有actor
-            if (stageiter != stageSet.end())
+            auto iter = stageSet.find(stage); //查找该线程对应在阶段i是否有actor
+            if (iter != stageSet.end())
             { //该stage在该thread上
                 buf << "\t\tif(" << stage << "==_stageNum)\n\t\t{\n";
-                vector<FlatNode *> flatVec = psa_->FindActor(stage);                //取得在该阶段的所有actor集合
-                for (auto iter1 = flatVec.begin(); iter1 != flatVec.end(); ++iter1) //遍历actor，调用初态initScheduleWork
-                {
-                    if (stage == mp_->findPartitionNumForFlatNode(*iter1))
-                    {
-                        buf << "\t\t\t" << (*iter1)->name << "_obj.runInitScheduleWork();\n";
-                    }
-                }
+                vector<FlatNode *> flatVec = psa_->FindActor(stage); //取得在该阶段的所有actor集合
+                //cout<<flatVec.size()<<endl;
+                for (auto fNode : flatVec) //遍历actor，调用初态initScheduleWork
+                    buf << "\t\t\t" << fNode->name << "_obj.runInitScheduleWork();\n";
                 buf << "\t\t}\n";
             }
         }
@@ -540,12 +535,29 @@ void X86CodeGeneration::CGThreads()
             buf << "\t\n\t\tmasterSync(" << nCpucore_ << ");\n";
         //初态调度完成
         buf << "\t}\n";
-
-
-
-
-
-        buf<<"}\n";
+        /* 稳态调度开始 */
+        buf << "\tfor(int _stageNum=" << MaxStageNum << ";_stageNum<2*" << MaxStageNum << "+MAX_ITER-1;_stageNum++)\n\t{\n";
+        for (int stage = MaxStageNum - 1; stage >= 0; stage--) //迭代stage
+        {
+            auto stageiter = stageSet.find(stage);
+            if (stageiter != stageSet.end())
+            { //该stage在该thread上
+                buf << "\t\tif(stage[" << stage << "])\n\t\t{\n";
+                vector<FlatNode *> flatVec = psa_->FindActor(stage);
+                for (auto iter : flatVec)
+                    buf << "\t\t\t" << iter->name << "_obj.runSteadyScheduleWork();\n";
+                buf << "\t\t}\n";
+            }
+        }
+        buf << "\t\tfor(int index=" << MaxStageNum - 1 << "; index>= 1; --index)\n";
+        buf << "\t\t\tstage[index] = stage[index-1];\n\t\tif(_stageNum == (MAX_ITER - 1 + " << MaxStageNum << "))\n\t\t{\n\t\t\tstage[0]=0;\n\t\t}\n";
+        if (i)
+            buf << "\t\n\t\tworkerSync(" << i << ");\n";
+        else
+            buf << "\t\n\t\tmasterSync(" << nCpucore_ << ");\n";
+        buf << "\t}\n"; 
+        /*稳态调度截止*/
+        buf << "}\n";
         string filename = "thread_" + to_string(i) + ".cpp";
         ofstream out(filename);
         out << buf.str();
