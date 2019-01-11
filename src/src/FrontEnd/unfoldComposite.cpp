@@ -20,6 +20,8 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
     id_j->init = init_j;
     primNode *prim = new primNode("int");
     declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    stmts->push_back(declI);
+    stmts->push_back(declJ);
     auto pos = outputs->begin();
     for (auto arg : *arguments)
     {
@@ -61,6 +63,8 @@ Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *argument
     id_j->init = init_j;
     primNode *prim = new primNode("int");
     declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    stmts->push_back(declI);
+    stmts->push_back(declJ);
     auto pos = inputs->begin();
     for (auto arg : *arguments)
     {

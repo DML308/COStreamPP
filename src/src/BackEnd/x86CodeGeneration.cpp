@@ -627,3 +627,8 @@ void X86CodeGeneration::CGMain()
     ofstream out("main.cpp");
     out << buf.str();
 }
+
+/****************生成函数文件*************************/
+void X86CodeGeneration::CGFunction(){
+
+}

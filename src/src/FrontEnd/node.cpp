@@ -55,6 +55,8 @@ string constantNode::toString()
 
 string initNode::toString()
 {
+    if (value.size() == 1)
+        return listToString(value);
     string str = "{";
     return str + listToString(value) + "}";
 }
