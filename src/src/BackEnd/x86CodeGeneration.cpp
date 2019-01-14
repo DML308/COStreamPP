@@ -629,6 +629,51 @@ void X86CodeGeneration::CGMain()
 }
 
 /****************生成函数文件*************************/
-void X86CodeGeneration::CGFunction(){
+void X86CodeGeneration::CGFunctionHeader()
+{
+    stringstream buf;
+    buf << "#ifndef _FUNCTION_H_\n";
+    buf << "#define _FUNCTION_H_\n";
+    if (Program != NULL)
+    {
+        for (auto it : *Program)
+        {
+            if (it->type == FuncDcl)
+            {
+                buf << (((funcDclNode *)it)->toString()) + ";";
+            }
+        }
+    }
+    buf << "\n";
+    buf << "#endif\n";
+    ofstream out("function_.h");
+    out << buf.str();
+}
 
+void X86CodeGeneration::CGFunction()
+{
+    stringstream buf;
+    buf << "#include \"function_.h\"\n";
+    if (Program != NULL)
+    {
+        for (auto it : *Program)
+        {
+            if (it->type == FuncDcl)
+            {
+                buf << (((funcDclNode *)it)->toString());
+                if (((funcDclNode *)it)->funcBody != NULL)
+                {
+                    buf << "{\n";
+                    buf << "\t" + ((funcDclNode *)it)->funcBody->toString();
+                    buf << "\n}\n";
+                }
+                else
+                {
+                    buf << "{\n}";
+                }
+            }
+        }
+    }
+    ofstream out("function_.cpp");
+    out << buf.str();
 }

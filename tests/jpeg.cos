@@ -176,3 +176,7 @@ composite Main ()
 	Sink(S3)(8);
 
 }
+
+int sum(int a,int b){
+	return a+b;
+}

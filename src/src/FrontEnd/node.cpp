@@ -140,15 +140,19 @@ string strdclNode::toString()
 
 string funcDclNode::toString()
 {
-    string str = "type.specifier(" + prim->name + ")";
-    str += " IDENTIFIER(" + name + ")";
-    str += " parameter.list(";
-    for (auto i : param_list)
+    string str = prim->toString()+" ";
+    str += name+"(";
+    if (param_list.size() != 0)
     {
-        assert(i);
-        str += ((idNode *)i)->valType + " " + ((idNode *)i)->toString() + ",";
+        auto top=param_list.front();
+        str+=((idNode*)top)->valType+" "+((idNode*)top)->toString();
+        for (auto iter=++param_list.begin();iter!=param_list.end();++iter)
+        {
+            str += ","+((idNode*)(*iter))->valType +" "+(*iter)->toString() ;
+        }
     }
-    str += ") function.body";
+
+    str += ")";
     return str;
 }
 
@@ -218,7 +222,7 @@ string blockNode::toString()
 string returnNode::toString()
 {
     string str = "return ";
-    str += exp->toString();
+    str += exp->toString()+";";
     return str;
 }
 

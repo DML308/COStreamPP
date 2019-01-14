@@ -36,7 +36,8 @@ public:
   void CGMain();
   /****************************************************/
   /****************生成函数文件*************************/
-  void CGFunction();
+  void CGFunctionHeader();  //function 头文件
+  void CGFunction();        //function定义
   /****************************************************/
 
 private:
