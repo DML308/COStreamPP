@@ -1,11 +1,11 @@
 %{
-//#define DEBUG
+#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
 #include "nodetype.h"
 #include "unfoldComposite.h"
-SymbolTable *top=NULL;
+SymbolTable *top=new SymbolTable(NULL);
 SymbolTable *saved=NULL;
 extern SymbolTable S;
 extern list<Node*> *Program;
@@ -164,12 +164,14 @@ declaration:
     ;
 declaring.list:
           type.specifier      idNode       initializer.opt  {
+              top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
               (static_cast<idNode*>$2)->init = $3;
               $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
         | declaring.list 	',' idNode        initializer.opt{
+              top->put(static_cast<idNode*>($3)->name,static_cast<idNode*>($3));
               (static_cast<idNode*>$3)->init = $4;
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
@@ -182,8 +184,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
-                                                  /* 需要添加符号表插入操作 */
-                                                  //$$=new list<Node*> ({$1});
+                                                  top->put(*($2),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -191,7 +192,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
                                                   idNode *id=new idNode(*($3),@3);
-                                                  /* 需要添加符号表插入操作 */
+                                                  top->put(*($3),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -205,11 +206,12 @@ stream.type.specifier:
         ;
 stream.declaration.list:
           type.specifier idNode     {
-                                        /* 需要添加符号表查找操作*/
+                                        top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                         (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                         $$ = new strdclNode((idNode*)$2,@1) ;
                                     }
         | stream.declaration.list ',' type.specifier idNode {
+                                        top->put(static_cast<idNode*>($4)->name,static_cast<idNode*>($4));
                                         (static_cast<idNode*>$4)->valType = (static_cast<primNode*>$3)->name;
                                         (static_cast<strdclNode*>$1)->id_list.push_back((idNode*)$4);
                                         $$ = $1 ;
@@ -301,6 +303,7 @@ parameter.list:
         ;
 parameter.declaration:
           type.specifier idNode     {
+                                          top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                           (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                           $$ = $2;
                                     }
@@ -360,6 +363,7 @@ composite.head.inout.member:
                   line("Line:%-4d",@1.first_line);
                   debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER(%s)  \n",$2->c_str());
                   idNode *id = new idNode(*($2),@2);
+                  top->put(*($2),id);
                   $$ = new inOutdeclNode($1,id,@2) ; 
             }
     ;
@@ -586,7 +590,10 @@ assignment.operator:
         | ERassign        { $$ = new string("^=") ; }
         | ORassign        { $$ = new string("|=") ; }
         ;
-exp:      idNode          { $$ = $1 ; }
+exp:      idNode          { line("Line:%-4d",@1.first_line);
+                            debug ("exp ::= idnode \n");
+                            //$1=top->get(static_cast<idNode*>$1->name);
+                            $$ = $1 ;  }
         | constant        { $$ = $1 ; }
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
