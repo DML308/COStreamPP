@@ -27,7 +27,7 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     X86Code->CGAllActorHeader();  //生成所有actor节点头文件
     X86Code->CGThreads();         //生成所有线程
     X86Code->CGMain();            //生成线程启动的main文件
-    X86Code->CGFunctionHeader();
+    X86Code->CGFunctionHeader();  //生成function头文件
     X86Code->CGFunction();        //生成function定义
     /* 拷贝程序运行所需要的库文件 */
     const char *command = "cp ../../src/lib/* .";

@@ -92,3 +92,15 @@ idNode *SymbolTable::operator[](string str)
     */
     return NULL;
 }
+
+void SymbolTable::put(string s,idNode *id){
+    table.insert((make_pair(s,id)));
+}
+
+idNode* SymbolTable::get(string s){
+    for(SymbolTable* e=this;e!=NULL;e!=e->getPrev()){
+        auto found=e->table.find(s);
+        if(found!=e->table.end()) return found->second;
+    }
+    return NULL;
+}

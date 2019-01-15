@@ -5,7 +5,8 @@
 #include "symbol.h"
 #include "nodetype.h"
 #include "unfoldComposite.h"
-
+SymbolTable *top=NULL;
+SymbolTable *saved=NULL;
 extern SymbolTable S;
 extern list<Node*> *Program;
 extern UnfoldComposite *unfold;
@@ -164,14 +165,12 @@ declaration:
 declaring.list:
           type.specifier      idNode       initializer.opt  {
               (static_cast<idNode*>$2)->init = $3;
-              //if(S[*($2)]==NULL) S.InsertSymbol(id);
               $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
         | declaring.list 	',' idNode        initializer.opt{
               (static_cast<idNode*>$3)->init = $4;
-              //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
               line("Line:%-4d",@1.first_line);
@@ -749,8 +748,16 @@ window.type:
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
 
-lblock: '{'  { EnterScope(); /* 进入新的变量块级作用域 */ }  
-rblock: '}'  { ExitScope();  /* 退出一个块级作用域    */ }
+lblock: '{' { 
+                  EnterScope(); /* 进入新的变量块级作用域 */ 
+                  saved=top;
+                  top=new SymbolTable(top);
+
+            }  
+rblock: '}' {     
+                  ExitScope();  /* 退出一个块级作用域    */ 
+                  top=saved;
+            }
 
 constant:
           doubleConstant    { $$ = new constantNode("double",$1,@1) ; }

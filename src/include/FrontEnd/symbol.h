@@ -11,23 +11,34 @@
 void EnterScope(void);
 void ExitScope(void);
 
-class SymbolTable{
-public:
+class SymbolTable
+{
+  public:
+    SymbolTable() {}
+    SymbolTable(SymbolTable *p)
+    {
+        prev = p;
+    }
+    ~SymbolTable() {}
+    bool LookupSymbol(string name);
+    void InsertSymbol(idNode *node);
+    /*put和get表示变量的插入和查找*/
+    void put(string s,idNode *);
+    idNode* get(string s);
+    void InsertCompositeSymbol(string name, compositeNode *);
+    compositeNode *LookupCompositeSymbol(string name);
+    SymbolTable * getPrev(){
+        return prev;
+    }
+    idNode *operator[](string str);
+    map<string, bool> firstScanFuncTable;
+    map<string, bool> firstScanCompTable;
 
-    SymbolTable(){}
-    ~SymbolTable(){}
-    bool LookupSymbol(string  name);
-    void InsertSymbol(idNode* node);
-    void InsertCompositeSymbol(string name,compositeNode*);
-    compositeNode* LookupCompositeSymbol(string name ) ;
-    idNode* operator[](string str);
-    map<string,bool>firstScanFuncTable;
-    map<string,bool>firstScanCompTable;
-
-private:
-    map<string,list<idNode*> >idTable;
-    map<string,functionNode*> funcTable;
-    map<string,compositeNode*> compTable;
-
+  private:
+    SymbolTable *prev;
+    map<string,idNode *> table;
+    map<string, list<idNode *>> idTable;
+    map<string, functionNode *> funcTable;
+    map<string, compositeNode *> compTable;
 };
 #endif
