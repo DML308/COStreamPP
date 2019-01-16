@@ -424,7 +424,6 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 /* 专用于splitjoin或者pipeline中展开流的替换，这些compositeCall可以指向相同的init，work*/
 compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, list<Node *> *inputs, list<Node *> *outputs)
 {
-
     compositeNode *copy = NULL;
     list<Node *> *stmt_list = NULL;
     stmt_list = new list<Node *>();
@@ -460,8 +459,8 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 operBodyNode *body = new operBodyNode(stmts, init, work, win);
                 operatorNode *oper = new operatorNode(preOutputs, operName, preInputs, body);
                 /* 修改输入输出的流名 */
-                modifyWindowName(oper, inputs, true);
-                modifyWindowName(oper, outputs, false);
+                modifyStreamName(oper, inputs, true);
+                modifyStreamName(oper, outputs, false);
                 stmt_list->push_back(oper);
                 compBodyNode *com_body = new compBodyNode(NULL, stmt_list);
                 copy = new compositeNode(head, com_body);
@@ -490,7 +489,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     {
     case Operator_:
         if (flag)
-            modifyWindowName(((operatorNode *)top), inputs, true);
+            modifyStreamName(((operatorNode *)top), inputs, true);
         ((operatorNode *)top)->inputs = inputs;
         break;
     case Binop:
@@ -498,7 +497,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         if (exp->type == Operator_)
         {
             if (flag)
-                modifyWindowName(((operatorNode *)exp), inputs, true);
+                modifyStreamName(((operatorNode *)exp), inputs, true);
             ((operatorNode *)exp)->inputs = inputs;
         }
         else if (exp->type == SplitJoin)
@@ -516,7 +515,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     {
     case Operator_:
         if (flag)
-            modifyWindowName(((operatorNode *)back), outputs, false);
+            modifyStreamName(((operatorNode *)back), outputs, false);
         ((operatorNode *)back)->outputs = outputs;
         break;
     case Binop:
@@ -525,7 +524,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         if (exp->type == Operator_)
         {
             if (flag)
-                modifyWindowName(((operatorNode *)exp), outputs, false);
+                modifyStreamName(((operatorNode *)exp), outputs, false);
             ((operatorNode *)exp)->outputs = outputs;
         }
         else if (exp->type == SplitJoin)
@@ -542,34 +541,40 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
 }
 
 /* style标识输入流还是输出流 */
-void UnfoldComposite::modifyWindowName(operatorNode *oper, list<Node *> *stream, bool style)
+void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream, bool style)
 {
     if (stream != NULL)
     {
         list<Node *> *inputs = NULL, *outputs = NULL;
         assert(stream->front()->type == Id);
         string replaceName = ((idNode *)stream->front())->name;
-        list<Node *> *stmts = oper->operBody->win->win_list;
-
-        //operatorNode中只有一个输入流和一个输出流
+        list<Node *> *win_stmts = oper->operBody->win->win_list;
+        Node *work = oper->operBody->work;
+        assert(work->type == Block);
+        list<Node *> *work_stmts = ((blockNode *)work)->stmt_list;
         switch (style)
         {
         case true:
             inputs = oper->inputs;
             if (inputs != NULL && inputs->size() != 0)
             {
+                //operatorNode中只有一个输入流和一个输出流
                 string name = ((idNode *)(inputs->front()))->name;
-                for (auto it : *stmts)
+                /* 替换window中流输入名*/
+                if (win_stmts != NULL)
                 {
-                    assert(it->type == WindowStmt);
-                    //cout << "address : " << &(((winStmtNode *)it)->winName) << endl;
-                    //cout<<((winStmtNode *)it)->winName<<endl;
-                    if (((winStmtNode *)it)->winName == name)
+                    for (auto it : *win_stmts)
                     {
-
-                        ((winStmtNode *)it)->winName = replaceName;
-                        //cout << "inputName: " << name << "  currentName : " << replaceName << endl;
+                        if (((winStmtNode *)it)->winName == name)
+                            ((winStmtNode *)it)->winName = replaceName;
                     }
+                }
+                //cout << replaceName << " " << name << endl;
+                /* 替换work中使用的形式参数流输入名 */
+                if (work_stmts != NULL)
+                {
+                    for (auto it : *work_stmts)
+                        modifyWorkName(it, replaceName, name);
                 }
             }
             break;
@@ -578,19 +583,87 @@ void UnfoldComposite::modifyWindowName(operatorNode *oper, list<Node *> *stream,
             if (outputs != NULL && outputs->size() != 0)
             {
                 string name = ((idNode *)(outputs->front()))->name;
-                for (auto it : *stmts)
+                /* 替换window中流输出名*/
+                if (win_stmts != NULL)
                 {
-                    assert(it->type == WindowStmt);
-                    //cout<<((winStmtNode *)it)->winName<<"   "<<name<<endl;
-
-                    if (((winStmtNode *)it)->winName == name)
+                    for (auto it : *win_stmts)
                     {
-                        //cout << "outName: " << name << "  currentName : " << replaceName << endl;
-                        ((winStmtNode *)it)->winName = replaceName;
+                        if (((winStmtNode *)it)->winName == name)
+                            ((winStmtNode *)it)->winName = replaceName;
                     }
+                }
+                /* 替换work中使用的形式参数流输出名 */
+                if (work_stmts != NULL)
+                {
+                    for (auto it : *work_stmts)
+                        modifyWorkName(it, replaceName, name);
                 }
             }
             break;
         }
+    }
+}
+
+/*递归遍历work中的语法树  替换stream形式参数(in out等)为实际的流变量名 */
+void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
+{
+    switch (u->type)
+    {
+    case Id:
+    {
+        if (static_cast<idNode *>(u)->name == name)
+        {
+            cout << static_cast<idNode *>(u)->name << " " << replaceName << endl;
+            static_cast<idNode *>(u)->name = replaceName;
+        }
+        break;
+    }
+    case Binop:
+    {
+        modifyWorkName(static_cast<binopNode *>(u)->left, replaceName, name);
+        modifyWorkName(static_cast<binopNode *>(u)->right, replaceName, name);
+        break;
+    }
+    case If:
+    {
+        modifyWorkName(static_cast<ifNode *>(u)->stmt, replaceName, name);
+        break;
+    }
+    case IfElse:
+    {
+        modifyWorkName(static_cast<ifElseNode *>(u)->stmt1, replaceName, name);
+        modifyWorkName(static_cast<ifElseNode *>(u)->stmt2, replaceName, name);
+        break;
+    }
+    case Unary:
+    {
+        modifyWorkName(static_cast<unaryNode *>(u)->exp, replaceName, name);
+        break;
+    }
+    case Ternary:
+    {
+        modifyWorkName(static_cast<ternaryNode *>(u)->first, replaceName, name);
+        modifyWorkName(static_cast<ternaryNode *>(u)->second, replaceName, name);
+        modifyWorkName(static_cast<ternaryNode *>(u)->third, replaceName, name);
+        break;
+    }
+    case For:
+    {
+        modifyWorkName(static_cast<forNode *>(u)->stmt, replaceName, name);
+        break;
+    }
+    case Block:
+    {
+        list<Node *> *stmts = static_cast<blockNode *>(u)->stmt_list;
+        if (stmts != NULL)
+        {
+            for (auto it : *stmts)
+            {
+                modifyWorkName(it, replaceName, name);
+            }
+        }
+        break;
+    }
+    
     }
 }

@@ -100,8 +100,8 @@ void SymbolTable::put(string s, idNode *id)
 
 idNode *SymbolTable::get(string s)
 {
-    SymbolTable *e = this;
-    for (int lev = Level; lev != -1; --lev)
+    
+    for (SymbolTable *e = this; e != NULL; e = e->getPrev())
     {
         for(auto it:e->table)
         cout<<it.first<<" ";
@@ -109,7 +109,7 @@ idNode *SymbolTable::get(string s)
         auto found = e->table.find(s);
         if (found != e->table.end())
             return found->second;
-        e = e->getPrev();
+        
     }
     string mesg = s + " has not been defined!";
     cout << mesg << endl;

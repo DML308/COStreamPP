@@ -1,12 +1,12 @@
 %{
-#define DEBUG
+//#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
 #include "nodetype.h"
 #include "unfoldComposite.h"
 SymbolTable *top=new SymbolTable(NULL);
-SymbolTable *saved=NULL;
+SymbolTable *saved=top;
 extern SymbolTable S;
 extern list<Node*> *Program;
 extern UnfoldComposite *unfold;
