@@ -23,7 +23,7 @@ composite IntSource(output stream<double x> Out)
 
 	Out = IntSource()
 	{
-		work
+		work 
 		{
 			int a;
 			int i,j;

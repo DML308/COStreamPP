@@ -455,7 +455,7 @@ void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
     /* work中的还含有流形式参数需要被替换 等符号表实现*/
     if (work != NULL)
         buf << work->toString();
-    buf << "\t\tpushToken();\n";
+    buf << "\n\t\tpushToken();\n";
     buf << "\t\tpopToken();\n";
     buf << "\t}\n";
 }

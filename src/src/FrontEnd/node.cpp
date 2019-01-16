@@ -81,9 +81,9 @@ string unaryNode::toString()
     else if (op == "PREDEC")
         return "--" + exp->toString();
     else if (op == "POSTINC")
-        return exp->toString() + "++;";
+        return exp->toString() + "++";
     else if (op == "POSTDEC")
-        return exp->toString() + "++;";
+        return exp->toString() + "++";
     else
         return op + exp->toString();
 }
@@ -101,7 +101,7 @@ string castNode::toString()
 string callNode::toString()
 {
     string str = name + '(';
-    return str + listToString(arg_list) + ')';
+    return str + listToString(arg_list) + ");";
 }
 
 string operatorNode::toString()

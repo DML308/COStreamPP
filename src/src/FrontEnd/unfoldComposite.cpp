@@ -448,6 +448,11 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 Node *init = operBody->init;
                 Node *work = operBody->work;
                 list<Node *> *win_list = new list<Node *>();
+                /*动态分配生成新的workNode*/
+                
+
+
+                /*动态分配生成新的windowNode*/
                 for (auto it : *operBody->win->win_list)
                 {
                     Node *winType = ((winStmtNode *)it)->winType;
@@ -465,7 +470,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 compBodyNode *com_body = new compBodyNode(NULL, stmt_list);
                 copy = new compositeNode(head, com_body);
             }
-            /* 暂时还未处理compsoite内为pipeline和splitjoin的情况 */
             else if (exp->type == Pipeline || exp->type == SplitJoin)
                 copy = comp;
         }
@@ -612,10 +616,7 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     case Id:
     {
         if (static_cast<idNode *>(u)->name == name)
-        {
-            cout << static_cast<idNode *>(u)->name << " " << replaceName << endl;
             static_cast<idNode *>(u)->name = replaceName;
-        }
         break;
     }
     case Binop:
@@ -664,6 +665,5 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
         }
         break;
     }
-    
     }
 }
