@@ -358,8 +358,7 @@ void workCompute(Node *node)
         break;
     case Initializer:
         break;
-    case ImplicitCast:
-        break;
+
     default:
         break;
     }
@@ -405,8 +404,7 @@ void WEST_astwalk(Node *node)
                 workCompute(it);
         }
         break;
-    // case ImplicitCast:
-    //     break;
+
     case Label:
         break;
     case Switch:

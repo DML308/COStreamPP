@@ -448,10 +448,10 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 Node *init = operBody->init;
                 Node *work = operBody->work;
                 list<Node *> *win_list = new list<Node *>();
-                /*动态分配生成新的workNode*/
-                
-
-
+                /*动态分配生成新的workNode 对work中的Node进行拷贝*/
+                //assert(work->type == Block);
+                work = workNodeCopy(work);
+                cout<<"---------------------------------------------"<<endl;
                 /*动态分配生成新的windowNode*/
                 for (auto it : *operBody->win->win_list)
                 {
@@ -470,6 +470,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 compBodyNode *com_body = new compBodyNode(NULL, stmt_list);
                 copy = new compositeNode(head, com_body);
             }
+            //若为pipeline或者splitjoin直接返回composite
             else if (exp->type == Pipeline || exp->type == SplitJoin)
                 copy = comp;
         }
@@ -573,7 +574,6 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
                             ((winStmtNode *)it)->winName = replaceName;
                     }
                 }
-                //cout << replaceName << " " << name << endl;
                 /* 替换work中使用的形式参数流输入名 */
                 if (work_stmts != NULL)
                 {
@@ -608,6 +608,139 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
     }
 }
 
+Node *UnfoldComposite::workNodeCopy(Node *u)
+{
+    switch (u->type)
+    {
+    case constant:
+        break;
+    case Id:
+    {
+        idNode *node=static_cast<idNode*>(u);
+        cout<<"location"<<node->loc->first_line<<" idname= "<<node->name<<endl;
+        idNode *replace_node = new idNode(node->name);
+        replace_node->arg_list = node->arg_list;
+        replace_node->init = node->init;
+        replace_node->isArray = node->isArray;
+        replace_node->isParam = node->isParam;
+        replace_node->isStream = node->isStream;
+        replace_node->level = node->level;
+        replace_node->version = node->version;
+        replace_node->type = node->type;
+        replace_node->valType = node->valType;
+        u = replace_node;
+        break;
+    }
+    case Binop:
+    {
+        workNodeCopy(static_cast<binopNode *>(u)->left);
+        workNodeCopy(static_cast<binopNode *>(u)->right);
+        break;
+    }
+    case Paren:
+    {
+        workNodeCopy(static_cast<parenNode *>(u)->exp);
+        break;
+    }
+    case Unary:
+    {
+        workNodeCopy(static_cast<unaryNode *>(u)->exp);
+        break;
+    }
+    case Cast:
+    {
+        workNodeCopy(static_cast<castNode *>(u)->exp);
+        break;
+    }
+    case Ternary:
+    {
+        workNodeCopy(static_cast<ternaryNode *>(u)->first);
+        workNodeCopy(static_cast<ternaryNode *>(u)->second);
+        workNodeCopy(static_cast<ternaryNode *>(u)->third);
+        break;
+    }
+    case Initializer:
+    case Label:
+        break;
+    case Switch:
+    {
+        workNodeCopy(static_cast<switchNode *>(u)->exp);
+        workNodeCopy(static_cast<switchNode *>(u)->stat);
+        break;
+    }
+    case Case:
+    {
+        workNodeCopy(static_cast<caseNode *>(u)->exp);
+        workNodeCopy(static_cast<caseNode *>(u)->stmt);
+        break;
+    }
+    case Default:
+    {
+        workNodeCopy(static_cast<defaultNode *>(u)->stmt);
+        break;
+    }
+    case If:
+    {
+        workNodeCopy(static_cast<ifNode *>(u)->exp);
+        workNodeCopy(static_cast<ifNode *>(u)->stmt);
+        break;
+    }
+    case IfElse:
+    {
+        workNodeCopy(static_cast<ifElseNode *>(u)->exp);
+        workNodeCopy(static_cast<ifElseNode *>(u)->stmt1);
+        workNodeCopy(static_cast<ifElseNode *>(u)->stmt2);
+        break;
+    }
+    case While:
+    {
+        workNodeCopy(static_cast<whileNode *>(u)->exp);
+        workNodeCopy(static_cast<whileNode *>(u)->stmt);
+        break;
+    }
+    case Do:
+    {
+        workNodeCopy(static_cast<doNode *>(u)->exp);
+        workNodeCopy(static_cast<doNode *>(u)->stmt);
+        break;
+    }
+    case For:
+    {
+        workNodeCopy(static_cast<forNode *>(u)->init);
+        workNodeCopy(static_cast<forNode *>(u)->cond);
+        workNodeCopy(static_cast<forNode *>(u)->next);
+        workNodeCopy(static_cast<forNode *>(u)->stmt);
+        break;
+    }
+    case Continue:
+    case Break:
+        break;
+    case Return:
+    {
+        workNodeCopy(static_cast<returnNode *>(u)->exp);
+        break;
+    }
+    case Block:
+    {
+        list<Node *> *stmts = static_cast<blockNode *>(u)->stmt_list;
+        if (stmts != NULL)
+        {
+            for (auto it : *stmts)
+            {
+                workNodeCopy(it);
+            }
+        }
+        break;
+    }
+    case primary:
+    case Array:
+        break;
+    default:
+        break;
+    }
+    return u;
+}
+
 /*递归遍历work中的语法树  替换stream形式参数(in out等)为实际的流变量名 */
 void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
 {
@@ -616,7 +749,10 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     case Id:
     {
         if (static_cast<idNode *>(u)->name == name)
+        {
+            //创建一个为replaceName的idnode 并改变原来idnode指针
             static_cast<idNode *>(u)->name = replaceName;
+        }
         break;
     }
     case Binop:
@@ -628,6 +764,11 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     case If:
     {
         modifyWorkName(static_cast<ifNode *>(u)->stmt, replaceName, name);
+        break;
+    }
+    case Paren:
+    {
+        modifyWorkName(static_cast<parenNode *>(u)->exp, replaceName, name);
         break;
     }
     case IfElse:
@@ -648,6 +789,11 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
         modifyWorkName(static_cast<ternaryNode *>(u)->third, replaceName, name);
         break;
     }
+    case Cast:
+    {
+        modifyWorkName(static_cast<castNode *>(u)->exp, replaceName, name);
+        break;
+    }
     case For:
     {
         modifyWorkName(static_cast<forNode *>(u)->stmt, replaceName, name);
@@ -665,5 +811,7 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
         }
         break;
     }
+    default:
+        break;
     }
 }

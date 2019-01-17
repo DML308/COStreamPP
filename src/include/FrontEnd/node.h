@@ -92,6 +92,7 @@ class idNode : public Node
         this->version = current_version[Level];
         this->valType = "int";
     }
+    
     idNode(string *name, YYLTYPE loc = YYLTYPE())
     {
         new (this) idNode(*name, loc);
@@ -225,6 +226,7 @@ class parenNode : public Node
     parenNode(expNode *exp, YYLTYPE loc = YYLTYPE())
     {
         setLoc(loc);
+        this->type=Paren;
         this->exp = exp;
     }
     ~parenNode() {}

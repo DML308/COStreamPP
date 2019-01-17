@@ -4,10 +4,9 @@
 typedef enum {
   /* expression nodes */
   constant=1, Id, Binop, Unary, Cast, Ternary,Initializer,
-  ImplicitCast,
   /* statement nodes */
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
-  Break, Return, Block,
+  Break, Return, Block,Paren,
   /* type nodes */
   primary,
   /* array */
