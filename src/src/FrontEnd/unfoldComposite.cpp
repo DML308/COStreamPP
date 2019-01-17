@@ -451,7 +451,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 /*动态分配生成新的workNode 对work中的Node进行拷贝*/
                 //assert(work->type == Block);
                 work = workNodeCopy(work);
-                cout<<"---------------------------------------------"<<endl;
+                cout << "---------------------------------------------" << endl;
                 /*动态分配生成新的windowNode*/
                 for (auto it : *operBody->win->win_list)
                 {
@@ -614,10 +614,15 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
     {
     case constant:
         break;
+    case Decl:
+    {
+        for (auto it : static_cast<declareNode *>(u)->id_list)
+            workNodeCopy(it);
+        break;
+    }
     case Id:
     {
-        idNode *node=static_cast<idNode*>(u);
-        cout<<"location"<<node->loc->first_line<<" idname= "<<node->name<<endl;
+        idNode *node = static_cast<idNode *>(u);
         idNode *replace_node = new idNode(node->name);
         replace_node->arg_list = node->arg_list;
         replace_node->init = node->init;
@@ -629,6 +634,8 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
         replace_node->type = node->type;
         replace_node->valType = node->valType;
         u = replace_node;
+        cout << "location:" << node->loc->first_line << " idname= " << node->name << "   " << node << " " << u << endl;
+
         break;
     }
     case Binop:
@@ -750,9 +757,16 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     {
         if (static_cast<idNode *>(u)->name == name)
         {
+            cout << "*******************" << name << " " << u << "*************************" << endl;
             //创建一个为replaceName的idnode 并改变原来idnode指针
-            static_cast<idNode *>(u)->name = replaceName;
+            //static_cast<idNode *>(u)->name = replaceName;
         }
+        break;
+    }
+    case Decl:
+    {
+        for (auto it : static_cast<declareNode *>(u)->id_list)
+            modifyWorkName(it, replaceName, name);
         break;
     }
     case Binop:
