@@ -114,7 +114,7 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#include <string>\n";
     buf << "using namespace std;\n";
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
-    set<string> typeSet;
+    map<string, string> typeSet;
     for (auto iter1 : *Program)
     {
         if (iter1->type == Composite)
@@ -132,8 +132,9 @@ void X86CodeGeneration::CGGlobalHeader()
                     {
                         auto nd = static_cast<inOutdeclNode *>(it)->strType;
                         string temp = static_cast<strdclNode *>(nd)->toString();
-                        string str = temp.substr(0, temp.find(' '));
-                        typeSet.insert(str);
+                        string type = temp.substr(0, temp.find(' '));
+                        string data = temp.substr(temp.find(' '), temp.size() - 1);
+                        typeSet.insert(make_pair(type, data));
                     }
                 }
                 if (outputs != NULL)
@@ -142,8 +143,9 @@ void X86CodeGeneration::CGGlobalHeader()
                     {
                         auto nd = static_cast<inOutdeclNode *>(it)->strType;
                         string temp = static_cast<strdclNode *>(nd)->toString();
-                        string str = temp.substr(0, temp.find(' '));
-                        typeSet.insert(str);
+                        string type = temp.substr(0, temp.find(' '));
+                        string data = temp.substr(temp.find(' '), temp.size() - 1);
+                        typeSet.insert(make_pair(type, data));
                     }
                 }
             }
@@ -154,7 +156,7 @@ void X86CodeGeneration::CGGlobalHeader()
     int cnt = 1;
     for (auto it : typeSet)
     {
-        buf << "\t" << it << " " << it[0] << to_string(cnt++) << ";\n";
+        buf << "\t" << it.first << " " << it.second << ";\n";
     }
     buf << "};\n";
     for (auto iter1 : flatNodes_)

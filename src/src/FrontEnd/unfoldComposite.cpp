@@ -451,7 +451,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 /*动态分配生成新的workNode 对work中的Node进行拷贝*/
                 //assert(work->type == Block);
                 work = workNodeCopy(work);
-                cout << "---------------------------------------------" << endl;
+                //cout << "---------------------------------------------" << endl;
                 /*动态分配生成新的windowNode*/
                 for (auto it : *operBody->win->win_list)
                 {
@@ -616,54 +616,66 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
         break;
     case Decl:
     {
-        for (auto it : static_cast<declareNode *>(u)->id_list)
-            workNodeCopy(it);
+        Node *prim = workNodeCopy(static_cast<declareNode *>(u)->prim);
+        Node *id = static_cast<declareNode *>(u)->id_list.front();
+        declareNode *tmp = new declareNode((primNode *)prim, (idNode *)id);
+        for (auto it = ++static_cast<declareNode *>(u)->id_list.begin(); it != static_cast<declareNode *>(u)->id_list.end(); ++it)
+            tmp->id_list.push_back((idNode *)workNodeCopy(*it));
+        return tmp;
         break;
     }
     case Id:
     {
         idNode *node = static_cast<idNode *>(u);
-        idNode *replace_node = new idNode(node->name);
-        replace_node->arg_list = node->arg_list;
-        replace_node->init = node->init;
-        replace_node->isArray = node->isArray;
-        replace_node->isParam = node->isParam;
-        replace_node->isStream = node->isStream;
-        replace_node->level = node->level;
-        replace_node->version = node->version;
-        replace_node->type = node->type;
-        replace_node->valType = node->valType;
-        u = replace_node;
-        cout << "location:" << node->loc->first_line << " idname= " << node->name << "   " << node << " " << u << endl;
-
+        idNode *tmp = new idNode(node->name);
+        tmp->arg_list = node->arg_list;
+        tmp->init = node->init;
+        tmp->isArray = node->isArray;
+        tmp->isParam = node->isParam;
+        tmp->isStream = node->isStream;
+        tmp->level = node->level;
+        tmp->version = node->version;
+        tmp->type = node->type;
+        tmp->valType = node->valType;
+        //cout << "location:" << node->loc->first_line << " idname= " << node->name << "   " << node << " " << u << endl;
+        return tmp;
         break;
     }
     case Binop:
     {
-        workNodeCopy(static_cast<binopNode *>(u)->left);
-        workNodeCopy(static_cast<binopNode *>(u)->right);
+        Node *left = workNodeCopy(static_cast<binopNode *>(u)->left);
+        Node *right = workNodeCopy(static_cast<binopNode *>(u)->right);
+        binopNode *tmp = new binopNode((expNode *)left, static_cast<binopNode *>(u)->op, (expNode *)right);
+        return tmp;
         break;
     }
     case Paren:
     {
-        workNodeCopy(static_cast<parenNode *>(u)->exp);
+        Node *exp = workNodeCopy(static_cast<parenNode *>(u)->exp);
+        parenNode *tmp = new parenNode((expNode *)exp);
+        return tmp;
         break;
     }
     case Unary:
     {
-        workNodeCopy(static_cast<unaryNode *>(u)->exp);
+        Node *exp = workNodeCopy(static_cast<unaryNode *>(u)->exp);
+        unaryNode *tmp = new unaryNode(static_cast<unaryNode *>(u)->op, (expNode *)exp);
+        return tmp;
         break;
     }
     case Cast:
     {
+
         workNodeCopy(static_cast<castNode *>(u)->exp);
         break;
     }
     case Ternary:
     {
-        workNodeCopy(static_cast<ternaryNode *>(u)->first);
-        workNodeCopy(static_cast<ternaryNode *>(u)->second);
-        workNodeCopy(static_cast<ternaryNode *>(u)->third);
+        Node *first = workNodeCopy(static_cast<ternaryNode *>(u)->first);
+        Node *second = workNodeCopy(static_cast<ternaryNode *>(u)->second);
+        Node *third = workNodeCopy(static_cast<ternaryNode *>(u)->third);
+        ternaryNode *tmp = new ternaryNode((expNode *)first, (expNode *)second, (expNode *)third);
+        return tmp;
         break;
     }
     case Initializer:
@@ -671,32 +683,40 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
         break;
     case Switch:
     {
-        workNodeCopy(static_cast<switchNode *>(u)->exp);
-        workNodeCopy(static_cast<switchNode *>(u)->stat);
+        Node *exp = workNodeCopy(static_cast<switchNode *>(u)->exp);
+        Node *stat = workNodeCopy(static_cast<switchNode *>(u)->stat);
+        switchNode *tmp = new switchNode((expNode *)exp, stat);
+        return tmp;
         break;
     }
     case Case:
     {
-        workNodeCopy(static_cast<caseNode *>(u)->exp);
-        workNodeCopy(static_cast<caseNode *>(u)->stmt);
+        Node *exp = workNodeCopy(static_cast<caseNode *>(u)->exp);
+        Node *stmt = workNodeCopy(static_cast<caseNode *>(u)->stmt);
+        caseNode *tmp = new caseNode((expNode *)exp, (expNode *)stmt);
+        return tmp;
         break;
     }
     case Default:
     {
-        workNodeCopy(static_cast<defaultNode *>(u)->stmt);
+        return static_cast<defaultNode *>(u);
         break;
     }
     case If:
     {
-        workNodeCopy(static_cast<ifNode *>(u)->exp);
-        workNodeCopy(static_cast<ifNode *>(u)->stmt);
+        Node *exp = workNodeCopy(static_cast<ifNode *>(u)->exp);
+        Node *stmt = workNodeCopy(static_cast<ifNode *>(u)->stmt);
+        ifNode *tmp = new ifNode((expNode *)exp, stmt);
+        return tmp;
         break;
     }
     case IfElse:
     {
-        workNodeCopy(static_cast<ifElseNode *>(u)->exp);
-        workNodeCopy(static_cast<ifElseNode *>(u)->stmt1);
-        workNodeCopy(static_cast<ifElseNode *>(u)->stmt2);
+        Node *exp = workNodeCopy(static_cast<ifElseNode *>(u)->exp);
+        Node *stmt1 = workNodeCopy(static_cast<ifElseNode *>(u)->stmt1);
+        Node *stmt2 = workNodeCopy(static_cast<ifElseNode *>(u)->stmt2);
+        ifElseNode *tmp = new ifElseNode((expNode *)exp, (expNode *)stmt1, (expNode *)stmt2);
+        return tmp;
         break;
     }
     case While:
@@ -713,35 +733,56 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
     }
     case For:
     {
-        workNodeCopy(static_cast<forNode *>(u)->init);
-        workNodeCopy(static_cast<forNode *>(u)->cond);
-        workNodeCopy(static_cast<forNode *>(u)->next);
-        workNodeCopy(static_cast<forNode *>(u)->stmt);
+        Node *init = workNodeCopy(static_cast<forNode *>(u)->init);
+        Node *cond = workNodeCopy(static_cast<forNode *>(u)->cond);
+        Node *next = workNodeCopy(static_cast<forNode *>(u)->next);
+        Node *stmt = workNodeCopy(static_cast<forNode *>(u)->stmt);
+        forNode *tmp = new forNode(init, (expNode *)cond, (expNode *)next, stmt);
+        return tmp;
         break;
     }
     case Continue:
-    case Break:
+    {
+        return static_cast<continueNode *>(u);
         break;
+    }
+    case Break:
+    {
+        return static_cast<breakNode *>(u);
+        break;
+    }
     case Return:
     {
-        workNodeCopy(static_cast<returnNode *>(u)->exp);
+        Node *exp = workNodeCopy(static_cast<returnNode *>(u)->exp);
+        returnNode *tmp = new returnNode((expNode *)tmp);
+        return tmp;
         break;
     }
     case Block:
     {
+        list<Node *> *stmt_list = new list<Node *>();
         list<Node *> *stmts = static_cast<blockNode *>(u)->stmt_list;
         if (stmts != NULL)
         {
             for (auto it : *stmts)
             {
-                workNodeCopy(it);
+                stmt_list->push_back(workNodeCopy(it));
             }
         }
+        blockNode *block = new blockNode(stmt_list);
+        return block;
         break;
     }
     case primary:
-    case Array:
+    {
+        return static_cast<primNode *>(u);
         break;
+    }
+    case Array:
+    {
+        return static_cast<arrayNode *>(u);
+        break;
+    }
     default:
         break;
     }
@@ -757,22 +798,51 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     {
         if (static_cast<idNode *>(u)->name == name)
         {
-            cout << "*******************" << name << " " << u << "*************************" << endl;
-            //创建一个为replaceName的idnode 并改变原来idnode指针
-            //static_cast<idNode *>(u)->name = replaceName;
+            //cout << "*******************" << name << " " << u << "*************************" << endl;
+            static_cast<idNode *>(u)->name = replaceName;
         }
         break;
     }
-    case Decl:
+    case Cast:
     {
-        for (auto it : static_cast<declareNode *>(u)->id_list)
-            modifyWorkName(it, replaceName, name);
+        modifyWorkName(static_cast<castNode *>(u)->prim, replaceName, name);
+        modifyWorkName(static_cast<castNode *>(u)->exp, replaceName, name);
         break;
     }
+
     case Binop:
     {
         modifyWorkName(static_cast<binopNode *>(u)->left, replaceName, name);
         modifyWorkName(static_cast<binopNode *>(u)->right, replaceName, name);
+        break;
+    }
+    case Unary:
+    {
+        modifyWorkName(static_cast<unaryNode *>(u)->exp, replaceName, name);
+        break;
+    }
+    case Ternary:
+    {
+        modifyWorkName(static_cast<ternaryNode *>(u)->first, replaceName, name);
+        modifyWorkName(static_cast<ternaryNode *>(u)->second, replaceName, name);
+        modifyWorkName(static_cast<ternaryNode *>(u)->third, replaceName, name);
+        break;
+    }
+    case Switch:
+    {
+        modifyWorkName(static_cast<switchNode *>(u)->exp, replaceName, name);
+        modifyWorkName(static_cast<switchNode *>(u)->stat, replaceName, name);
+        break;
+    }
+    case Case:
+    {
+        modifyWorkName(static_cast<caseNode *>(u)->exp, replaceName, name);
+        modifyWorkName(static_cast<caseNode *>(u)->stmt, replaceName, name);
+        break;
+    }
+    case Default:
+    {
+        modifyWorkName(static_cast<defaultNode *>(u)->stmt, replaceName, name);
         break;
     }
     case If:
@@ -791,26 +861,26 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
         modifyWorkName(static_cast<ifElseNode *>(u)->stmt2, replaceName, name);
         break;
     }
-    case Unary:
+    case While:
     {
-        modifyWorkName(static_cast<unaryNode *>(u)->exp, replaceName, name);
+        modifyWorkName(static_cast<whileNode *>(u)->exp, replaceName, name);
+        modifyWorkName(static_cast<whileNode *>(u)->stmt, replaceName, name);
         break;
     }
-    case Ternary:
+    case Do:
     {
-        modifyWorkName(static_cast<ternaryNode *>(u)->first, replaceName, name);
-        modifyWorkName(static_cast<ternaryNode *>(u)->second, replaceName, name);
-        modifyWorkName(static_cast<ternaryNode *>(u)->third, replaceName, name);
-        break;
-    }
-    case Cast:
-    {
-        modifyWorkName(static_cast<castNode *>(u)->exp, replaceName, name);
+        modifyWorkName(static_cast<doNode *>(u)->exp, replaceName, name);
+        modifyWorkName(static_cast<doNode *>(u)->stmt, replaceName, name);
         break;
     }
     case For:
     {
         modifyWorkName(static_cast<forNode *>(u)->stmt, replaceName, name);
+        break;
+    }
+    case Return:
+    {
+        modifyWorkName(static_cast<returnNode *>(u)->exp, replaceName, name);
         break;
     }
     case Block:
@@ -823,6 +893,12 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
                 modifyWorkName(it, replaceName, name);
             }
         }
+        break;
+    }
+    case Decl:
+    {
+        for (auto it : static_cast<declareNode *>(u)->id_list)
+            modifyWorkName(it, replaceName, name);
         break;
     }
     default:
