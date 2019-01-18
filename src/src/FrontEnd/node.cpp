@@ -16,6 +16,7 @@ void Node::setLoc(YYLTYPE loc)
     this->loc->last_column = loc.last_column;
 }
 
+
 string primNode::toString()
 {
     string str = "";
@@ -49,7 +50,7 @@ string constantNode::toString()
     else if (style == "integer")
         return to_string(llval);
     else
-        return sval;
+        return "\""+sval+"\"";
     ;
 }
 
@@ -140,15 +141,15 @@ string strdclNode::toString()
 
 string funcDclNode::toString()
 {
-    string str = prim->toString()+" ";
-    str += name+"(";
+    string str = prim->toString() + " ";
+    str += name + "(";
     if (param_list.size() != 0)
     {
-        auto top=param_list.front();
-        str+=((idNode*)top)->valType+" "+((idNode*)top)->toString();
-        for (auto iter=++param_list.begin();iter!=param_list.end();++iter)
+        auto top = param_list.front();
+        str += ((idNode *)top)->valType + " " + ((idNode *)top)->toString();
+        for (auto iter = ++param_list.begin(); iter != param_list.end(); ++iter)
         {
-            str += ","+((idNode*)(*iter))->valType +" "+(*iter)->toString() ;
+            str += "," + ((idNode *)(*iter))->valType + " " + (*iter)->toString();
         }
     }
 
@@ -222,7 +223,7 @@ string blockNode::toString()
 string returnNode::toString()
 {
     string str = "return ";
-    str += exp->toString()+";";
+    str += exp->toString() + ";";
     return str;
 }
 

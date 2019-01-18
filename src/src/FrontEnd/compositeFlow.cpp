@@ -162,7 +162,6 @@ void streamFlow(compositeNode *main)
     list<Node *> body_stmt = *(main->body->stmt_List);
     for (auto it : body_stmt)
     {
-        //cout<<it->type<<endl;
         switch (it->type)
         {
         case Binop:

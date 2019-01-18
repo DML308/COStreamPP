@@ -783,6 +783,17 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
         return static_cast<arrayNode *>(u);
         break;
     }
+    case Call:
+    {
+        list<Node *> *ids=new list<Node*>();
+        for(auto it:static_cast<callNode*>(u)->arg_list)
+        {
+            ids->push_back(workNodeCopy(it));
+        }
+        callNode * tmp=new callNode(static_cast<callNode*>(u)->name,ids);
+        return tmp;
+        break;
+    }
     default:
         break;
     }
@@ -898,6 +909,12 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     case Decl:
     {
         for (auto it : static_cast<declareNode *>(u)->id_list)
+            modifyWorkName(it, replaceName, name);
+        break;
+    }
+    case Call:
+    {
+        for (auto it : static_cast<callNode *>(u)->arg_list)
             modifyWorkName(it, replaceName, name);
         break;
     }

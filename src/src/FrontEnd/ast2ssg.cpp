@@ -23,23 +23,19 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                //cout << "Operator_" << endl;
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                //cout<<"compositeCall"<<endl;
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
             {
-                //cout << "SplitJoin" << endl;
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
-                //cout<<"pipeline"<<endl;
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
@@ -47,26 +43,22 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
-            //cout << "Operator_" << endl;
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            //cout << "compositeCall" << endl;
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
-            //cout << "SplitJoin" << endl;
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
         {
-            //cout << "Pipeline" << endl;
             ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;

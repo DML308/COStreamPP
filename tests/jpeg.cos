@@ -35,7 +35,6 @@ composite IntSource(output stream<double x> Out)
 					k++;
 				}
 			}
-			println("");
 		}
 		window{
 			Out tumbling(256);
