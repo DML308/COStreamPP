@@ -148,10 +148,10 @@ composite Sink(input stream<double x> In)
 		{
 			int i;
 			for(i = 0;i<8;i++){
-				print(In[i].x);
-				print(" ");
+				cout<<In[i].x;
+				cout<<" ";
 			}
-			println("");
+			cout<<endl;
 		}
 		window{
 			In sliding(8,8);

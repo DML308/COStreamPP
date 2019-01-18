@@ -16,7 +16,6 @@ void Node::setLoc(YYLTYPE loc)
     this->loc->last_column = loc.last_column;
 }
 
-
 string primNode::toString()
 {
     string str = "";
@@ -50,7 +49,7 @@ string constantNode::toString()
     else if (style == "integer")
         return to_string(llval);
     else
-        return "\""+sval+"\"";
+        return "\"" + sval + "\"";
     ;
 }
 
@@ -65,6 +64,9 @@ string initNode::toString()
 string binopNode::toString()
 {
     if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/=")
+        return left->toString() + op + right->toString() + ";";
+    //当为输出时候需要加分号
+    if (left->type == Id && ((idNode *)left)->name == "cout")
         return left->toString() + op + right->toString() + ";";
     return left->toString() + op + right->toString();
 }

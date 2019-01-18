@@ -626,6 +626,7 @@ void X86CodeGeneration::CGMain()
     buf << "\t\t\t\tbreak;\n";
     buf << "\t\t}\n";
     buf << "\t}\n";
+    buf << "}\n";
     ofstream out("main.cpp");
     out << buf.str();
 }
