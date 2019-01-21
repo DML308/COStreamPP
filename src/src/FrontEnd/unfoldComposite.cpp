@@ -74,10 +74,10 @@ Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *argument
         next_j = new unaryNode("POSTINC", (expNode *)id_j);
         idNode *left = new idNode(static_cast<idNode *>(output)->name);
         left->isArray = 1;
-        left->arg_list.push_back(id_i);
+        left->arg_list.push_back(next_j);
         idNode *right = new idNode((static_cast<idNode *>(*pos))->name);
         right->isArray = 1;
-        right->arg_list.push_back(next_j);
+        right->arg_list.push_back(id_i);
         stmt = new binopNode((expNode *)left, "=", (expNode *)right);
         for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
         stmts->push_back(for_node);
