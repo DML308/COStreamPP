@@ -80,9 +80,9 @@ string ternaryNode::toString()
 string unaryNode::toString()
 {
     if (op == "PREINC")
-        return "++" + exp->toString();
+        return "++" + exp->toString() ;
     else if (op == "PREDEC")
-        return "--" + exp->toString();
+        return "--" + exp->toString() ;
     else if (op == "POSTINC")
         return exp->toString() + "++";
     else if (op == "POSTDEC")
@@ -202,6 +202,9 @@ string forNode::toString()
     str += cond->toString();
     str += ";";
     str += next->toString();
+    //去掉分号
+    if (str[str.size() - 1] == ';')
+        str = str.substr(0, str.size() - 1);
     str += ")";
     str += "\t\t" + stmt->toString();
     return str;
@@ -263,3 +266,4 @@ string funcBodyNode::toString()
     }
     return str;
 }
+

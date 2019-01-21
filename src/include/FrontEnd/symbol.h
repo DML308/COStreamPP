@@ -23,11 +23,12 @@ class SymbolTable
     bool LookupSymbol(string name);
     void InsertSymbol(idNode *node);
     /*put和get表示变量的插入和查找*/
-    void put(string s,idNode *);
-    idNode* get(string s);
+    void put(string s, idNode *);
+    idNode *get(string s);
     void InsertCompositeSymbol(string name, compositeNode *);
     compositeNode *LookupCompositeSymbol(string name);
-    SymbolTable * getPrev(){
+    SymbolTable *getPrev()
+    {
         return prev;
     }
     idNode *operator[](string str);
@@ -36,7 +37,7 @@ class SymbolTable
 
   private:
     SymbolTable *prev;
-    map<string,idNode *> table;
+    map<string, idNode *> table;
     map<string, list<idNode *>> idTable;
     map<string, functionNode *> funcTable;
     map<string, compositeNode *> compTable;
