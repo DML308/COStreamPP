@@ -80,13 +80,13 @@ string ternaryNode::toString()
 string unaryNode::toString()
 {
     if (op == "PREINC")
-        return "++" + exp->toString();
+        return "++" + exp->toString() + ";";
     else if (op == "PREDEC")
-        return "--" + exp->toString();
+        return "--" + exp->toString() + ";";
     else if (op == "POSTINC")
-        return exp->toString() + "++";
+        return exp->toString() + "++" + ";";
     else if (op == "POSTDEC")
-        return exp->toString() + "++";
+        return exp->toString() + "--" + ";";
     else
         return op + exp->toString();
 }
@@ -126,7 +126,10 @@ string idNode::toString()
         {
             for (auto i : arg_list)
             {
-                str += '[' + i->toString() + ']';
+                str += '[' + i->toString();
+                if (str[str.size() - 1] == ';')
+                    str = str.substr(0, str.size() - 1);
+                str += "]";
             }
         }
     }
