@@ -103,7 +103,6 @@ string castNode::toString()
 
 string callNode::toString()
 {
-    cout<<name<<endl;
     if (name == "print")
         return "cout<<" + listToString(arg_list) + ";";
     else if (name == "println")
