@@ -80,9 +80,9 @@ string ternaryNode::toString()
 string unaryNode::toString()
 {
     if (op == "PREINC")
-        return "++" + exp->toString() ;
+        return "++" + exp->toString();
     else if (op == "PREDEC")
-        return "--" + exp->toString() ;
+        return "--" + exp->toString();
     else if (op == "POSTINC")
         return exp->toString() + "++";
     else if (op == "POSTDEC")
@@ -103,6 +103,11 @@ string castNode::toString()
 
 string callNode::toString()
 {
+    cout<<name<<endl;
+    if (name == "print")
+        return "cout<<" + listToString(arg_list) + ";";
+    else if (name == "println")
+        return "cout<<" + listToString(arg_list) + "<<endl;";
     string str = name + '(';
     return str + listToString(arg_list) + ");";
 }
@@ -266,4 +271,3 @@ string funcBodyNode::toString()
     }
     return str;
 }
-
