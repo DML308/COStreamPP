@@ -1,9 +1,13 @@
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
+#include "compositeFlow.h"
 static StaticStreamGraph *ssg = NULL;
 extern UnfoldComposite *unfold;
-//对composite节点展开成数据流图 oldComposite表示原来的compositecall,对于splitjoin，pipeline结构无区别
-/* 暂时不清楚oldComposite的作用 用node*表示*/
+/*
+* 功能：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
+* 输入参数：composite
+* 输出：设置静态数据流图的对应flatNode节点，完成数据流边到flatNode节点的映射
+*/
 void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
     /* 获取compositebody内的statementNode */
@@ -19,17 +23,14 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                //cout << "Operator_" << endl;
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                //cout<<"compositeCall"<<endl;
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
             {
-                //cout << "SplitJoin" << endl;
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
@@ -42,26 +43,24 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
-            //cout << "Operator_" << endl;
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            //cout << "compositeCall" << endl;
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
-            //cout << "SplitJoin" << endl;
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
         {
-            //cout << "Pipeline" << endl;
+            ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
+            GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;
         }
         default:
@@ -71,45 +70,21 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
     return;
 }
 
-void streamFlow(compositeNode *main)
-{
-    list<Node *> body_stmt = *(main->body->stmt_List);
-    for (auto it : body_stmt)
-    {
-        switch (it->type)
-        {
-        case Binop:
-        {
-            expNode *right = static_cast<binopNode *>(it)->right;
-            if(right->type == CompositeCall)
-            {
-                compositeNode *comp = ((compositeCallNode *)right)->actual_composite;
-                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp, 
-                ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs,1);
-            }
-            break;
-        }
-        case CompositeCall:
-        {
-            compositeNode *comp = ((compositeCallNode *)it)->actual_composite;
-            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp, 
-            ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs,1);
-            break;
-        }
-        default:
-            break;
-        }
-    }
-}
-
+/*
+ *  功能：将抽象语法树转为平面图 
+ *  输入参数：gMaincomposite
+ *  streamFlow：对所有Main composite的composite调用进行实际流边量名的替换
+ *  GraphToOperators：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
+ *  SetTopNode：设置顶层节点
+ *  ResetFlatNodeNames：给所有的图节点重命名
+ *  SetFlatNodesWeights：设置静态数据流图的peek，pop，push值
+ *  输出：静态数据流图ssg
+ */
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
     GraphToOperators(mainComposite, mainComposite);
-    // for(auto it:ssg->flatNodes){
-    //     cout<<it->nIn<<" "<<it->nOut<<endl;
-    // }
     ssg->SetTopNode();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();
@@ -117,21 +92,21 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     /* 测试peek，pop，push值 */
 
     // for (auto it : ssg->flatNodes){
-	// 	cout << "push: ";
-	// 	for (auto it2 : it->outPushWeights){
-	// 		cout << it2 << " ";
-	// 	}
-	// 	cout << endl;
-	// 	cout << "pop: ";
-	// 	for (auto it3 : it->inPopWeights){
-	// 		cout << it3 << " ";
-	// 	}
-	// 	cout << endl;
-	// 	cout << "peek: ";
-	// 	for (auto it4 : it->inPeekWeights){
-	// 		cout << it4 << " ";
-	// 	}
-	// 	cout << endl << endl;
-	// }
+    // 	cout << "push: ";
+    // 	for (auto it2 : it->outPushWeights){
+    // 		cout << it2 << " ";
+    // 	}
+    // 	cout << endl;
+    // 	cout << "pop: ";
+    // 	for (auto it3 : it->inPopWeights){
+    // 		cout << it3 << " ";
+    // 	}
+    // 	cout << endl;
+    // 	cout << "peek: ";
+    // 	for (auto it4 : it->inPeekWeights){
+    // 		cout << it4 << " ";
+    // 	}
+    // 	cout << endl << endl;
+    // }
     return ssg;
 }

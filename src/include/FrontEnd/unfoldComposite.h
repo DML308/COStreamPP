@@ -6,7 +6,6 @@ class UnfoldComposite
 {
   public:
     int num;
-    vector<Node *> call_List; //存储splitjoin/pipeline中的compositeCall
     UnfoldComposite()
     {
         num = 0;
@@ -16,10 +15,9 @@ class UnfoldComposite
     {
         return name +"_"+ to_string(num);
     }
-    void setCallList(list<Node *> *stmt);
     compositeNode *UnfoldRoundrobin(string comName, splitjoinNode *node);
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
-    compositeNode *UnfoldPipeline(Node *node);
+    compositeNode *UnfoldPipeline(pipelineNode *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
     Node *MakeRoundrobinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     Node *MakeJoinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
@@ -27,6 +25,8 @@ class UnfoldComposite
     operatorNode *MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments);
     compositeNode *streamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs,int flag);
     compositeNode *compositeCallStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs);
-    void modifyWindowName(operatorNode *oper,list<Node*> *stream ,bool style );
+    void modifyStreamName(operatorNode *oper,list<Node*> *stream ,bool style );
+    void modifyWorkName(Node *u,string replaceName,string name);
+    Node* workNodeCopy(Node *u);
 };
 #endif

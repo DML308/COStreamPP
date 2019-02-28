@@ -1,4 +1,4 @@
-int Mutrix[][16]={
+int Mutrix[16][16]={
          52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94,
 		 52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94,
 		 52,55,61,66,70,61,64,73,63,59,55,90,109,85,69,72,62,59,68,113,144,104,66,73,63,58,71,122,154,106,70,69,67,61,68,104,126,88,68,70,79,65,60,70,77,68,58,75,85,71,64,59,55,61,65,83,87,79,69,68,65,76,78,94,
@@ -18,12 +18,12 @@ const int  PI = 3.141592;
 double pi = 3.14159265358979323846;
 
 stream<double x,int y>S;
-composite IntSource(output stream<double x,int y> Out)
+composite IntSource(output stream<double x> Out)
 {
 
 	Out = IntSource()
 	{
-		work
+		work 
 		{
 			int a;
 			int i,j;
@@ -35,7 +35,6 @@ composite IntSource(output stream<double x,int y> Out)
 					k++;
 				}
 			}
-			println("");
 		}
 		window{
 			Out tumbling(256);
@@ -140,7 +139,7 @@ composite DCT_X(output stream<double x>Out,input stream<double x>In)
 	};
 }
 
-composite Sink(input stream<int x> In)
+composite Sink(input stream<double x> In)
 {
 
 	Sink(In)
@@ -149,10 +148,10 @@ composite Sink(input stream<int x> In)
 		{
 			int i;
 			for(i = 0;i<8;i++){
-				print(In[i].x);
-				print(" ");
+				cout<<In[i].x;
+				cout<<" ";
 			}
-			println("");
+			cout<<endl;
 		}
 		window{
 			In sliding(8,8);
@@ -177,4 +176,6 @@ composite Main ()
 
 }
 
-
+int sum(int a,int b){
+	return a+b;
+}

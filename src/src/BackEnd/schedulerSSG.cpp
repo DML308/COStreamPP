@@ -222,6 +222,13 @@ int SchedulerSSG::lcm(int a, int b)
     return product / gcd(a, b);
 }
 
+int SchedulerSSG::GetInitCount(FlatNode *node)
+{
+	std::map<FlatNode *, int> ::iterator pos;
+	pos = mapInitCount2FlatNode.find(node);
+	assert(pos!= mapInitCount2FlatNode.end());
+	return pos->second;
+}
 int SchedulerSSG::GetSteadyCount(FlatNode *node)
 {
 	map<FlatNode *, int> ::iterator pos;

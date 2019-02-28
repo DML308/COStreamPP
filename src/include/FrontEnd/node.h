@@ -92,6 +92,7 @@ class idNode : public Node
         this->version = current_version[Level];
         this->valType = "int";
     }
+    
     idNode(string *name, YYLTYPE loc = YYLTYPE())
     {
         new (this) idNode(*name, loc);
@@ -162,7 +163,7 @@ class declareNode : public Node
     }
     ~declareNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class unaryNode : public Node
@@ -225,6 +226,7 @@ class parenNode : public Node
     parenNode(expNode *exp, YYLTYPE loc = YYLTYPE())
     {
         setLoc(loc);
+        this->type=Paren;
         this->exp = exp;
     }
     ~parenNode() {}
@@ -264,7 +266,7 @@ class caseNode : public Node
     }
     ~caseNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class defaultNode : public Node
@@ -279,7 +281,7 @@ class defaultNode : public Node
     }
     ~defaultNode() {}
     void print() {}
-    string toString() {}
+    string toString() ;
 };
 
 class continueNode : public Node
@@ -292,7 +294,7 @@ class continueNode : public Node
     }
     ~continueNode() {}
     void print() {}
-    string toString() {}
+    string toString() {return "continue;";}
 };
 
 class breakNode : public Node
@@ -305,7 +307,7 @@ class breakNode : public Node
     }
     ~breakNode() {}
     void print() {}
-    string toString() {}
+    string toString() {return "break;";}
 };
 
 class returnNode : public Node
@@ -320,7 +322,7 @@ class returnNode : public Node
     }
     ~returnNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class ifNode : public Node
@@ -337,7 +339,7 @@ class ifNode : public Node
     }
     ~ifNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class ifElseNode : public Node
@@ -356,7 +358,7 @@ class ifElseNode : public Node
     }
     ~ifElseNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class switchNode : public Node
@@ -373,7 +375,7 @@ class switchNode : public Node
     }
     ~switchNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class whileNode : public Node
@@ -390,7 +392,7 @@ class whileNode : public Node
     }
     ~whileNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class doNode : public Node
@@ -407,7 +409,7 @@ class doNode : public Node
     }
     ~doNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class forNode : public Node
@@ -428,7 +430,7 @@ class forNode : public Node
         this->stmt = stmt;
     }
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class blockNode : public Node
@@ -436,7 +438,7 @@ class blockNode : public Node
   public:
     list<Node *> *stmt_list;
     YYLTYPE right;
-    blockNode(list<Node *> *stmt_list, YYLTYPE left= YYLTYPE(), YYLTYPE right= YYLTYPE())
+    blockNode(list<Node *> *stmt_list, YYLTYPE left = YYLTYPE(), YYLTYPE right = YYLTYPE())
     {
         this->setLoc(left);
         this->right = right;
@@ -445,20 +447,24 @@ class blockNode : public Node
     }
     ~blockNode() {}
     void print() {}
-    string toString() {}
+    string toString();
 };
 
 class compositeNode;
 class pipelineNode : public Node
 {
   public:
-    list<Node *> *bodyStmt_List;
+    list<Node *> *outputs;
+    list<Node *> *inputs;
+    list<Node *> *body_stmts;
     compositeNode *replace_composite;
-    pipelineNode(list<Node *> *bodyStmt_List, YYLTYPE loc = YYLTYPE())
+    pipelineNode(list<Node *> *outputs,list<Node *> *body_stmts, list<Node *> *inputs,YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = Pipeline;
-        this->bodyStmt_List = bodyStmt_List;
+        this->outputs=outputs;
+        this->inputs=inputs;
+        this->body_stmts = body_stmts;
         this->replace_composite = NULL;
     }
     ~pipelineNode() {}
@@ -536,15 +542,15 @@ class splitjoinNode : public Node
     splitNode *split;
     joinNode *join;
     list<Node *> *stmt_list;
-    list<Node *> *bodyStmt_List;
+    list<Node *> *body_stmts;
     compositeNode *replace_composite;
-    splitjoinNode(  list<Node *> *inputs, 
-                    list<Node *> *outputs, 
-                    splitNode *split, 
-                    list<Node *> *stmt_list, 
-                    list<Node *> *bodyStmt_List, 
-                    joinNode *join, 
-                    YYLTYPE loc = YYLTYPE())
+    splitjoinNode(list<Node *> *inputs,
+                  list<Node *> *outputs,
+                  splitNode *split,
+                  list<Node *> *stmt_list,
+                  list<Node *> *body_stmts,
+                  joinNode *join,
+                  YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
         this->type = SplitJoin;
@@ -553,7 +559,7 @@ class splitjoinNode : public Node
         this->split = split;
         this->join = join;
         this->stmt_list = stmt_list;
-        this->bodyStmt_List = bodyStmt_List;
+        this->body_stmts = body_stmts;
         this->replace_composite = NULL;
     }
     ~splitjoinNode() {}
@@ -607,27 +613,6 @@ class tumblingNode : public Node
     string toString() {}
 };
 
-/*
-class OperHeadNode : public Node
-{
-  public:
-    string name;
-    list<Node *> *inputs;
-    list<Node *> *outputs;
-    OperHeadNode(string name, list<Node *> *inputs, list<Node *> *outputs, YYLTYPE loc= YYLTYPE())
-    {
-        this->setLoc(loc);
-        this->type = OperHead;
-        this->name = name;
-        this->inputs = inputs;
-        this->outputs = outputs;
-    }
-    ~OperHeadNode() {}
-    void print() {}
-    string toString() {}
-};
-*/
-
 class strdclNode : public Node
 {
   public:
@@ -635,6 +620,7 @@ class strdclNode : public Node
     strdclNode(idNode *id, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
+        this->type = StrDcl;
         if (id)
             id_list.push_back(id);
     }
@@ -740,7 +726,6 @@ class ComInOutNode : public Node
   public:
     list<Node *> *input_List;
     list<Node *> *output_List;
-    ComInOutNode() {}
     ComInOutNode(list<Node *> *input_list, list<Node *> *output_list, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -748,15 +733,6 @@ class ComInOutNode : public Node
         this->input_List = input_list;
         this->output_List = output_list;
     }
-    ComInOutNode(const ComInOutNode &inout)
-    {
-        this->type = ComInOut;
-        this->input_List = new list<Node *>();
-        this->output_List = new list<Node *>();
-        *(this->input_List) = *(inout.input_List);
-        *(this->output_List) = *(inout.output_List);
-    }
-
     ~ComInOutNode() {}
     void print() {}
     string toString() {}
@@ -802,7 +778,7 @@ class funcBodyNode : public Node
     }
     ~funcBodyNode() {}
     void print() {}
-    string toString() {}
+    string toString() ;
 };
 
 class compBodyNode : public Node
@@ -821,7 +797,7 @@ class compBodyNode : public Node
         this->type = CompBody;
         this->param = body.param;
         this->stmt_List = new list<Node *>();
-        *(this->stmt_List)=*(body.stmt_List);
+        *(this->stmt_List) = *(body.stmt_List);
     }
     ~compBodyNode() {}
     void print() {}
@@ -857,7 +833,6 @@ class compositeCallNode : public Node
     list<Node *> *inputs;
     list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
-    /*拷贝构造函数 */
     compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -881,14 +856,6 @@ class compHeadNode : public Node
         this->type = CompHead;
         this->compName = compName;
         this->inout = inout;
-    }
-
-    compHeadNode(compHeadNode &comp)
-    {
-        this->type = CompHead;
-        this->compName = comp.compName;
-        this->inout = new ComInOutNode;
-        *(this->inout) = *(comp.inout);
     }
     ~compHeadNode() {}
     void print() {}

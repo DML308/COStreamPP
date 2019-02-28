@@ -162,7 +162,7 @@ void workCompute(Node *node)
         workCompute(static_cast<forNode *>(node)->init);
         oldWork = work;
         {
-            int condition = MAX_INF, init = MAX_INF, step = 0;
+            int condition = MAX_INF, init = MAX_INF, step = 1;
             Node *init_exp = static_cast<forNode *>(node)->init;
             expNode *cond_exp = static_cast<forNode *>(node)->cond;
             expNode *next_exp = static_cast<forNode *>(node)->next;
@@ -358,8 +358,7 @@ void workCompute(Node *node)
         break;
     case Initializer:
         break;
-    case ImplicitCast:
-        break;
+
     default:
         break;
     }
@@ -405,8 +404,7 @@ void WEST_astwalk(Node *node)
                 workCompute(it);
         }
         break;
-    // case ImplicitCast:
-    //     break;
+
     case Label:
         break;
     case Switch:

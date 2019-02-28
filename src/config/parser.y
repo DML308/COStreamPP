@@ -5,7 +5,8 @@
 #include "symbol.h"
 #include "nodetype.h"
 #include "unfoldComposite.h"
-
+SymbolTable *top=new SymbolTable(NULL);
+SymbolTable *saved=top;
 extern SymbolTable S;
 extern list<Node*> *Program;
 extern UnfoldComposite *unfold;
@@ -33,6 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
+%token MATRIX
 
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
@@ -163,15 +165,15 @@ declaration:
     ;
 declaring.list:
           type.specifier      idNode       initializer.opt  {
+              top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
               (static_cast<idNode*>$2)->init = $3;
-              //if(S[*($2)]==NULL) S.InsertSymbol(id);
               $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
         | declaring.list 	',' idNode        initializer.opt{
+              top->put(static_cast<idNode*>($3)->name,static_cast<idNode*>($3));
               (static_cast<idNode*>$3)->init = $4;
-              //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
               line("Line:%-4d",@1.first_line);
@@ -183,7 +185,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
-                                                  /* 需要添加符号表插入操作 */
+                                                  top->put(*($2),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -191,7 +193,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
                                                   idNode *id=new idNode(*($3),@3);
-                                                  /* 需要添加符号表插入操作 */
+                                                  top->put(*($3),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -205,11 +207,12 @@ stream.type.specifier:
         ;
 stream.declaration.list:
           type.specifier idNode     {
-                                        /* 需要添加符号表查找操作*/
+                                        top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                         (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                         $$ = new strdclNode((idNode*)$2,@1) ;
                                     }
         | stream.declaration.list ',' type.specifier idNode {
+                                        top->put(static_cast<idNode*>($4)->name,static_cast<idNode*>($4));
                                         (static_cast<idNode*>$4)->valType = (static_cast<primNode*>$3)->name;
                                         (static_cast<strdclNode*>$1)->id_list.push_back((idNode*)$4);
                                         $$ = $1 ;
@@ -301,6 +304,7 @@ parameter.list:
         ;
 parameter.declaration:
           type.specifier idNode     {
+                                          top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                           (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                           $$ = $2;
                                     }
@@ -360,6 +364,7 @@ composite.head.inout.member:
                   line("Line:%-4d",@1.first_line);
                   debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER(%s)  \n",$2->c_str());
                   idNode *id = new idNode(*($2),@2);
+                  top->put(*($2),id);
                   $$ = new inOutdeclNode($1,id,@2) ; 
             }
     ;
@@ -442,7 +447,7 @@ operator.add:
                                     }
         ;
 operator.pipeline:
-          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode($3,@1) ; }
+          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
@@ -586,7 +591,10 @@ assignment.operator:
         | ERassign        { $$ = new string("^=") ; }
         | ORassign        { $$ = new string("|=") ; }
         ;
-exp:      idNode          { $$ = $1 ; }
+exp:      idNode          { line("Line:%-4d",@1.first_line);
+                            debug ("exp ::= idnode \n");
+                            //$1=top->get(static_cast<idNode*>$1->name);
+                            $$ = $1 ;  }
         | constant        { $$ = $1 ; }
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
@@ -629,7 +637,7 @@ exp:      idNode          { $$ = $1 ; }
                               }
                               else if($3->type==Pipeline){
                                     list<Node*> *outputs=new list<Node*>({$1});
-                                    ((splitjoinNode*)$3)->outputs=outputs;
+                                    ((pipelineNode*)$3)->outputs=outputs;
                               }
                               else if($3->type==CompositeCall){
                                     ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
@@ -686,7 +694,7 @@ exp:      idNode          { $$ = $1 ; }
         |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new pipelineNode($6,@1) ; 
+                  $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
         ;
 
@@ -748,8 +756,16 @@ window.type:
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
 
-lblock: '{'  { EnterScope(); /* 进入新的变量块级作用域 */ }  
-rblock: '}'  { ExitScope();  /* 退出一个块级作用域    */ }
+lblock: '{' { 
+                  EnterScope(); /* 进入新的变量块级作用域 */ 
+                  saved=top;
+                  top=new SymbolTable(top);
+
+            }  
+rblock: '}' {     
+                  ExitScope();  /* 退出一个块级作用域    */ 
+                  top=saved;
+            }
 
 constant:
           doubleConstant    { $$ = new constantNode("double",$1,@1) ; }

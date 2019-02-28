@@ -3,11 +3,10 @@
 /* definition of Node data structure */
 typedef enum {
   /* expression nodes */
-  constant, Id, Binop, Point,Unary, Cast, Ternary,Initializer,
-  ImplicitCast,
+  constant=1, Id, Binop, Unary, Cast, Ternary,Initializer,
   /* statement nodes */
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
-  Break, Return, Block,
+  Break, Return, Block,Paren,
   /* type nodes */
   primary,
   /* array */

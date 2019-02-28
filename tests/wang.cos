@@ -6,7 +6,6 @@ composite B(output stream<int x>Out,input stream<int x>In)
 		int size1,int size2;
 	Out = B(In)
 	{
-
 		work
 		{
 			int i,j;
@@ -40,7 +39,7 @@ composite Main(){
 			S tumbling(8);
 		}
 	};
-	P = B(S)(88,N);
+	P = B(S)(88,99);
 	Sink(P){
 		work{
 			println(P[0].x);

@@ -13,6 +13,7 @@
 #include "schedulerSSG.h"
 #include "ActorStageAssignment.h"
 #include "GreedyPartition.h"
+#include "CodeGeneration.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
 
     // (3) 语义检查
     PhaseName = "SemCheck";
+    /* 找到Main composite */
     SemCheck::findMainComposite(Program);
 
     // (4) 打印抽象语法树
@@ -118,6 +120,11 @@ int main(int argc, char *argv[])
     pSA->actorTopologicalorder(SSSG->GetFlatNodes());
     //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
     pSA->actorStageMap(mp->GetFlatNode2PartitionNum());
+
+    // (7) 输入为SDF图，输出为目标代码
+    /* 第二个参数根据输入文件修改 暂时还未完成*/
+    string path="splitjoinTest";
+    CodeGeneration(CpuCoreNum,SSSG, path, pSA, mp);
 
     //===----------------------------------------------------------------------===//
     // 编译后端 end
