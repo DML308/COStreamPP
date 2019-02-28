@@ -35,7 +35,8 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             else if (exp->type == Pipeline)
             {
-                //cout << "Pipeline" << endl;
+                ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
+                GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
             break;
         }
