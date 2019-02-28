@@ -7,6 +7,7 @@ FlatNode::FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom)
     oldContents = contents;
     nOut = 0;
     nIn = 0;
+    visitTimes = 0;
 }
 
 
@@ -27,7 +28,7 @@ void FlatNode::VisitNode()
 	visitTimes++;
 }
 
-void FlatNode::ResetVistTimes()
+void FlatNode::ResetVisitTimes()
 {
 	visitTimes = 0;
 }

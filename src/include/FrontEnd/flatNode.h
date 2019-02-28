@@ -59,7 +59,7 @@ class FlatNode
 	void AddOutEdges(FlatNode *dest);
 	void AddInEdges(FlatNode *src);
 	void VisitNode(); // 访问该结点
-	void ResetVistTimes(); // 重置visitTimes信息
+	void ResetVisitTimes(); // 重置visitTimes信息
 	// 获取该flatnode结点的operator的name
 	string GetOperatorName()
 	{

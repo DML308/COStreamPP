@@ -91,22 +91,10 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     ssg->SetFlatNodesWeights();
     /* 测试peek，pop，push值 */
 
-    // for (auto it : ssg->flatNodes){
-    // 	cout << "push: ";
-    // 	for (auto it2 : it->outPushWeights){
-    // 		cout << it2 << " ";
-    // 	}
-    // 	cout << endl;
-    // 	cout << "pop: ";
-    // 	for (auto it3 : it->inPopWeights){
-    // 		cout << it3 << " ";
-    // 	}
-    // 	cout << endl;
-    // 	cout << "peek: ";
-    // 	for (auto it4 : it->inPeekWeights){
-    // 		cout << it4 << " ";
-    // 	}
-    // 	cout << endl << endl;
-    // }
+    cout<<"--------- 查看静态数据流图中的全部 FlatNode ---------------\n";
+    for (auto it : ssg->flatNodes){
+        cout<<it->name<<":\t"<<it->toString()<<endl;
+        if(it!=ssg->flatNodes.back())cout << "    ↓" << endl;
+    }
     return ssg;
 }
