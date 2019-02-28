@@ -38,6 +38,24 @@ string FlatNode::toString(){
     s+= ", visitTimes: "+to_string(visitTimes);
     s += ", nOut: " + to_string(nOut);
     s += ", nIn: " + to_string(nIn);
+    if(outFlatNodes.size()>0){
+        s+=", outFlatNodes:[";
+        int k = 0;
+        for(auto i :outFlatNodes){
+            s += (k++ > 0 ? "," : "") + i->name;
+        }
+        s+="]";
+    }
+    if (inFlatNodes.size() > 0)
+    {
+        s += ", inFlatNodes:[";
+        int k = 0;
+        for (auto i : inFlatNodes)
+        {
+            s += (k++ > 0 ? "," : "") + i->name;
+        }
+        s+="]";
+    }
     s+= " }";
     return s;
 }

@@ -1,5 +1,5 @@
 %{
-//#define DEBUG
+#define DEBUG
 #include "defines.h"
 #include "node.h"
 #include "symbol.h"
@@ -590,8 +590,8 @@ exp:      idNode          { $$ = $1 ; }
         | constant        { $$ = $1 ; }
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
-        | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
-        | exp '*' exp     { $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@2) ; }
+        | exp '-' exp     { debug("-\n"); $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
+        | exp '*' exp     { debug("*\n"); $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@2) ; }
         | exp '/' exp     { $$ = new binopNode((expNode*)$1,"/",(expNode*)$3,@2) ; }
         | exp '%' exp     { $$ = new binopNode((expNode*)$1,"%",(expNode*)$3,@2) ;}
         | exp OROR exp    { $$ = new binopNode((expNode*)$1,"||",(expNode*)$3,@2) ;}
@@ -609,9 +609,9 @@ exp:      idNode          { $$ = $1 ; }
         | exp NE exp      { $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,@2) ;}
         | exp '?' exp ':' exp { $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,@4); }
         | '+' exp         { $$ = new unaryNode("+",(expNode*)$2,@2) ; }
-        | '-' exp         { $$ = new unaryNode("-",(expNode*)$2,@2) ; }
+        | '-' exp         { debug("D-\n"); $$ = new unaryNode("-",(expNode*)$2,@2) ; }
         | '~' exp         { $$ = new unaryNode("~",(expNode*)$2,@2) ; }
-        | '!' exp         { $$ = new unaryNode("!",(expNode*)$2,@2) ; }
+        | '!' exp         { debug("!\n");$$ = new unaryNode("!",(expNode*)$2,@2) ; }
         |  ICR exp        { $$ = new unaryNode("PREINC",(expNode*)$2,@2) ; }
         |  DECR exp       { $$ = new unaryNode("PREDEC",(expNode*)$2,@2) ; }
         |  exp ICR        { $$ = new unaryNode("POSTINC",(expNode*)$1,@2) ; }

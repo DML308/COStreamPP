@@ -463,7 +463,9 @@ class pipelineNode : public Node
     }
     ~pipelineNode() {}
     void print() {}
-    string toString() {}
+    string toString() {
+        return "pipelineNode";
+    }
 };
 
 class roundrobinNode : public Node
