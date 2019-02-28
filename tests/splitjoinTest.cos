@@ -32,12 +32,12 @@ composite Main () {
 		}
 	};
 	y = splitjoin (data) {
-		int i; 
+		int i, j; 
 		split duplicate();
-			for (i = 0; i < 32; i++) {
+			for (i = 0; i < 3; i++) {
 				add splitjoin {
 					split roundrobin();
-					for (i = 0; i < 32; i++) {
+					for (j = 0; j < 2; j++) {
 						add rTest();
 					}
 					join roundrobin();
@@ -45,7 +45,6 @@ composite Main () {
 			}
 		join roundrobin();
 	};
-
 	sink(y) {
 		int i;
 		work {
