@@ -55,6 +55,7 @@ class FlatNode
 
   public:
 	FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom);
+    string toString();
 	void AddOutEdges(FlatNode *dest);
 	void AddInEdges(FlatNode *src);
 	void VisitNode(); // 访问该结点

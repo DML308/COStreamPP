@@ -31,3 +31,13 @@ void FlatNode::ResetVistTimes()
 {
 	visitTimes = 0;
 }
+
+string FlatNode::toString(){
+    string s = "{ ";
+    s+= "name: "+name+", preName: "+PreName;
+    s+= ", visitTimes: "+to_string(visitTimes);
+    s += ", nOut: " + to_string(nOut);
+    s += ", nIn: " + to_string(nIn);
+    s+= " }";
+    return s;
+}
