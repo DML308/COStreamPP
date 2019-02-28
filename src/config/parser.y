@@ -34,6 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
+%token MATRIX
 
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 

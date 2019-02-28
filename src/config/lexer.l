@@ -100,6 +100,8 @@ join         { return JOIN; }
 duplicate    { return DUPLICATE; }
 roundrobin   { return ROUNDROBIN; }
 
+matrix       {  return MATRIX;}
+
 {identifier} { yylval.str = new string(yytext);
                return IDENTIFIER; }
 
