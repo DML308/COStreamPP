@@ -28,17 +28,15 @@
       - [x] `VocoderTopLevel.cos` 文法测试通过
     - [x] 出错误时能显示源文件的对应行内容了
 - [ ] 生命周期
-  - [x] `0.handle_options` 对命令行输入预处理
-  - [x] `1.firstScan` 第一遍扫描 `\t 转4个空格`,函数和`composite`变量名识别
+  - [x] `handle_options` 对命令行输入预处理
+  - [x] `firstScan` 第一遍扫描 `\t 转4个空格`,函数和`composite`变量名识别
+  - [x] `yyparse()`按既定文法生成语法树完成
+  - [ ] 打印抽象语法树没做
+  - [ ] `semCheck` 语义检查没做
+  - [x] `AST2FlatStaticStreamGraph` 语法树到平面图转换
+  - [x] `WorkEstimate` 对静态数据流图各节点进行工作量估计
+  - [ ] 后端部分待测试
 - 下一步工作
-    - [ ] `Yang && Li`
-      - [ ] `Node` 构建&测试:
-        - [x] 主体部分 node 建立完成
-        - [x] 以 exp 节点为主的 `toString`函数
-        - [ ] `dumpdot` 即打印语法树至 dot 文件
-      - [ ] 符号表`SymbolTable`处理
-      - [ ] `splitjoin`节点的 Node拆分
+  - [ ] 测试,加注释
+  - [ ] 整合其他人工作
 
-目前效果:
-
-![yylineo](https://i.loli.net/2018/12/20/5c1b84cabe32d.png)
