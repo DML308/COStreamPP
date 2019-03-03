@@ -34,8 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token MATRIX
-
+%token SQUENTIAL DENSE
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -83,8 +82,10 @@ extern void yyerror (const char *msg);
 %type<num> integerConstant
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
-
-
+/* 语法分析器自己的结构 6. 深度学习扩展文法*/
+%type<str> DENSE
+%type<node> operator.layer operator.squential.add
+%type<list> squential.statement.list
 
 /* C. 优先级标记,从上至下优先级从低到高排列 */
 %right '='
@@ -449,6 +450,24 @@ operator.add:
 operator.pipeline:
           PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
         ;
+operator.squential.add:
+          ADD operator.layer              {
+                                                line("Line:%-4d",@1.first_line);
+                                                debug("operator.squential.add ::= ADD operator.layer \n");
+                                                $$ = new addNode((layerNode*)$2, @1);
+                                          }
+        ;
+operator.layer:
+          DENSE '(' argument.expression.list ')' ';'      {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=DENSE ( argument.expression.list );\n");
+                                                                /* $$ = new layerNode(*($1), $3, @1); */
+                                                                $$ = new layerNode("dense", $3, @1);
+                                                                /* $$ = new layerNode(); */
+                                                                debug("create one layer!\n");
+                                                          }
+        /* other layer, for example conv2 */
+        ;
 splitjoinPipeline.statement.list:
           statement                                       {
                                                                 line("Line:%-4d",@1.first_line);
@@ -495,7 +514,7 @@ join.statement:
           JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,@1) ;}
         ;
 argument.expression.list:
-          exp                                               {  $$ = new list<Node*>({$1}); }
+          exp                                               {  $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
         | argument.expression.list ',' exp                  {  $$ ->push_back($3);         }
         ;
 operator.default.call:
@@ -506,7 +525,28 @@ operator.default.call:
                   $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
             }
         ;
-
+squential.statement.list:
+          statement                                          {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("squential.statement.list ::= statement \n");
+                                                                $$ = new list<Node *>({$1});
+                                                             }
+        | operator.squential.add                             {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("squential.statement.list ::= operator.squential.add\n");
+                                                                $$ = new list<Node *>({$1});
+                                                             }
+        | squential.statement.list statement                 {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("squential.statement.list ::= squential.statement.list statement\n");
+                                                                $$ ->push_back($2);
+                                                             }
+        | squential.statement.list operator.squential.add    {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("squential.statement.list ::= squential.statement.list operator.squential.add\n");
+                                                                $$ ->push_back($2);
+                                                             }
+        ;
 /*************************************************************************/
 /*        3. statement 花括号内以';'结尾的结构是statement                  */
 /*************************************************************************/
@@ -696,6 +736,13 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
+        |   SQUENTIAL '(' argument.expression.list ')' '(' argument.expression.list ')' lblock squential.statement.list rblock {
+                  /*     1.argument.expression.list是一个identifier
+                  2. argument.expression.list*/
+                  line("Line%-4d", @1.first_line);
+                  debug("exp ::= SQUENTIAL\n");
+                  $$ = new squentialNode(NULL,$3,$6,$9,@1); 
+        }
         ;
 
 operator.selfdefine.body:

@@ -469,9 +469,7 @@ class pipelineNode : public Node
     }
     ~pipelineNode() {}
     void print() {}
-    string toString() {
-        return "pipelineNode";
-    }
+    string toString() {}
 };
 
 class roundrobinNode : public Node
@@ -566,7 +564,74 @@ class splitjoinNode : public Node
     void print() {}
     string toString() {}
 };
-
+class squentialNode : public Node
+{
+  public:
+    list<Node *> *outputs;
+    list<Node *> *inputs;
+    list<Node *> *body_stmts;
+    // ?
+    list<Node *> *arg_list;
+    compositeNode *replace_composite;
+    squentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
+    {
+      this->setLoc(loc);
+      this->type = Squential;
+      this->outputs = outputs;
+      this->inputs = inputs;
+      this->arg_list = arg_list;
+      this->body_stmts = body_stmts;
+      this->replace_composite = NULL;
+    }
+    ~squentialNode() {};
+    void print() {};
+    string toString() {};
+};
+class layerNode : public Node
+{
+  public:
+    compositeNode *bp_composite;
+    compositeNode *fp_composite;
+    list<Node *> *arg_list;
+    string layerName;
+    // pre dim
+    // next dim
+    layerNode () {
+      std::printf("Start to create a void layer\n");
+    }
+    layerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
+    {
+      std::printf("Start to create a layer\n");
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerName = layerName;
+      // ???
+      this->bp_composite = NULL;
+      this->fp_composite = NULL;
+      this->arg_list = arg_list;
+    }
+    ~layerNode() {}
+    void print() {}
+    string toString() {}
+};
+// class layerNode : public compositeNode
+// {
+//   public:
+//     compositeNode *bp_composite;
+//     layerNode(string compName, paramNode *param)
+//     {
+//       this->type = Layer;
+//       this->head->compName = compName;
+//       this->head->inout->input_List = NULL;
+//       this->head->inout->output_List = NULL;
+//       this->body->param = param;
+//       this->body->stmt_List = NULL;
+//       this->bp_composite = NULL;
+//     }
+//     ~layerNode() {}
+//     void print() {}
+//     string toString() {}
+// };
 class addNode : public Node
 {
   public:

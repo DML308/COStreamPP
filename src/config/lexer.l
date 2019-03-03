@@ -85,6 +85,7 @@ stream      { return STREAM; }
 FileReader  { return FILEREADER; }
 FileWriter  { return FILEWRITER; }
 add         { return ADD; }
+Dense       { return DENSE; }
 
 param        { return PARAM; }
 init         { return INIT; }
@@ -99,8 +100,7 @@ split        { return SPLIT; }
 join         { return JOIN; }
 duplicate    { return DUPLICATE; }
 roundrobin   { return ROUNDROBIN; }
-
-matrix       {  return MATRIX;}
+squential    { return SQUENTIAL; }
 
 {identifier} { yylval.str = new string(yytext);
                return IDENTIFIER; }
