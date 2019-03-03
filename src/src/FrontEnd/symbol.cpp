@@ -1,6 +1,6 @@
 #include "symbol.h"
-int Level;
-int current_version[MAX_SCOPE_DEPTH];
+int Level=0;
+int current_version[MAX_SCOPE_DEPTH]={0};
 /* enterScope */
 void EnterScope()
 {
@@ -90,5 +90,29 @@ idNode *SymbolTable::operator[](string str)
     if(compositeTable.find(str)!=compositeTable.end())  
         return compositeTable[str];
     */
+    return NULL;
+}
+
+void SymbolTable::put(string s, idNode *id)
+{
+    table.insert((make_pair(s, id)));
+}
+
+idNode *SymbolTable::get(string s)
+{
+    
+    for (SymbolTable *e = this; e != NULL; e = e->getPrev())
+    {
+        for(auto it:e->table)
+        cout<<it.first<<" ";
+        cout<<endl;
+        auto found = e->table.find(s);
+        if (found != e->table.end())
+            return found->second;
+        
+    }
+    string mesg = s + " has not been defined!";
+    cout << mesg << endl;
+    exit(-1);
     return NULL;
 }

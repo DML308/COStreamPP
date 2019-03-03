@@ -29,7 +29,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <vector>
+#include <map>
 #include <iostream>
+#include <sstream>
 #include <assert.h>
 using namespace std;
 

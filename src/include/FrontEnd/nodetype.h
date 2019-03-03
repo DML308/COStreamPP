@@ -3,11 +3,10 @@
 /* definition of Node data structure */
 typedef enum {
   /* expression nodes */
-  constant, Id, Binop, Point,Unary, Cast, Comma, Ternary,Initializer,
-  ImplicitCast,
+  constant=1, Id, Binop, Unary, Cast, Ternary,Initializer,
   /* statement nodes */
   Label, Switch, Case, Default, If, IfElse, While, Do, For, Continue,
-  Break, Return, Block,
+  Break, Return, Block,Paren,
   /* type nodes */
   primary,
   /* array */
@@ -27,7 +26,7 @@ typedef enum {
   Param,		/*composite.body.param SPL*/
   ParamDcl,
   OperBody,		/*operator SPL*/
-  Operdcl,		/*operator SPL*/
+  OperHead,		/*operator SPL*/
   Operator_,	/* operator def node SPL*/
   Window,		/*operator.body.window SPL*/
   WindowStmt,

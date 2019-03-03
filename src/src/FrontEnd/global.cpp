@@ -8,7 +8,7 @@ FILE *outfp = NULL;  // output file's pointer, default is stdout
 
 static void show_line(int line, const char *file_name)
 {
-    std::string line_str;
+    string line_str;
     line_str = "";
     line_str += "./bin/sed.sh '";
     char temp[10];

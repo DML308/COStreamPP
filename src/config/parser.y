@@ -4,9 +4,12 @@
 #include "node.h"
 #include "symbol.h"
 #include "nodetype.h"
-
+#include "unfoldComposite.h"
+SymbolTable *top=new SymbolTable(NULL);
+SymbolTable *saved=top;
 extern SymbolTable S;
 extern list<Node*> *Program;
+extern UnfoldComposite *unfold;
 extern int yylex ();
 extern void yyerror (const char *msg);
 
@@ -31,6 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
+%token MATRIX
 
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
@@ -161,15 +165,15 @@ declaration:
     ;
 declaring.list:
           type.specifier      idNode       initializer.opt  {
+              top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
               (static_cast<idNode*>$2)->init = $3;
-              //if(S[*($2)]==NULL) S.InsertSymbol(id);
               $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
         | declaring.list 	',' idNode        initializer.opt{
+              top->put(static_cast<idNode*>($3)->name,static_cast<idNode*>($3));
               (static_cast<idNode*>$3)->init = $4;
-              //if(S[*($3)]==NULL) S.InsertSymbol(id);
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
               line("Line:%-4d",@1.first_line);
@@ -181,7 +185,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
-                                                  /* 需要添加符号表插入操作 */
+                                                  top->put(*($2),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -189,7 +193,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
                                                   idNode *id=new idNode(*($3),@3);
-                                                  /* 需要添加符号表插入操作 */
+                                                  top->put(*($3),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -203,11 +207,12 @@ stream.type.specifier:
         ;
 stream.declaration.list:
           type.specifier idNode     {
-                                        /* 需要添加符号表查找操作*/
+                                        top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                         (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                         $$ = new strdclNode((idNode*)$2,@1) ;
                                     }
         | stream.declaration.list ',' type.specifier idNode {
+                                        top->put(static_cast<idNode*>($4)->name,static_cast<idNode*>($4));
                                         (static_cast<idNode*>$4)->valType = (static_cast<primNode*>$3)->name;
                                         (static_cast<strdclNode*>$1)->id_list.push_back((idNode*)$4);
                                         $$ = $1 ;
@@ -299,6 +304,7 @@ parameter.list:
         ;
 parameter.declaration:
           type.specifier idNode     {
+                                          top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                           (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                           $$ = $2;
                                     }
@@ -332,14 +338,14 @@ composite.definition:
                                           line("Line:%-4d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
                                           $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2) ;
+                                          S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
                                     }
     ;
 composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'   {
             line("Line:%-4d",@1.first_line);
             debug ("composite.head ::= COMPOSITE %s '(' composite.head.inout ')' \n",$2->c_str());
-            idNode *id = new idNode(*($2),@2);
-            $$ = new compHeadNode(id,(ComInOutNode*)$4) ;
+            $$ = new compHeadNode(*($2),(ComInOutNode*)$4) ;
       }
     ;
 composite.head.inout:
@@ -358,6 +364,7 @@ composite.head.inout.member:
                   line("Line:%-4d",@1.first_line);
                   debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER(%s)  \n",$2->c_str());
                   idNode *id = new idNode(*($2),@2);
+                  top->put(*($2),id);
                   $$ = new inOutdeclNode($1,id,@2) ; 
             }
     ;
@@ -436,11 +443,11 @@ operator.add:
         | ADD operator.default.call {
                                           line("Line:%-4d",@1.first_line);
                                           debug ("operator.add ::= ADD operator.default.call \n");
-                                          $$ = new addNode((OperdclNode*)$2,@1) ;
+                                          $$ = new addNode((compositeCallNode*)$2,@1) ;
                                     }
         ;
 operator.pipeline:
-          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode($3,@1) ; }
+          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
@@ -466,10 +473,10 @@ splitjoinPipeline.statement.list:
         ;
 operator.splitjoin:
           SPLITJOIN lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock     {
-                   $$=new splitjoinNode((splitNode*)$3,NULL,$4,(joinNode*)$5,@1);
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$3,NULL,$4,(joinNode*)$5,@1);
             }
         | SPLITJOIN lblock statement.list split.statement splitjoinPipeline.statement.list join.statement rblock  {
-                   $$=new splitjoinNode((splitNode*)$4,$3,$5,(joinNode*)$6,@1);
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$4,$3,$5,(joinNode*)$6,@1);
             }
         ;
 split.statement:
@@ -493,15 +500,11 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                                                              $$ = new OperdclNode(*($1),NULL,@1); 
-                                                              /*需要查找符号表*/
-                                                            }
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1);
+            }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                                                              /*composite call(StreamIt style)*///operator.param.list 不能为空以区分函数调用/*composite call*/
-                                                              ///*DEBUG*/printf("have found operator.default.call\n");
-                                                              $$ = new OperdclNode(*($1),$3,@1);
-                                                              /* 需要查找符号表 */
-                                                            }
+                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
+            }
         ;
 
 /*************************************************************************/
@@ -526,12 +529,12 @@ labeled.statement:
           CASE exp ':' statement                    {
                                                           line("Line:%-4d",@1.first_line);
                                                           debug ("labeled.statement ::= CASE exp ':' statement \n");
-                                                          $$ = new caseNode((expNode*)$2,(statNode*)$4,@3) ;
+                                                          $$ = new caseNode((expNode*)$2,$4,@3) ;
                                                     }
         | DEFAULT ':' statement                     {
                                                           line("Line:%-4d",@1.first_line);
                                                           debug ("labeled.statement ::= DEFAULT ':' statement \n");
-                                                          $$ = new defaultNode((statNode*)$3,@2) ;
+                                                          $$ = new defaultNode($3,@2) ;
                                                     }
         ;
 compound.statement:
@@ -551,7 +554,7 @@ selection.statement:
                                                           debug ("selection.statement ::= if(exp) costream.composite.statement else ...\n");
                                                           $$ = new ifElseNode((expNode*)$3,$5,$7,@1);
                                                         }
-        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,(statNode*)$5,@1); }
+        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,$5,@1); }
         ;
 iteration.statement:
           WHILE '(' exp ')' costream.composite.statement                          {  $$ = new whileNode((expNode*)$3,$5,@1) ; }
@@ -588,7 +591,10 @@ assignment.operator:
         | ERassign        { $$ = new string("^=") ; }
         | ORassign        { $$ = new string("|=") ; }
         ;
-exp:      idNode          { $$ = $1 ; }
+exp:      idNode          { line("Line:%-4d",@1.first_line);
+                            debug ("exp ::= idnode \n");
+                            //$1=top->get(static_cast<idNode*>$1->name);
+                            $$ = $1 ;  }
         | constant        { $$ = $1 ; }
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
@@ -624,6 +630,21 @@ exp:      idNode          { $$ = $1 ; }
                               line("Line:%-4d",@1.first_line);
                               debug ("exp ::= exp(%s) assignment.operator(%s) exp(%s)\n",$1->toString().c_str(),$2->c_str(),$3->toString().c_str()); 
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
+                              //当类型为splitjoin，pipeline，operator，compositecall时设置输出流
+                              if($3->type==SplitJoin){
+                                    list<Node*> *outputs=new list<Node*>({$1});
+                                    ((splitjoinNode*)$3)->outputs=outputs;
+                              }
+                              else if($3->type==Pipeline){
+                                    list<Node*> *outputs=new list<Node*>({$1});
+                                    ((pipelineNode*)$3)->outputs=outputs;
+                              }
+                              else if($3->type==CompositeCall){
+                                    ((compositeCallNode*)$3)->outputs=new list<Node*>({$1});
+                              }
+                              else if($3->type==Operator_){
+                                     ((operatorNode*)$3)->outputs=new list<Node*>({$1});
+                              }
                         }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
         | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@1) ; }
@@ -635,30 +656,45 @@ exp:      idNode          { $$ = $1 ; }
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-4d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  $$ = new operatorNode(*($1),NULL,(operBodyNode*)$4) ; 
+                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4) ; 
                   //error("%s",((operatorNode*)$$)->operName.c_str());
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = new operatorNode(*($1),$3,(operBodyNode*)$5) ; 
+                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5) ; 
             }
-        | IDENTIFIER '('  ')'  '(' ')'  { $$ = new compositeCallNode($1,NULL,NULL,@1) ; }
-        | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { $$ = new compositeCallNode($1,NULL,$5,@1) ; }
-        | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { $$ = new compositeCallNode($1,$3,NULL,@1) ; }
-        | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { $$ = new compositeCallNode($1,$3,$6,@1) ; }
+        | IDENTIFIER '('  ')'  '(' ')'  { 
+                  line("Line:%-3d",@1.first_line);
+                  debug ("exp ::= %s()()\n",$1->c_str()); 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
+        | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),$5,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
+        | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
+        | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
+                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),$6,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
+            }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode((splitNode*)$6,NULL,$7,(joinNode*)$8,@1)  ; 
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$6,NULL,$7,(joinNode*)$8,@1)  ; 
+
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { 
                   /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode((splitNode*)$7,$6,$8,(joinNode*)$9,@1)  ;  
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,@1)  ; 
             }
-        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock                                                 {
+        |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new pipelineNode($6,@1) ; 
+                  $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
         ;
 
@@ -720,12 +756,20 @@ window.type:
 /*        5. basic 从词法TOKEN直接归约得到的节点,自底向上接入头部文法结构    */
 /*************************************************************************/
 
-lblock: '{'  { EnterScope(); /* 进入新的变量块级作用域 */ }  
-rblock: '}'  { ExitScope();  /* 退出一个块级作用域    */ }
+lblock: '{' { 
+                  EnterScope(); /* 进入新的变量块级作用域 */ 
+                  saved=top;
+                  top=new SymbolTable(top);
+
+            }  
+rblock: '}' {     
+                  ExitScope();  /* 退出一个块级作用域    */ 
+                  top=saved;
+            }
 
 constant:
           doubleConstant    { $$ = new constantNode("double",$1,@1) ; }
-        | integerConstant   { $$ = new constantNode("interger",$1,@1) ; }
+        | integerConstant   { $$ = new constantNode("integer",$1,@1) ; }
         | stringConstant    { $$ = new constantNode("string",*($1),@1) ; }
         ;
 type.specifier:
