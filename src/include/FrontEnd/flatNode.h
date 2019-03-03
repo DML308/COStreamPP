@@ -1,12 +1,7 @@
 #ifndef _FLAT_NODE_H_
 #define _FLAT_NODE_H_
 
-#include <string>
-#include <vector>
-#include <map>
 #include <fstream>
-#include <sstream>
-#include <iostream>
 #include <math.h>
 #include "node.h"
 
