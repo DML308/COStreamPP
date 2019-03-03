@@ -84,6 +84,7 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
+    //cout << "--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n";
     GraphToOperators(mainComposite, mainComposite);
     ssg->SetTopNode();
     /* 将每个composite重命名 */
@@ -91,22 +92,10 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     ssg->SetFlatNodesWeights();
     /* 测试peek，pop，push值 */
 
-    // for (auto it : ssg->flatNodes){
-    // 	cout << "push: ";
-    // 	for (auto it2 : it->outPushWeights){
-    // 		cout << it2 << " ";
-    // 	}
-    // 	cout << endl;
-    // 	cout << "pop: ";
-    // 	for (auto it3 : it->inPopWeights){
-    // 		cout << it3 << " ";
-    // 	}
-    // 	cout << endl;
-    // 	cout << "peek: ";
-    // 	for (auto it4 : it->inPeekWeights){
-    // 		cout << it4 << " ";
-    // 	}
-    // 	cout << endl << endl;
-    // }
+    cout << "--------- 执行AST2FlatStaticStreamGraph后, 查看静态数据流图中的全部 FlatNode ---------------\n";
+    for (auto it : ssg->flatNodes){
+        cout<<it->name<<":\t"<<it->toString()<<endl;
+        if(it!=ssg->flatNodes.back())cout << "    ↓" << endl;
+    }
     return ssg;
 }
