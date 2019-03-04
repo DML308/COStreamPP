@@ -10,7 +10,7 @@ void compositeCallFlow(list<Node *> *stmts)
     /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到compositeCall_list中*/
     for (auto nd : *(stmts))
     {
-
+        //cout<<"type:"<<nd->type<<endl;
         if (nd->type == Add)
         {
             /* add composite()的情况 */
@@ -19,10 +19,12 @@ void compositeCallFlow(list<Node *> *stmts)
             /* add splitjoin{}的情况*/
             else if (((addNode *)nd)->content->type == SplitJoin)
             {
+                compositeCall_list.push_back(((addNode *)nd)->content);
             }
             /* add pipeline{}的情况 */
             else if (((addNode *)nd)->content->type == Pipeline)
             {
+                compositeCall_list.push_back(((addNode *)nd)->content);
             }
         }
         else if (nd->type == For)
@@ -125,9 +127,22 @@ void compositeCallFlow(list<Node *> *stmts)
                 }
                 else if (for_stmts->type == Add)
                 {
+                    //cout << "type==" << ((addNode *)for_stmts)->content->type << endl;
                     for (long long i = initial; i < condition; ++i)
                     {
                         if (((addNode *)for_stmts)->content->type == CompositeCall)
+                        {
+                            compositeCall_list.push_back(((addNode *)for_stmts)->content);
+                        }
+                        /* add splitjoin{} */
+                        else if (((addNode *)for_stmts)->content->type == SplitJoin)
+                        {
+                            compositeCall_list.push_back(((addNode *)for_stmts)->content);
+
+                            //cout << "---------------------------------------------------" << endl;
+                        }
+                        /* add pipeline{}的情况 */
+                        else if (((addNode *)for_stmts)->content->type == Pipeline)
                         {
                             compositeCall_list.push_back(((addNode *)for_stmts)->content);
                         }
@@ -144,6 +159,16 @@ void compositeCallFlow(list<Node *> *stmts)
                 for (long long i = initial; i < condition; ++i)
                 {
                     if (((addNode *)ptr)->content->type == CompositeCall)
+                    {
+                        compositeCall_list.push_back(((addNode *)ptr)->content);
+                    }
+                    /* add splitjoin{} */
+                    else if (((addNode *)ptr)->content->type == SplitJoin)
+                    {
+                        compositeCall_list.push_back(((addNode *)ptr)->content);
+                    }
+                    /* add pipeline{}的情况 */
+                    else if (((addNode *)ptr)->content->type == Pipeline)
                     {
                         compositeCall_list.push_back(((addNode *)ptr)->content);
                     }

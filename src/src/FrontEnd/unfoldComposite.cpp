@@ -321,7 +321,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     list<Node *> *outputs = node->outputs;
     list<Node *> *inputs_join = new list<Node *>();
     list<Node *> *call_outputs = NULL;
-    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
+    list<Node *> *comCallList = new list<Node *>();
     ComInOutNode *inout = new ComInOutNode(inputs_split, outputs);
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
@@ -338,6 +338,10 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 
     for (auto it : compositeCall_list)
     {
+        cout << "--------------------" << endl;
+        // if(it->type==SplitJoin||it->type==Pipeline){
+        //     comCallList->push_back(it);
+        // }
         string name = (((compositeCallNode *)it)->compName);
         string tempName = streamName + to_string(number2) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName);
@@ -348,7 +352,6 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         list<Node *> *call_inputs = new list<Node *>({*iter});
         compositeNode *comp = S.LookupCompositeSymbol(name);
         assert(comp != NULL);
-
         /*修改composite节点的输入流,输出流*/
         compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
         compositeCallNode *call = new compositeCallNode(call_outputs, tempName, NULL, call_inputs, actual_composite);
