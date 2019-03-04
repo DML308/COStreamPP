@@ -63,7 +63,7 @@ string initNode::toString()
 
 string binopNode::toString()
 {
-    if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/=")
+    if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/="||op=="<="||op==">="||op=="|="||op=="&=")
         return left->toString() + op + right->toString() + ";";
     //当为输出时候需要加分号
     if (left->type == Id && ((idNode *)left)->name == "cout")
