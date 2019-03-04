@@ -96,9 +96,13 @@ void toBuildOutPutString(FlatNode *node)
 {
     MyVisitNode(node);
     for (int i = 0; i < node->nOut; i++)
-    {                                                                                /*深度优先遍历*/
-        if (node->outFlatNodes[i] == NULL || node->outFlatNodes[i]->visitTimes != 0) //该结点的后续结点还未被访问过
+    {                                                                                
+        /*深度优先遍历*/
+        if (node->outFlatNodes[i] == NULL || node->outFlatNodes[i]->visitTimes != 0) 
+        {
+            //该结点的后续结点还未被访问过
             continue;
+        }
         toBuildOutPutString(node->outFlatNodes[i]);
     }
 }
@@ -111,7 +115,7 @@ void DumpStreamGraph(SchedulerSSG *sssg, Partition *mp,string fileName)
     buf << "digraph Flattend {\n";
     toBuildOutPutString(ssg->topNode);
     buf << "}\n";
-    ssg->ResetFlatNodeVisitTimes(); //将flatnode的visttimes置0
+    ssg->ResetFlatNodeVisitTimes(); //将flatnode的visitimes置0
     ofstream fw;
     fw.open(fileName);
     fw << buf.str();

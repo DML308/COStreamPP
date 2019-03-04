@@ -113,7 +113,10 @@ string callNode::toString()
 
 string operatorNode::toString()
 {
-    return "operatorNode";
+    string s = "{ operName: "+operName;
+    if(inputs) s+= ", inputs:[" + listToString(*inputs)+"]";
+    if(outputs) s+= ", outputs:["+listToString(*outputs)+"]";
+    return s+" }";
 }
 string idNode::toString()
 {

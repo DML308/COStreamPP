@@ -14,6 +14,8 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         //cout<<"output Name = "<<((idNode*)it)->name<<endl;
         mapEdge2UpFlatNode.insert(make_pair(((idNode *)it)->name, src));
     }
+    //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
+    //cout << "operatorNode:\t" << u->toString() << endl << "    ↓" << endl;
     flatNodes.push_back(src);
     dest = src;
     //搜索节点的输入边，建立节点流输入输出关系
@@ -29,9 +31,14 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         src->AddOutEdges(dest);
         dest->AddInEdges(src);
     }
+    //cout << "flatNode:\t" <<dest->toString() << endl<<endl;
+    //cout << "mapEdge2DownFlatNode.size()= " << mapEdge2DownFlatNode.size() << endl;
     //cout<<"-----------------operator end------------------------------"<<endl;
 }
 
+/**
+ * @brief 给静态数据流图中所有的 FlatNode 加上数字后缀来表达顺序, 如 Source => Source_0
+ */
 void StaticStreamGraph::ResetFlatNodeNames()
 {
     for (int i = 0; i < flatNodes.size(); i++)
@@ -40,7 +47,7 @@ void StaticStreamGraph::ResetFlatNodeNames()
         newName << flatNodes[i]->name << "_" << i;
         flatNodes[i]->name = newName.str();
     }
-}
+} 
 
 /*
 1.若该operator没有输入，则FlatNode成员变量inPeekWeights，inPopWeights均为0
@@ -158,11 +165,11 @@ void StaticStreamGraph::AddSteadyWork(FlatNode *flat, int work)
 {
     mapSteadyWork2FlatNode.insert(make_pair(flat, work));
 }
-/*重置ssg结点flatnodes内所有flatnode内的visttimes*/
+/*重置ssg结点flatnodes内所有flatnode内的visitimes*/
 void StaticStreamGraph::ResetFlatNodeVisitTimes()
 {
     for (int i = 0; i < flatNodes.size(); i++)
     {
-        this->flatNodes[i]->ResetVistTimes();
+        this->flatNodes[i]->ResetVisitTimes();
     }
 }
