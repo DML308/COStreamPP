@@ -192,7 +192,13 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
         arguments = new list<Node *>();
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
     Node *arg = arguments->front();
+    Node *constantIntOne = new constantNode("integer", (long long)1);
     outputs->push_back(output);
+    if (arguments->size() == 0)
+    {
+        for (int i = 0; i < len; ++i)
+            arguments->push_back(constantIntOne);
+    }
     if (arguments->size() == 1)
     {
         for (int i = 1; i < len; ++i)
@@ -244,7 +250,6 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
-
     string streamName = "Rstream";
     static int number1 = 0;
     vector<compositeCallNode *> comCallList;
@@ -274,7 +279,9 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     for (auto it : compositeCall_list)
     {
         assert(it->type == CompositeCall);
+
         string name = (((compositeCallNode *)it)->compName);
+
         string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
         idNode *id = new idNode(tempName);
         //compositeCall的输出流是join节点的输入流
@@ -283,13 +290,17 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         //compositeCall的输入流
         list<Node *> *call_inputs = new list<Node *>({*iter});
         compositeNode *comp = S.LookupCompositeSymbol(name);
+
         assert(comp != NULL);
         /*修改composite节点的输入流,输出流*/
         compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
+        cout << "---------------------------roundRobin---------------------------" << endl;
+
         //修改compositeCall的输入输出流
         compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
         //cout<<"address: "<<&(call->inputs)<<endl;
         comCallList.push_back(call);
+
         iter++;
         cnt++;
     }
@@ -338,31 +349,51 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 
     for (auto it : compositeCall_list)
     {
+        // if (it->type == SplitJoin || it->type == Pipeline)
+        // {
+        //     comCallList->push_back(it);
+        // }
         //cout << "--------------------" << endl;
-        if (it->type == SplitJoin || it->type == Pipeline)
-        {
-            comCallList->push_back(it);
-        }
-        else if(it->type==CompositeCall)
+        string tempName = streamName + to_string(number2) + "_" + (to_string(cnt));
+        idNode *id = new idNode(tempName);
+        //compositeCall的输出流是join节点的输入流
+        inputs_join->push_back(id);
+        list<Node *> *call_outputs = new list<Node *>({id});
+        //compositeCall的输入流
+        list<Node *> *call_inputs = new list<Node *>({*iter});
+        /* 1.若为compositecall 将compositeCall替换为实际的composite */
+        /*修改composite节点的输入流,输出流*/
+
+        if (it->type == CompositeCall)
         {
             string name = (((compositeCallNode *)it)->compName);
-            string tempName = streamName + to_string(number2) + "_" + (to_string(cnt));
-            idNode *id = new idNode(tempName);
-            //compositeCall的输出流是join节点的输入流
-            inputs_join->push_back(id);
-            list<Node *> *call_outputs = new list<Node *>({id});
-            //compositeCall的输入流
-            list<Node *> *call_inputs = new list<Node *>({*iter});
             compositeNode *comp = S.LookupCompositeSymbol(name);
             assert(comp != NULL);
-            /*修改composite节点的输入流,输出流*/
+
             compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
             compositeCallNode *call = new compositeCallNode(call_outputs, tempName, NULL, call_inputs, actual_composite);
             //cout<<"compName= "<<tempName<<endl;
             comCallList->push_back(call);
-            iter++;
-            cnt++;
         }
+        /* 2.若为splitjoin或者pipeline结构，赋予其输入和输出流 */
+        else if (it->type == SplitJoin)
+        {
+            //1.指定嵌套结构中的输入和输出流
+            ((splitjoinNode *)(it))->inputs = call_inputs;
+            ((splitjoinNode *)(it))->outputs = call_outputs;
+            //2.加入到comCallList
+            comCallList->push_back(it);
+        }
+
+        else if (it->type == Pipeline)
+        {
+            ((pipelineNode *)it)->inputs = call_inputs;
+            ((pipelineNode *)it)->outputs = call_outputs;
+            comCallList->push_back(it);
+        }
+
+        iter++;
+        cnt++;
     }
     joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
     comp_stmt_List->push_back(splitOperator);
