@@ -57,39 +57,39 @@ void workCompute(Node *node)
         WEST_astwalk(node);
         break;
     case Decl:
-        if (static_cast<declareNode *>(node)->id_list.size() != 0)
+    {
+        declareNode *decl = static_cast<declareNode *>(node);
+        if (decl->id_list.size() != 0)
         {
-            for (auto id : static_cast<declareNode *>(node)->id_list)
+            for (auto id : decl->id_list)
             {
-                if (id->init != NULL)
+                assert(id != NULL);
+                if (id->init != NULL && id->isArray == 1)
                 {
                     //如果是数组声明
-                    if (id->isArray == 1)
+                    int cnt = 0;
+                    /* 标识是否含有int a[][10];前一个参数为空的情况 */
+                    bool flag = true;
+                    for (auto it : id->arg_list)
                     {
-                        int cnt = 0;
-                        /* 标识是否含有int a[][10];前一个参数为空的情况 */
-                        bool flag = true;
-                        for (auto it : id->arg_list)
+                        /* 如果含有为空的情况 需要通过初始化推导 */
+                        if (it == NULL)
                         {
-                            /* 如果含有为空的情况 需要通过初始化推导 */
-                            if (it == NULL)
-                            {
-                                flag = false;
-                            }
-                            if (it->type == constant)
-                            {
-                                cnt += (static_cast<constantNode *>(it)->llval);
-                            }
+                            flag = false;
                         }
-                        if (flag)
-                            work += cnt * MEMORY_OP;
-                        else
+                        else if (it->type == constant)
                         {
-                            int args = static_cast<initNode *>(id->init)->value.size();
-                            int num = ceil(args * 1.0 / cnt);
-                            cnt += num;
-                            work += cnt * MEMORY_OP;
+                            cnt += (static_cast<constantNode *>(it)->llval);
                         }
+                    }
+                    if (flag)
+                        work += cnt * MEMORY_OP;
+                    else
+                    {
+                        int args = static_cast<initNode *>(id->init)->value.size();
+                        int num = ceil(args * 1.0 / cnt);
+                        cnt += num;
+                        work += cnt * MEMORY_OP;
                     }
                 }
                 else
@@ -97,6 +97,7 @@ void workCompute(Node *node)
             }
         }
         break;
+    }
     case Id:
         work += MEMORY_OP;
         break;

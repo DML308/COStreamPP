@@ -139,8 +139,8 @@ class arrayNode : public Node
     list<Node *> arg_list;
     arrayNode(expNode *exp, YYLTYPE loc = YYLTYPE())
     {
-        if (exp)
-            arg_list.push_back(exp);
+        //这里即使 exp 为 NULL 也要加入, 以保证数组维度正确
+        arg_list.push_back(exp);
         setLoc(loc);
     }
     ~arrayNode() {}

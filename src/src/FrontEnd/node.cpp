@@ -3,8 +3,10 @@ string listToString(list<Node *> list)
 {
     int k = 0;
     string str = "";
-    for (auto i : list)
-        str += (k++ > 0 ? "," : "") + i->toString();
+    for (auto i : list){
+        str += (k++ > 0 ? "," : "");
+        str += i ? i->toString() : " ";
+    }
     return str;
 }
 
@@ -123,17 +125,11 @@ string idNode::toString()
     string str = name;
     if (isArray)
     {
-        if (arg_list.size() == 0) // int sum(int a[])特殊情况,是数组但是无 arg_list
-            str += "[]";
-        else
+        for (auto i : arg_list)
         {
-            for (auto i : arg_list)
-            {
-                str += '[' + i->toString();
-                if (str[str.size() - 1] == ';')
-                    str = str.substr(0, str.size() - 1);
-                str += "]";
-            }
+            str += '[';
+            if(i) str+=i->toString();
+            str += "]";
         }
     }
 
