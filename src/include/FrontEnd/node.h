@@ -564,7 +564,7 @@ class splitjoinNode : public Node
     }
     ~splitjoinNode() {}
     void print() {}
-    string toString() {}
+    string toString() { return "splitjoinNode"; }
 };
 
 class addNode : public Node
@@ -666,14 +666,14 @@ class operBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *stmt_list;
+    list<Node *> stmt_list;
     Node *init;
     Node *work;
     windowNode *win;
     operBodyNode(list<Node *> *stmt_list, Node *init, Node *work, windowNode *win)
     {
         this->type = OperBody;
-        this->stmt_list = stmt_list;
+        if(stmt_list){ this->stmt_list = *stmt_list;}
         this->init = init;
         this->work = work;
         this->win = win;

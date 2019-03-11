@@ -40,6 +40,8 @@ int workEstimate_steady(operBodyNode *body, int w_steady)
 
 void workCompute(Node *node)
 {
+    if (node == NULL)
+        return;
     int tmp = 0;
     int newWork = 0;
     int oldWork = 0;
@@ -462,30 +464,24 @@ void WEST_astwalk(Node *node)
     case Decl:
         break;
     case OperBody:
+    {
+        operBodyNode *operbody = static_cast<operBodyNode *>(node);
         /* 初态调度只计算init部分工作量 */
         if (state == INIT)
         {
-            if (static_cast<operBodyNode *>(node)->init != NULL)
-            {
-                workCompute(static_cast<operBodyNode *>(node)->init);
-            }
+            workCompute(operbody->init);
         }
         /* 稳态调度需要计算statment_list和work函数的工作量 */
         else if (state == STEADY)
         {
-            if (static_cast<operBodyNode *>(node)->stmt_list != NULL)
+            for (auto it : operbody->stmt_list)
             {
-                for (auto it : *static_cast<operBodyNode *>(node)->stmt_list)
-                {
-                    workCompute(it);
-                }
+                workCompute(it);
             }
-            if (static_cast<operBodyNode *>(node)->work != NULL)
-            {
-                workCompute(static_cast<operBodyNode *>(node)->work);
-            }
+            workCompute(operbody->work);
         }
         break;
+    }
     default:
         break;
     }

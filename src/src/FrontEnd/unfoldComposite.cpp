@@ -456,7 +456,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 list<Node *> *preOutputs = ((operatorNode *)exp)->outputs;
                 string operName = ((operatorNode *)exp)->operName;
                 paramNode *param = operBody->param;
-                list<Node *> *stmts = operBody->stmt_list;
+                list<Node *> stmts = operBody->stmt_list;
                 Node *init = operBody->init;
                 Node *work = operBody->work;
                 list<Node *> *win_list = new list<Node *>();
@@ -473,7 +473,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                     win_list->push_back(stmt_node);
                 }
                 windowNode *win = new windowNode(win_list);
-                operBodyNode *body = new operBodyNode(stmts, init, work, win);
+                operBodyNode *body = new operBodyNode(&stmts, init, work, win);
                 operatorNode *oper = new operatorNode(preOutputs, operName, preInputs, body);
                 /* 修改输入输出的流名 */
                 modifyStreamName(oper, inputs, true);

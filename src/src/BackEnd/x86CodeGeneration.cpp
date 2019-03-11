@@ -249,7 +249,7 @@ void X86CodeGeneration::CGactors()
         vector<string> outEdgeName;
         auto oper = flatNodes_[i]->contents;
         operBodyNode *body = oper->operBody;
-        list<Node *> *stmts = body->stmt_list;
+        list<Node *> stmts = body->stmt_list;
         Node *init = body->init;
         Node *work = body->work;
         list<Node *> *inputs = oper->inputs;
@@ -278,11 +278,11 @@ void X86CodeGeneration::CGactors()
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
-        CGactorsStmts(buf, stmts);
+        CGactorsStmts(buf, &stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
         CGactorsPushToken(buf, flatNodes_[i], outEdgeName);
         //init部分前的statement赋值
-        CGactorsinitVarAndState(buf, stmts);
+        CGactorsinitVarAndState(buf, &stmts);
         /* composite 中init函数 */
         CGactorsInit(buf, init);
         /* composite中work函数 */

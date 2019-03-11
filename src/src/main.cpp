@@ -73,16 +73,17 @@ int main(int argc, char *argv[])
     // (6) 对静态数据流图各节点进行工作量估计
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);
-    /* 
-    打印初态和稳态工作量
-    for(auto it:SSG->mapInitWork2FlatNode){
-        cout<<it.second<<endl;
+    //打印初态和稳态工作量
+    cout << "--------- 执行WorkEstimate后, 查看静态数据流图中的全部 FlatNode ---------------\n";
+    for (auto it : SSG->flatNodes)
+    {
+        cout << it->name << ":\t" << it->toString() ;
+        cout <<", initWork:" << SSG->mapInitWork2FlatNode[it];
+        cout <<", steadyWork:" << SSG->mapSteadyWork2FlatNode[it]<<endl;
+        if (it != SSG->flatNodes.back())
+            cout << "    ↓" << endl;
     }
-    cout<<"-------------------"<<endl;
-    for(auto it:SSG->mapSteadyWork2FlatNode){
-        cout<<it.second<<endl;
-    }
-    */
+
     //===----------------------------------------------------------------------===//
     // 编译前端 end
     //===----------------------------------------------------------------------===//
