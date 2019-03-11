@@ -568,7 +568,6 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
         list<Node *> *win_stmts = oper->operBody->win->win_list;
         Node *work = oper->operBody->work;
         assert(work->type == Block);
-        list<Node *> *work_stmts = ((blockNode *)work)->stmt_list;
         switch (style)
         {
         case true:
@@ -587,11 +586,8 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
                     }
                 }
                 /* 替换work中使用的形式参数流输入名 */
-                if (work_stmts != NULL)
-                {
-                    for (auto it : *work_stmts)
-                        modifyWorkName(it, replaceName, name);
-                }
+                for (auto it : ((blockNode *)work)->stmt_list)
+                    modifyWorkName(it, replaceName, name);
             }
             break;
         case false:
@@ -609,11 +605,8 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
                     }
                 }
                 /* 替换work中使用的形式参数流输出名 */
-                if (work_stmts != NULL)
-                {
-                    for (auto it : *work_stmts)
-                        modifyWorkName(it, replaceName, name);
-                }
+                for (auto it : ((blockNode *)work)->stmt_list)
+                    modifyWorkName(it, replaceName, name);
             }
             break;
         }
@@ -773,13 +766,9 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
     case Block:
     {
         list<Node *> *stmt_list = new list<Node *>();
-        list<Node *> *stmts = static_cast<blockNode *>(u)->stmt_list;
-        if (stmts != NULL)
+        for (auto it : static_cast<blockNode *>(u)->stmt_list)
         {
-            for (auto it : *stmts)
-            {
-                stmt_list->push_back(workNodeCopy(it));
-            }
+            stmt_list->push_back(workNodeCopy(it));
         }
         blockNode *block = new blockNode(stmt_list);
         return block;
@@ -908,13 +897,9 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     }
     case Block:
     {
-        list<Node *> *stmts = static_cast<blockNode *>(u)->stmt_list;
-        if (stmts != NULL)
+        for (auto it : static_cast<blockNode *>(u)->stmt_list)
         {
-            for (auto it : *stmts)
-            {
-                modifyWorkName(it, replaceName, name);
-            }
+            modifyWorkName(it, replaceName, name);
         }
         break;
     }

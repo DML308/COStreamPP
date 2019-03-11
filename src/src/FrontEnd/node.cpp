@@ -219,13 +219,10 @@ string forNode::toString()
 string blockNode::toString()
 {
     string str = "\t{\n";
-    if (stmt_list != NULL)
+    for (auto stmt : stmt_list)
     {
-        for (auto stmt : *stmt_list)
-        {
-            str += "\t\t" + stmt->toString();
-            str += "\n";
-        }
+        str += "\t\t" + stmt->toString();
+        str += "\n";
     }
     str += "\t}";
     return str;

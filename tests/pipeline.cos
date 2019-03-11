@@ -127,7 +127,6 @@ composite Main()
 
 	Source = FloatSource()
 	{
-        int array[][10] = {1,0};
 		double max = 1000.0;
 		double current = 0.0;
 		work

@@ -436,14 +436,14 @@ class forNode : public Node
 class blockNode : public Node
 {
   public:
-    list<Node *> *stmt_list;
+    list<Node *> stmt_list;
     YYLTYPE right;
     blockNode(list<Node *> *stmt_list, YYLTYPE left = YYLTYPE(), YYLTYPE right = YYLTYPE())
     {
         this->setLoc(left);
         this->right = right;
         this->type = Block;
-        this->stmt_list = stmt_list;
+        if(stmt_list) this->stmt_list = *stmt_list;
     }
     ~blockNode() {}
     void print() {}

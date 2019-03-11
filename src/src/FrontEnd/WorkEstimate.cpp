@@ -369,6 +369,7 @@ void workCompute(Node *node)
 
 void WEST_astwalk(Node *node)
 {
+    assert(node != NULL);
     switch (node->type)
     {
     case constant:
@@ -452,12 +453,9 @@ void WEST_astwalk(Node *node)
         workCompute(static_cast<returnNode *>(node)->exp);
         break;
     case Block:
-        if (static_cast<blockNode *>(node)->stmt_list != NULL)
+        for (auto it : static_cast<blockNode *>(node)->stmt_list)
         {
-            for (auto it : *static_cast<blockNode *>(node)->stmt_list)
-            {
-                workCompute(it);
-            }
+            workCompute(it);
         }
         break;
     case primary:

@@ -136,7 +136,7 @@ void compositeCallFlow(list<Node *> *stmts)
             }
             else
             {
-                stmts = ((blockNode *)(for_nd->stmt))->stmt_list;
+                stmts = &((blockNode *)(for_nd->stmt))->stmt_list;
                 auto ptr = stmts->front();
                 assert(ptr->type == Add);
                 // cout << "init = "<<initial << endl;
