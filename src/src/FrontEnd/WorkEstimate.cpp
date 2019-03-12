@@ -123,18 +123,19 @@ void workCompute(Node *node)
         break;
 
     case Binop:
-        if (static_cast<binopNode *>(node)->op != "=" && static_cast<binopNode *>(node)->op != ".")
+    {
+        binopNode * binop = static_cast<binopNode *>(node);
+        if (binop->op != "=" && binop->op != ".")
         {
-            {
-                expNode *left = static_cast<binopNode *>(node)->left;
-                expNode *right = static_cast<binopNode *>(node)->right;
+                expNode *left = binop->left;
+                expNode *right = binop->right;
                 /*暂时缺乏对左操作树的工作量估计*/
                 if (right->type == constant)
                 {
                     if (((constantNode *)right)->style == "double")
                     {
                         tmp = FLOAT_ARITH_OP;
-                        if (static_cast<binopNode *>(node)->op == "/") //仅当浮点的除法需要x16
+                        if (binop->op == "/") //仅当浮点的除法需要x16
                             tmp *= 16;
                     }
                     else if (((constantNode *)right)->style == "integer")
@@ -144,20 +145,20 @@ void workCompute(Node *node)
                 }
                 else
                     tmp = FLOAT_ARITH_OP;
-            }
         }
-        else if (static_cast<binopNode *>(node)->op == "=")
+        else if (binop->op == "=")
         {
             tmp = 0;
         }
-        else if (static_cast<binopNode *>(node)->op == ".")
+        else if (binop->op == ".")
         {
-            workCompute(static_cast<binopNode *>(node)->left); //如果是点操作，则仅取左边表达式计算
+            workCompute(binop->left); //如果是点操作，则仅取左边表达式计算
             break;
         }
         work += tmp;
         WEST_astwalk(node);
         break;
+    }
     case Ternary:
         WEST_astwalk(node);
         break;
@@ -252,7 +253,7 @@ void workCompute(Node *node)
         oldWork = work;
         WEST_astwalk(node);
         newWork = work;
-        work += (newWork - oldWork) / 2;
+        work -= (newWork - oldWork) / 2;
         work += IF;
         break;
     case Do:
