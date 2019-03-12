@@ -10,7 +10,7 @@
 #include "speedup.h"
 #include "unfoldComposite.h"
 #include "staticStreamGragh.h"
-#include "schedulerSSG.h"
+#include "6.schedulerSSG.h"
 #include "ActorStageAssignment.h"
 #include "GreedyPartition.h"
 #include "CodeGeneration.h"

@@ -1,6 +1,6 @@
 #ifndef _PARTITION_H
 #define _PARTITION_H
-#include "schedulerSSG.h"
+#include "6.schedulerSSG.h"
 class Partition
 {
 public:
