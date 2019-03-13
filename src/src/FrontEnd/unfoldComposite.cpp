@@ -671,6 +671,8 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
 
 Node *UnfoldComposite::workNodeCopy(Node *u)
 {
+    cout << u->type << endl;
+
     switch (u->type)
     {
     case Split:
@@ -682,28 +684,31 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
     case RoundRobin:
     {
         list<Node *> *arg_list = new list<Node *>();
-        for (auto it : *static_cast<roundrobinNode *>(u)->arg_list)
-            arg_list->push_back(workNodeCopy(it));
-        roundrobinNode *tmp=new roundrobinNode(arg_list);
+        if (static_cast<roundrobinNode *>(u)->arg_list != NULL)
+            for (auto it : *static_cast<roundrobinNode *>(u)->arg_list)
+                arg_list->push_back(workNodeCopy(it));
+        roundrobinNode *tmp = new roundrobinNode(arg_list);
         return tmp;
     }
     case Duplicate:
     {
-        Node *exp=workNodeCopy(static_cast<duplicateNode*>(u)->exp);
-        duplicateNode *tmp=new duplicateNode((expNode*)exp);
+        Node *exp = workNodeCopy(static_cast<duplicateNode *>(u)->exp);
+        duplicateNode *tmp = new duplicateNode((expNode *)exp);
         return tmp;
     }
     case Join:
     {
-        Node *rdb=workNodeCopy(static_cast<joinNode*>(u)->rdb);
-        joinNode *tmp=new joinNode((roundrobinNode*)rdb);
+        Node *rdb = workNodeCopy(static_cast<joinNode *>(u)->rdb);
+        joinNode *tmp = new joinNode((roundrobinNode *)rdb);
         return tmp;
     }
     case SplitJoin:
     {
         list<Node *> *outputs = new list<Node *>();
         list<Node *> *inputs = new list<Node *>();
+
         Node *split = workNodeCopy(static_cast<splitjoinNode *>(u)->split);
+
         Node *join = workNodeCopy(static_cast<splitjoinNode *>(u)->join);
         list<Node *> *stmt_list = new list<Node *>();
         list<Node *> *body_list = new list<Node *>();
@@ -720,25 +725,25 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
             for (auto it : *static_cast<splitjoinNode *>(u)->body_stmts)
                 body_list->push_back(workNodeCopy(it));
         splitjoinNode *tmp = new splitjoinNode(inputs, outputs, (splitNode *)split, stmt_list, body_list, (joinNode *)join);
-        tmp->replace_composite=NULL;
+        tmp->replace_composite = NULL;
         return tmp;
     }
     case Pipeline:
     {
-        list<Node*> *outputs=new list<Node*>();
-        list<Node*>*inputs=new list<Node*>();
-        list<Node*> *body_stmts=new list<Node*>();
-         if (static_cast<pipelineNode *>(u)->outputs != NULL)
+        list<Node *> *outputs = new list<Node *>();
+        list<Node *> *inputs = new list<Node *>();
+        list<Node *> *body_stmts = new list<Node *>();
+        if (static_cast<pipelineNode *>(u)->outputs != NULL)
             for (auto it : *static_cast<pipelineNode *>(u)->outputs)
                 outputs->push_back(workNodeCopy(it));
         if (static_cast<pipelineNode *>(u)->inputs != NULL)
             for (auto it : *static_cast<pipelineNode *>(u)->inputs)
                 inputs->push_back(workNodeCopy(it));
-         if (static_cast<pipelineNode *>(u)->body_stmts != NULL)
+        if (static_cast<pipelineNode *>(u)->body_stmts != NULL)
             for (auto it : *static_cast<pipelineNode *>(u)->body_stmts)
                 body_stmts->push_back(workNodeCopy(it));
-        pipelineNode *tmp=new pipelineNode(outputs,body_stmts,inputs);
-        tmp->replace_composite=NULL;
+        pipelineNode *tmp = new pipelineNode(outputs, body_stmts, inputs);
+        tmp->replace_composite = NULL;
         return tmp;
     }
     case constant:

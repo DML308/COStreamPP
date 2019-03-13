@@ -165,7 +165,9 @@ void compositeCallFlow(list<Node *> *stmts)
                     /* add splitjoin{} */
                     else if (((addNode *)ptr)->content->type == SplitJoin)
                     {
-                        compositeCall_list.push_back(((addNode *)ptr)->content);
+                        Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
+                        //cout<<"asdasdasdsadadasdasdasdasdas";
+                        compositeCall_list.push_back(nd);
                     }
                     /* add pipeline{}的情况 */
                     else if (((addNode *)ptr)->content->type == Pipeline)
