@@ -1,6 +1,7 @@
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
+
 static StaticStreamGraph *ssg = NULL;
 extern UnfoldComposite *unfold;
 /*
@@ -33,7 +34,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             else if (exp->type == SplitJoin)
             {
-                cout << "splitjoin.." << endl;
+                cout << "splitjoin" << endl;
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
@@ -48,21 +49,18 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         case Operator_:
         {
             cout << "operator_" << endl;
-
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
             cout << "compositeCall" << endl;
-
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
             cout << "splitjoin" << endl;
-
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
@@ -70,7 +68,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         case Pipeline:
         {
             cout << "pipeline" << endl;
-
             ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;

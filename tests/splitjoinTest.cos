@@ -5,6 +5,10 @@ composite dTest(input stream<int i>In, output stream<int i>Out) {
 			printf(In[0].i);
 			Out[0].i = In[0].i;
 		}
+		window {
+			In sliding(1, 1);
+			Out tumbling(1);
+		}
 	};
 }
 composite rTest(input stream<int i>In, output stream<int i>Out) {
@@ -13,6 +17,10 @@ composite rTest(input stream<int i>In, output stream<int i>Out) {
 			printf("r: ");
 			printf(In[0].i);
 			Out[0].i = In[0].i;
+		}
+		window {
+			In sliding(1, 1);
+			Out tumbling(1);
 		}
 	};
 }
@@ -28,7 +36,7 @@ composite Main () {
 			data[0].i = i;
 		}
 		window {
-			data sliding(1, 1);
+			data tumbling(1, 1);
 		}
 	};
 	y = splitjoin (data) {
