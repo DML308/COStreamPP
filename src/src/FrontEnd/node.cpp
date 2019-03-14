@@ -63,7 +63,7 @@ string initNode::toString()
 
 string binopNode::toString()
 {
-    if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/="||op=="<="||op==">="||op=="|="||op=="&=")
+    if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/=" || op == "<=" || op == ">=" || op == "|=" || op == "&=")
         return left->toString() + op + right->toString() + ";";
     //当为输出时候需要加分号
     if (left->type == Id && ((idNode *)left)->name == "cout")
@@ -103,7 +103,7 @@ string castNode::toString()
 
 string callNode::toString()
 {
-    if (name == "print")
+    if (name == "print" || name == "printf")
         return "cout<<" + listToString(arg_list) + ";";
     else if (name == "println")
         return "cout<<" + listToString(arg_list) + "<<endl;";
@@ -113,10 +113,12 @@ string callNode::toString()
 
 string operatorNode::toString()
 {
-    string s = "{ operName: "+operName;
-    if(inputs) s+= ", inputs:[" + listToString(*inputs)+"]";
-    if(outputs) s+= ", outputs:["+listToString(*outputs)+"]";
-    return s+" }";
+    string s = "{ operName: " + operName;
+    if (inputs)
+        s += ", inputs:[" + listToString(*inputs) + "]";
+    if (outputs)
+        s += ", outputs:[" + listToString(*outputs) + "]";
+    return s + " }";
 }
 string idNode::toString()
 {

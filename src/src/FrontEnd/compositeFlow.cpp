@@ -19,12 +19,14 @@ void compositeCallFlow(list<Node *> *stmts)
             /* add splitjoin{}的情况*/
             else if (((addNode *)nd)->content->type == SplitJoin)
             {
-                compositeCall_list.push_back(((addNode *)nd)->content);
+                Node *nd = unfold->workNodeCopy(((addNode *)nd)->content);
+                compositeCall_list.push_back(nd);
             }
             /* add pipeline{}的情况 */
             else if (((addNode *)nd)->content->type == Pipeline)
             {
-                compositeCall_list.push_back(((addNode *)nd)->content);
+                Node *nd = unfold->workNodeCopy(((addNode *)nd)->content);
+                compositeCall_list.push_back(nd);
             }
         }
         else if (nd->type == For)
@@ -137,14 +139,14 @@ void compositeCallFlow(list<Node *> *stmts)
                         /* add splitjoin{} */
                         else if (((addNode *)for_stmts)->content->type == SplitJoin)
                         {
-                            compositeCall_list.push_back(((addNode *)for_stmts)->content);
-
-                            //cout << "---------------------------------------------------" << endl;
+                            Node *nd = unfold->workNodeCopy(((addNode *)for_stmts)->content);
+                            compositeCall_list.push_back(nd);
                         }
                         /* add pipeline{}的情况 */
                         else if (((addNode *)for_stmts)->content->type == Pipeline)
                         {
-                            compositeCall_list.push_back(((addNode *)for_stmts)->content);
+                            Node *nd = unfold->workNodeCopy(((addNode *)for_stmts)->content);
+                            compositeCall_list.push_back(nd);
                         }
                     }
                 }
@@ -166,13 +168,13 @@ void compositeCallFlow(list<Node *> *stmts)
                     else if (((addNode *)ptr)->content->type == SplitJoin)
                     {
                         Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
-                        //cout<<"asdasdasdsadadasdasdasdasdas";
                         compositeCall_list.push_back(nd);
                     }
                     /* add pipeline{}的情况 */
                     else if (((addNode *)ptr)->content->type == Pipeline)
                     {
-                        compositeCall_list.push_back(((addNode *)ptr)->content);
+                        Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
+                        compositeCall_list.push_back(nd);
                     }
                 }
             }

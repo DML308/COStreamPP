@@ -516,8 +516,7 @@ void X86CodeGeneration::CGThreads()
         //遍历该线程上的所有的阶段号，在对应的阶段号内调用每个actor的initwork
         buf << "\tfor(int _stageNum=0;_stageNum<" << MaxStageNum << ";_stageNum++)\n";
         buf << "\t{\n";
-        set<int> stageSet = mapNum2Stage.find(i)->second; //查找该thread对应的阶段号集合
-
+        set<int> stageSet = mapNum2Stage.find(i)->second;      //查找该thread对应的阶段号集合
         for (int stage = MaxStageNum - 1; stage >= 0; stage--) //迭代stage Num
         {
             auto iter = stageSet.find(stage); //查找该线程对应在阶段i是否有actor
@@ -527,7 +526,10 @@ void X86CodeGeneration::CGThreads()
                 vector<FlatNode *> flatVec = psa_->FindActor(stage); //取得在该阶段的所有actor集合
                 //cout<<flatVec.size()<<endl;
                 for (auto fNode : flatVec) //遍历actor，调用初态initScheduleWork
-                    buf << "\t\t\t" << fNode->name << "_obj.runInitScheduleWork();\n";
+                {
+                    if (i == mp_->findPartitionNumForFlatNode(fNode))
+                        buf << "\t\t\t" << fNode->name << "_obj.runInitScheduleWork();\n";
+                }
                 buf << "\t\t}\n";
             }
         }
@@ -547,7 +549,10 @@ void X86CodeGeneration::CGThreads()
                 buf << "\t\tif(stage[" << stage << "])\n\t\t{\n";
                 vector<FlatNode *> flatVec = psa_->FindActor(stage);
                 for (auto iter : flatVec)
-                    buf << "\t\t\t" << iter->name << "_obj.runSteadyScheduleWork();\n";
+                {
+                    if (i == mp_->findPartitionNumForFlatNode(iter))
+                        buf << "\t\t\t" << iter->name << "_obj.runSteadyScheduleWork();\n";
+                }
                 buf << "\t\t}\n";
             }
         }
