@@ -671,8 +671,6 @@ void UnfoldComposite::modifyStreamName(operatorNode *oper, list<Node *> *stream,
 
 Node *UnfoldComposite::workNodeCopy(Node *u)
 {
-    cout << u->type << endl;
-
     switch (u->type)
     {
     case Split:

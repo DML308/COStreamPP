@@ -158,7 +158,7 @@ PMEMORYPOOL CreateMemoryPool(void* pBuf, size_t sBufSize)
     mem_pool->mem_map_unit_count = (sBufSize - mem_pool_struct_size + MINUNITSIZE - 1) / MINUNITSIZE;  
     mem_pool->pmem_map = (memory_block*)((char*)pBuf + mem_pool_struct_size);  
     mem_pool->pfree_mem_chunk_pool = (memory_chunk*)((char*)pBuf + mem_pool_struct_size + sizeof(memory_block) * mem_pool->mem_map_unit_count);  
-      
+    //设置内存的大小
     mem_pool->memory = (char*)pBuf + mem_pool_struct_size+ sizeof(memory_block) * mem_pool->mem_map_unit_count + sizeof(memory_chunk) * mem_pool->mem_map_pool_count;  
     mem_pool->size = sBufSize - mem_pool_struct_size - sizeof(memory_block) * mem_pool->mem_map_unit_count - sizeof(memory_chunk) * mem_pool->mem_map_pool_count;  
     size_t align = check_align_addr(mem_pool->memory);  
