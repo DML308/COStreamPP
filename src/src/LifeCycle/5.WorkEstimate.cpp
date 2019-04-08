@@ -1,5 +1,5 @@
 #include "staticStreamGragh.h"
-#include "workEstimate.h"
+#include "5.workEstimate.h"
 
 void WorkEstimate(StaticStreamGraph *ssg)
 {
@@ -40,6 +40,8 @@ int workEstimate_steady(operBodyNode *body, int w_steady)
 
 void workCompute(Node *node)
 {
+    if (node == NULL)
+        return;
     int tmp = 0;
     int newWork = 0;
     int oldWork = 0;
@@ -55,39 +57,39 @@ void workCompute(Node *node)
         WEST_astwalk(node);
         break;
     case Decl:
-        if (static_cast<declareNode *>(node)->id_list.size() != 0)
+    {
+        declareNode *decl = static_cast<declareNode *>(node);
+        if (decl->id_list.size() != 0)
         {
-            for (auto id : static_cast<declareNode *>(node)->id_list)
+            for (auto id : decl->id_list)
             {
-                if (id->init != NULL)
+                assert(id != NULL);
+                if (id->init != NULL && id->isArray == 1)
                 {
                     //如果是数组声明
-                    if (id->isArray == 1)
+                    int cnt = 0;
+                    /* 标识是否含有int a[][10];前一个参数为空的情况 */
+                    bool flag = true;
+                    for (auto it : id->arg_list)
                     {
-                        int cnt = 0;
-                        /* 标识是否含有int a[][10];前一个参数为空的情况 */
-                        bool flag = true;
-                        for (auto it : id->arg_list)
+                        /* 如果含有为空的情况 需要通过初始化推导 */
+                        if (it == NULL)
                         {
-                            /* 如果含有为空的情况 需要通过初始化推导 */
-                            if (it == NULL)
-                            {
-                                flag = false;
-                            }
-                            if (it->type == constant)
-                            {
-                                cnt += (static_cast<constantNode *>(it)->llval);
-                            }
+                            flag = false;
                         }
-                        if (flag)
-                            work += cnt * MEMORY_OP;
-                        else
+                        else if (it->type == constant)
                         {
-                            int args = static_cast<initNode *>(id->init)->value.size();
-                            int num = ceil(args * 1.0 / cnt);
-                            cnt += num;
-                            work += cnt * MEMORY_OP;
+                            cnt += (static_cast<constantNode *>(it)->llval);
                         }
+                    }
+                    if (flag)
+                        work += cnt * MEMORY_OP;
+                    else
+                    {
+                        int args = static_cast<initNode *>(id->init)->value.size();
+                        int num = ceil(args * 1.0 / cnt);
+                        cnt += num;
+                        work += cnt * MEMORY_OP;
                     }
                 }
                 else
@@ -95,6 +97,7 @@ void workCompute(Node *node)
             }
         }
         break;
+    }
     case Id:
         work += MEMORY_OP;
         break;
@@ -120,18 +123,19 @@ void workCompute(Node *node)
         break;
 
     case Binop:
-        if (static_cast<binopNode *>(node)->op != "=" && static_cast<binopNode *>(node)->op != ".")
+    {
+        binopNode * binop = static_cast<binopNode *>(node);
+        if (binop->op != "=" && binop->op != ".")
         {
-            {
-                expNode *left = static_cast<binopNode *>(node)->left;
-                expNode *right = static_cast<binopNode *>(node)->right;
+                expNode *left = binop->left;
+                expNode *right = binop->right;
                 /*暂时缺乏对左操作树的工作量估计*/
                 if (right->type == constant)
                 {
                     if (((constantNode *)right)->style == "double")
                     {
                         tmp = FLOAT_ARITH_OP;
-                        if (static_cast<binopNode *>(node)->op == "/") //仅当浮点的除法需要x16
+                        if (binop->op == "/") //仅当浮点的除法需要x16
                             tmp *= 16;
                     }
                     else if (((constantNode *)right)->style == "integer")
@@ -141,20 +145,20 @@ void workCompute(Node *node)
                 }
                 else
                     tmp = FLOAT_ARITH_OP;
-            }
         }
-        else if (static_cast<binopNode *>(node)->op == "=")
+        else if (binop->op == "=")
         {
             tmp = 0;
         }
-        else if (static_cast<binopNode *>(node)->op == ".")
+        else if (binop->op == ".")
         {
-            workCompute(static_cast<binopNode *>(node)->left); //如果是点操作，则仅取左边表达式计算
+            workCompute(binop->left); //如果是点操作，则仅取左边表达式计算
             break;
         }
         work += tmp;
         WEST_astwalk(node);
         break;
+    }
     case Ternary:
         WEST_astwalk(node);
         break;
@@ -249,7 +253,7 @@ void workCompute(Node *node)
         oldWork = work;
         WEST_astwalk(node);
         newWork = work;
-        work += (newWork - oldWork) / 2;
+        work -= (newWork - oldWork) / 2;
         work += IF;
         break;
     case Do:
@@ -366,6 +370,7 @@ void workCompute(Node *node)
 
 void WEST_astwalk(Node *node)
 {
+    assert(node != NULL);
     switch (node->type)
     {
     case constant:
@@ -449,12 +454,9 @@ void WEST_astwalk(Node *node)
         workCompute(static_cast<returnNode *>(node)->exp);
         break;
     case Block:
-        if (static_cast<blockNode *>(node)->stmt_list != NULL)
+        for (auto it : static_cast<blockNode *>(node)->stmt_list)
         {
-            for (auto it : *static_cast<blockNode *>(node)->stmt_list)
-            {
-                workCompute(it);
-            }
+            workCompute(it);
         }
         break;
     case primary:
@@ -462,30 +464,24 @@ void WEST_astwalk(Node *node)
     case Decl:
         break;
     case OperBody:
+    {
+        operBodyNode *operbody = static_cast<operBodyNode *>(node);
         /* 初态调度只计算init部分工作量 */
         if (state == INIT)
         {
-            if (static_cast<operBodyNode *>(node)->init != NULL)
-            {
-                workCompute(static_cast<operBodyNode *>(node)->init);
-            }
+            workCompute(operbody->init);
         }
         /* 稳态调度需要计算statment_list和work函数的工作量 */
         else if (state == STEADY)
         {
-            if (static_cast<operBodyNode *>(node)->stmt_list != NULL)
+            for (auto it : operbody->stmt_list)
             {
-                for (auto it : *static_cast<operBodyNode *>(node)->stmt_list)
-                {
-                    workCompute(it);
-                }
+                workCompute(it);
             }
-            if (static_cast<operBodyNode *>(node)->work != NULL)
-            {
-                workCompute(static_cast<operBodyNode *>(node)->work);
-            }
+            workCompute(operbody->work);
         }
         break;
+    }
     default:
         break;
     }

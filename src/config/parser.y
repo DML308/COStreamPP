@@ -171,7 +171,7 @@ declaring.list:
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
-        | declaring.list 	',' idNode        initializer.opt{
+        | declaring.list     ',' idNode        initializer.opt{
               top->put(static_cast<idNode*>($3)->name,static_cast<idNode*>($3));
               (static_cast<idNode*>$3)->init = $4;
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));

@@ -1,3 +1,4 @@
+//#define DEBUG
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
@@ -13,6 +14,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
     /* 获取compositebody内的statementNode */
     assert(composite != NULL && oldComposite != NULL);
+    assert(composite->body->stmt_List != NULL);
     list<Node *> body_stmt = *(composite->body->stmt_List);
     for (auto it : body_stmt)
     {
@@ -24,23 +26,23 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                //cout << "operator_" << endl;
+                debug("operator_\n");
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                //cout << "compositeCall" << endl;
+                debug("compositeCall\n");
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
             {
-                //cout << "splitjoin" << endl;
+                debug("splitjoin\n");
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
-                //cout << "pipeline" << endl;
+                debug("pipeline\n");
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
@@ -48,26 +50,26 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
-            //cout << "operator_" << endl;
+            debug("operator_\n");
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            //cout << "compositeCall" << endl;
+            debug("compositeCall\n");
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
-            //cout << "splitjoin" << endl;
+            debug("splitjoin\n");
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
         {
-            //cout << "pipeline" << endl;
+            debug("pipeline\n");
             ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;
@@ -93,7 +95,7 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
-    //cout << "--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n";
+    debug("--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n");
     GraphToOperators(mainComposite, mainComposite);
     ssg->SetTopNode();
     /* 将每个composite重命名 */
@@ -102,9 +104,11 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     /* 测试peek，pop，push值 */
 
     cout << "--------- 执行AST2FlatStaticStreamGraph后, 查看静态数据流图中的全部 FlatNode ---------------\n";
-    for (auto it : ssg->flatNodes){
-        cout<<it->name<<":\t"<<it->toString()<<endl;
-        if(it!=ssg->flatNodes.back())cout << "    ↓" << endl;
+    for (auto it : ssg->flatNodes)
+    {
+        cout << it->name << ":\t" << it->toString() << endl;
+        if (it != ssg->flatNodes.back())
+            cout << "    ↓" << endl;
     }
     return ssg;
 }

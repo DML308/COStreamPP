@@ -139,8 +139,8 @@ class arrayNode : public Node
     list<Node *> arg_list;
     arrayNode(expNode *exp, YYLTYPE loc = YYLTYPE())
     {
-        if (exp)
-            arg_list.push_back(exp);
+        //这里即使 exp 为 NULL 也要加入, 以保证数组维度正确
+        arg_list.push_back(exp);
         setLoc(loc);
     }
     ~arrayNode() {}
@@ -436,14 +436,14 @@ class forNode : public Node
 class blockNode : public Node
 {
   public:
-    list<Node *> *stmt_list;
+    list<Node *> stmt_list;
     YYLTYPE right;
     blockNode(list<Node *> *stmt_list, YYLTYPE left = YYLTYPE(), YYLTYPE right = YYLTYPE())
     {
         this->setLoc(left);
         this->right = right;
         this->type = Block;
-        this->stmt_list = stmt_list;
+        if(stmt_list) this->stmt_list = *stmt_list;
     }
     ~blockNode() {}
     void print() {}
@@ -564,7 +564,7 @@ class splitjoinNode : public Node
     }
     ~splitjoinNode() {}
     void print() {}
-    string toString() {}
+    string toString() { return "splitjoinNode"; }
 };
 
 class addNode : public Node
@@ -666,14 +666,14 @@ class operBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *stmt_list;
+    list<Node *> stmt_list;
     Node *init;
     Node *work;
     windowNode *win;
     operBodyNode(list<Node *> *stmt_list, Node *init, Node *work, windowNode *win)
     {
         this->type = OperBody;
-        this->stmt_list = stmt_list;
+        if(stmt_list){ this->stmt_list = *stmt_list;}
         this->init = init;
         this->work = work;
         this->win = win;

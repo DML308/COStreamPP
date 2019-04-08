@@ -1,6 +1,6 @@
 #ifndef _X86CODEGENERATE_H_
 #define _X86CODEGENERATE_H_
-#include "schedulerSSG.h"
+#include "6.schedulerSSG.h"
 #include "ActorStageAssignment.h"
 #include "Partition.h"
 #include <set>

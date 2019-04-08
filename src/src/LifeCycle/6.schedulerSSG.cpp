@@ -1,4 +1,4 @@
-#include "schedulerSSG.h"
+#include "6.schedulerSSG.h"
 
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
 {
@@ -6,7 +6,7 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
     if (sssg->SteadyScheduling())
     {
         sssg->InitScheduling();
-#if 0
+#if 1
         map<FlatNode *, int>::iterator pos;
         cout << "稳态调度序列:" << endl;
         for (pos = sssg->mapSteadyCount2FlatNode.begin(); pos != sssg->mapSteadyCount2FlatNode.end(); ++pos)
