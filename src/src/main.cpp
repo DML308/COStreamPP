@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
     mp->setCpuCoreNum(CpuCoreNum, SSSG);
     mp->SssgPartition(SSSG, 1);
     /* dot出划分后的图 */
-    DumpStreamGraph(SSSG, mp, "PartitionGraph.dot"); //zww_20120605添加第四个参数
+    DumpStreamGraph(SSSG, mp, "PartitionGraph.dot");
 
     // (5)打印理论加速比
     PhaseName = "Speedup";

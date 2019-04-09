@@ -43,28 +43,28 @@ void MyVisitNode(FlatNode *node)
         //print the name and multiplicities and some other crap
         //buf <<node->name << "[ label = \"" <<	node->GetOperatorName() << "\\n";
         buf << "\n"
-            << node->name << "[ label = \"" << node->name << "\\n";
-        buf << "init Mult: " << ssg->mapFlatNode2InitCount.find(node)->second << " steady Mult: " << ssg->mapFlatNode2SteadyCount.find(node)->second << "\\n";
-        buf << "init work: " << ssg->mapInitWork2FlatNode.find(node)->second << " steady work:" << ssg->mapSteadyWork2FlatNode.find(node)->second << "\\n";
-        for (int i = 0; i < node->nIn; i++)
-            buf << " peek: " << node->inPeekWeights[i];
+            << node->name << "[ label = \"" << node->name << " \\n ";
+        buf << "init Mult: " << ssg->mapFlatNode2InitCount.find(node)->second << " steady Mult: " << ssg->mapFlatNode2SteadyCount.find(node)->second << " \\n ";
+        buf << "init work: " << ssg->mapInitWork2FlatNode.find(node)->second << " steady work:" << ssg->mapSteadyWork2FlatNode.find(node)->second << " \\n ";
+        for (auto i : node->inPeekWeights)
+            buf << " peek: " << i;
         if (node->nIn != 0)
-            buf << "\\n";
+            buf << " \\n";
         for (int j = 0; j < node->nIn; j++)
             buf << " pop: " << node->inPopWeights[j];
         if (node->nIn != 0)
-            buf << "\\n";
+            buf << " \\n";
         for (int k = 0; k < node->nOut; k++)
             buf << " push: " << node->outPushWeights[k];
         if (node->nOut != 0)
-            buf << "\\n";
+            buf << " \\n";
         buf << "\"";
         if(mpp != NULL)//Partition后则对节点着色
 		{		
 			buf<<" color=\""<<color[mpp->findPartitionNumForFlatNode(node)]<<"\""; 
 			buf<<" style=\"filled\" "; 	
 		}
-        buf << "]";
+        buf << " ]";
     }
     //假如当前遇到的node是一个多输入的结点，该结点的链接边如下处理
     if (node->nIn > 1)
@@ -72,14 +72,13 @@ void MyVisitNode(FlatNode *node)
         for (int i = 0; i < node->nIn; i++)
         {
             //joiners may have null upstream neighbors
-            if (node->inFlatNodes[i] == NULL)
-                continue;
+            assert(node->inFlatNodes[i] != NULL);
             buf << node->inFlatNodes[i]->name << " -> " << node->name;
             buf << "[label=\"1\"];\n"; //输出权重固定为1
         }
     }
 
-    //create the arcs for the outgoing edges
+    //链接当前 node 和它的所有输出边
     for (int i = 0; i < node->nOut; i++)
     {
         if (node->outFlatNodes[i] == NULL)
@@ -114,7 +113,7 @@ void DumpStreamGraph(SchedulerSSG *sssg, Partition *mp,string fileName)
     buf.str("");
     buf << "digraph Flattend {\n";
     toBuildOutPutString(ssg->topNode);
-    buf << "}\n";
+    buf << "\n\n}\n";
     ssg->ResetFlatNodeVisitTimes(); //将flatnode的visitimes置0
     ofstream fw;
     fw.open(fileName);
