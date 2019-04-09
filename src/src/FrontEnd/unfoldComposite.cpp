@@ -384,7 +384,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
                 {
                     if (it->type == Id)
                     {
-                        cout << "ID NAME: " << ((idNode *)it)->name << "......................" << endl;
+                        //cout << "ID NAME: " << ((idNode *)it)->name << "......................" << endl;
                     }
                 }
             }

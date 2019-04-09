@@ -1,4 +1,4 @@
-//#define DEBUG
+#define DEBUG
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
@@ -26,23 +26,23 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
-                debug("operator_\n");
+                debug("operator_ %s\n",exp->toString().c_str());
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
-                debug("compositeCall\n");
+                debug("compositeCall %s\n",exp->toString().c_str());
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
             {
-                debug("splitjoin\n");
+                debug("splitjoin %s\n",exp->toString().c_str());
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
-                debug("pipeline\n");
+                debug("pipeline %s\n",exp->toString().c_str());
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
@@ -50,26 +50,26 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
-            debug("operator_\n");
+            debug("operator_ %s\n",it->toString().c_str());
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
-            debug("compositeCall\n");
+            debug("compositeCall %s\n", it->toString().c_str());
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
-            debug("splitjoin\n");
+            debug("splitjoin %s\n", it->toString().c_str());
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
         {
-            debug("pipeline\n");
+            debug("pipeline %s\n", it->toString().c_str());
             ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;

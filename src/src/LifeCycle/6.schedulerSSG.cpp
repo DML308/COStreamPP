@@ -1,3 +1,4 @@
+#define DEBUG
 #include "6.schedulerSSG.h"
 
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
@@ -7,13 +8,12 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
     {
         sssg->InitScheduling();
 #if 1
-        map<FlatNode *, int>::iterator pos;
         cout << "稳态调度序列:" << endl;
-        for (pos = sssg->mapSteadyCount2FlatNode.begin(); pos != sssg->mapSteadyCount2FlatNode.end(); ++pos)
-            cout << pos->first->name << "\t" << pos->second << endl;
+        for (auto pos : sssg->mapSteadyCount2FlatNode)
+            cout << pos.first->name << "\t" << pos.second << endl;
         cout << "初始化调度序列:" << endl;
-        for (pos = sssg->mapInitCount2FlatNode.begin(); pos != sssg->mapInitCount2FlatNode.end(); ++pos)
-            cout << pos->first->name << "\t" << pos->second << endl;
+        for (auto pos : sssg->mapInitCount2FlatNode)
+            cout << pos.first->name << "\t" << pos.second << endl;
 
 #endif
     }
@@ -60,13 +60,15 @@ bool SchedulerSSG::SteadyScheduling()
             // 检查该节点是否已进行稳态调度，每条只进行一次稳态调度
             //Map的find函数寻找元素elem出现的位置，返回对应位置的迭代器，若没有出现则返回尾元素的下一个位置
             pos = mapSteadyCount2FlatNode.find(down);
-            // 该节点未进行稳态调度
+            // down 节点未进行稳态调度
             if (pos == mapSteadyCount2FlatNode.end())
             {
+                debug("down节点 %s 未进行稳态调度\n",down->name.c_str());
                 // 得到上端节点的稳态调度系数（这个稳态调度系数就是一个迭代器，它指向Map中的指定节点《first，second》 《结点，执行次数》）
                 pos = mapSteadyCount2FlatNode.find(up);
                 x = pos->second;
                 nPush *= x; // 为什么是x*nPush呢？理解稳态调度的概念--节点在流水线稳定运行中执行的最少次数 = 每次push * 稳态执行次数
+                line("nPush %d nPop %d\n",nPush, nPop);
                 if (nPush != 0)
                 {
                     // nPush, nPop的最小公倍数;
