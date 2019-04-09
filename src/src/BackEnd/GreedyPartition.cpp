@@ -755,7 +755,7 @@ void GreedyPartition::setActorWorkload(SchedulerSSG *sssg)
 {
     vector<FlatNode *> V = sssg->flatNodes;                           //sssg所有顶点的vector
     map<FlatNode *, int> stadyWork = sssg->mapSteadyWork2FlatNode;        //存放各个operator的稳态工作量估计
-    map<FlatNode *, int> steadyCount = sssg->mapSteadyCount2FlatNode; // SDF图所有节点稳定状态调度序列<节点，执行次数>
+    map<FlatNode *, int> steadyCount = sssg->mapFlatNode2SteadyCount; // SDF图所有节点稳定状态调度序列<节点，执行次数>
     sssg->total_work = 0.0;                                           //计算SDF总的节点工作量
     for (int i = 0; i < nvtxs; i++)
     {

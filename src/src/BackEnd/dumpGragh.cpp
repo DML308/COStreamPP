@@ -44,7 +44,7 @@ void MyVisitNode(FlatNode *node)
         //buf <<node->name << "[ label = \"" <<	node->GetOperatorName() << "\\n";
         buf << "\n"
             << node->name << "[ label = \"" << node->name << "\\n";
-        buf << "init Mult: " << ssg->mapInitCount2FlatNode.find(node)->second << " steady Mult: " << ssg->mapSteadyCount2FlatNode.find(node)->second << "\\n";
+        buf << "init Mult: " << ssg->mapFlatNode2InitCount.find(node)->second << " steady Mult: " << ssg->mapFlatNode2SteadyCount.find(node)->second << "\\n";
         buf << "init work: " << ssg->mapInitWork2FlatNode.find(node)->second << " steady work:" << ssg->mapSteadyWork2FlatNode.find(node)->second << "\\n";
         for (int i = 0; i < node->nIn; i++)
             buf << " peek: " << node->inPeekWeights[i];
