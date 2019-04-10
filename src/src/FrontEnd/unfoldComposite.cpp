@@ -98,16 +98,20 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     list<Node *> *inputs = new list<Node *>();
     list<Node *> *win_stmt = new list<Node *>();
     assert(input->type == Id);
+
     string input_name = ((idNode *)input)->name;
     int len = compositeCall_list.size();
     static int number = 0;
     long long sum = 0;
     inputs->push_back(input);
+
     //arguments可能为NULL，就分配一块内存
     if (arguments == NULL)
         arguments = new list<Node *>();
+     
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
 
+ 
     /*若split roundroubin()参数为空 默认赋值一个数据大小*/
     if (arguments->size() == 0)
     {
@@ -191,7 +195,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     if (arguments == NULL)
         arguments = new list<Node *>();
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
-    Node *arg = arguments->front();
+    
     Node *constantIntOne = new constantNode("integer", (long long)1);
     outputs->push_back(output);
     if (arguments->size() == 0)
@@ -199,6 +203,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
         for (int i = 0; i < len; ++i)
             arguments->push_back(constantIntOne);
     }
+    Node *arg = arguments->front();
     if (arguments->size() == 1)
     {
         for (int i = 1; i < len; ++i)
@@ -233,9 +238,11 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
 
 compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
+
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
     compositeCallFlow(node->body_stmts);
+
     if (node->split->dup_round->type == RoundRobin)
     {
         tmp = UnfoldRoundrobin(comName, node);
@@ -243,6 +250,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
     else
     {
         tmp = UnfoldDuplicate(comName, node);
+
     }
 
     return tmp;
@@ -250,6 +258,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 
 compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *node)
 {
+
     string streamName = "Rstream";
     static int number1 = 0;
     vector<compositeCallNode *> comCallList;
@@ -321,6 +330,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
 
 compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *node)
 {
+
     compositeNode *dup = NULL;
     string streamName = "Dstream";
     static int number2 = 0;
@@ -343,6 +353,8 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     //1.构建splitoperator，构建输出输入流 与composite调用关联
 
     splitOperator = MakeSplitOperator(inputs_split->front(), arg_list, 0);
+       
+
     tempList = splitOperator->outputs;
     auto iter = tempList->begin();
     int cnt = 0;

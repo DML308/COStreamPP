@@ -30,6 +30,66 @@ SymbolTable S;
 //===----------------------------------------------------------------------===//
 int main(int argc, char *argv[])
 {
+    // cout << sizeof(primNode) << '\t';
+    // cout << sizeof(constantNode) << '\t';
+    // cout << sizeof(idNode) << '\t';
+    // cout << sizeof(initNode) << '\t';
+    // cout << sizeof(expNode) << endl;
+
+    // cout << sizeof(arrayNode) << '\t';
+    // cout << sizeof(declareNode) << '\t';
+    // cout << sizeof(unaryNode) << '\t';
+    // cout << sizeof(binopNode) << '\t';
+    // cout << sizeof(ternaryNode) << endl;
+
+    // cout << sizeof(parenNode) << '\t';
+    // cout << sizeof(castNode) << '\t';
+    // cout << sizeof(caseNode) << '\t';
+    // cout << sizeof(defaultNode) << '\t';
+    // cout << sizeof(continueNode) << endl;
+
+    // cout << sizeof(breakNode) << '\t';
+    // cout << sizeof(returnNode) << '\t';
+    // cout << sizeof(ifNode) << '\t';
+    // cout << sizeof(ifElseNode) << '\t';
+    // cout << sizeof(switchNode) << endl;
+
+    // cout << sizeof(whileNode) << '\t';
+    // cout << sizeof(doNode) << '\t';
+    // cout << sizeof(forNode) << '\t';
+    // cout << sizeof(blockNode) << '\t';
+    // cout << sizeof(pipelineNode) << endl;
+
+    // cout << sizeof(roundrobinNode) << '\t';
+    // cout << sizeof(duplicateNode) << '\t';
+    // cout << sizeof(splitNode) << '\t';
+    // cout << sizeof(joinNode) << '\t';
+    // cout << sizeof(splitjoinNode) << endl;
+
+    // cout << sizeof(addNode) << '\t';
+    // cout << sizeof(slidingNode) << '\t';
+    // cout << sizeof(tumblingNode) << '\t';
+    // cout << sizeof(strdclNode) << '\t';
+    // cout << sizeof(winStmtNode) << endl;
+
+    // cout << sizeof(windowNode) << '\t';
+    // cout << sizeof(operBodyNode) << '\t';
+    // cout << sizeof(callNode) << '\t';
+    // cout << sizeof(inOutdeclNode) << '\t';
+    // cout << sizeof(ComInOutNode) << endl;
+
+    // cout << sizeof(paramDeclNode) << '\t';
+    // cout << sizeof(paramNode) << '\t';
+    // cout << sizeof(funcBodyNode) << '\t';
+    // cout << sizeof(compBodyNode) << '\t';
+    // cout << sizeof(funcDclNode) << endl;
+
+    // cout << sizeof(compositeCallNode) << '\t';
+    // cout << sizeof(compHeadNode) << '\t';
+    // cout << sizeof(compositeNode) << '\t';
+    // cout << sizeof(functionNode) << '\t';
+    // cout << sizeof(operatorNode) << endl;
+ 
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
     int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
@@ -123,12 +183,13 @@ int main(int argc, char *argv[])
 
     // (7) 输入为SDF图，输出为目标代码
     /* 第二个参数根据输入文件修改 暂时还未完成*/
-    string path="splitjoinTest";
-    CodeGeneration(CpuCoreNum,SSSG, path, pSA, mp);
+    string path = "Wang";
+    CodeGeneration(CpuCoreNum, SSSG, path, pSA, mp);
 
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
+
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
     //removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
