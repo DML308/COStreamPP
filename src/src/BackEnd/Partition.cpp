@@ -4,18 +4,21 @@ Partition::Partition()
 	mnparts = 1; //初始化划分数目为1
 }
 
+//设置place数目（即进程数目）
 void Partition::setCpuCoreNum(int nplaces, SchedulerSSG *sssg)
 {
-	if (nplaces != 0)
-	{
+	if (nplaces != 0){
 		mnparts = nplaces;
-	}
+	}else{
+        warning("Partion.cpp: 划分算法的目标子图数量不能为0,此处使用默认值1\n");
+    }
 }
 int Partition::getParts()
 {
 	return this->mnparts;
 }
 
+//根据flatnode找到其下标号 如source_0中的0
 int Partition::findID(SchedulerSSG *sssg, FlatNode *flatnode)
 {
 	for (int i = 0; i < sssg->GetFlatNodes().size(); i++)

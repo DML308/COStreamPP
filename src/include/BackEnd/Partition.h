@@ -18,10 +18,6 @@ public:
   vector<FlatNode *> findNodeSetInPartition(int partitionNum);   //根据编号num查找其中的节点，将节点集合返回给PartitonNumSet(编号->节点)
   int findPartitionNumForFlatNode(FlatNode *flatnode);           //根据节点返回其所在划分区的编号(节点->编号) for dot
   int getParts();
-  inline std::map<FlatNode *, int> GetFlatNode2PartitionNum(void)
-  {
-    return FlatNode2PartitionNum;
-  } //返回划分个数mnparts
 };
 
 void DumpStreamGraph(SchedulerSSG *ssg, Partition *mp, string fileName);

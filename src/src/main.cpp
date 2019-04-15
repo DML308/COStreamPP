@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     //第一步首先根据SDF图的输入边得到拓扑序列，并打印输出
     pSA->actorTopologicalorder(SSSG->GetFlatNodes());
     //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
-    pSA->actorStageMap(mp->GetFlatNode2PartitionNum());
+    pSA->actorStageMap(mp->FlatNode2PartitionNum);
 
     // (7) 输入为SDF图，输出为目标代码
     /* 第二个参数根据输入文件修改 暂时还未完成*/
