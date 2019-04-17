@@ -684,6 +684,8 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                               }
                               else if($3->type==Operator_){
                                      ((operatorNode*)$3)->outputs=new list<Node*>({$1});
+                              } else if($3->type==Squential){
+                                    ((squentialNode *)$3)->outputs=new list<Node*>({$1});
                               }
                         }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }

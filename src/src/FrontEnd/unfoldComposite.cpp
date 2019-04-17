@@ -450,7 +450,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
             //cout<<"exp->type ="<<exp->type<<endl;
             if (exp->type == Operator_)
             {
-                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
+                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，在函数的结尾将流进行替换*/
                 operBodyNode *operBody = ((operatorNode *)exp)->operBody;
                 list<Node *> *preInputs = ((operatorNode *)exp)->inputs;
                 list<Node *> *preOutputs = ((operatorNode *)exp)->outputs;
@@ -933,4 +933,118 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
     default:
         break;
     }
+}
+compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
+    cout<<node->body_stmts->size()<<endl;
+    compositeCallFlow(node->body_stmts); // 将通过add加入的层,依次push到compositeCall_list中
+    vector<compositeCallNode *> comCallList; // 用于存储展开后的compositeCallNode
+    compositeNode *squential = NULL;
+    string streamName = "Sstream";
+    static int num = 0;
+    string comName = MakeCompositeName("squential");
+    list<Node *> *inputs = node->inputs;
+    list<Node *> *outputs = node->outputs;
+    list<Node *> *arg_list = node->arg_list;
+    cout<<"unfold squential"<<endl;
+    ComInOutNode *inout = new ComInOutNode(inputs, outputs);
+    compHeadNode *head = new compHeadNode(comName, inout);
+    compBodyNode *body = NULL;
+    // squential有两个输入流, 分别是是训练集和标签
+    assert(inputs != NULL && outputs != NULL);
+    assert(inputs->size() == 2);
+    int levelNum = compositeCall_list.size();
+    int currentLevel = 0;
+    // 将层连接起来
+    for (auto iter = compositeCall_list.begin(); *(iter + 1) != *compositeCall_list.end(); iter++) {
+        ((layerNode *)*iter)->level = ++currentLevel;
+        ((layerNode *)*iter)->nextLayer  = ((layerNode *)*(iter+1));
+        ((layerNode *)*(iter+1))->prevLayer  = ((layerNode *)*iter);
+    }
+    ((layerNode *)compositeCall_list.back())->level = ++currentLevel;
+    // 取得输入到squential的训练集
+    list<Node *> *temp_stream = new list<Node *>({inputs->front()});
+    // 取得输入到squential的标签
+    list<Node *> *y_stream = new list<Node *>({inputs->back()});
+    // 展开前向传播composite
+    for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
+        list<Node *> *call_inputs, *call_outputs;
+        string name = ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
+        cout<<((layerNode *)*iter)->level<<endl;
+        if (*iter != *compositeCall_list.rbegin()) {
+            // cout<< ((layerNode *)*iter)->layerName;
+            // cout<< to_string(((layerNode *)*iter)->level)<<endl;
+            string namePrefix = streamName + "_F" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
+            // 正向传递给下一层的stream名称
+            string tempName1 = namePrefix + "F" + ((layerNode *)*iter)->nextLayer->layerName + to_string(((layerNode *)*iter)->nextLayer->level);
+            idNode *id1 = new idNode(tempName1);
+            // 传递给反向传播中本层的stream名称
+            string tempName2 = namePrefix + "B" + ((layerNode *)*iter)->nextLayer->layerName + to_string(((layerNode *)*iter)->nextLayer->level);
+            idNode *id2 = new idNode(tempName2);
+            call_inputs = new list<Node *>({temp_stream->front()});
+            call_outputs = new list<Node *>({id1, id2});
+            temp_stream->pop_back();
+            temp_stream->push_back(call_outputs->front());
+        } else {
+            // 对正向传播过程的最后一层要做特别的处理, 他只有一个输出流
+            cout<<"forward last layer"<<endl;
+            string tempName =  streamName  + "_F" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)-> level);
+            idNode *id = new idNode(tempName);
+            call_inputs = new list<Node *>({temp_stream->front()});
+            call_outputs = new list<Node *>({id});
+            temp_stream->pop_back();
+            temp_stream->push_back(call_outputs->front());
+        }
+        // 构造实际的正向传播composite  ???未完成
+        // compositeNode* actual_composite = makeForwardComposite((layerNode *) *iter, call_inputs, call_outputs);
+        // compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
+        // ((layerNode *)*iter)->fp_composite = call; 
+        // comCallList.push_back(call);
+    }
+    cout<<"unfold forward propogation"<<endl;
+    // 展开反向传播composite, 最后一层的composite的输入为实际预测和期望预测的输入流 也即temp_stream和 与y_stream
+    temp_stream->push_back(y_stream->front());
+    // 额外创建一个新的节点计算dL/dy
+    
+    for (auto iter = compositeCall_list.rbegin(); iter != compositeCall_list.rend(); iter++) {
+        list<Node *> *call_inputs, *call_outputs;
+        string name = "B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
+        string namePrefix = "B" + streamName + "_" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
+        string tempName =  namePrefix + ((layerNode *)*iter)->prevLayer->layerName + to_string(((layerNode *)*iter)->prevLayer->level);
+        idNode *id = new idNode(tempName);
+        call_inputs = new list<Node *>({temp_stream->front(), temp_stream->back()});
+        call_outputs = new list<Node *>({id});
+        temp_stream->clear();
+        temp_stream->push_back(call_outputs->front());
+        // 上面的未实现,这里就会有问题
+        temp_stream->push_back(((layerNode *)*iter)->fp_composite->outputs->back());
+        // 构造实际的正向传播composite  ???未完成
+        // compositeNode* actual_composite = makeBackComposite((layerNode *) *iter,call_inputs, call_outputs);
+        // compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
+        // ((layerNode *) *iter)-> bp_composite = call; 
+        // comCallList.push_back(call);
+    }
+    cout<<"unfold back propogation"<<endl;
+    // ...
+    // 生成squential composite
+    /*for (auto nd : comCallList)
+        comp_stmts->push_back(nd);
+    body = new compBodyNode(NULL, comp_stmts);
+    squential = new compositeNode(head, body);
+    // ++num; // ???
+    compositeCall_list.clear();
+    return squential;*/
+}
+compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    compHeadNode *compHead = NULL;
+    compBodyNode *compBody = NULL;
+    compositeNode *comp = new compositeNode(compHead, compBody);
+    cout << "makeForwardComposite"<<endl;
+    return comp;
+ }
+compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    compHeadNode *compHead = NULL;
+    compBodyNode *compBody = NULL;
+    compositeNode *comp = new compositeNode(compHead, compBody);
+    cout << "makeBackComposite"<<endl;
+    return comp;
 }

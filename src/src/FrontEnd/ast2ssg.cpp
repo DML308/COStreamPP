@@ -39,6 +39,11 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
+            else if (exp->type == Squential)
+            {   
+                ((squentialNode *)exp)->replace_composite = unfold->UnfoldSquential(((squentialNode *)exp));
+                GraphToOperators(((squentialNode *)(exp))->replace_composite, ((squentialNode *)(exp))->replace_composite);
+            }
             break;
         }
         case Operator_:

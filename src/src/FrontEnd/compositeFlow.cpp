@@ -24,6 +24,10 @@ void compositeCallFlow(list<Node *> *stmts)
             else if (((addNode *)nd)->content->type == Pipeline)
             {
             }
+            /* add layer 的情况 */ 
+            else if (((addNode *)nd)->content->type == Layer) {
+                compositeCall_list.push_back(((addNode *)nd)->content);
+            }
         }
         else if (nd->type == For)
         {
@@ -154,7 +158,7 @@ void compositeCallFlow(list<Node *> *stmts)
 }
 
 /*
-*   功能：对所有Main composite的composite调用进行实际流边量名的替换
+*   功能：对所有Main composite的composite调用进行实际流变量名的替换
 *   输入参数：gMaincomposite
 */
 void streamFlow(compositeNode *main)

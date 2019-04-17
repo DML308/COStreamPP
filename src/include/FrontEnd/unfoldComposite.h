@@ -19,6 +19,7 @@ class UnfoldComposite
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
     compositeNode *UnfoldPipeline(pipelineNode *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
+    compositeNode *UnfoldSquential(squentialNode *node);
     Node *MakeRoundrobinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     Node *MakeJoinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     operatorNode *MakeSplitOperator(Node *input, list<Node *> *arguments, int style);
@@ -28,5 +29,7 @@ class UnfoldComposite
     void modifyStreamName(operatorNode *oper,list<Node*> *stream ,bool style );
     void modifyWorkName(Node *u,string replaceName,string name);
     Node* workNodeCopy(Node *u);
+    compositeNode* makeForwardComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeBackComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif
