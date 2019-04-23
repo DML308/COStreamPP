@@ -1,6 +1,8 @@
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
+#include <string.h>
 extern SymbolTable S;
+extern list<Node*> *Program;
 vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
 
 Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
@@ -502,6 +504,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     //cout<<"stmts.size()= "<<stmt_list->size();
     Node *top = stmt_list->front();
     Node *back = stmt_list->back();
+    // 修改composite输入对应的operator
     switch (top->type)
     {
     case Operator_:
@@ -527,7 +530,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         }
         break;
     }
-
+    // 修改composite输出对应的operator
     switch (back->type)
     {
     case Operator_:
@@ -949,16 +952,34 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
+    // ???
+    // EnterScope();
+    // ???
+    SymbolTable *top = new SymbolTable(NULL);
     // squential有两个输入流, 分别是是训练集和标签
     assert(inputs != NULL && outputs != NULL);
     assert(inputs->size() == 2);
     int levelNum = compositeCall_list.size();
     int currentLevel = 0;
-    // 将层连接起来
+    cout << ((constantNode *)(node->arg_list->front()))->style << endl;
+    // assert(((constantNode *)(node->arg_list->front()))->style == "integer");
+    Node *prevDim = new constantNode("integer",((constantNode *)(node->arg_list->front()))->llval);
+    // 将层连接起来, 并且以全局变量声明参数
     for (auto iter = compositeCall_list.begin(); *(iter + 1) != *compositeCall_list.end(); iter++) {
         ((layerNode *)*iter)->level = ++currentLevel;
         ((layerNode *)*iter)->nextLayer  = ((layerNode *)*(iter+1));
         ((layerNode *)*(iter+1))->prevLayer  = ((layerNode *)*iter);
+        // assert(((constantNode *)(((layerNode *)*iter)->arg_list->front()))->style == "integer");
+        // 声明_weight_[prevDim][dim]
+        Node *dim = new constantNode("integer", ((constantNode *)(((layerNode *)*iter)->arg_list->front()))->llval);
+        string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
+        Node *weight =  new idNode(weightName);
+        ((idNode *)weight)->isArray = 1;
+        Node* arrDecl = new arrayNode((expNode *)prevDim);
+        (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)dim);
+        (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+        Program->push_back(weight);
+        prevDim = dim;
     }
     ((layerNode *)compositeCall_list.back())->level = ++currentLevel;
     // 取得输入到squential的训练集
@@ -980,6 +1001,8 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
             // 传递给反向传播中本层的stream名称
             string tempName2 = namePrefix + "B" + ((layerNode *)*iter)->nextLayer->layerName + to_string(((layerNode *)*iter)->nextLayer->level);
             idNode *id2 = new idNode(tempName2);
+            // 将反向传播要连接的id存储到符号表中???
+            top->put(tempName2 ,id2);
             call_inputs = new list<Node *>({temp_stream->front()});
             call_outputs = new list<Node *>({id1, id2});
             temp_stream->pop_back();
@@ -995,7 +1018,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
             temp_stream->push_back(call_outputs->front());
         }
         // 构造实际的正向传播composite  ???未完成
-        // compositeNode* actual_composite = makeForwardComposite((layerNode *) *iter, call_inputs, call_outputs);
+        compositeNode* actual_composite = makeForwardComposite((layerNode *) *iter, call_inputs, call_outputs);
         // compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
         // ((layerNode *)*iter)->fp_composite = call; 
         // comCallList.push_back(call);
@@ -1004,8 +1027,8 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     // 展开反向传播composite, 最后一层的composite的输入为实际预测和期望预测的输入流 也即temp_stream和 与y_stream
     temp_stream->push_back(y_stream->front());
     // 额外创建一个新的节点计算dL/dy
-    
-    for (auto iter = compositeCall_list.rbegin(); iter != compositeCall_list.rend(); iter++) {
+    // 暂时搁置
+    /*for (auto iter = compositeCall_list.rbegin(); iter != compositeCall_list.rend(); iter++) {
         list<Node *> *call_inputs, *call_outputs;
         string name = "B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
         string namePrefix = "B" + streamName + "_" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
@@ -1022,29 +1045,156 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         // compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
         // ((layerNode *) *iter)-> bp_composite = call; 
         // comCallList.push_back(call);
-    }
+    }*/
     cout<<"unfold back propogation"<<endl;
     // ...
     // 生成squential composite
     /*for (auto nd : comCallList)
         comp_stmts->push_back(nd);
     body = new compBodyNode(NULL, comp_stmts);
-    squential = new compositeNode(head, body);
+    squential = new compositeNode(head, body);*/
     // ++num; // ???
     compositeCall_list.clear();
-    return squential;*/
+    return squential;
 }
 compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
-    compHeadNode *compHead = NULL;
+    ComInOutNode *inout = new ComInOutNode(inputs, outputs);
+    compHeadNode *compHead = new compHeadNode("F" + layer->layerName + to_string(layer-> level), inout);
     compBodyNode *compBody = NULL;
+    list<Node *> *comp_stmt_List = new list<Node *>();
+    operatorNode *layerOperator = NULL;
+    // operatorNode *activationOperator = NULL;
+    if (layer->layerName == "dense") layerOperator = makeDenseOperator(layer, inputs, outputs);
     compositeNode *comp = new compositeNode(compHead, compBody);
     cout << "makeForwardComposite"<<endl;
     return comp;
  }
 compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
-    compHeadNode *compHead = NULL;
+    ComInOutNode *inout = new ComInOutNode(inputs, outputs);
+    compHeadNode *compHead = new compHeadNode("F" + layer->layerName + to_string(layer-> level), inout);
     compBodyNode *compBody = NULL;
     compositeNode *comp = new compositeNode(compHead, compBody);
     cout << "makeBackComposite"<<endl;
     return comp;
+}
+operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    string operName = "dense";
+    operBodyNode *body = NULL;
+    Node *init = NULL, *work = NULL;
+    windowNode *window = NULL;
+    Node *row = NULL, *col = NULL;
+    list<Node *> *win_stmt = new list<Node *>();
+    // In0 sliding(row, row);
+    if (!layer->prevLayer) {
+        row = layer->prevLayer->arg_list->front();
+    }
+    col = layer->arg_list->front();
+    
+    // 添加输入窗口
+    auto iter = inputs->begin();
+    slidingNode *slid = new slidingNode(new list<Node *>({row, row}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)*iter)->name, slid);
+    win_stmt->push_back(win1);
+    // 添加输出窗口
+    iter = outputs->begin();
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({col}));
+    winStmtNode *win2 = new winStmtNode(((idNode *)*iter)->name, tumb);
+    win_stmt->push_back(win2);
+    window = new windowNode(win_stmt);
+    init = MakeDenseInit(layer, inputs, outputs);
+    work = MakeDenseWork(layer, inputs, outputs);
+    // statement.list, operator.selfdefine.body.init, operator.selfdefine.body.work, operator.selfdefine.body.window.list
+    body = new operBodyNode(NULL, init, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+operatorNode* UnfoldComposite::makeActivationOperator(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs) {
+    string operName;
+    operBodyNode *operBody;
+    return new operatorNode(outputs, operName, inputs, operBody);
+}
+// 全局变量初始化 下一步???
+Node* UnfoldComposite::MakeDenseInit(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
+    list<Node *> *stmts = new list<Node *>();
+    Node *init =  NULL;
+    // 如何调用全局的weight
+    // weight
+    // idNode: IDENTIFIER  array.declarator
+    string weightName = "_weight_" + to_string(layer-> level);
+    // idNode*  weight = new idNode(weightName);
+    // weight->isArray = 1; 
+    init  = new blockNode(stmts);
+
+    return init;
+}
+// 计算Dense
+Node* UnfoldComposite::MakeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
+    list<Node *> *stmts = new list<Node *>();
+    Node *work =  NULL;
+    string weightName = "_weight_" + to_string(layer-> level);
+    Node*  idWeight = new idNode(weightName);
+    ((idNode *)idWeight)->isArray = 1;
+
+    // int i = 0, j = 0;
+    constantNode *const_zero = new  constantNode("integer", (long long)0);
+    constantNode *const_i = new constantNode("integer", (long long)0);
+    constantNode *const_j = new constantNode("integer", (long long)0);
+    initNode *init_i = new initNode(const_i);
+    initNode *init_j = new initNode(const_j);
+    idNode *id_i = new idNode("i"), *id_j = new idNode("j");
+    id_i->init = init_i;
+    id_j->init = init_j;
+    primNode *prim = new primNode("int");
+    declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    stmts->push_back(declI);
+    stmts->push_back(declJ);
+
+    idNode *id_temp = new idNode("temp");
+    id_temp->init = new initNode(const_zero);
+    declareNode *declTemp = new declareNode(prim, id_temp);
+    stmts->push_back(declTemp);
+
+    Node *forNode1 = NULL, *init1 = NULL, *cond1 = NULL, *next_j = NULL, *stmt1 = NULL;
+    init1 = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
+    cond1 = new binopNode((expNode *)id_j, "<", (expNode *)(layer->arg_list->front()));
+    next_j = new unaryNode("POSTINC", (expNode *)id_j);
+    list<Node *> *stmts1 = new list<Node *>();
+    stmts1->push_back(new binopNode((expNode *)id_temp, "=", (expNode *)const_zero));
+
+    Node *forNode2 = NULL, *init2 = NULL, *cond2 = NULL, *next_i = NULL, *stmt2 = NULL, *block2 = NULL;
+    init2 = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
+    cond2 = new binopNode((expNode *)id_i, "<", (expNode *)(* (layer->arg_list->begin()++)));
+    next_i = new unaryNode("POSTINC", (expNode *)id_i);
+    list<Node *> *stmts2 = new list<Node *>();
+    // 取得_weight_level[i][j]
+    Node *weightArrDec = NULL;
+    weightArrDec =  new arrayNode((expNode *)(next_i));
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)(next_j));
+    (static_cast<idNode*>(idWeight))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+    // 取得In1[i].x
+    idNode* x = new idNode("x");
+    idNode* input1 = new idNode(static_cast<idNode *>(inputs->front())->name);
+    input1->isArray = 1;
+    input1->arg_list.push_back(next_i);
+    Node* In1 = new binopNode((expNode *)input1, ".", (expNode *)x);
+    // temp+=In1[i].x*_weight_level[i][j];
+    Node* midRes = new binopNode((expNode *)id_temp, "+=", (expNode *)(new binopNode((expNode *)In1, "*", (expNode *)input1)));
+    stmts2->push_back(midRes);
+    block2 = new blockNode(stmts2);
+    // for(i = 0; i < arg:row; i++) {temp+=In0[i].x*weight1[i][j];}
+    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)next_i, block2);
+    stmts1->push_back(forNode2);
+    work  = new blockNode(stmts);
+    // 取得Out1[j].x
+    idNode* output1 = new idNode(static_cast<idNode *>(outputs->front())->name);
+    output1->isArray = 1;
+    output1->arg_list.push_back(next_j);
+    Node* Out1 = new binopNode((expNode *)output1, ".", (expNode *)x);
+    Node* res = new binopNode((expNode *)Out1, "=", (expNode *)id_temp);
+    stmts1->push_back(res);
+    Node* block1 = new blockNode(stmts1);
+    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)next_j, block1);
+    stmts->push_back(forNode1);
+    
+    work = new blockNode(stmts);
+    return work;
 }

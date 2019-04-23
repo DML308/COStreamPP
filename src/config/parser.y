@@ -738,7 +738,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
-        |   SQUENTIAL '(' argument.expression.list ')' '(' argument.expression.list ')' lblock squential.statement.list rblock {
+        |   SQUENTIAL '(' argument.expression.list ')'  '(' argument.expression.list ')' lblock squential.statement.list rblock {
                   /*     1.argument.expression.list是一个identifier
                   2. argument.expression.list*/
                   line("Line%-4d", @1.first_line);

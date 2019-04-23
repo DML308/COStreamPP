@@ -839,6 +839,7 @@ class compositeCallNode : public Node
         this->compName = compName;
         this->inputs = inputs;
         this->actual_composite = actual_composite;
+        this->stream_List = stream_List;
     }
     ~compositeCallNode() {}
     void print() {}
@@ -915,6 +916,11 @@ class squentialNode : public Node
       this->arg_list = arg_list;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
+      cout<< "inputs" << inputs->size() << endl;
+      cout<< "arg_list" << arg_list->size() << endl;
+      for(auto iter = arg_list->begin(); iter != arg_list->end(); iter++) {
+        cout<< (*iter)->type  << endl;
+      }
     }
     ~squentialNode() {};
     void print() {};

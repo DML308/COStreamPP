@@ -1,14 +1,16 @@
 composite Main() {
-    stream<double x> In, Out;
-    In = Start() {
+    stream<double x> In, Out, Y;
+    (In,Y) = Start() {
         work {
             In[0].x = 1;
+            Y[0].x = 0;
         }
         window {
             In tumbling(1);
+            Y tumbling(1);
         }
     };
-    Out = squential (In, Y) (4) {
+    Out = squential (In, Y) (4, 2) {
         add Dense(3, "Relu");
         add Dense(2, "Sigmoid");
         add Dense(1, "Softmax");

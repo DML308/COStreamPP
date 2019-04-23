@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     //（5）打印理论加速比
     PhaseName = "Speedup";
     /* 此处ccfilename需要从argv中读取，后续再写 */
-    string ccfilename = "jpeg.cos";
+    string ccfilename = "squential.cos";
     ComputeSpeedup(SSSG, mp, ccfilename, "workEstimate.txt", "GAPartition");
 
     // (6) 阶段赋值

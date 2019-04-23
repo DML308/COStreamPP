@@ -10,3 +10,7 @@
 效果:
 
 ![yylineo](https://i.loli.net/2018/11/26/5bfbf72f270ac.png)
+
+## use
+
+在/COStreamPP/src 路径下 ./a ../tests/XXX.cos

@@ -31,5 +31,9 @@ class UnfoldComposite
     Node* workNodeCopy(Node *u);
     compositeNode* makeForwardComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeBackComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* MakeDenseInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* MakeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeActivationOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif

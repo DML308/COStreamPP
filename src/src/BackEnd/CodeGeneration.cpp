@@ -30,6 +30,8 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string fileName, StageAs
     X86Code->CGFunctionHeader();  //生成function头文件
     X86Code->CGFunction();        //生成function定义
     /* 拷贝程序运行所需要的库文件 */
-    const char *command = "cp ../../src/lib/* .";
+    const char *command = "cp ./src/lib/* .";
+    const char *command2 = "pwd";
+    system(command2);
     system(command);
 }
