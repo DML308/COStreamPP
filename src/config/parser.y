@@ -585,8 +585,8 @@ assignment.operator:
         | MODassign       { $$ = new string("%=") ; }
         | PLUSassign      { $$ = new string("+=") ; }
         | MINUSassign     { $$ = new string("-=") ; }
-        | LSassign        { $$ = new string("<=") ; }
-        | RSassign        { $$ = new string(">=") ; }
+        | LSassign        { $$ = new string("<<=") ; }
+        | RSassign        { $$ = new string(">>=") ; }
         | ANDassign       { $$ = new string("&=") ; }
         | ERassign        { $$ = new string("^=") ; }
         | ORassign        { $$ = new string("|=") ; }
