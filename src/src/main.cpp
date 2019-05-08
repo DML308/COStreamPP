@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     // 编译前端 begin
     //===----------------------------------------------------------------------===//
 
-    // (0) 对命令行输入预处理,同时
+    // (0) 对命令行输入预处理
     if (handle_options(argc, argv) == false)
         return 0;
 
@@ -51,8 +51,10 @@ int main(int argc, char *argv[])
     {
         infp = changeTabToSpace();
         infp = recordFunctionAndCompositeName();
+        //设置输出文件路径
+        setOutputPath();
     }
-
+    
     // (2) 文法建立和语法树生成
     PhaseName = "Parsing";
     yyin = infp;
@@ -72,12 +74,12 @@ int main(int argc, char *argv[])
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);
     //打印初态和稳态工作量
-    cout<< "--------- 执行WorkEstimate后, 查看静态数据流图中的全部 FlatNode ---------------\n" ;
+    cout << "--------- 执行WorkEstimate后, 查看静态数据流图中的全部 FlatNode ---------------\n";
     for (auto it : SSG->flatNodes)
     {
-        cout << it->name << ":\t" << it->toString() ;
-        cout <<", initWork:" << SSG->mapInitWork2FlatNode[it];
-        cout <<", steadyWork:" << SSG->mapSteadyWork2FlatNode[it]<<endl;
+        cout << it->name << ":\t" << it->toString();
+        cout << ", initWork:" << SSG->mapInitWork2FlatNode[it];
+        cout << ", steadyWork:" << SSG->mapSteadyWork2FlatNode[it] << endl;
         if (it != SSG->flatNodes.back())
             cout << "    ↓" << endl;
     }
@@ -120,15 +122,13 @@ int main(int argc, char *argv[])
     pSA->actorStageMap(mp->FlatNode2PartitionNum);
 
     // (7) 输入为SDF图，输出为目标代码
-    /* 第二个参数根据输入文件修改 暂时还未完成*/
-    string path="splitjoinTest";
-    CodeGeneration(CpuCoreNum,SSSG, path, pSA, mp);
+    CodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
 
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
-    //removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
+    removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
     return 0;
 }
