@@ -349,7 +349,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 
     for (auto it : compositeCall_list)
     {
-        cout << "--------------------------------------" << it << "-------------------------------" << endl;
+        //cout << "--------------------------------------" << it << "-------------------------------" << endl;
         // if (it->type == SplitJoin || it->type == Pipeline)
         // {
         //     comCallList->push_back(it);

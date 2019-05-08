@@ -1,4 +1,4 @@
-#define DEBUG
+//#define DEBUG
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
@@ -102,13 +102,14 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     ssg->ResetFlatNodeNames();
     ssg->SetFlatNodesWeights();
     /* 测试peek，pop，push值 */
-
     cout << "--------- 执行AST2FlatStaticStreamGraph后, 查看静态数据流图中的全部 FlatNode ---------------\n";
+#if 0
     for (auto it : ssg->flatNodes)
     {
         cout << it->name << ":\t" << it->toString() << endl;
         if (it != ssg->flatNodes.back())
             cout << "    ↓" << endl;
     }
+#endif
     return ssg;
 }

@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
     WorkEstimate(SSG);
     //打印初态和稳态工作量
     cout << "--------- 执行WorkEstimate后, 查看静态数据流图中的全部 FlatNode ---------------\n";
+#if 0
     for (auto it : SSG->flatNodes)
     {
         cout << it->name << ":\t" << it->toString();
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
         if (it != SSG->flatNodes.back())
             cout << "    ↓" << endl;
     }
+#endif
 
     //===----------------------------------------------------------------------===//
     // 编译前端 end
