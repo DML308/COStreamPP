@@ -1,6 +1,6 @@
 #include "0.handle_options.h"
 
-float VersionNumber = 0.42;
+float VersionNumber = 0.43;
 const char *const CompiledDate = __DATE__;
 int WarningLevel = 99; //大于99级作用域 Level 后不报警告,即默认大部分情况都报警告
 
@@ -12,8 +12,8 @@ int handle_options(int argc, char *argv[]){
             {"version", no_argument, NULL, 'v'},
             {"help", no_argument, NULL, 'h'},
             {"nCpucore", required_argument, NULL, 'j'},
-            {"nowarning",no_argument,NULL,'w'},
-            {"output",required_argument,NULL,'o'},
+            {"nowarning", no_argument, NULL, 'w'},
+            {"output", required_argument, NULL, 'o'},
             {0, 0, 0, 0}};
     int option_index = 0;
     while ((c = getopt_long(argc, argv, ":hvwo:j:", long_options, &option_index)) != -1)
@@ -29,10 +29,10 @@ int handle_options(int argc, char *argv[]){
             print_version_info();
             break;
         case 'o':
-            outfile_name = optarg;
+            output_path = optarg;
             break;
         case 'w':
-            WarningLevel = 0;//大于等于0级的作用域中需要报警告时直接 return, 即不报警告
+            WarningLevel = 0; //大于等于0级的作用域中需要报警告时直接 return, 即不报警告
             break;
         case 'j':
             error("-j 还没写完呢\n");
@@ -56,12 +56,14 @@ int handle_options(int argc, char *argv[]){
         infile_name = argv[optind];
     return true;
 }
+
 void print_version_info()
 {
-    fprintf(stderr, "COStream\nVersion %.02f (Compiled Date: %s)\n\n",VersionNumber, CompiledDate);
+    fprintf(stderr, "COStream\nVersion %.02f (Compiled Date: %s)\n\n", VersionNumber, CompiledDate);
     exit(0);
 }
-void print_usage(){
+void print_usage()
+{
     fprintf(stderr, "Usage: COStream  [options] [file]\n");
     fprintf(stderr,
             "\n"
@@ -78,4 +80,3 @@ void print_usage(){
     fprintf(stderr, "\n");
     exit(0);
 }
-
