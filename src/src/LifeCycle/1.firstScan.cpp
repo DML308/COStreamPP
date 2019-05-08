@@ -116,8 +116,6 @@ void setOutputPath()
     {
         /* 获取当前文件目录 用于拼接文件目录*/
         /* 默认输出路径为 ./StaticDistCode/filename */
-        char buf[1024];
-        char *path = getcwd(buf, 1024);
         umask(0); //重置文件夹权限继承
         mkdir("StaticDistCode", 0754);
         //切换文件目录
@@ -130,8 +128,8 @@ void setOutputPath()
     {
         /* 用户输入了指定路径,例如 -o output , 则应该新建文件夹 */
         umask(0); //重置文件夹权限继承
-        mkdir(infile_name.c_str(), 0754);
-        chdir(infile_name.c_str());
+        mkdir(output_path.c_str(), 0754);
+        chdir(output_path.c_str());
     }
 }
 
