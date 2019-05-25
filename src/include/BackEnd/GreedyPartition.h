@@ -21,7 +21,7 @@ class GreedyPartition : public Partition
     ~GreedyPartition()
     {
     }
-    void SssgPartition(SchedulerSSG *sssg, int level); //一级划分,调用doPartition
+    void SssgPartition(SchedulerSSG *sssg); //一级划分,调用doPartition
     void doPartition(SchedulerSSG *sssg, int k);
     int chooseMaxGain(SchedulerSSG *sssg, vector<FlatNode *> &S, vector<FlatNode *> &Xi, vector<FlatNode *> &X0);
     void updateCandidate(SchedulerSSG *sssg, vector<FlatNode *> &X0, vector<FlatNode *> &S, int index);
@@ -50,7 +50,7 @@ class GreedyPartition : public Partition
         return w[index];
     }
 
-  private:
+  public:
     vector<vector<FlatNode *>> X;                   //划分的结果
     vector<int> w;                                  //划分的K个子图每个子图的总工作量
     vector<int> edge;                               //划分的K个子图每个子图的通信边的权重

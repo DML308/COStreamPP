@@ -12,7 +12,7 @@ public:
 
 public:
   Partition();
-  virtual void SssgPartition(SchedulerSSG *sssg, int level) = 0; //划分成员方法，具体实现由子类实现
+  virtual void SssgPartition(SchedulerSSG *sssg) = 0; //划分成员方法，具体实现由子类实现
   int findID(SchedulerSSG *sssg, FlatNode *flatnode);            //根据flatnode找到其下标号 如source_0中的0
   void setCpuCoreNum(int, SchedulerSSG *);                       //设置place数目（即进程数目）
   vector<FlatNode *> findNodeSetInPartition(int partitionNum);   //根据编号num查找其中的节点，将节点集合返回给PartitonNumSet(编号->节点)

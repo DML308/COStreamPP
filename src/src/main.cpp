@@ -13,6 +13,7 @@
 #include "6.schedulerSSG.h"
 #include "ActorStageAssignment.h"
 #include "GreedyPartition.h"
+#include "HeuristicGreedyPartition.h"
 #include "CodeGeneration.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
@@ -103,10 +104,14 @@ int main(int argc, char *argv[])
 
     // (3)对节点进行调度划分
     PhaseName = "Partition";
+    #if 0
     mp = new GreedyPartition(SSSG);
+    #else
+    mp = new HeuristicGreedyPartition(SSSG);
+    #endif
     /* CpuCoreNum需要从argv中读取然后赋值，暂时未做，采用初始值 */
     mp->setCpuCoreNum(CpuCoreNum, SSSG);
-    mp->SssgPartition(SSSG, 1);
+    mp->SssgPartition(SSSG);
     /* dot出划分后的图 */
     DumpStreamGraph(SSSG, mp, "PartitionGraph.dot");
 

@@ -1,8 +1,6 @@
 #include "GreedyPartition.h"
-void GreedyPartition::SssgPartition(SchedulerSSG *sssg, int level)
+void GreedyPartition::SssgPartition(SchedulerSSG *sssg)
 {
-    assert(level == 1);
-
     if (this->mnparts == 1)
     {
         for (int i = 0; i < nvtxs; i++)
