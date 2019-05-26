@@ -67,7 +67,7 @@ void X86CodeGeneration::CGGlobalvar()
     for (auto iter : *Program)
     {
         if (iter->type == Decl)
-            buf << iter->toString() << "\n";
+            buf << iter->toString()+ ";" << "\n";
     }
     ofstream out("GlobalVar.cpp");
     out << buf.str();
@@ -355,7 +355,7 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
     {
         for (auto it : *stmts)
         {
-            string str = it->toString();
+            string str = it->toString()+";";
             /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
             string temp = "";
             bool flag = 1;
@@ -410,7 +410,7 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
     {
         for (auto it : *stmts)
         {
-            string str = it->toString();
+            string str = it->toString()+";";
             vector<string> svec;
             /*解析逗号和等号,类似int i=0,j;形式变成i=0;的形式,初始化stmts*/
             string temp = "";

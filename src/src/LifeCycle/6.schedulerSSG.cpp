@@ -1,3 +1,4 @@
+//#define DEBUG
 #include "6.schedulerSSG.h"
 
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
@@ -6,14 +7,13 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
     if (sssg->SteadyScheduling())
     {
         sssg->InitScheduling();
-#if 1
-        map<FlatNode *, int>::iterator pos;
+#if 0
         cout << "稳态调度序列:" << endl;
-        for (pos = sssg->mapSteadyCount2FlatNode.begin(); pos != sssg->mapSteadyCount2FlatNode.end(); ++pos)
-            cout << pos->first->name << "\t" << pos->second << endl;
+        for (auto pos : sssg->mapFlatNode2SteadyCount)
+            cout << pos.first->name << "\t" << pos.second << endl;
         cout << "初始化调度序列:" << endl;
-        for (pos = sssg->mapInitCount2FlatNode.begin(); pos != sssg->mapInitCount2FlatNode.end(); ++pos)
-            cout << pos->first->name << "\t" << pos->second << endl;
+        for (auto pos : sssg->mapFlatNode2InitCount)
+            cout << pos.first->name << "\t" << pos.second << endl;
 
 #endif
     }
@@ -48,7 +48,7 @@ bool SchedulerSSG::SteadyScheduling()
     while (1)
     {
         // 稳态调度系列初始系数为1
-        mapSteadyCount2FlatNode.insert(make_pair(up, 1));
+        mapFlatNode2SteadyCount.insert(make_pair(up, 1));
         // 遍历该节点的所有输出节点（广度优先遍历）
         for (i = 0; i < up->nOut; ++i)
         {
@@ -59,14 +59,16 @@ bool SchedulerSSG::SteadyScheduling()
             nPop = down->inPopWeights[j]; // 下端节点取出对应的pop值
             // 检查该节点是否已进行稳态调度，每条只进行一次稳态调度
             //Map的find函数寻找元素elem出现的位置，返回对应位置的迭代器，若没有出现则返回尾元素的下一个位置
-            pos = mapSteadyCount2FlatNode.find(down);
-            // 该节点未进行稳态调度
-            if (pos == mapSteadyCount2FlatNode.end())
+            pos = mapFlatNode2SteadyCount.find(down);
+            // down 节点未进行稳态调度
+            if (pos == mapFlatNode2SteadyCount.end())
             {
+                debug("对 down 节点 %s 进行稳态调度\n",down->name.c_str());
                 // 得到上端节点的稳态调度系数（这个稳态调度系数就是一个迭代器，它指向Map中的指定节点《first，second》 《结点，执行次数》）
-                pos = mapSteadyCount2FlatNode.find(up);
+                pos = mapFlatNode2SteadyCount.find(up);
                 x = pos->second;
                 nPush *= x; // 为什么是x*nPush呢？理解稳态调度的概念--节点在流水线稳定运行中执行的最少次数 = 每次push * 稳态执行次数
+                line("nPush %d nPop %d\n",nPush, nPop);
                 if (nPush != 0)
                 {
                     // nPush, nPop的最小公倍数;
@@ -75,15 +77,15 @@ bool SchedulerSSG::SteadyScheduling()
                     if (temp != 1)           // 加一个判断，提高效率，乘1是不必要的
                     {
                         // 根据计算规则得来的
-                        for (pos = mapSteadyCount2FlatNode.begin(); pos != mapSteadyCount2FlatNode.end(); ++pos)
+                        for (pos = mapFlatNode2SteadyCount.begin(); pos != mapFlatNode2SteadyCount.end(); ++pos)
                             pos->second *= temp;
                     }
-                    mapSteadyCount2FlatNode.insert(make_pair(down, nLcm / nPop));
+                    mapFlatNode2SteadyCount.insert(make_pair(down, nLcm / nPop));
                 }
                 else // 对push(0)作处理
                 {
                     // 取 1 值
-                    mapSteadyCount2FlatNode.insert(make_pair(down, 1));
+                    mapFlatNode2SteadyCount.insert(make_pair(down, 1));
                 }
                 // 将down加入listNode是为了对down的输出节点进行调度,相当于遍历
                 flatNodeList.push_back(down);
@@ -91,7 +93,7 @@ bool SchedulerSSG::SteadyScheduling()
             else //该节点已进行稳态调度，检查SDF图是否存在稳态调度系列，一般不存在的话表明程序有误
             {
                 y = pos->second; //下方节点的执行次数
-                pos = mapSteadyCount2FlatNode.find(up);
+                pos = mapFlatNode2SteadyCount.find(up);
                 x = pos->second; //上端节点的执行次数
                 //nPop == 0 说明在进行join 0 操作
                 if ((nPop != 0) && (nPush * x) != (nPop * y))
@@ -140,7 +142,7 @@ bool SchedulerSSG::InitScheduling()
         exit(1);
     }
     //每个节点的初始化调度次数初始值为0
-    mapInitCount2FlatNode.insert(make_pair(down, 0));
+    mapFlatNode2InitCount.insert(make_pair(down, 0));
     while (1)
     {
         //遍历该节点的所有输入节点
@@ -156,7 +158,7 @@ bool SchedulerSSG::InitScheduling()
                 ;
 
             nPush = up->outPushWeights[j];
-            pos = mapInitCount2FlatNode.find(down);
+            pos = mapFlatNode2InitCount.find(down);
             //下端节点已有的初始化调度次数
             x = pos->second;
             //下端节点运行一次需要的额外数据量
@@ -168,10 +170,10 @@ bool SchedulerSSG::InitScheduling()
                 n = ceil((x * nPop + y) / float(nPush));
             else
                 n = 0;
-            pos = mapInitCount2FlatNode.find(up);
-            if (pos == mapInitCount2FlatNode.end()) //zww：20120322，为了找没有输出的节点而修改
+            pos = mapFlatNode2InitCount.find(up);
+            if (pos == mapFlatNode2InitCount.end()) //zww：20120322，为了找没有输出的节点而修改
             {
-                mapInitCount2FlatNode.insert(make_pair(up, n));
+                mapFlatNode2InitCount.insert(make_pair(up, n));
                 flatNodeList.push_back(up);
             }
             else
@@ -225,14 +227,14 @@ int SchedulerSSG::lcm(int a, int b)
 int SchedulerSSG::GetInitCount(FlatNode *node)
 {
 	std::map<FlatNode *, int> ::iterator pos;
-	pos = mapInitCount2FlatNode.find(node);
-	assert(pos!= mapInitCount2FlatNode.end());
+	pos = mapFlatNode2InitCount.find(node);
+	assert(pos!= mapFlatNode2InitCount.end());
 	return pos->second;
 }
 int SchedulerSSG::GetSteadyCount(FlatNode *node)
 {
 	map<FlatNode *, int> ::iterator pos;
-	pos = mapSteadyCount2FlatNode.find(node);
-	assert(pos!=mapSteadyCount2FlatNode.end());
+	pos = mapFlatNode2SteadyCount.find(node);
+	assert(pos!=mapFlatNode2SteadyCount.end());
 	return pos->second;
 }
