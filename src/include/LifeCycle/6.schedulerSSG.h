@@ -10,11 +10,10 @@ class SchedulerSSG : public StaticStreamGraph
 	int gcd(int a, int b); // 求a,b的最大公约数
 	bool InitScheduling();
 	bool SteadyScheduling();
-	map<FlatNode *, int> SteadySchedulingGroup(vector<FlatNode *>); //对vector中的点集进行局部稳态调度
 	int GetInitCount(FlatNode *node);
 	int GetSteadyCount(FlatNode *node);
-	map<FlatNode *, int> mapInitCount2FlatNode;   // SDF图所有节点初始化调度序列
-	map<FlatNode *, int> mapSteadyCount2FlatNode; // SDF图所有节点稳定状态调度序列<节点，执行次数>
+	map<FlatNode *, int> mapFlatNode2InitCount;   // SDF图所有节点初始化调度序列
+	map<FlatNode *, int> mapFlatNode2SteadyCount; // SDF图所有节点稳定状态调度序列<节点，执行次数>
 	double total_work;							  //SDF总的工作量
 	double edge_work;							  // SDF总的边大小
 };

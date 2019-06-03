@@ -1,6 +1,8 @@
+//#define DEBUG
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
+
 static StaticStreamGraph *ssg = NULL;
 extern UnfoldComposite *unfold;
 /*
@@ -12,6 +14,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
     /* 获取compositebody内的statementNode */
     assert(composite != NULL && oldComposite != NULL);
+    assert(composite->body->stmt_List != NULL);
     list<Node *> body_stmt = *(composite->body->stmt_List);
     for (auto it : body_stmt)
     {
@@ -23,19 +26,23 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             expNode *exp = static_cast<binopNode *>(it)->right;
             if (exp->type == Operator_)
             {
+                debug("operator_ %s\n",exp->toString().c_str());
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
             }
             else if (exp->type == CompositeCall)
             {
+                debug("compositeCall %s\n",exp->toString().c_str());
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)
             {
+                debug("splitjoin %s\n",exp->toString().c_str());
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
+                debug("pipeline %s\n",exp->toString().c_str());
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
             }
@@ -43,22 +50,26 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         }
         case Operator_:
         {
+            debug("operator_ %s\n",it->toString().c_str());
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             break;
         }
         case CompositeCall:
         {
+            debug("compositeCall %s\n", it->toString().c_str());
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
             break;
         }
         case SplitJoin:
         {
+            debug("splitjoin %s\n", it->toString().c_str());
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
         {
+            debug("pipeline %s\n", it->toString().c_str());
             ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
             break;
@@ -84,18 +95,21 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
-    //cout << "--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n";
+    debug("--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n");
     GraphToOperators(mainComposite, mainComposite);
     ssg->SetTopNode();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();
     ssg->SetFlatNodesWeights();
     /* 测试peek，pop，push值 */
-
     cout << "--------- 执行AST2FlatStaticStreamGraph后, 查看静态数据流图中的全部 FlatNode ---------------\n";
-    for (auto it : ssg->flatNodes){
-        cout<<it->name<<":\t"<<it->toString()<<endl;
-        if(it!=ssg->flatNodes.back())cout << "    ↓" << endl;
+#if 0
+    for (auto it : ssg->flatNodes)
+    {
+        cout << it->name << ":\t" << it->toString() << endl;
+        if (it != ssg->flatNodes.back())
+            cout << "    ↓" << endl;
     }
+#endif
     return ssg;
 }

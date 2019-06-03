@@ -14,9 +14,9 @@ string vectorToString(vector<T> v)
 {
     int k = 0;
     string str = "[";
-    stringstream sstr;
     for (auto i : v)
     {
+        stringstream sstr;
         sstr << i;
         str += (k++ > 0 ? "," : "") + sstr.str();
     }

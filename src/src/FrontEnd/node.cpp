@@ -5,6 +5,10 @@ string listToString(list<Node *> list)
     string str = "";
     for (auto i : list)
         str += (k++ > 0 ? "," : "") + i->toString();
+    if (str[str.size() - 1] == ';')
+    { // ???去掉分号
+        str[str.size() - 1] = ' ';
+    }
     return str;
 }
 
@@ -38,7 +42,7 @@ string declareNode::toString()
         if ((*iter)->init != NULL)
             str += "=" + (*iter)->init->toString();
     }
-    str += ";";
+    if (str[str.size() - 1] != ';')
     return str;
 }
 
@@ -64,10 +68,9 @@ string initNode::toString()
 string binopNode::toString()
 {
     if (op == "=" || op == "+=" || op == "-=" || op == "*=" || op == "/=")
-        return left->toString() + op + right->toString() + ";";
-    //当为输出时候需要加分号
+        return left->toString() + op + right->toString();
     if (left->type == Id && ((idNode *)left)->name == "cout")
-        return left->toString() + op + right->toString() + ";";
+        return left->toString() + op + right->toString();
     return left->toString() + op + right->toString();
 }
 
@@ -80,13 +83,13 @@ string ternaryNode::toString()
 string unaryNode::toString()
 {
     if (op == "PREINC")
-        return "++" + exp->toString() + ";";
+        return "++" + exp->toString();
     else if (op == "PREDEC")
-        return "--" + exp->toString() + ";";
+        return "--" + exp->toString();
     else if (op == "POSTINC")
-        return exp->toString() + "++" + ";";
+        return exp->toString() + "++";
     else if (op == "POSTDEC")
-        return exp->toString() + "--" + ";";
+        return exp->toString() + "--";
     else
         return op + exp->toString();
 }
@@ -104,19 +107,21 @@ string castNode::toString()
 string callNode::toString()
 {
     if (name == "print")
-        return "cout<<" + listToString(arg_list) + ";";
+        return "cout<<" + listToString(arg_list);
     else if (name == "println")
-        return "cout<<" + listToString(arg_list) + "<<endl;";
+        return "cout<<" + listToString(arg_list) + "<<endl";
     string str = name + '(';
-    return str + listToString(arg_list) + ");";
+    return str + listToString(arg_list) + ")"; 
 }
 
 string operatorNode::toString()
 {
-    string s = "{ operName: "+operName;
-    if(inputs) s+= ", inputs:[" + listToString(*inputs)+"]";
-    if(outputs) s+= ", outputs:["+listToString(*outputs)+"]";
-    return s+" }";
+    string s = "{ operName: " + operName;
+    if (inputs)
+        s += ", inputs:[" + listToString(*inputs) + "]";
+    if (outputs)
+        s += ", outputs:[" + listToString(*outputs) + "]";
+    return s + " }";
 }
 string idNode::toString()
 {
@@ -130,8 +135,6 @@ string idNode::toString()
             for (auto i : arg_list)
             {
                 str += '[' + i->toString();
-                if (str[str.size() - 1] == ';')
-                    str = str.substr(0, str.size() - 1);
                 str += "]";
             }
         }
@@ -208,13 +211,9 @@ string ifElseNode::toString()
 string forNode::toString()
 {
     string str = "for(";
-    str += init->toString();
-    str += cond->toString();
-    str += ";";
+    str += init->toString()+";";
+    str += cond->toString()+";";
     str += next->toString();
-    //去掉分号
-    if (str[str.size() - 1] == ';')
-        str = str.substr(0, str.size() - 1);
     str += ")";
     str += "\t\t" + stmt->toString();
     return str;
@@ -223,13 +222,11 @@ string forNode::toString()
 string blockNode::toString()
 {
     string str = "\t{\n";
-    if (stmt_list != NULL)
+    for (auto stmt : stmt_list)
     {
-        for (auto stmt : *stmt_list)
-        {
-            str += "\t\t" + stmt->toString();
-            str += "\n";
-        }
+        str += "\t\t" + stmt->toString() ;
+        if(str[str.size()-1] != '}')   str+=";";  
+        str += "\n";
     }
     str += "\t}";
     return str;
@@ -238,7 +235,7 @@ string blockNode::toString()
 string returnNode::toString()
 {
     string str = "return ";
-    str += exp->toString() + ";";
+    str += exp->toString();
     return str;
 }
 
@@ -262,7 +259,7 @@ string doNode::toString()
 {
     string str = "do\n";
     str += stmt->toString() + "\n";
-    str += "while(" + exp->toString() + ");";
+    str += "while(" + exp->toString() + ")";
     return str;
 }
 

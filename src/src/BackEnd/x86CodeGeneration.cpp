@@ -67,7 +67,7 @@ void X86CodeGeneration::CGGlobalvar()
     for (auto iter : *Program)
     {
         if (iter->type == Decl)
-            buf << iter->toString() << "\n";
+            buf << iter->toString()+ ";" << "\n";
     }
     ofstream out("GlobalVar.cpp");
     out << buf.str();
@@ -249,7 +249,7 @@ void X86CodeGeneration::CGactors()
         vector<string> outEdgeName;
         auto oper = flatNodes_[i]->contents;
         operBodyNode *body = oper->operBody;
-        list<Node *> *stmts = body->stmt_list;
+        list<Node *> stmts = body->stmt_list;
         Node *init = body->init;
         Node *work = body->work;
         list<Node *> *inputs = oper->inputs;
@@ -278,11 +278,11 @@ void X86CodeGeneration::CGactors()
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
-        CGactorsStmts(buf, stmts);
+        CGactorsStmts(buf, &stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
         CGactorsPushToken(buf, flatNodes_[i], outEdgeName);
         //init部分前的statement赋值
-        CGactorsinitVarAndState(buf, stmts);
+        CGactorsinitVarAndState(buf, &stmts);
         /* composite 中init函数 */
         CGactorsInit(buf, init);
         /* composite中work函数 */
@@ -355,7 +355,7 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
     {
         for (auto it : *stmts)
         {
-            string str = it->toString();
+            string str = it->toString()+";";
             /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
             string temp = "";
             bool flag = 1;
@@ -410,7 +410,7 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
     {
         for (auto it : *stmts)
         {
-            string str = it->toString();
+            string str = it->toString()+";";
             vector<string> svec;
             /*解析逗号和等号,类似int i=0,j;形式变成i=0;的形式,初始化stmts*/
             string temp = "";
@@ -516,8 +516,7 @@ void X86CodeGeneration::CGThreads()
         //遍历该线程上的所有的阶段号，在对应的阶段号内调用每个actor的initwork
         buf << "\tfor(int _stageNum=0;_stageNum<" << MaxStageNum << ";_stageNum++)\n";
         buf << "\t{\n";
-        set<int> stageSet = mapNum2Stage.find(i)->second; //查找该thread对应的阶段号集合
-
+        set<int> stageSet = mapNum2Stage.find(i)->second;      //查找该thread对应的阶段号集合
         for (int stage = MaxStageNum - 1; stage >= 0; stage--) //迭代stage Num
         {
             auto iter = stageSet.find(stage); //查找该线程对应在阶段i是否有actor
@@ -527,7 +526,10 @@ void X86CodeGeneration::CGThreads()
                 vector<FlatNode *> flatVec = psa_->FindActor(stage); //取得在该阶段的所有actor集合
                 //cout<<flatVec.size()<<endl;
                 for (auto fNode : flatVec) //遍历actor，调用初态initScheduleWork
-                    buf << "\t\t\t" << fNode->name << "_obj.runInitScheduleWork();\n";
+                {
+                    if (i == mp_->findPartitionNumForFlatNode(fNode))
+                        buf << "\t\t\t" << fNode->name << "_obj.runInitScheduleWork();\n";
+                }
                 buf << "\t\t}\n";
             }
         }
@@ -547,7 +549,10 @@ void X86CodeGeneration::CGThreads()
                 buf << "\t\tif(stage[" << stage << "])\n\t\t{\n";
                 vector<FlatNode *> flatVec = psa_->FindActor(stage);
                 for (auto iter : flatVec)
-                    buf << "\t\t\t" << iter->name << "_obj.runSteadyScheduleWork();\n";
+                {
+                    if (i == mp_->findPartitionNumForFlatNode(iter))
+                        buf << "\t\t\t" << iter->name << "_obj.runSteadyScheduleWork();\n";
+                }
                 buf << "\t\t}\n";
             }
         }

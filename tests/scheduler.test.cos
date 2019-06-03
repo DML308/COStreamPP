@@ -1,0 +1,76 @@
+/*
+* 该文件用于测试 schedulerSSG 中的逻辑
+* 稳态调度的概念--节点在流水线稳定运行中执行的最少次数
+* 预期结果为: INIT 执行了8次, 后面每个节点分别执行了4,2,1,1,1,8次
+*/
+
+composite pipe(output stream<double x>Out, input stream<double x>In)
+{
+
+    Out = pipe(In)
+    {
+        work{}
+        window{
+            In  sliding(8,8);
+            Out tumbling(8);
+        }
+    };
+}
+
+composite AAA(output stream<double x>Out, input stream<double x>In)
+{
+    Out = AAA(In)
+    {
+        work{}
+        window {
+            In  sliding(2,2);
+            Out	tumbling(2);
+        }
+    };
+}
+
+composite BBB(output stream<double x>Out, input stream<double x>In)
+{
+
+    Out = BBB(In)
+    {
+        work{}
+        window {
+            In sliding(4,4);
+            Out tumbling(4);
+        }
+    };
+}
+
+composite CCC(output stream<double x>Out, input stream<double x>In)
+{
+    Out = pipeline(In)
+    {
+        int j;
+        for(j=2; j<=8; j*=2){
+            add pipe();
+        }
+    };
+}
+
+composite Main()
+{
+    int N = 8;
+    stream<double x> Source,CDFT;
+    Source = INIT()
+    {
+        work {}
+        window { Source tumbling(1); }
+    };
+    CDFT = pipeline(Source){
+        add AAA();
+        add BBB();
+        add CCC();
+    };
+    DDD(CDFT)
+    {
+        work { println(CDFT[0].x); }
+        window{ CDFT sliding(1,1); }
+    };
+}
+

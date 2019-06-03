@@ -62,13 +62,13 @@ composite SecondSource(output stream<double x>Out, input stream<double x>In)
 			println("\nOut:");
 			for (i = 0; i<16; i++)
 			{
-			    Out[i].x = In[0].x + i;
+			    Out[i].x = In[i].x + i;
 			  	print(Out[i].x);
 			}
 			println('\n');
 		}
 		window {
-	    	In  sliding(1,1);
+	    	In  sliding(16,16);
 			Out	tumbling(16);
 	    }
 	};
