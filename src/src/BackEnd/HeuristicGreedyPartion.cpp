@@ -19,17 +19,17 @@ void HeuristicGreedyPartition::SssgPartition(SchedulerSSG *sssg)
     setActorWorkload(sssg); //初始化每个节点的工作量(稳态工作量*稳态调度次数)
 
     //进入初始划分阶段
-    cout << "initial partition" << endl;
+    //cout << "initial partition" << endl;
     doPartition(sssg, k);
     for (int i = 0; i < k; i++)
-        cout << w[i] << endl;
-    cout << "comm:" << getTotalEdge(sssg, k) << endl;
+        //cout << w[i] << endl;
+    //cout << "comm:" << getTotalEdge(sssg, k) << endl;
     //保存初始划分结果
     vector<vector<FlatNode *>> tmp_X = X;
     vector<int> tmp_w = w;
 
     //误差下降算法1
-    cout << "errordecrease" << endl;
+    //cout << "errordecrease" << endl;
     errorDecrease(sssg, k);
     float w_max = -1;
     float w_bal = 0;
@@ -38,16 +38,16 @@ void HeuristicGreedyPartition::SssgPartition(SchedulerSSG *sssg)
         if (w[i] > w_max)
             w_max = w[i];
         w_bal += w[i];
-        cout << w[i] << endl;
+        //cout << w[i] << endl;
     }
     w_bal = w_bal / k;
-    cout << "balance actor:" << w_max / w_bal << endl;
-    cout << "comm:" << getTotalEdge(sssg, k) << endl;
+    //cout << "balance actor:" << w_max / w_bal << endl;
+    //cout << "comm:" << getTotalEdge(sssg, k) << endl;
 
     ee = w_max / w_bal * 1.01;
 
     //对初始化分使用禁忌搜索来优化划分结果
-    cout << "dynamicOptimization:" << endl;
+    //cout << "dynamicOptimization:" << endl;
     dynamicOptimization(sssg, k);
 
     w_max = -1;
@@ -62,10 +62,10 @@ void HeuristicGreedyPartition::SssgPartition(SchedulerSSG *sssg)
         //cout << w[i] << endl;
     }
 
-    cout << "speed up:" << w_bal / w_max << endl;
+    //cout << "speed up:" << w_bal / w_max << endl;
     w_bal = w_bal / k;
-    cout << "balance actor:" << w_max / w_bal << endl;
-    cout << "comm:" << getTotalEdge(sssg, k) << endl;
+    //cout << "balance actor:" << w_max / w_bal << endl;
+    //cout << "comm:" << getTotalEdge(sssg, k) << endl;
     //cout <<"all workload:"<<all << endl;
     //存储最终的划分结果
     savePartitionResult(sssg);
@@ -206,9 +206,9 @@ void HeuristicGreedyPartition::updateGainCandidate(SchedulerSSG *sssg, int k)
 void HeuristicGreedyPartition::dynamicOptimization(SchedulerSSG *sssg, int k)
 {
     //获取原始的划分效果数据
-    cout << "before tabuSearch:" << endl;
-    cout << "balance:" << getBalance(k) << endl;
-    cout << "comm:" << getTotalEdge(sssg, k) << endl;
+    //cout << "before tabuSearch:" << endl;
+    //cout << "balance:" << getBalance(k) << endl;
+    //cout << "comm:" << getTotalEdge(sssg, k) << endl;
 
     //记录原始划分值
     vector<vector<FlatNode *>> bestX(X);
@@ -225,10 +225,10 @@ void HeuristicGreedyPartition::dynamicOptimization(SchedulerSSG *sssg, int k)
         updateGainStructure(sssg, k);
         //初始化候选增益列表
         updateGainCandidate(sssg, k);
-        cout << "candidates List" << endl;
+        //cout << "candidates List" << endl;
         for (int i = 0; i < candidates.size(); i++)
         {
-            cout << findID(sssg, candidates[i].first) << ":" << candidates[i].second.first << endl;
+            //cout << findID(sssg, candidates[i].first) << ":" << candidates[i].second.first << endl;
         }
         //初始化迭代次数
         int iterTimes = 100;
@@ -266,7 +266,7 @@ void HeuristicGreedyPartition::dynamicOptimization(SchedulerSSG *sssg, int k)
                 break;
             }
         }
-        cout << "execute times:" << 100 - iterTimes << endl;
+        //cout << "execute times:" << 100 - iterTimes << endl;
 
         vector<vector<FlatNode *>> beforeX(X);
         vector<int> beforew(w);
@@ -336,9 +336,9 @@ bool HeuristicGreedyPartition::moveActor(SchedulerSSG *sssg, pair<FlatNode *, pa
     if (w_max / w_bal > ee)
         return false;
 
-    cout << "calculate balance:" << w_max / w_bal << endl;
-    cout << "move actor" << index << endl;
-    cout << "gain:" << candidate.second.first << endl;
+    //cout << "calculate balance:" << w_max / w_bal << endl;
+    //cout << "move actor" << index << endl;
+    //cout << "gain:" << candidate.second.first << endl;
 
     //如果移动后负载仍然小于平衡因子，那么执行这次移动，并更新所有的数据
     //调整负载w和各子图划分结果
@@ -436,7 +436,7 @@ void HeuristicGreedyPartition::disturb(SchedulerSSG *sssg, int k, int max_part, 
         FlatNode *p = X[max_part][i];
 
         pair<FlatNode *, int> pf;
-        int work = INT_MAX;
+        int work = 2147483647;//INT_MAX
         bool flag = false;
 
         for (int j = 0; j < p->nIn; j++)

@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
     DumpStreamGraph(SSSG, NULL, "flatgraph.dot");
 
     // (3)对节点进行调度划分
+    cout << "--------- 对静态数据流图执行划分算法 ---------------\n";
     PhaseName = "Partition";
     #if 0
     mp = new GreedyPartition(SSSG);
@@ -116,10 +117,12 @@ int main(int argc, char *argv[])
     DumpStreamGraph(SSSG, mp, "PartitionGraph.dot");
 
     // (5)打印理论加速比
+    cout << "--------- 打印理论加速比 -------------------------\n";
     PhaseName = "Speedup";
     ComputeSpeedup(SSSG, mp, infile_name, "workEstimate.txt", "GAPartition");
 
     // (6) 阶段赋值
+    cout << "--------- 阶段赋值      -------------------------\n";
     PhaseName = "StageAssignment";
     //存储阶段赋值的结果
     pSA = new StageAssignment();
@@ -129,6 +132,7 @@ int main(int argc, char *argv[])
     pSA->actorStageMap(mp->FlatNode2PartitionNum);
 
     // (7) 输入为SDF图，输出为目标代码
+    cout << "--------- x86代码生成   -------------------------\n";
     CodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
 
     //===----------------------------------------------------------------------===//
