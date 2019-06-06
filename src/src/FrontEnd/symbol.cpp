@@ -155,7 +155,7 @@ void SymbolTable::InserIdentifySymbol(Node *node){
     }
 }
 
-void SymbolTable::InserInoutSymbol(Node *node){
+/*void SymbolTable::InserInoutSymbol(Node *node){
     string name;
     name = static_cast<inOutdeclNode *>(node)->id->name;
 
@@ -169,7 +169,7 @@ void SymbolTable::InserInoutSymbol(Node *node){
         cout << name<<" had been declared!";
         exit(-1);
     }
-}
+}*/
 
 bool SymbolTable::LookupIdentifySymbol(string name){
 

@@ -36,9 +36,9 @@ class SymbolTable
     void InserIdentifySymbol(Node *node);
     bool LookupIdentifySymbol(string name);
 
-    void SymbolTable::InserInoutSymbol(Node *node);
+   // void SymbolTable::InserInoutSymbol(Node *node);
 
-    void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt);
+    void InsertOperatorSymbol(string name, operatorNode *opt);
 
     void printSymbolTables();
 
@@ -48,7 +48,7 @@ class SymbolTable
     map<string, list<idNode *>> idTable;
     map<string, functionNode *> funcTable;
 
-    map<string, Node *> inoutTable;
+  //  map<string, Node *> inoutTable;
     map<string, Node *> identifyTable;
     map<string, compositeNode *> compTable;
     map<string, operatorNode *> optTable;

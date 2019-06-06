@@ -2,19 +2,24 @@
 
 SymbolTable S ;//全局
 SymbolTable *top;
-SymbolTable *saved;
+list<SymbolTable *>saved;
 
 operatorNode *right_opt;
 
+map<string,Node *> operator_state_identify;
+bool isOperatorState = false;
+bool isOperatorCheck = false;
 void EnterScopeFn(){
     EnterScope(); /* 进入 composite 块级作用域 */ 
-    saved=top;
+    saved.push_back(top);
+    //saved=top;
     top=new SymbolTable(top);
 }
 
 void ExitScopeFn(){
     ExitScope(); /* 退出 composite 块级作用域 */ 
-    top = saved;
+    top = saved.back();
+    saved.pop_back();
 }
 
 // 解析 NodeList
@@ -32,6 +37,43 @@ void generateDeclareNode(declareNode* dlcNode){
     //generatorIdList(id_list);  
     for(auto it = id_list.begin();it!=id_list.end();it++){
         top->InserIdentifySymbol(*it);
+        if(isOperatorState){
+            operator_state_identify.insert(make_pair((*it)->name,*it));
+        }
+    }
+}
+
+void generatorOperatorNode(operatorNode * optNode);
+
+// 解析 语句
+void genrateStmt(Node *stmt){
+    switch (stmt->type)
+    {
+        case Binop:{
+            expNode *left = static_cast<binopNode *>(stmt)->left;
+            expNode *right = static_cast<binopNode *>(stmt)->right; 
+            genrateStmt(left);
+            genrateStmt(right);
+            break;
+        }
+        case Id :{
+            
+            break;
+        }
+        case Decl :{
+            generateDeclareNode(static_cast<declareNode *>(stmt));
+            break;
+        }
+        case Operator_:{
+            right_opt = static_cast<operatorNode *>(stmt);
+            top->InsertOperatorSymbol(static_cast<operatorNode *>(stmt)->operName,static_cast<operatorNode *>(stmt));
+            EnterScopeFn();
+            generatorOperatorNode(static_cast<operatorNode *>(stmt));  //解析 operator 节点
+            ExitScopeFn();
+            break;
+        }
+        default:
+            break;
     }
 }
 
@@ -49,73 +91,52 @@ void generatorOperatorNode(operatorNode * optNode){
     list<Node *> *output_List = optNode->outputs; //
     operBodyNode *body = optNode->operBody; //body
     
-    if(input_List != NULL){
+    if(input_List != NULL){  //检查
         for(auto it = input_List->begin();it!=input_List->end();it++){
-            top->InserInoutSymbol(static_cast<inOutdeclNode *>(*it));
+           // top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
         }
     }
-    if(output_List != NULL){
+    if(output_List != NULL){ //检查 
         for(auto it = output_List->begin();it!=output_List->end();it++){
-            top->InserInoutSymbol(static_cast<inOutdeclNode *>(*it));
+           // top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
         }  
     } 
 
     if(body != NULL){
         paramNode *param = body->param;
-        list<Node *> stmt_list = body->stmt_list;
+        list<Node *> stmt_list = body->stmt_list; // 其中定义的为变量 在 work中被使用 会使 operator变为 有状态节点
         Node *init = body->init;
-        Node *work = body->work;
+        Node *work = body->work; //
         windowNode *win = body->win;
 
         if(param != NULL){
             generateNodeList(*(param->param_list)); 
         }
         //解析 operator 中的语句
+        isOperatorState = true;
         if(&stmt_list != NULL){
             for(auto it = stmt_list.begin();it != stmt_list.end();it++){
                 genrateStmt(*it);
             }
         }  
-
+        isOperatorState = false;
+        
         if(init != NULL){
             generatorBlcokNode(static_cast<blockNode *>(init));
         }
         
         if(work != NULL){
+            EnterScopeFn();
+            isOperatorCheck = true;
             generatorBlcokNode(static_cast<blockNode *>(work));
+            ExitScopeFn();
+            isOperatorCheck = false;
         }
 
         //window
    
     }
      
-}
-// 解析 语句
-void genrateStmt(Node *stmt){
-    switch (stmt->type)
-    {
-        case Binop:{
-            expNode *left = static_cast<binopNode *>(stmt)->left;
-            expNode *right = static_cast<binopNode *>(stmt)->right; 
-            genrateStmt(left);
-            genrateStmt(right);
-            break;
-        }
-        case Id :{
-            top->InserIdentifySymbol(stmt);
-            break;
-        }
-        case Operator_:{
-            right_opt = static_cast<operatorNode *>(stmt);
-            top->InsertOperatorSymbol(static_cast<operatorNode *>(stmt)->operName,static_cast<operatorNode *>(stmt));
-            EnterScopeFn();
-            generatorOperatorNode(static_cast<operatorNode *>(stmt));  //解析 operator 节点
-            ExitScopeFn();
-            break;
-        }
-        default:
-            break;
-    }
 }
 
 // 入口
@@ -128,7 +149,6 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
     S = new SymbolTable(NULL);
     symbol_tables[0][0] = &S;
     top = &S; 
-    saved = top;
     assert(program != NULL);
     for (auto it : *(program))
     {
@@ -139,12 +159,8 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
             }
             case Composite:{
                 top->InsertCompositeSymbol(static_cast<compositeNode *>(it)->compName,static_cast<compositeNode *>(it));
-               
-
                 EnterScopeFn();/* 进入 composite 块级作用域 */ 
-
                 generateSymbolTableComposite(static_cast<compositeNode *>(it));
-
                 ExitScopeFn(); /* 退出 composite 块级作用域 */ 
 
                 break;
@@ -173,12 +189,12 @@ void generateSymbolTableComposite(compositeNode* composite){
         list<Node *> *output_List = inout->output_List; //输出流
         if(input_List != NULL){
             for(auto it = input_List->begin();it!=input_List->end();it++){
-                top->InserInoutSymbol(static_cast<inOutdeclNode *>(*it));
+                top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
             }
         }
         if(output_List != NULL){
             for(auto it = output_List->begin();it!=output_List->end();it++){
-                top->InserInoutSymbol(static_cast<inOutdeclNode *>(*it));
+                top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
             }  
         } 
     } 
