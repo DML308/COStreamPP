@@ -515,7 +515,7 @@ join.statement:
         ;
 argument.expression.list:
           exp                                               {  $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
-        | argument.expression.list ',' exp                  {  $$ ->push_back($3);         }
+        | argument.expression.list ',' exp                  {  $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push param\n");         }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 

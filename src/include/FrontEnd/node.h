@@ -621,7 +621,7 @@ class strdclNode : public Node
         this->setLoc(loc);
         this->type = StrDcl;
         if (id)
-            id_list.push_back(id);
+          id_list.push_back(id);
     }
     ~strdclNode() {}
     void print() {}
@@ -913,12 +913,12 @@ class squentialNode : public Node
       this->type = Squential;
       this->outputs = outputs;
       this->inputs = inputs;
-      this->arg_list = arg_list;
+      this->arg_list = param;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
-      cout<< "inputs" << inputs->size() << endl;
-      cout<< "arg_list" << arg_list->size() << endl;
-      for(auto iter = arg_list->begin(); iter != arg_list->end(); iter++) {
+      cout<< "inputs " << inputs->size() << endl;
+      cout<< "arg_list " << param->size() << endl;
+      for(auto iter = param->begin(); iter != param->end(); iter++) {
         cout<< (*iter)->type  << endl;
       }
     }
@@ -940,7 +940,6 @@ class layerNode : public Node
     // next dim
     layerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
-      std::printf("Start to create a layer\n");
       this->setLoc(loc);
       this->type = Layer;
       this->layerName = layerName;

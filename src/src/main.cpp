@@ -21,6 +21,7 @@ string PhaseName = "undefined";                  //阶段名
 UnfoldComposite *unfold = new UnfoldComposite(); //用于展开splitjoin，pipeline节点
 list<Node *> *Program = NULL;                    //用于存储语法树节点
 compositeNode *gMainComposite = NULL;            //compositeMain
+squentialNode *globalSquential = NULL;           // 用于存储squential节点, 也为了确保仅有一个squential节点
 StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 SymbolTable S;
@@ -32,7 +33,7 @@ int main(int argc, char *argv[])
 {
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
-    int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
+    int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
     //===----------------------------------------------------------------------===//

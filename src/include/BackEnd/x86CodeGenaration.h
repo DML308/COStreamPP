@@ -5,6 +5,7 @@
 #include "Partition.h"
 #include <set>
 extern list<Node *> *Program;
+extern squentialNode *globalSquential;
 class X86CodeGeneration
 {
 public:
