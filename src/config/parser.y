@@ -5,9 +5,9 @@
 #include "symbol.h"
 #include "nodetype.h"
 #include "unfoldComposite.h"
-SymbolTable *top=new SymbolTable(NULL);
-SymbolTable *saved=top;
-extern SymbolTable S;
+//SymbolTable *top=new SymbolTable(NULL);
+//SymbolTable *saved=top;
+//extern SymbolTable S;
 extern list<Node*> *Program;
 extern UnfoldComposite *unfold;
 extern int yylex ();
@@ -165,14 +165,14 @@ declaration:
     ;
 declaring.list:
           type.specifier      idNode       initializer.opt  {
-              top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
+              //top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
               (static_cast<idNode*>$2)->init = $3;
               $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
               line("Line:%-4d",@1.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
         | declaring.list     ',' idNode        initializer.opt{
-              top->put(static_cast<idNode*>($3)->name,static_cast<idNode*>($3));
+              //top->put(static_cast<idNode*>($3)->name,static_cast<idNode*>($3));
               (static_cast<idNode*>$3)->init = $4;
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
@@ -185,7 +185,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
-                                                  top->put(*($2),id);
+                                                  //top->put(*($2),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -193,7 +193,7 @@ stream.declaring.list:
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
                                                   idNode *id=new idNode(*($3),@3);
-                                                  top->put(*($3),id);
+                                                  //top->put(*($3),id);
                                                   ((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
@@ -207,12 +207,12 @@ stream.type.specifier:
         ;
 stream.declaration.list:
           type.specifier idNode     {
-                                        top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
+                                        //top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                         (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                         $$ = new strdclNode((idNode*)$2,@1) ;
                                     }
         | stream.declaration.list ',' type.specifier idNode {
-                                        top->put(static_cast<idNode*>($4)->name,static_cast<idNode*>($4));
+                                        //top->put(static_cast<idNode*>($4)->name,static_cast<idNode*>($4));
                                         (static_cast<idNode*>$4)->valType = (static_cast<primNode*>$3)->name;
                                         (static_cast<strdclNode*>$1)->id_list.push_back((idNode*)$4);
                                         $$ = $1 ;
@@ -304,7 +304,7 @@ parameter.list:
         ;
 parameter.declaration:
           type.specifier idNode     {
-                                          top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
+                                          //top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                           (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
                                           $$ = $2;
                                     }
@@ -338,7 +338,7 @@ composite.definition:
                                           line("Line:%-4d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
                                           $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2) ;
-                                          S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
+                                          //S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
                                     }
     ;
 composite.head:
@@ -364,7 +364,7 @@ composite.head.inout.member:
                   line("Line:%-4d",@1.first_line);
                   debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER(%s)  \n",$2->c_str());
                   idNode *id = new idNode(*($2),@2);
-                  top->put(*($2),id);
+                 // top->put(*($2),id);
                   $$ = new inOutdeclNode($1,id,@2) ; 
             }
     ;
@@ -500,10 +500,12 @@ argument.expression.list:
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1);
+                  //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1);
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@1);
             }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
+                  //$$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
+                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,NULL,@1);
             }
         ;
 
@@ -665,20 +667,24 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
-                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@1) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
-                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),$5,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  $$ = new compositeCallNode(NULL,*($1),$5,NULL,NULL,@1) ; 
+                  //$$ = new compositeCallNode(NULL,*($1),$5,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
-                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  //$$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,NULL,@1) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
-                  if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),$6,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
+                  //$$ = new compositeCallNode(NULL,*($1),$6,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$6,$3,NULL,@1) ;
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
@@ -757,14 +763,14 @@ window.type:
 /*************************************************************************/
 
 lblock: '{' { 
-                  EnterScope(); /* 进入新的变量块级作用域 */ 
-                  saved=top;
-                  top=new SymbolTable(top);
+                 // EnterScope(); /* 进入新的变量块级作用域 */ 
+                 // saved=top;
+                 // top=new SymbolTable(top);
 
             }  
 rblock: '}' {     
-                  ExitScope();  /* 退出一个块级作用域    */ 
-                  top=saved;
+                  // ExitScope();  /* 退出一个块级作用域    */ 
+                  // top=saved;
             }
 
 constant:

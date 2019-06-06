@@ -15,6 +15,7 @@
 #include "GreedyPartition.h"
 #include "HeuristicGreedyPartition.h"
 #include "CodeGeneration.h"
+#include "symboltableGenerate.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -24,7 +25,9 @@ list<Node *> *Program = NULL;                    //用于存储语法树节点
 compositeNode *gMainComposite = NULL;            //compositeMain
 StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
-SymbolTable S;
+//SymbolTable S;
+
+SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
 
 //===----------------------------------------------------------------------===//
 // Main
@@ -60,6 +63,9 @@ int main(int argc, char *argv[])
     PhaseName = "Parsing";
     yyin = infp;
     yyparse();
+    // 生成符号表
+    generateSymbolTable(Program,symboltables);
+    printSymbolTable(symboltables);
 
     // (3) 语义检查
     PhaseName = "SemCheck";

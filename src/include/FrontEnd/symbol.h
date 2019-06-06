@@ -11,14 +11,12 @@
 void EnterScope(void);
 void ExitScope(void);
 
+
 class SymbolTable
 {
   public:
     SymbolTable() {}
-    SymbolTable(SymbolTable *p)
-    {
-        prev = p;
-    }
+    SymbolTable(SymbolTable *p);
     ~SymbolTable() {}
     bool LookupSymbol(string name);
     void InsertSymbol(idNode *node);
@@ -35,11 +33,24 @@ class SymbolTable
     map<string, bool> firstScanFuncTable;
     map<string, bool> firstScanCompTable;
 
+    void InserIdentifySymbol(Node *node);
+    bool LookupIdentifySymbol(string name);
+
+    void SymbolTable::InserInoutSymbol(Node *node);
+
+    void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt);
+
+    void printSymbolTables();
+
   private:
     SymbolTable *prev;
     map<string, idNode *> table;
     map<string, list<idNode *>> idTable;
     map<string, functionNode *> funcTable;
+
+    map<string, Node *> inoutTable;
+    map<string, Node *> identifyTable;
     map<string, compositeNode *> compTable;
+    map<string, operatorNode *> optTable;
 };
 #endif

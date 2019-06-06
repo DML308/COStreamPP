@@ -1,6 +1,15 @@
 #include "symbol.h"
 int Level=0;
 int current_version[MAX_SCOPE_DEPTH]={0};
+
+extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
+
+SymbolTable::SymbolTable(SymbolTable *p){
+    prev = p;
+    symboltables[Level][current_version[Level]] = this;
+    //current_version[Level]++; //创建了新的符号表,当前层的 version + 1 
+}
+
 /* enterScope */
 void EnterScope()
 {
@@ -10,7 +19,7 @@ void EnterScope()
         cout << "Internal Error: out of nesting levels!\n";
         exit(-1);
     }
-    current_version[Level]++;
+    //
 }
 
 void ExitScope()
@@ -19,6 +28,7 @@ void ExitScope()
     {
         cout << "missing '{' detected" << endl;
     }
+    current_version[Level]++; //创建了新的符号表,当前层的 version + 1 
     Level--;
 }
 
@@ -63,6 +73,8 @@ bool SymbolTable::LookupSymbol(string name)
 void SymbolTable::InsertCompositeSymbol(string name, compositeNode *comp)
 {
     compTable.insert(make_pair(name, comp));
+    static_cast<compositeNode *>(comp)->level = Level;
+    static_cast<compositeNode *>(comp)->version = current_version[Level];
 }
 
 compositeNode *SymbolTable::LookupCompositeSymbol(string name)
@@ -116,3 +128,69 @@ idNode *SymbolTable::get(string s)
     exit(-1);
     return NULL;
 }
+
+
+void SymbolTable::InserIdentifySymbol(Node *node){
+    string name;
+    switch(node->type){
+        case Id:{
+            name = static_cast<idNode *>(node)->name;
+            static_cast<idNode *>(node)->level = Level;
+            static_cast<idNode *>(node)->version = current_version[Level];
+            break;
+        }
+        case InOutdcl:{
+            name = static_cast<inOutdeclNode *>(node)->id->name;
+        }
+    }
+    auto iter = identifyTable.find(name);
+    if (iter == identifyTable.end())
+    {
+        identifyTable.insert(make_pair(name, node));
+    }
+    else
+    {
+        cout << name<<" had been declared!";
+        exit(-1);
+    }
+}
+
+void SymbolTable::InserInoutSymbol(Node *node){
+    string name;
+    name = static_cast<inOutdeclNode *>(node)->id->name;
+
+    auto iter = inoutTable.find(name);
+    if (iter == inoutTable.end())
+    {
+        inoutTable.insert(make_pair(name, node));
+    }
+    else
+    {
+        cout << name<<" had been declared!";
+        exit(-1);
+    }
+}
+
+bool SymbolTable::LookupIdentifySymbol(string name){
+
+}
+
+void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
+{
+    optTable.insert(make_pair(name, opt));
+    static_cast<operatorNode *>(opt)->level = Level;
+    static_cast<operatorNode *>(opt)->version = current_version[Level];
+}
+
+void SymbolTable::printSymbolTables(){
+    cout<<"---------- Identify Table: ----------\n";
+    for(auto it = identifyTable.begin();it!=identifyTable.end();it++){
+        cout<<it->first<<endl;
+    }
+    cout<<"---------- Composite Table: ----------\n";
+    for(auto it = compTable.begin();it!=compTable.end();it++){
+        cout<<it->first<<endl;
+    }
+
+}
+

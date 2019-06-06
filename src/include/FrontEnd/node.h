@@ -715,6 +715,7 @@ class inOutdeclNode : public Node
         this->setLoc(loc);
         this->type = InOutdcl;
         this->strType = strType;
+        this->id = id;
     }
     ~inOutdeclNode() {}
     void print() {}
@@ -867,6 +868,8 @@ class compositeNode : public Node
   public:
     compHeadNode *head;
     compBodyNode *body;
+    int level; // 如果composite 也可以嵌套定义
+    int version;
     string compName;
     compositeNode(compHeadNode *head, compBodyNode *body)
     {
@@ -887,6 +890,9 @@ class operatorNode : public Node
     list<Node *> *inputs;
     list<Node *> *outputs;
     operBodyNode *operBody;
+    int level;
+    int version;
+    bool hasState;
     operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
     {
         this->type = Operator_;
