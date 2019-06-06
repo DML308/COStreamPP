@@ -182,11 +182,13 @@ void X86CodeGeneration::CGGlobal()
     buf << "#include \"Global.h\"\n";
     buf << "#include <vector>\n";
     buf << "using namespace std;\n";
+    //为特殊的缓冲区分配内存
     int init1, init2;                                                            //发送actor和接受actor初态调度产生和接受的数据量
     for (auto iter_1 = flatNodes_.begin(); iter_1 != flatNodes_.end(); ++iter_1) //遍历所有结点
     {
         for (auto iter_2 = (*iter_1)->outFlatNodes.begin(); iter_2 != (*iter_1)->outFlatNodes.end(); iter_2++)
         {
+            bool special = true;                                                                             //缓冲区是否能重复利用,若为真则不能重复利用
             int stageminus;                                                                                  //stageminus表示两个actor所分配的阶段差
             int size;                                                                                        //缓冲区的大小
             string edgename = (*iter_1)->name + "_" + (*iter_2)->name;                                       //边的名称
@@ -209,6 +211,10 @@ void X86CodeGeneration::CGGlobal()
                             copySize = (init1 - init2) % perSteadyPushCount;
                             copyStartPos = init2 % perSteadyPushCount;
                         }
+
+                        //只有在peek=pop且上下游节点不存在阶段差的时候才能实现内存共享
+                        if(copySize==0&&copyStartPos==0&&stageminus==0)
+                            special = false;
                     }
                     //peek != pop
                     else
@@ -219,11 +225,125 @@ void X86CodeGeneration::CGGlobal()
                         copyStartPos = init2 % perSteadyPushCount;
                         size += addtime * perSteadyPushCount;
                     }
-                    buf << "Buffer<streamData> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                    if(special)//如果是特殊缓冲区则单独分配内存
+                    {
+                        buf << "Buffer<streamData> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                        bufferSpace bspace;
+                        bspace.original = edgename;
+                        bspace.instance = edgename;
+                        bspace.buffersize = size;
+                        bspace.buffertype = 1;
+
+                        bufferMatch[bspace.original] = bspace;
+                    }
                     break;
                 }
         }
     }
+    //为同一核上可以共享内存的缓冲区分配内存
+    //根据拓扑排序模拟运行各个CPU上的计算节点找出可以被复用的缓冲区
+    map<int,vector<FlatNode*>> processor2topoactors = psa_->processor2topoactors;
+    map<int,vector<FlatNode*>>::iterator miter = processor2topoactors.begin();
+    while(miter!=processor2topoactors.end())
+    {
+        vector<FlatNode*> nodes = miter->second;//获取同一个CPU上拓扑排序后的节点
+        vector<bufferSpace> vb;//用来存储在一次稳态调度中已经使用完的缓冲区
+
+        //按拓扑排序访问各个节点
+        for(int i=0;i<nodes.size();i++)
+        {
+            vector<FlatNode*> downNodes = nodes[i]->outFlatNodes;//找出所有与该节点相连的下游节点准备分配内存
+            for(int j=0;j<downNodes.size();j++)
+            {
+                string edgename = nodes[i]->name+"_"+downNodes[j]->name;
+                if(bufferMatch.find(edgename)!=bufferMatch.end())//如果该边为特殊缓冲区在之前已经分配完成则进入下一条边的分配
+                    continue;
+
+                //计算所需要占用的缓冲区大小-开始
+                FlatNode* father = nodes[i];
+                FlatNode* child = downNodes[j];
+                int stageminus;//表示两个actor所分配的阶段差
+                int size;//缓冲区的大小
+                stageminus = psa_->FindStage(child)-psa_->FindStage(father);//发送方和接受方的软件流水阶段差
+                vector<FlatNode*>::iterator iter = father->outFlatNodes.begin();
+                    
+                int edgePos = 0;
+                //获取父节点outFlatNodes的迭代器，如果与子节点相等代表该子节点在父节点的第几条边上
+                while (iter != father->outFlatNodes.end())
+                {
+                        if (*iter == child)
+                            break;
+                        edgePos++;
+                        iter++;
+                }
+                int perSteadyPushCount = sssg_->GetSteadyCount(father)*father->outPushWeights.at(edgePos);//稳态时产生的数据量
+                int copySize = 0, copyStartPos = 0;
+                size = perSteadyPushCount*(stageminus + 2);
+                //计算所需占用的缓冲区大小-结束
+
+                //分配时首先搜索队列中是否有已经使用完的缓冲区,没有再自己分配内存，使用队列中的缓冲区要将其从队列中删除
+                bool flag = false;//缓冲区是否分配完成
+                if (!vb.empty())
+                {
+                        vector<bufferSpace>::iterator it = vb.begin();
+                        while (it != vb.end())
+                        {
+                            if (it->buffersize >= size)
+                            {
+                                bufferSpace bspace;
+                                bspace.original = edgename;
+                                bspace.instance = it->instance;
+                                bspace.buffersize = it->buffersize;
+                                bspace.buffertype = 2;
+
+                                bufferMatch[bspace.original] = bspace;
+                                flag = true;
+                                vb.erase(it);
+                                break;
+                            }
+                            it++;
+                        }
+                }
+                    
+                //找不到可以复用的缓冲区，自己进行分配
+                if (!flag)
+                {
+                    buf << "Buffer<streamData> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                    bufferSpace bspace;
+                    bspace.original = edgename;
+                    bspace.instance = edgename;
+                    bspace.buffersize = size;
+                    bspace.buffertype = 2;
+
+                    bufferMatch[bspace.original] = bspace;
+                }
+            }
+
+            //当该节点内存分配完之后说明该节点执行完毕，可以将节点上游能够复用的缓冲区加入到队列中
+            vector<FlatNode*> upNodes = nodes[i]->inFlatNodes;
+            for (int j = 0; j < upNodes.size(); j++)
+            {
+                    string edgename = upNodes[j]->name+"_"+nodes[i]->name;
+                    if (bufferMatch[edgename].buffertype == 2)
+                        vb.push_back(bufferMatch[edgename]);
+            }
+
+            sort(vb.begin(), vb.end(), [](bufferSpace& a,bufferSpace& b){return a.buffersize<b.buffersize;});
+        }
+        miter++;
+    }
+
+    //测试是否有缓冲区没有分配
+    for (vector<FlatNode *>::iterator iter_1 = flatNodes_.begin(); iter_1 != flatNodes_.end(); ++iter_1)
+    {
+        for (vector<FlatNode *>::iterator iter_2 = (*iter_1)->outFlatNodes.begin(); iter_2 != (*iter_1)->outFlatNodes.end(); iter_2++)
+        {
+            string edgename = (*iter_1)->name + "_" + (*iter_2)->name;
+            if (bufferMatch.find(edgename) == bufferMatch.end())
+                cout <<edgename <<" not exist"<< endl;
+        }
+    }
+
     ofstream out("Global.cpp");
     out << buf.str();
 }
@@ -256,13 +376,21 @@ void X86CodeGeneration::CGactors()
         list<Node *> *outputs = oper->outputs;
         if (inputs != NULL)
         {
-            for (auto it : *inputs)
+            for (auto it : *inputs){
                 inEdgeName.push_back(((idNode *)it)->name);
+                string upNodeName = (sssg_->mapEdge2UpFlatNode)[((idNode *)it)->name]->name;
+                string edgename = upNodeName+"_"+className;
+                bufferType[((idNode *)it)->name] = bufferMatch[edgename].buffertype;//确定输入边类型
+            }
         }
         if (outputs != NULL)
         {
-            for (auto it : *outputs)
+            for (auto it : *outputs){
                 outEdgeName.push_back(((idNode *)it)->name);
+                string downNodeName = (sssg_->mapEdge2DownFlatNode)[((idNode *)it)->name]->name;
+                string edgename = className+"_"+downNodeName;
+                bufferType[((idNode *)it)->name] = bufferMatch[edgename].buffertype;//确定输出边类型
+            }
         }
         buf << "public:\n";
         /*写入类成员函数*/
@@ -342,11 +470,19 @@ void X86CodeGeneration::CGactorsRunSteadyScheduleWork(stringstream &buf, vector<
     buf << "\t\tfor(int i=0;i<steadyScheduleCount;i++)\n";
     buf << "\t\t\twork();\n";
     if (outEdgeName.size() != 0)
-        for (auto out : outEdgeName)
-            buf << "\t\t" << out << ".resetTail();\n";
+        for (auto out : outEdgeName){
+            if(bufferType[out]==1)
+                buf << "\t\t" << out << ".resetTail();\n";
+            else if(bufferType[out]==2)//若为2代表可以共享内存，每次使用需要清空缓冲区
+                buf << "\t\t" << out << ".resetTail2();\n";
+        }
     if (inEdgeName.size() != 0)
-        for (auto in : inEdgeName)
-            buf << "\t\t" << in << ".resetHead();\n";
+        for (auto in : inEdgeName){
+            if(bufferType[in]==1)
+                buf << "\t\t" << in << ".resetHead();\n";
+            else if(bufferType[in]==2)//若为2代表可以共享内存，每次使用需要清空缓冲区
+                buf << "\t\t" << in << ".resetHead2();\n";
+        }
     buf << "\t}\n";
 }
 void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
@@ -498,12 +634,14 @@ void X86CodeGeneration::CGThreads()
             auto pos2 = mapActor2OutEdge.equal_range(*iter);
             while (pos2.first != pos2.second)
             {
-                buf << pos2.first->second << ",";
+                //buf << pos2.first->second << ",";
+                buf<<bufferMatch[pos2.first->second].instance<<",";//使用实际共享的缓冲区作为实际输入
                 ++pos2.first;
             }
             while (pos1.first != pos1.second)
             {
-                buf << pos1.first->second << ",";
+                //buf << pos1.first->second << ",";
+                buf<<bufferMatch[pos1.first->second].instance<<",";//使用实际共享的缓冲区作为实际输入
                 ++pos1.first;
             }
             //稳态iad

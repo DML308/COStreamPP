@@ -24,7 +24,10 @@ public:
 			tail = proBuffer.copySize + proBuffer.copyStartPos;
 		}
 	}
-
+	void resetTail2()
+	{
+		tail = proBuffer.copySize+proBuffer.copyStartPos;
+	}
 private:
 	Buffer<T> &proBuffer;
 	int tail;

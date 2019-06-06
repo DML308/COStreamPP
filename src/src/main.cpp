@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 {
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
-    int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
+    int CpuCoreNum = 2; /*默认初始化为1一台机器中核的数目*/
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
     //===----------------------------------------------------------------------===//
@@ -130,6 +130,8 @@ int main(int argc, char *argv[])
     pSA->actorTopologicalorder(SSSG->GetFlatNodes());
     //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
     pSA->actorStageMap(mp->FlatNode2PartitionNum);
+    //第三步获取各个核上的拓扑排序
+    pSA->Getprocessor2topoactors(mp->FlatNode2PartitionNum);
 
     // (7) 输入为SDF图，输出为目标代码
     cout << "--------- x86代码生成   -------------------------\n";

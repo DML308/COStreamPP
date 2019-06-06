@@ -4,6 +4,7 @@
 #include "ActorStageAssignment.h"
 #include "Partition.h"
 #include <set>
+#include <algorithm>
 extern list<Node *> *Program;
 class X86CodeGeneration
 {
@@ -51,5 +52,17 @@ private:
   multimap<FlatNode *, string> mapActor2InEdge;      //actor对应输入边的名称
   multimap<FlatNode *, string> mapActor2OutEdge;     //actor对应输出边的名称
   map<int, set<int>> mapNum2Stage;                   //处理器编号到stage的对应关系
+
+  //定义保存缓冲区信息的结构体
+  struct bufferSpace
+  {
+    string original;//原始缓冲区的名称
+    string instance;//实际对应的缓冲区名称
+
+    int buffersize;//分配缓冲区的大小
+    int buffertype;//分配缓冲区的类型，是否可复用，0代表未分配，1代表不可复用，2代表可复用
+  };
+  map<string,bufferSpace> bufferMatch;//字符串到对应的缓冲区的映射
+  map<string,int> bufferType;//缓冲区到对应缓冲区类型的映射，通过这个来判断调用consumer和producer哪种方法
 };
 #endif

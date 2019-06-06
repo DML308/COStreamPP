@@ -26,6 +26,10 @@ public:
 			head = conBuffer.copyStartPos;
 		}
 	}
+	void resetHead2()
+	{
+		head = conBuffer.copyStartPos;
+	}
 
 private:
 	Buffer<T> &conBuffer;

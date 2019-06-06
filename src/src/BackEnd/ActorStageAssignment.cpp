@@ -113,6 +113,16 @@ void StageAssignment::actorStageMap(map<FlatNode *, int> processor2actor)
 	}*/
 }
 
+void StageAssignment::Getprocessor2topoactors(map<FlatNode*,int> processor2actor)
+{
+	vector<FlatNode*>::iterator topoiter;
+	for(topoiter = actortopo.begin();topoiter!=actortopo.end();++topoiter)
+	{
+		int processorId = processor2actor.find(*topoiter)->second;
+		processor2topoactors[processorId].push_back(*topoiter);
+	}
+}
+
 int StageAssignment::FindStage(FlatNode *actor)
 {
 	auto iter = Actor2Stage.find(actor);
