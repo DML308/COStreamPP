@@ -13,6 +13,7 @@ composite B(output stream<int x>Out,input stream<int x>In)
 			for(i = 0;i < 10000;i++){
 				j = i * i;
 			}
+			
 		}
 		window{
 			In  sliding(1,1);
@@ -29,6 +30,26 @@ composite Main(){
 		init{
 			i=0;
             if(1) { println(1); }
+			int i,j;
+			matrix a,b,c;
+			matrix_resize(a,2,2);
+			matrix_resize(b,2,2);
+			for(i=0;i<2;i++)
+			{
+				for(j=0;j<2;j++)
+				{
+					matrix_set_num(a,i,j,i+2);
+					matrix_set_num(b,i,j,2*i);
+				}
+			}
+			matrix_print(a);
+			matrix_print(b);
+			c=a+b;
+			matrix_print(c);
+			c=a*b;
+			matrix_print(c);
+			c=matrix_hstack(a,b);
+			matrix_print(c);
 		}
 		work{
 			for(i = 0;i < 8;i++){

@@ -112,6 +112,7 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#include \"Buffer.h\"\n";
     buf << "#include <math.h>\n";
     buf << "#include <string>\n";
+	buf << "#include \"matrix.h\"\n";
     buf << "using namespace std;\n";
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
     map<string, string> typeSet;

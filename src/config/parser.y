@@ -786,6 +786,7 @@ basic.type.name:
         | FLOAT       { $$ = new primNode("float",@1 ); }
         | DOUBLE      { $$ = new primNode("double",@1 ); }
         | STRING      { $$ = new primNode("string",@1 ); }
+	| MATRIX      { $$ = new primNode("matrix",@1 ); }
         ;
 
 idNode:
