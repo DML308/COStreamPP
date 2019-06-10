@@ -688,6 +688,7 @@ class callNode : public Node
   public:
     string name;
     list<Node *> arg_list;
+    funcDclNode* actual_callnode;
     callNode(string name, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);

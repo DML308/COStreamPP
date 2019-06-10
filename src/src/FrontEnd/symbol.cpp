@@ -141,6 +141,8 @@ void SymbolTable::InserIdentifySymbol(Node *node){
         }
         case InOutdcl:{
             name = static_cast<inOutdeclNode *>(node)->id->name;
+            // 是否需要设置 level version ?
+            break;
         }
     }
     auto iter = identifyTable.find(name);
@@ -152,6 +154,59 @@ void SymbolTable::InserIdentifySymbol(Node *node){
     {
         cout << name<<" had been declared!";
         exit(-1);
+    }
+}
+
+Node* SymbolTable::LookupIdentifySymbol(string name){
+    SymbolTable *right_pre;
+    auto iter = identifyTable.find(name);
+    if(!(iter == identifyTable.end())){
+        return iter->second;
+    }else{
+        if(prev == NULL) return NULL;
+        do{
+            right_pre = prev;
+            iter = right_pre->identifyTable.find(name);
+        }while(iter == right_pre->identifyTable.end() && right_pre->prev != NULL);
+        if(iter == right_pre->identifyTable.end()){
+            return NULL;
+        }else{
+            return iter->second;
+        }
+    }
+    
+
+}
+
+void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
+    auto iter = funcTable.find(func->name);
+    if (iter == funcTable.end())
+    {
+        funcTable.insert(make_pair(func->name, func));
+    }
+    else
+    {
+        cout << func->name<<" had been declared!";
+        exit(-1);
+    }
+}
+
+funcDclNode* SymbolTable::LookupFunctionSymbol(string name){
+    SymbolTable *right_pre;
+    auto iter = funcTable.find(name);
+    if(!(iter == funcTable.end())){
+        return iter->second;
+    }else{
+        if(prev == NULL) return NULL;
+        do{
+            right_pre = prev;
+            iter = right_pre->funcTable.find(name);
+        }while(iter == right_pre->funcTable.end() && right_pre->prev != NULL);
+        if(iter == right_pre->funcTable.end()){
+            return NULL;
+        }else{
+            return iter->second;
+        }
     }
 }
 
@@ -171,9 +226,7 @@ void SymbolTable::InserIdentifySymbol(Node *node){
     }
 }*/
 
-bool SymbolTable::LookupIdentifySymbol(string name){
 
-}
 
 void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
 {

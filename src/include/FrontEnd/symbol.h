@@ -23,8 +23,7 @@ class SymbolTable
     /*put和get表示变量的插入和查找*/
     void put(string s, idNode *);
     idNode *get(string s);
-    void InsertCompositeSymbol(string name, compositeNode *);
-    compositeNode *LookupCompositeSymbol(string name);
+    
     SymbolTable *getPrev()
     {
         return prev;
@@ -33,8 +32,14 @@ class SymbolTable
     map<string, bool> firstScanFuncTable;
     map<string, bool> firstScanCompTable;
 
+    void InsertCompositeSymbol(string name, compositeNode *);
+    compositeNode *LookupCompositeSymbol(string name);
+
     void InserIdentifySymbol(Node *node);
-    bool LookupIdentifySymbol(string name);
+    Node* LookupIdentifySymbol(string name);
+
+    void InsertFunctionSymbol(funcDclNode *func);
+    funcDclNode* LookupFunctionSymbol(string name);
 
    // void SymbolTable::InserInoutSymbol(Node *node);
 
@@ -44,13 +49,17 @@ class SymbolTable
 
   private:
     SymbolTable *prev;
+
     map<string, idNode *> table;
     map<string, list<idNode *>> idTable;
-    map<string, functionNode *> funcTable;
 
-  //  map<string, Node *> inoutTable;
-    map<string, Node *> identifyTable;
-    map<string, compositeNode *> compTable;
-    map<string, operatorNode *> optTable;
+    map<string, funcDclNode *> funcTable;
+    //map<string, Node *> inoutTable;
+    map<string, Node *> identifyTable; //变量
+    map<string, compositeNode *> compTable; // composite
+    map<string, operatorNode *> optTable; //operator
+    map<string, Node *> arrTable; // 数组 
+
+    
 };
 #endif

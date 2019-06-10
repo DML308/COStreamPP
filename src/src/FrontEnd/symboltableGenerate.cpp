@@ -22,6 +22,28 @@ void ExitScopeFn(){
     saved.pop_back();
 }
 
+// 检查 变量 是否已经定义
+bool checkIdentify(Node* node){
+    string name;
+    switch(node->type){
+        case Id:{
+            name = static_cast<idNode *>(node)->name;
+            break;
+        }
+        case InOutdcl:{
+            name = static_cast<inOutdeclNode *>(node)->id->name;
+            break;
+        }
+    }
+    Node* act_node = top->LookupIdentifySymbol(name);
+    if(act_node != NULL){
+        node = act_node;  //替换成真实 id 节点
+        return true;
+    }else{
+        return false;
+    }
+}
+
 // 解析 NodeList
 void generateNodeList(list<Node *> id_list){
     for(auto it = id_list.begin();it!=id_list.end();it++){
@@ -43,7 +65,11 @@ void generateDeclareNode(declareNode* dlcNode){
     }
 }
 
+// 前置声明
 void generatorOperatorNode(operatorNode * optNode);
+void generatorSplitjoinNode(splitjoinNode * splitjoinNode);
+void generatorPipelineNode(pipelineNode * pipelineNode);
+
 
 // 解析 语句
 void genrateStmt(Node *stmt){
@@ -58,6 +84,9 @@ void genrateStmt(Node *stmt){
         }
         case Id :{
             
+            Node * id = top->LookupIdentifySymbol(static_cast<idNode *>(stmt)->name);
+            assert(id);
+            stmt = id;  //?? 替换成真实的idNode 
             break;
         }
         case Decl :{
@@ -70,6 +99,49 @@ void genrateStmt(Node *stmt){
             EnterScopeFn();
             generatorOperatorNode(static_cast<operatorNode *>(stmt));  //解析 operator 节点
             ExitScopeFn();
+            break;
+        }
+        case While:{
+            EnterScopeFn();
+            genrateStmt(static_cast<whileNode *>(stmt)->exp);
+            genrateStmt(static_cast<whileNode *>(stmt)->stmt);
+            ExitScope();
+            break;
+        }
+        case Do:{
+            EnterScope();
+            genrateStmt(static_cast<doNode *>(stmt)->exp);
+            genrateStmt(static_cast<doNode *>(stmt)->stmt);
+            ExitScope();
+            break;
+        }
+        case For:{
+            genrateStmt(static_cast<forNode *>(stmt)->init);
+            genrateStmt(static_cast<forNode *>(stmt)->cond);
+            genrateStmt(static_cast<forNode *>(stmt)->next);
+            genrateStmt(static_cast<forNode *>(stmt)->stmt); 
+            break;
+        }
+        case Call:{
+            funcDclNode *func = top->LookupFunctionSymbol(static_cast<callNode *>(stmt)->name);
+            assert(func != NULL);
+            static_cast<callNode *>(stmt)->actual_callnode = func;
+            // 检查传入的参数是否存在
+            break;
+        }
+        case CompositeCall:{
+            compositeNode *actual_comp = top->LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName);
+            static_cast<compositeCallNode *>(stmt)->actual_composite = actual_comp;
+            // 检查传入的参数是否存在 以及 获得参数值 
+            break;
+        }
+        case SplitJoin:{
+            generatorSplitjoinNode(static_cast<splitjoinNode *>(stmt));
+
+            break;  
+        }
+        case Pipeline:{
+            generatorPipelineNode(static_cast<pipelineNode *>(stmt));
             break;
         }
         default:
@@ -93,12 +165,12 @@ void generatorOperatorNode(operatorNode * optNode){
     
     if(input_List != NULL){  //检查
         for(auto it = input_List->begin();it!=input_List->end();it++){
-           // top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
+           assert(checkIdentify(*it));
         }
     }
     if(output_List != NULL){ //检查 
         for(auto it = output_List->begin();it!=output_List->end();it++){
-           // top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
+           assert(checkIdentify(*it));
         }  
     } 
 
@@ -139,6 +211,30 @@ void generatorOperatorNode(operatorNode * optNode){
      
 }
 
+void generatorSplitjoinNode(splitjoinNode * splitjoinNode){
+    list<Node *> *outputs = splitjoinNode->outputs;
+    list<Node *> *inputs = splitjoinNode->inputs;
+
+    if(outputs != NULL){  //检查
+        for(auto it = outputs->begin();it!=outputs->end();it++){
+            assert(checkIdentify(*it));
+        }
+    }
+    if(inputs != NULL){ //检查 
+        for(auto it = inputs->begin();it!=inputs->end();it++){
+            assert(checkIdentify(*it));
+        }  
+    } 
+    /*  1.argument.expression.list是一个identifier
+        2.查找符号表 identifier是否出现过 */
+    
+}
+
+// 解析 pipeline 节点 
+void generatorPipelineNode(pipelineNode * pipelineNode){
+
+}
+
 // 入口
 void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
     for(int i=0;i<MAX_SCOPE_DEPTH;i++){
@@ -157,13 +253,19 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
                 generateDeclareNode(static_cast<declareNode *>(it));  
                 break;
             }
-            case Composite:{
+            case Composite:{ 
                 top->InsertCompositeSymbol(static_cast<compositeNode *>(it)->compName,static_cast<compositeNode *>(it));
                 EnterScopeFn();/* 进入 composite 块级作用域 */ 
-                generateSymbolTableComposite(static_cast<compositeNode *>(it));
+                generateComposite(static_cast<compositeNode *>(it));
                 ExitScopeFn(); /* 退出 composite 块级作用域 */ 
 
                 break;
+            }
+            case FuncDcl:{ // 仅支持全局作用域下的函数声明
+                top->InsertFunctionSymbol(static_cast<funcDclNode *>(it)); 
+                //以下实现函数内部解析
+
+                //
             }
         }
     }
@@ -172,7 +274,7 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
 
 
 // 解析 Composite 节点 
-void generateSymbolTableComposite(compositeNode* composite){
+void generateComposite(compositeNode* composite){
     ComInOutNode *inout = composite->head->inout; //输入输出参数
     compBodyNode *body = composite->body; //body
     paramNode *param;

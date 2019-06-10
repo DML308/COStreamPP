@@ -669,6 +669,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
                   //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  // 建立符号表时 补上真是的composite节点
                   $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@1) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
