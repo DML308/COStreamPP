@@ -58,7 +58,7 @@ private:
   {
     string original;//原始缓冲区的名称
     string instance;//实际对应的缓冲区名称
-
+    //string classification;//所属分类
     int buffersize;//分配缓冲区的大小
     int buffertype;//分配缓冲区的类型，是否可复用，0代表未分配，1代表不可复用，2代表可复用
   };

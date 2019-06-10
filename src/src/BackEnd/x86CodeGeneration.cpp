@@ -248,6 +248,8 @@ void X86CodeGeneration::CGGlobal()
     {
         vector<FlatNode*> nodes = miter->second;//获取同一个CPU上拓扑排序后的节点
         vector<bufferSpace> vb;//用来存储在一次稳态调度中已经使用完的缓冲区
+        vector<string> alloc;//用来存储实际分配的缓冲区，string代表缓冲区名称，利用bufferMatch找到实际的缓冲区
+        vector<pair<int,int>> allocRecord;//与alloc一一对应，存储缓冲区的copySize和copyStartPos
 
         //按拓扑排序访问各个节点
         for(int i=0;i<nodes.size();i++)
@@ -283,9 +285,10 @@ void X86CodeGeneration::CGGlobal()
 
                 //分配时首先搜索队列中是否有已经使用完的缓冲区,没有再自己分配内存，使用队列中的缓冲区要将其从队列中删除
                 bool flag = false;//缓冲区是否分配完成
-                if (!vb.empty())
+                if (!vb.empty())//代表有可以复用的缓冲区
                 {
                         vector<bufferSpace>::iterator it = vb.begin();
+                        //寻找当前可用缓冲区中最小的进行内存共享
                         while (it != vb.end())
                         {
                             if (it->buffersize >= size)
@@ -303,20 +306,48 @@ void X86CodeGeneration::CGGlobal()
                             }
                             it++;
                         }
+
+                        //若当前可用缓冲区大小都不符合要求则对最大缓冲区进行扩容
+                        if(!flag)
+                        {
+                            auto iter = vb.end()-1;
+                            iter->buffersize = size;
+                            bufferMatch[iter->instance].buffersize = size;
+                            bufferMatch[iter->original].buffersize = size;
+
+                            bufferSpace bspace;
+                            bspace.original = edgename;
+                            bspace.instance = iter->instance;
+                            bspace.buffersize = iter->buffersize;
+                            bspace.buffertype = 2;
+
+                            bufferMatch[bspace.original] = bspace;
+                            flag = true;
+                            vb.erase(iter);
+                        }
                 }
                     
                 //找不到可以复用的缓冲区，自己进行分配
                 if (!flag)
                 {
-                    buf << "Buffer<streamData> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
+                    //buf << "Buffer<streamData> " << edgename << "(" << size << "," << copySize << "," << copyStartPos << ");\n";
                     bufferSpace bspace;
                     bspace.original = edgename;
                     bspace.instance = edgename;
                     bspace.buffersize = size;
                     bspace.buffertype = 2;
 
+                    alloc.push_back(bspace.original);//实际分配内存缓冲区的
+                    allocRecord.push_back(make_pair(copySize,copyStartPos));
+
                     bufferMatch[bspace.original] = bspace;
                 }
+            }
+
+            //由于空闲缓冲区队列中的缓冲区与原始缓冲区存在映射关系，所以要更新其缓冲区大小
+            for(int j=0;j<vb.size();j++)
+            {
+                vb[j].buffersize = bufferMatch[vb[j].instance].buffersize;
             }
 
             //当该节点内存分配完之后说明该节点执行完毕，可以将节点上游能够复用的缓冲区加入到队列中
@@ -329,6 +360,12 @@ void X86CodeGeneration::CGGlobal()
             }
 
             sort(vb.begin(), vb.end(), [](bufferSpace& a,bufferSpace& b){return a.buffersize<b.buffersize;});
+        }
+
+        //实际进行内存分配
+        for(int i=0;i<alloc.size();i++)
+        {
+            buf << "Buffer<streamData> " << bufferMatch[alloc[i]].original << "(" << bufferMatch[alloc[i]].buffersize << "," << allocRecord[i].first << "," << allocRecord[i].second << ");\n";
         }
         miter++;
     }
