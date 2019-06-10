@@ -4,22 +4,22 @@
 //#define PARALLEL
 #define MATRIX_DEBUG
 #define MATRIX_MAX_SIZE 2000
-//¾ØÕóÀà
+//çŸ©é˜µç±»
 class matrix
 {
 public:
-	//ÓÃÒ»¸ö¶þÎ¬Êý×é±£´æ¾ØÕóÔªËØ
+	//ç”¨ä¸€ä¸ªäºŒç»´æ•°ç»„ä¿å­˜çŸ©é˜µå…ƒç´ 
 	double(*data)[MATRIX_MAX_SIZE];
-	//¾ØÕóµÄÐÐÊýÁÐÊý
+	//çŸ©é˜µçš„è¡Œæ•°åˆ—æ•°
 	int row, col;
 	matrix() :row(0), col(0), data(NULL){}
-	matrix& operator =(const matrix& b)//¸³ÖµÔËËã·û
+	matrix& operator =(const matrix& b)//èµ‹å€¼è¿ç®—ç¬¦
 	{
 		if (this != &b)
 		{
 			this->row = b.row;
 			this->col = b.col;
-			//ÏÈÎªµÈºÅ×ó±ßµÄ¾ØÕóÉêÇë¿Õ¼ä£¬ÕâÑù¾Í²»ÓÃ¶Ô²Ù×÷·û×ó±ßµÄ¾ØÕóresizeÁË
+			//å…ˆä¸ºç­‰å·å·¦è¾¹çš„çŸ©é˜µç”³è¯·ç©ºé—´ï¼Œè¿™æ ·å°±ä¸ç”¨å¯¹æ“ä½œç¬¦å·¦è¾¹çš„çŸ©é˜µresizeäº†
 			this->data = new double[row][MATRIX_MAX_SIZE];
 			int i, j;
 			for (i = 0; i < row; i++)
@@ -30,30 +30,40 @@ public:
 		}
 		return *this;
 	}
-	/*~matrix()
+    matrix(const matrix& b)
 	{
-		int i;
-		for (i = 0; i<row; i++)
-			delete[MATRIX_MAX_SIZE] data[i];
+		copy_count++;
+		this->row = b.row;
+		this->col = b.col;
+		this->data = new double[row][MATRIX_MAX_SIZE];
+		int i, j;
+		for (i = 0; i < row; i++)
+		{
+			for (j = 0; j < col; j++)
+				data[i][j] = b.data[i][j];
+		}
+	}
+	~matrix()
+	{
 		delete[] data;
-		data = nullptr;
-	}*/
+		data = NULL;
+	}
 };
-//ÏòÁ¿Àà
+//å‘é‡ç±»
 class Vector
 {
 public:
-	//ÏòÁ¿µÄÊý¾Ý
+	//å‘é‡çš„æ•°æ®
 	double *data;
-	//ÏòÁ¿µÄÎ¬¶È
+	//å‘é‡çš„ç»´åº¦
 	int dim;
 	Vector():data(NULL),dim(0){}
-	Vector& operator =(const Vector& b)//¸³ÖµÔËËã·û
+	Vector& operator =(const Vector& b)//èµ‹å€¼è¿ç®—ç¬¦
 	{
 		if (this != &b)
 		{
 			this->dim = b.dim;
-			//ÏÈÎªµÈºÅ×ó±ßµÄÏòÁ¿ÉêÇë¿Õ¼ä£¬ÕâÑù¾Í²»ÓÃ¶Ô²Ù×÷·û×ó±ßµÄÏòÁ¿resizeÁË
+			//å…ˆä¸ºç­‰å·å·¦è¾¹çš„å‘é‡ç”³è¯·ç©ºé—´ï¼Œè¿™æ ·å°±ä¸ç”¨å¯¹æ“ä½œç¬¦å·¦è¾¹çš„å‘é‡resizeäº†
 			this->data = new double[dim];
 			int i, j;
 			for (i = 0; i < dim; i++)
@@ -64,108 +74,108 @@ public:
 		return *this;
 	}
 };
-/***********************************¾ØÕó²Ù×÷******************************/
-//ÉêÇë¿Õ¼ä£¬²¢ÉèÖÃ¾ØÕóÐÐÁÐÊý
-//Èç¹ûÊÇ´´½¨Ò»¸öÌØÊâ¾ØÕó£¬Ôò²»ÓÃresize£¬Èç´´½¨Ò»¸öµ¥Î»¾ØÕó£¬Ö±½Ó
-//matrix a;matrix_eye(a,rank);¼´¿É
+/***********************************çŸ©é˜µæ“ä½œ******************************/
+//ç”³è¯·ç©ºé—´ï¼Œå¹¶è®¾ç½®çŸ©é˜µè¡Œåˆ—æ•°
+//å¦‚æžœæ˜¯åˆ›å»ºä¸€ä¸ªç‰¹æ®ŠçŸ©é˜µï¼Œåˆ™ä¸ç”¨resizeï¼Œå¦‚åˆ›å»ºä¸€ä¸ªå•ä½çŸ©é˜µï¼Œç›´æŽ¥
+//matrix a;matrix_eye(a,rank);å³å¯
 void matrix_resize(matrix& a, int, int);
 
-//»ñÈ¡¾ØÕóÖÐÄ³¸öÎ»ÖÃµÄÔªËØ
+//èŽ·å–çŸ©é˜µä¸­æŸä¸ªä½ç½®çš„å…ƒç´ 
 double matrix_get_num(matrix&, int, int);
 
-//ÐÞ¸Ä¾ØÕóÖÐÄ³¸öÎ»ÖÃµÄÔªËØµÄÖµ£¬ÔÝÊ±ÓÃÀ´³õÊ¼»¯¾ØÕó¸÷¸öÔªËØµÄÖµ
+//ä¿®æ”¹çŸ©é˜µä¸­æŸä¸ªä½ç½®çš„å…ƒç´ çš„å€¼ï¼Œæš‚æ—¶ç”¨æ¥åˆå§‹åŒ–çŸ©é˜µå„ä¸ªå…ƒç´ çš„å€¼
 void matrix_set_num(matrix&, int, int, double);
 
-//´òÓ¡¾ØÕóµÄËùÓÐÔªËØ
+//æ‰“å°çŸ©é˜µçš„æ‰€æœ‰å…ƒç´ 
 void matrix_print(matrix&);
 
-//°Ñ´«ÈëµÄ¾ØÕó±äÎªÒ»¸öµ¥Î»¾ØÕó
+//æŠŠä¼ å…¥çš„çŸ©é˜µå˜ä¸ºä¸€ä¸ªå•ä½çŸ©é˜µ
 void matrix_eye(matrix&,int rank);
 
-//°Ñ´«ÈëµÄ¾ØÕó±äÎªÒ»¸öÈ«0¾ØÕó
+//æŠŠä¼ å…¥çš„çŸ©é˜µå˜ä¸ºä¸€ä¸ªå…¨0çŸ©é˜µ
 void matrix_zeros(matrix&,int,int);
 
-//°Ñ´«ÈëµÄ¾ØÕó±äÎªÒ»¸öÈ«1¾ØÕó
+//æŠŠä¼ å…¥çš„çŸ©é˜µå˜ä¸ºä¸€ä¸ªå…¨1çŸ©é˜µ
 void matrix_ones(matrix&,int,int);
 
-//ÖØÔØmatrixÀà²Ù×÷·û+,¾ØÕó¼Ó·¨
+//é‡è½½matrixç±»æ“ä½œç¬¦+,çŸ©é˜µåŠ æ³•
 matrix operator+(const matrix &a, const matrix &b);
 
-//ÖØÔØmatrixÀà²Ù×÷·û-,¾ØÕó¼õ·¨
+//é‡è½½matrixç±»æ“ä½œç¬¦-,çŸ©é˜µå‡æ³•
 matrix operator-(const matrix &a, const matrix &b);
 
-//ÖØÔØmatrixÀà²Ù×÷·û*£¬¾ØÕó³Ë·¨
+//é‡è½½matrixç±»æ“ä½œç¬¦*ï¼ŒçŸ©é˜µä¹˜æ³•
 matrix operator*(const matrix &a, const matrix &b);
 
-//½«¾ØÕóËùÓÐÔªËØ±äÎªËüÃÇµÄ¸ºÊý
+//å°†çŸ©é˜µæ‰€æœ‰å…ƒç´ å˜ä¸ºå®ƒä»¬çš„è´Ÿæ•°
 void matrix_opposite(matrix&);
 
-//Çó·½ÕóµÄÐÐÁÐÊ½
+//æ±‚æ–¹é˜µçš„è¡Œåˆ—å¼
 double matrix_det(matrix&);
 
-//·½ÕóµÄLU·Ö½â
+//æ–¹é˜µçš„LUåˆ†è§£
 void matrix_LU(matrix& a, matrix& l, matrix u);
 
-//¾ØÕó×ªÖÃ
+//çŸ©é˜µè½¬ç½®
 matrix matrix_transpose(matrix& );
 
-//¾ØÕó¹éÒ»»¯
+//çŸ©é˜µå½’ä¸€åŒ–
 void matrix_norm(matrix&);
 
-//»ñÈ¡Ò»¸ö·½ÕóµÄÉÏÈý½Ç¾ØÕó
+//èŽ·å–ä¸€ä¸ªæ–¹é˜µçš„ä¸Šä¸‰è§’çŸ©é˜µ
 matrix matrix_get_triU(matrix&);
 
-//¾ØÕóÄæ
+//çŸ©é˜µé€†
 matrix matrix_inverse(matrix&);
 
-//¾ØÕóË®Æ½ºÏ²¢
+//çŸ©é˜µæ°´å¹³åˆå¹¶
 matrix matrix_hstack(matrix&, matrix&);
 
-//¾ØÕó´¹Ö±ºÏ²¢
+//çŸ©é˜µåž‚ç›´åˆå¹¶
 matrix matrix_vstack(matrix&, matrix&);
 
-/***********************************¾ØÕó²Ù×÷******************************/
+/***********************************çŸ©é˜µæ“ä½œ******************************/
 
 
-/***********************************ÏòÁ¿²Ù×÷******************************/
-//Éè¶¨ÏòÁ¿µÄÎ¬¶È
+/***********************************å‘é‡æ“ä½œ******************************/
+//è®¾å®šå‘é‡çš„ç»´åº¦
 void Vector_resize(Vector& a, int);
 
-//ÖØÔØVectorÀà²Ù×÷·û+,ÏòÁ¿Ïà¼Ó
+//é‡è½½Vectorç±»æ“ä½œç¬¦+,å‘é‡ç›¸åŠ 
 Vector operator+(const Vector &a, const Vector &b);
 
-//ÖØÔØVectorÀà²Ù×÷·û-,ÏòÁ¿¼õ·¨
+//é‡è½½Vectorç±»æ“ä½œç¬¦-,å‘é‡å‡æ³•
 Vector operator-(const Vector &a, const Vector &b);
 
-//»ñÈ¡ÏòÁ¿ÖÐµÄÄ³¸öÎ¬¶ÈµÄÊý
+//èŽ·å–å‘é‡ä¸­çš„æŸä¸ªç»´åº¦çš„æ•°
 double Vector_get_num(Vector&, int);
 
-//ÐÞ¸ÄÏòÁ¿ÖÐµÄÄ³¸öÎ¬¶ÈµÄÊý
+//ä¿®æ”¹å‘é‡ä¸­çš„æŸä¸ªç»´åº¦çš„æ•°
 void Vector_set_num(Vector&, int,double);
 
-//»ñÈ¡¾ØÕóµÄÄ³¸öÐÐÏòÁ¿
+//èŽ·å–çŸ©é˜µçš„æŸä¸ªè¡Œå‘é‡
 Vector matrix_get_row_vector(matrix& a, int target_row);
 
-//»ñÈ¡¾ØÕóµÄÄ³¸öÁÐÏòÁ¿
+//èŽ·å–çŸ©é˜µçš„æŸä¸ªåˆ—å‘é‡
 Vector matrix_get_col_vector(matrix& a, int target_col);
 
-//ÏòÁ¿µã»ý
+//å‘é‡ç‚¹ç§¯
 double Vector_dot(Vector& a, Vector& b);
 
-//»ñÈ¡ÏòÁ¿ºÍ
+//èŽ·å–å‘é‡å’Œ
 double Vector_sum(Vector& a);
 
-//»ñÈ¡¾ØÕóÖÐÄ³¸öÐÐÏòÁ¿µÄºÍ
+//èŽ·å–çŸ©é˜µä¸­æŸä¸ªè¡Œå‘é‡çš„å’Œ
 double matrix_sum_of_row_vector(matrix& a, int target_row);
 
-//»ñÈ¡¾ØÕóÖÐÄ³¸öÁÐÏòÁ¿µÄºÍ
+//èŽ·å–çŸ©é˜µä¸­æŸä¸ªåˆ—å‘é‡çš„å’Œ
 double matrix_sum_of_col_vector(matrix& a, int target_col);
 
-//´òÓ¡ÏòÁ¿
+//æ‰“å°å‘é‡
 void Vector_print(Vector&);
-/***********************************ÏòÁ¿²Ù×÷******************************/
+/***********************************å‘é‡æ“ä½œ******************************/
 /*
-//Ê¹ÓÃ¶þÎ¬Êý×éÀ´³õÊ¼»¯matrix,ÐèÒªCOSteamÖ§³Önew²Ù×÷·û£¬·ñÔòµ±Ê¹ÓÃ½Ï´ó¹æÄ£µÄ¾ØÕóÊ±»áÊ¹Õ»¿Õ¼äÒç³ö
+//ä½¿ç”¨äºŒç»´æ•°ç»„æ¥åˆå§‹åŒ–matrix,éœ€è¦COSteamæ”¯æŒnewæ“ä½œç¬¦ï¼Œå¦åˆ™å½“ä½¿ç”¨è¾ƒå¤§è§„æ¨¡çš„çŸ©é˜µæ—¶ä¼šä½¿æ ˆç©ºé—´æº¢å‡º
 void init(matrix a, double matrix[][MATRIX_MAX_SIZE], int row, int col)
 {
 	int i, j;
