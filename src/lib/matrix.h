@@ -32,7 +32,6 @@ public:
 	}
     matrix(const matrix& b)
 	{
-		copy_count++;
 		this->row = b.row;
 		this->col = b.col;
 		this->data = new double[row][MATRIX_MAX_SIZE];
