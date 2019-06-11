@@ -20,8 +20,8 @@ public:
   /******************生成actor类的定义*****************/
   void CGactors();                                                                                                                       //生成以类表示的计算单元actor
   void CGactorsConstructor(FlatNode *actor, stringstream &buf, string className, vector<string> inEdgeName, vector<string> outEdgeName); //actor 构造函数
-  void CGactorsRunInitScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName);                            //actor runInitScheduleWork()函数
-  void CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName);                          //actor runSteadyScheduleWork()函数
+  void CGactorsRunInitScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName, FlatNode *actor);           //actor runInitScheduleWork()函数
+  void CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName, FlatNode *actor);         //actor runSteadyScheduleWork()函数
   void CGactorsPopToken(stringstream &buf, FlatNode *actor, vector<string> inEdgeName);                                                  //actor popToken函数
   void CGactorsPushToken(stringstream &buf, FlatNode *actor, vector<string> outEdgeName);                                                //actor pushToken函数
   void CGactorsStmts(stringstream &buf, list<Node *> *stmts);                                                                            //actor 写入init部分前的statement定义
@@ -52,6 +52,9 @@ private:
   multimap<FlatNode *, string> mapActor2InEdge;      //actor对应输入边的名称
   multimap<FlatNode *, string> mapActor2OutEdge;     //actor对应输出边的名称
   map<int, set<int>> mapNum2Stage;                   //处理器编号到stage的对应关系
+
+  int workLen;//头节点执行一次work所需读入的数据量
+  FlatNode* fileReaderActor;//标识读取数据的节点
 
   //定义保存缓冲区信息的结构体
   struct bufferSpace

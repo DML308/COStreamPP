@@ -1,4 +1,7 @@
 #include "x86CodeGenaration.h"
+
+static bool IOHandler = false;//是否有IO操作节点，如果没有则进入正常工作流程
+
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -7,6 +10,11 @@ X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const c
     flatNodes_ = sssg->GetFlatNodes();
     nCpucore_ = cpuCoreNum;
     nActors_ = flatNodes_.size();
+
+    //IO所需要的变量
+    workLen = 0;
+    fileReaderActor = NULL;
+
     //建立mapActor2InEdge，mapActor2OutEdge
     for (auto iter1 : flatNodes_)
     {
@@ -19,6 +27,15 @@ X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const c
         {
             string str = iter1->name + "_" + iter3->name;
             mapActor2OutEdge.insert(make_pair(iter1, str));
+        }
+        if((iter1->name).find("FileReader")!=-1)
+        {
+            //如果找到了名字为FileReader的节点则证明有IO读取操作，保存节点的结构
+            fileReaderActor = iter1;
+            //进入带IO的操作流程，否则与原来一致
+            IOHandler = true;
+            //输出IO头节点名字，测试用
+            cout<<iter1->name<<endl;
         }
     }
     //构造每个线程上的stage集合mapNum2Stage
@@ -401,6 +418,19 @@ void X86CodeGeneration::CGactors()
         buf << "#include \"Global.h\"\n";
         buf << "#include \"GlobalVar.h\"\n";
         buf << "using namespace std;\n";
+
+        //如果当前节点为IO节点
+        if(flatNodes_[i] == fileReaderActor)
+        {
+            buf << "#include \"RingBuffer.h\"\n";
+            workLen = flatNodes_[i]->outPushWeights[0];
+        	buf << "struct source{\n";
+            //由于目前不支持多类型流变量，这里先强制设置为int
+		    buf << "int" << " " << "buffer[" << workLen << "];\n";
+		    buf << "};\n";
+		    buf << "extern RingBuffer<source> ringBuffer;\n";
+        }
+
         buf << "class " << className << "{\n"; // 类块开始
         vector<string> inEdgeName;
         vector<string> outEdgeName;
@@ -432,8 +462,8 @@ void X86CodeGeneration::CGactors()
         buf << "public:\n";
         /*写入类成员函数*/
         CGactorsConstructor(flatNodes_[i], buf, className, inEdgeName, outEdgeName);
-        CGactorsRunInitScheduleWork(buf, inEdgeName, outEdgeName);
-        CGactorsRunSteadyScheduleWork(buf, inEdgeName, outEdgeName);
+        CGactorsRunInitScheduleWork(buf, inEdgeName, outEdgeName, flatNodes_[i]);
+        CGactorsRunSteadyScheduleWork(buf, inEdgeName, outEdgeName, flatNodes_[i]);
         /*写入类成员变量*/
         buf << "private:\n";
         for (auto out : outEdgeName)
@@ -442,6 +472,11 @@ void X86CodeGeneration::CGactors()
             buf << "\tConsumer<streamData> " << in << ";\n";
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
+        //如果是IO头节点
+        if(flatNodes_[i] == fileReaderActor)
+        {
+		    buf << "\tsource sourceBuff;\n";
+        }
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
         CGactorsStmts(buf, &stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
@@ -486,7 +521,7 @@ void X86CodeGeneration::CGactorsConstructor(FlatNode *actor, stringstream &buf, 
     buf << "\t}\n";
 }
 
-void X86CodeGeneration::CGactorsRunInitScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName)
+void X86CodeGeneration::CGactorsRunInitScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName, FlatNode *actor)
 {
     buf << "\tvoid runInitScheduleWork() {\n";
     buf << "\t\tinitVarAndState();\n";
@@ -501,7 +536,7 @@ void X86CodeGeneration::CGactorsRunInitScheduleWork(stringstream &buf, vector<st
             buf << "\t\t" << in << ".resetHead();\n";
     buf << "\t}\n";
 }
-void X86CodeGeneration::CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName)
+void X86CodeGeneration::CGactorsRunSteadyScheduleWork(stringstream &buf, vector<string> inEdgeName, vector<string> outEdgeName, FlatNode *actor)
 {
     buf << "\tvoid runSteadyScheduleWork() {\n";
     buf << "\t\tfor(int i=0;i<steadyScheduleCount;i++)\n";
