@@ -79,10 +79,27 @@ void SymbolTable::InsertCompositeSymbol(string name, compositeNode *comp)
 
 compositeNode *SymbolTable::LookupCompositeSymbol(string name)
 {
-    if (compTable.find(name) != compTable.end())
-        return compTable[name];
-    else
-        return NULL;
+    SymbolTable *right_pre;
+    auto iter = compTable.find(name);
+    if(!(iter == compTable.end())){
+        return iter->second;
+    }else{ // 往上层作用域查找
+        if(prev == NULL) return NULL;
+        right_pre = prev;
+        do{
+            iter = right_pre->compTable.find(name);
+            if(right_pre->prev != NULL){
+                right_pre = right_pre->prev;
+            }else{
+                break;
+            }
+        }while(iter == right_pre->compTable.end());
+        if(iter == right_pre->compTable.end()){
+            return NULL;
+        }else{
+            return iter->second;
+        }
+    }
 }
 
 idNode *SymbolTable::operator[](string str)
@@ -162,20 +179,23 @@ Node* SymbolTable::LookupIdentifySymbol(string name){
     auto iter = identifyTable.find(name);
     if(!(iter == identifyTable.end())){
         return iter->second;
-    }else{
+    }else{ // 往上层作用域查找
         if(prev == NULL) return NULL;
+        right_pre = prev;
         do{
-            right_pre = prev;
             iter = right_pre->identifyTable.find(name);
-        }while(iter == right_pre->identifyTable.end() && right_pre->prev != NULL);
+            if(right_pre->prev != NULL){
+                right_pre = right_pre->prev;
+            }else{
+                break;
+            }
+        }while(iter == right_pre->identifyTable.end());
         if(iter == right_pre->identifyTable.end()){
             return NULL;
         }else{
             return iter->second;
         }
     }
-    
-
 }
 
 void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
@@ -198,10 +218,15 @@ funcDclNode* SymbolTable::LookupFunctionSymbol(string name){
         return iter->second;
     }else{
         if(prev == NULL) return NULL;
+        right_pre = prev;
         do{
-            right_pre = prev;
             iter = right_pre->funcTable.find(name);
-        }while(iter == right_pre->funcTable.end() && right_pre->prev != NULL);
+            if(right_pre->prev != NULL){
+                right_pre = right_pre->prev;
+            }else{
+                break;
+            }
+        }while(iter == right_pre->funcTable.end());
         if(iter == right_pre->funcTable.end()){
             return NULL;
         }else{

@@ -683,6 +683,7 @@ class operBodyNode : public Node
     string toString() { return "operBodyNode"; }
 };
 
+class funcDclNode;
 class callNode : public Node
 {
   public:

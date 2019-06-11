@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     PhaseName = "Parsing";
     yyin = infp;
     yyparse();
-    // 生成符号表
+    // 生成符号表 语义检查
     generateSymbolTable(Program,symboltables);
     printSymbolTable(symboltables);
 
