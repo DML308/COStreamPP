@@ -40,3 +40,16 @@
   - [ ] 测试,加注释
   - [ ] 整合其他人工作
 
+
+
+  陈名韬GPU后端整合
+  1.当前新后端不支持多类型stream变量，因此后端只支持老的benchmark，新文法扩展暂时无法使用
+
+  2.缺少从语法树获取数组变量名称，类型，维度的方式
+
+  3.旧版生成work时会使用SPLnode，新版没有，一些从语法树中获取的信息暂时没有了
+  CGGlobalVirable
+  CGdeclList  	SPL2GPU_List(state, 0);
+  CGlogicInit
+
+

@@ -1,5 +1,6 @@
 #include "CodeGeneration.h"
 #include "x86CodeGenaration.h"
+#include "GPUCodeGenerate.h"
 #include <unistd.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -23,4 +24,18 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string path, StageAssign
     /* 拷贝程序运行所需要的库文件 */
     string command = "cp " +  origin_path+"/lib/* .";
     system(command.c_str());
+}
+
+void GPUCodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string path, StageAssignment *psa, GPULBPartition *mp)
+{
+    cout<<"-----------生成GPU(OpenCL)代码-----------"<<endl;
+    GPUCodeGenerate *GPUCode = new GPUCodeGenerate(sssg,"",psa,mp);
+    GPUCode->CGGlobalvar();//生成全局变量
+    GPUCode->CGGlobalvarextern();
+    GPUCode->CGThreads();
+    GPUCode->CGglobalHeader();
+    GPUCode->CGactors();
+    GPUCode->CGAllKernel();
+    GPUCode->CGglobalCpp();
+    GPUCode->CGMain();//生成启动线程的main文件
 }

@@ -436,7 +436,7 @@ void HeuristicGreedyPartition::disturb(SchedulerSSG *sssg, int k, int max_part, 
         FlatNode *p = X[max_part][i];
 
         pair<FlatNode *, int> pf;
-        int work = INT_MAX;
+        int work = 2147483647;//INT_MAX
         bool flag = false;
 
         for (int j = 0; j < p->nIn; j++)

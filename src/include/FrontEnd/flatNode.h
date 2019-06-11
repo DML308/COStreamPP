@@ -48,6 +48,12 @@ class FlatNode
 	// opeator在ssg的flatnodes中的顺序编号
 	int num;
 
+	bool hasCall;    //operater 是否调用了内部或者外部函数
+	bool stateful;  //operater 是否有状态
+	int GPUPart;     //0表示 gpu上，  gpunum 表示在CPU线程
+	std::vector<std::string> NDrangeName;
+	std::vector<int> NDrangeValue;
+
   public:
 	FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom);
     string toString();

@@ -15,6 +15,9 @@
 #include "GreedyPartition.h"
 #include "HeuristicGreedyPartition.h"
 #include "CodeGeneration.h"
+#include "GPULBPartition.h"
+
+bool GPUBackend = true;
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -34,6 +37,8 @@ int main(int argc, char *argv[])
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
     int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
+    int GpuNum =1;
+    int MultiNum =1;
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
     //===----------------------------------------------------------------------===//
@@ -102,34 +107,65 @@ int main(int argc, char *argv[])
     PhaseName = "SSG2Graph";
     DumpStreamGraph(SSSG, NULL, "flatgraph.dot");
 
-    // (3)对节点进行调度划分
-    PhaseName = "Partition";
-    #if 0
-    mp = new GreedyPartition(SSSG);
-    #else
-    mp = new HeuristicGreedyPartition(SSSG);
-    #endif
-    /* CpuCoreNum需要从argv中读取然后赋值，暂时未做，采用初始值 */
-    mp->setCpuCoreNum(CpuCoreNum, SSSG);
-    mp->SssgPartition(SSSG);
-    /* dot出划分后的图 */
-    DumpStreamGraph(SSSG, mp, "PartitionGraph.dot");
+    if(GPUBackend)
+    {
+        // (3)对节点进行调度划分
+        PhaseName = "Partition";
+        Partition *mp = NULL;
+        mp = new GPULBPartition(CpuCoreNum,GpuNum,MultiNum);
+        mp->SssgPartition(SSSG);
+        cout << "GPU任务划分完成，选择HLBP" << endl;
 
-    // (5)打印理论加速比
-    PhaseName = "Speedup";
-    ComputeSpeedup(SSSG, mp, infile_name, "workEstimate.txt", "GAPartition");
+        /* dot出划分后的图 */
+        DumpStreamGraph(SSSG, mp, "GPUPartitionGraph.dot");
 
-    // (6) 阶段赋值
-    PhaseName = "StageAssignment";
-    //存储阶段赋值的结果
-    pSA = new StageAssignment();
-    //第一步首先根据SDF图的输入边得到拓扑序列，并打印输出
-    pSA->actorTopologicalorder(SSSG->GetFlatNodes());
-    //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
-    pSA->actorStageMap(mp->FlatNode2PartitionNum);
+        // (6) 阶段赋值
+        PhaseName = "StageAssignment";
+        //存储阶段赋值的结果
+        pSA = new StageAssignment();
+        pSA->setGpuNum(GpuNum);
+        //第一步首先根据SDF图的输入边得到拓扑序列，并打印输出
+        pSA->actorTopologicalorder(SSSG->GetFlatNodes());
+        //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
+        pSA->actorStageMapForGPU(mp->FlatNode2PartitionNum);
 
-    // (7) 输入为SDF图，输出为目标代码
-    CodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
+        // (7) 输入为SDF图，输出为目标代码
+        GPULBPartition *HLBP = (GPULBPartition*)mp;
+        GPUCodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
+    }
+    else
+    {
+        // (3)对节点进行调度划分
+        PhaseName = "Partition";
+        #if 0
+        mp = new GreedyPartition(SSSG);
+        #else
+        mp = new HeuristicGreedyPartition(SSSG);
+        #endif
+        /* CpuCoreNum需要从argv中读取然后赋值，暂时未做，采用初始值 */
+        mp->setCpuCoreNum(CpuCoreNum, SSSG);
+        mp->SssgPartition(SSSG);
+        /* dot出划分后的图 */
+        DumpStreamGraph(SSSG, mp, "PartitionGraph.dot");
+
+        // (5)打印理论加速比
+        PhaseName = "Speedup";
+        ComputeSpeedup(SSSG, mp, infile_name, "workEstimate.txt", "GAPartition");
+
+        // (6) 阶段赋值
+        PhaseName = "StageAssignment";
+        //存储阶段赋值的结果
+        pSA = new StageAssignment();
+        //第一步首先根据SDF图的输入边得到拓扑序列，并打印输出
+        pSA->actorTopologicalorder(SSSG->GetFlatNodes());
+        //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
+        pSA->actorStageMap(mp->FlatNode2PartitionNum);
+
+        // (7) 输入为SDF图，输出为目标代码
+        CodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
+    }
+    
+
 
     //===----------------------------------------------------------------------===//
     // 编译后端 end
