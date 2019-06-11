@@ -182,15 +182,14 @@ Node* SymbolTable::LookupIdentifySymbol(string name){
     }else{ // 往上层作用域查找
         if(prev == NULL) return NULL;
         right_pre = prev;
-        do{
+        while(right_pre!=NULL){
             iter = right_pre->identifyTable.find(name);
-            if(right_pre->prev != NULL){
-                right_pre = right_pre->prev;
-            }else{
+            if(iter != right_pre->identifyTable.end()){
                 break;
             }
-        }while(iter == right_pre->identifyTable.end());
-        if(iter == right_pre->identifyTable.end()){
+            right_pre = right_pre->prev;
+        }
+        if(right_pre == NULL){
             return NULL;
         }else{
             return iter->second;

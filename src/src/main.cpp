@@ -63,12 +63,12 @@ int main(int argc, char *argv[])
     PhaseName = "Parsing";
     yyin = infp;
     yyparse();
-    // 生成符号表 语义检查
-    generateSymbolTable(Program,symboltables);
-    printSymbolTable(symboltables);
 
     // (3) 语义检查
     PhaseName = "SemCheck";
+    // 生成符号表 语义检查
+    generateSymbolTable(Program,symboltables);
+    printSymbolTable(symboltables);
     /* 找到Main composite */
     SemCheck::findMainComposite(Program);
     // (4) 打印抽象语法树

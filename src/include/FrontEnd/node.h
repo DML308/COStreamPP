@@ -902,6 +902,7 @@ class operatorNode : public Node
         this->operName = operName;
         this->inputs = inputs;
         this->operBody = operBody;
+        this->hasState = false;
     }
     ~operatorNode() {}
     void print() {}

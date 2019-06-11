@@ -1,14 +1,16 @@
 #include "symboltableGenerate.h"
-
+extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 SymbolTable S ;//全局
-SymbolTable *top;
-list<SymbolTable *>saved;
+SymbolTable *top; //当前作用域
+list<SymbolTable *>saved; //作用域栈
 
-operatorNode *right_opt;
+operatorNode *right_opt; // 正在判断是否为有状态的 operator节点
+SymbolTable *right_opt_symboltable; // 正在判断是否为有状态的operator节点的 作用域
+map<string,Node *> operator_state_identify; // operator 中 init work 外定义的 变量
 
-map<string,Node *> operator_state_identify;
-bool isOperatorState = false;
-bool isOperatorCheck = false;
+bool isOperatorState = false; //是否进行 变量收集
+bool isOperatorCheck = false; //是否进行 状态判断
+
 void EnterScopeFn(){
     EnterScope(); /* 进入 composite 块级作用域 */ 
     saved.push_back(top);
@@ -40,16 +42,36 @@ bool checkIdentify(Node* node){
         }
     }
     Node* act_node = top->LookupIdentifySymbol(name);
+
+    if(isOperatorCheck && operator_state_identify.find(name) != operator_state_identify.end()){ // 判断是否是有状态operator 
+        int identify_level = static_cast<idNode *>(act_node)->level; //必然是变量节点
+        int identify_version = static_cast<idNode *>(act_node)->version;
+        if(symboltables[identify_level][identify_version] == right_opt_symboltable){
+                right_opt->hasState = true;
+                isOperatorCheck = false; // 找到一个变量就可以判断为 有状态operator 停止继续寻找
+            }
+        cout<<right_opt->operName<<" state :"<<right_opt->hasState<<endl;
+    }
+
     if(act_node != NULL){
         if(node->type!=WindowStmt){
             node = act_node;  //替换成真实 node 节点
         }     
         return true;
     }else{
-        cout<<name<<" is not defined"; 
+        cout<<name<<" is not defined"<<endl; 
         return false;
     }
 }
+
+
+// 前置声明
+void generatorOperatorNode(operatorNode * optNode);
+void generatorSplitjoinNode(splitjoinNode * splitjoinNode);
+void generatorPipelineNode(pipelineNode * pipelineNode);
+void generateComposite(compositeNode* composite);
+void generatorBlcokNode(blockNode *blockNode);
+void generateDeclareNode(declareNode* dlcNode);
 
 // 解析 NodeList
 void generateNodeList(list<Node *> id_list){
@@ -59,48 +81,6 @@ void generateNodeList(list<Node *> id_list){
         static_cast<idNode *>(*it)->version = current_version[Level];
     }
 }
-
-// 
-void generateInitNode(Node* init_value){
-    if(init_value != NULL){
-        switch (init_value->type)
-        {
-            case Initializer:{
-                list<Node *> init_values = static_cast<initNode *>(init_value)->value;
-                for(auto it = init_values.begin();it!=init_values.end();it++){
-                    generateInitNode(*it);
-                }
-                break;
-            }
-            default:{
-                genrateStmt(init_value);
-                break;
-            }
-                
-        }
-    }
-}
-// 解析 Declare 节点
-void generateDeclareNode(declareNode* dlcNode){
-    list<idNode *> id_list = dlcNode->id_list;
-    //generatorIdList(id_list);  
-    for(auto it = id_list.begin();it!=id_list.end();it++){
-        // 处理初始化值
-        Node* init_value = (*it)->init;
-        generateInitNode(init_value); // 解析初始化值
-        top->InserIdentifySymbol(*it);
-        if(isOperatorState){
-            operator_state_identify.insert(make_pair((*it)->name,*it));
-        }
-    }
-}
-
-// 前置声明
-void generatorOperatorNode(operatorNode * optNode);
-void generatorSplitjoinNode(splitjoinNode * splitjoinNode);
-void generatorPipelineNode(pipelineNode * pipelineNode);
-void generateComposite(compositeNode* composite);
-void generatorBlcokNode(blockNode *blockNode);
 
 
 // 解析 语句
@@ -205,6 +185,41 @@ void genrateStmt(Node *stmt){
     }
 }
 
+// 
+void generateInitNode(Node* init_value){
+    if(init_value != NULL){
+        switch (init_value->type)
+        {
+            case Initializer:{
+                list<Node *> init_values = static_cast<initNode *>(init_value)->value;
+                for(auto it = init_values.begin();it!=init_values.end();it++){
+                    generateInitNode(*it);
+                }
+                break;
+            }
+            default:{
+                genrateStmt(init_value);
+                break;
+            }
+                
+        }
+    }
+}
+// 解析 Declare 节点
+void generateDeclareNode(declareNode* dlcNode){
+    list<idNode *> id_list = dlcNode->id_list;
+    //generatorIdList(id_list);  
+    for(auto it = id_list.begin();it!=id_list.end();it++){
+        // 处理初始化值
+        Node* init_value = (*it)->init;
+        generateInitNode(init_value); // 解析初始化值
+        top->InserIdentifySymbol(*it);
+        if(isOperatorState){
+            operator_state_identify.insert(make_pair((*it)->name,*it));
+        }
+    }
+}
+
 void generatorBlcokNode(blockNode *blockNode){
     list<Node *> stmt_list =blockNode->stmt_list;
     if(&stmt_list != NULL){
@@ -249,6 +264,8 @@ void generatorOperatorNode(operatorNode * optNode){
     list<Node *> *output_List = optNode->outputs; //
     operBodyNode *body = optNode->operBody; //body
     
+    right_opt_symboltable = top; // 保存oprator的作用域,因为 work 外部变量 都保存在此作用域下
+
     if(input_List != NULL){  //检查
         for(auto it = input_List->begin();it!=input_List->end();it++){
            assert(checkIdentify(*it));
@@ -271,7 +288,7 @@ void generatorOperatorNode(operatorNode * optNode){
             generateNodeList(*(param->param_list)); 
         }
         //解析 operator 中的语句
-        isOperatorState = true;
+        isOperatorState = true; // 收集 operator 在init work 外定义的变量
         if(&stmt_list != NULL){
             for(auto it = stmt_list.begin();it != stmt_list.end();it++){
                 genrateStmt(*it);
@@ -285,10 +302,14 @@ void generatorOperatorNode(operatorNode * optNode){
         
         if(work != NULL){
             EnterScopeFn();
-            isOperatorCheck = true;
+            isOperatorCheck = true; //判断work中是否用到了 外部定义的变量
             generatorBlcokNode(static_cast<blockNode *>(work));
             ExitScopeFn();
             isOperatorCheck = false;
+            // 判断是否为有状态operator结束 初始化状态
+            right_opt = NULL;
+            right_opt_symboltable = NULL;
+            
         }
 
         //window
