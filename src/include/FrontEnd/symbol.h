@@ -58,7 +58,6 @@ class SymbolTable
     map<string, Node *> identifyTable; //变量
     map<string, compositeNode *> compTable; // composite
     map<string, operatorNode *> optTable; //operator
-    map<string, Node *> arrTable; // 数组 
 
     
 };

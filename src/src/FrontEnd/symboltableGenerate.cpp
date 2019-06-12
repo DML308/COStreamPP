@@ -122,6 +122,10 @@ void genrateStmt(Node *stmt){
             generateDeclareNode(static_cast<declareNode *>(stmt));
             break;
         }
+        case StrDcl:{
+            static_cast<strdclNode *>(stmt);
+            break;
+        }
         case Operator_:{
             right_opt = static_cast<operatorNode *>(stmt);
             top->InsertOperatorSymbol(static_cast<operatorNode *>(stmt)->operName,static_cast<operatorNode *>(stmt));
@@ -220,6 +224,9 @@ void generateDeclareNode(declareNode* dlcNode){
     }
 }
 
+void generateStrDlcNode(strdclNode* streamDeclearNode){  //stream "<int x,int y>" 这部分
+    list<idNode *> id_list = streamDeclearNode->id_list;
+}
 void generatorBlcokNode(blockNode *blockNode){
     list<Node *> stmt_list =blockNode->stmt_list;
     if(&stmt_list != NULL){
@@ -486,7 +493,7 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
     for(int i=0;i<MAX_SCOPE_DEPTH;i++){
         for(int j=0;j<MAX_SCOPE_DEPTH;j++){
             if(symbol_tables[i][j] != NULL){
-                cout<<"[Symbol Table] -- Level -- "<<i<<" Version -- "<<j<<endl;
+                cout<<"[Symbol Table] -- Level -- "<<i<<" Version -- "<<j<<"--------"<<endl;
                 symbol_tables[i][j]->printSymbolTables();
             }
             
