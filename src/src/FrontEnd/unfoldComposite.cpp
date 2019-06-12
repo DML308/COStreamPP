@@ -3,7 +3,7 @@
 extern SymbolTable S;
 vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
 
-Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
+Node *UnfoldComposite::MakeRoundrobinOrDuplicateWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs, int style)
 {
     list<Node *> *stmts = new list<Node *>();
     Node *work = NULL, *for_node = NULL;
@@ -34,8 +34,10 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
         left->arg_list.push_back(id_i);
         idNode *right = new idNode(static_cast<idNode *>(input)->name);
         right->isArray = 1;
-        right->arg_list.push_back(next_j);
-
+        if (style == 1)
+            right->arg_list.push_back(next_j);
+        else
+            right->arg_list.push_back(id_j);
         stmt = new binopNode((expNode *)left, "=", (expNode *)right);
         for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
 
@@ -46,7 +48,7 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
     return work;
 }
 
-Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
+Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs, int style)
 {
     list<Node *> *stmts = new list<Node *>();
     Node *work = NULL, *for_node = NULL;
@@ -66,6 +68,7 @@ Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *argument
     stmts->push_back(declI);
     stmts->push_back(declJ);
     auto pos = inputs->begin();
+
     for (auto arg : *arguments)
     {
         init = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
@@ -83,6 +86,7 @@ Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *argument
         stmts->push_back(for_node);
         pos++;
     }
+
     work = new blockNode(stmts);
     return work;
 }
@@ -108,10 +112,9 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     //arguments可能为NULL，就分配一块内存
     if (arguments == NULL)
         arguments = new list<Node *>();
-     
+
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
 
- 
     /*若split roundroubin()参数为空 默认赋值一个数据大小*/
     if (arguments->size() == 0)
     {
@@ -169,7 +172,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     }
     // cout<<"win_stmt.size()= "<<win_stmt->size()<<endl;
     // cout<<"outputs.size()= "<<outputs->size()<<endl;
-    work = MakeRoundrobinWork(inputs, arguments, outputs);
+    work = MakeRoundrobinOrDuplicateWork(inputs, arguments, outputs,style);
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName[style], inputs, body);
@@ -178,7 +181,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     return res;
 }
 
-operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments)
+operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inputs, list<Node *> *arguments, int style)
 {
     Node *work = NULL;
     operatorNode *res = NULL;
@@ -195,7 +198,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     if (arguments == NULL)
         arguments = new list<Node *>();
     assert(arguments->size() == 0 || arguments->size() == 1 || arguments->size() == len);
-    
+
     Node *constantIntOne = new constantNode("integer", (long long)1);
     outputs->push_back(output);
     if (arguments->size() == 0)
@@ -228,7 +231,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     winStmtNode *win = new winStmtNode(output_name, tum);
     win_stmt->push_back(win);
     /*end*/
-    work = MakeJoinWork(inputs, arguments, outputs);
+    work = MakeJoinWork(inputs, arguments, outputs, style);
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName, inputs, body);
@@ -250,7 +253,6 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
     else
     {
         tmp = UnfoldDuplicate(comName, node);
-
     }
 
     return tmp;
@@ -314,7 +316,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         cnt++;
     }
     /*3.构建joinOperator，与compositeCall的输入输出流关联 */
-    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
+    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list, 1);
     comp_stmt_List->push_back(splitOperator);
     for (auto it : comCallList)
     {
@@ -353,7 +355,6 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     //1.构建splitoperator，构建输出输入流 与composite调用关联
 
     splitOperator = MakeSplitOperator(inputs_split->front(), arg_list, 0);
-       
 
     tempList = splitOperator->outputs;
     auto iter = tempList->begin();
@@ -418,7 +419,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         iter++;
         cnt++;
     }
-    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
+    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list, 0);
     comp_stmt_List->push_back(splitOperator);
     for (auto it : *comCallList)
     {
