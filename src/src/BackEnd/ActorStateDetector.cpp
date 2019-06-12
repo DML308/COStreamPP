@@ -5,7 +5,13 @@ using namespace std;
 void ActorStateDetector::hasMutableState()
 {  
 	//是state则返回True
-
+	//新前端已经增加了对operter中有无状态的判断，合并后取消注释该函数即可使用
+	/*
+    if(opNode->hasState)
+		stateful =  true;
+	else
+		stateful =  false;
+	*/
 }
 
 bool DetectiveActorState(FlatNode *flatNode)

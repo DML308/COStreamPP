@@ -24,6 +24,6 @@ public:
 	multimap<int,map<FlatNode*,int>>datastage;//用于标记数据传输是发送还是取数据，方便thread.cpp的生成,该数据结构中第一个int用于记录阶段号，第二个int用于记录标志位,1:取数据  2：发数据
 	int GpuNum;
 	int setGpuNum(int n){GpuNum =n;}
-	vector<FlatNode*> StageAssignment::FindDataOfActor(int stage);
+	vector<FlatNode*> FindDataOfActor(int stage);
 };
 #endif

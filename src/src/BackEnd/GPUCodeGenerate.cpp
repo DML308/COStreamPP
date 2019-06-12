@@ -537,7 +537,7 @@ void GPUCodeGenerate::CGglobalHeader()
 	map<string,string>::iterator iterName;
 	map<string,string> tmpVec;
 	int stageminus; //stageminus表示两个actor所分配的阶段差
-	bool printStruct = false;
+	//bool printStruct = false;
 	
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
     map<string, string> typeSet;
@@ -577,19 +577,18 @@ void GPUCodeGenerate::CGglobalHeader()
             }
         }
     }
-	string typeName = "mystruct_x";
+	string typeName = "streamData";
 	string typedefine = "";
+	//写入数据流数据类型结构体
+	buf << "struct streamData{\n";
     for (auto it : typeSet)
     {
 		typedefine += it.first + " " +it.second +";\n";
+		buf << "\t" << it.first << " " << it.second << ";\n";
     }
-	//pEdgeInfo->DeclEdgeType(buf);
-	//for (int i = 0; i<pEdgeInfo->vStreamTypeInfo.size(); i++)
-	//{
-		//string typeName = pEdgeInfo->vStreamTypeInfo.at(i).typeName;
-		//string typedefine = pEdgeInfo->vStreamTypeInfo.at(i).typedefine;
-		allnameandtype.insert(make_pair(typeName, typedefine));
-	//}
+	buf << "};\n";
+	allnameandtype.insert(make_pair(typeName, typedefine));
+
 
 	//存储边的信息 结构体信息
 	vector<FlatNode *>::iterator iter;
@@ -599,7 +598,7 @@ void GPUCodeGenerate::CGglobalHeader()
 		{
 			string edgename = (*iter)->name + "_" + (*iter_2)->name;
 			//string edgetype = pEdgeInfo->getEdgeInfo((*iter), (*iter_2)).typeName;
-			string edgetype = "mystruct_x";
+			string edgetype = "streamData";
 			EdgeNameToDefinetype.insert(make_pair(edgename, edgetype));
 		}
 	}
@@ -619,12 +618,11 @@ void GPUCodeGenerate::CGglobalHeader()
 			string declaredEdgeStr;
 			flag = 0;
 			edgename=(*iter_1)->name+"_"+(*iter_2)->name;
-			
+			/*
 			if(!printStruct)
 			{
 				buf<<"struct mystruct_x\n{\n";   //废弃
 			}
-			/*
 			if(!flag&&(*iter_1)->contents->ot != Common_)
 			{
 				if(( iterName= mapOperator2EdgeName.find((*iter_1)->name))!=mapOperator2EdgeName.end())
@@ -715,12 +713,12 @@ void GPUCodeGenerate::CGglobalHeader()
 					mapOperator2EdgeName.insert(make_pair((*iter_2)->name,edgename));
 					UpdateFlatNodeEdgeName(iter_2,edgename);
 				}
-			}*/
+			}
 			if(!printStruct)
 			{
 				buf<<"};\n";
 				printStruct = true;
-			}
+			}*/
 			
 			stageminus = pSa->FindStage(*iter_2) - pSa->FindStage(*iter_1);
 			if((*iter_1)->GPUPart == nGpu_ || (*iter_2)->GPUPart == nGpu_)
@@ -834,7 +832,7 @@ void GPUCodeGenerate::CGMain()
 	buf<<"#include \"barrier_sync.h\"\t//包含barrier函数\n";
 	buf<<"#include \"AllActorHeader.h\"\t//包含所有actor的头文件\n";
 	buf<<"using namespace std;\n";//home/chenwenbin/Desktop/GPU201310/FFT5/barrier_sync.cpp
-	buf<<"int com_num = "<<1<<";\n"; //cwb
+	buf<<"int com_num = "<<Comm_num<<";\n"; //cwb
 	
 	//buf<<"int ThreadNum="<<2*nGpu_+NCpuThreads<<";\n";
 	buf << "int ThreadNum=" << 2 * nGpu_ + CPUthread << ";\n";
@@ -1030,7 +1028,7 @@ void GPUCodeGenerate::CGactors()
 		CGactor(flatNodes_[i]);
 
 	}
-	string filename = "global.h";
+	string filename = "AllActorHeader.h";
 	ofstream out(filename);
 	out << buf.str();
 	buf.str("");
@@ -1107,7 +1105,7 @@ void GPUCodeGenerate::CGactor(FlatNode *actor)
 		CGpopTokenForGPU(actor,buf,inEdgeName);
 		CGpushTokenForGPU(actor,buf,outEdgeName);
 	}
-	buf<<"public:\n\t";
+	buf<<"public:\n";
 	// 写入构造函数信息
 	buf<<"\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
 	buf<<"\tint initScheduleCount;\n";
@@ -1685,6 +1683,7 @@ void GPUCodeGenerate::CGthis(FlatNode *actor, stringstream &buf,vector<string> i
 	//buf << "\t\tRepeatCount = rc;\n ";
 	//	buf<< "\t\tsteadyScheduleCount = "<<sssg_->GetSteadyCount(actor)*Maflp->MultiNum2FlatNode[actor]/NCpuThreads<<";\n";
 	buf<< "\t\tsteadyScheduleCount = "<<sssg_->GetSteadyCount(actor)*Maflp->MultiNum2FlatNode[actor]<<";\n";
+	cout<<sssg_->GetSteadyCount(actor);
 	buf<< "\t\tinitScheduleCount = "<<sssg_->GetInitCount(actor)<<";\n";
 	CGdatataginit(actor,buf);
 	buf << "\t}\n"; // init方法结束
@@ -2311,7 +2310,7 @@ void GPUCodeGenerate::CGAllKernel()
 			}
 			//////////////////////////////////////////////////////////////////////////
 			buf << kernelstring;
-			buf<<"}\n";
+			buf<<"\n}\n";
 		}
 	}
 	//输出到文件
@@ -2451,7 +2450,7 @@ void GPUCodeGenerate::CGexternbuffer(FlatNode *actor,stringstream &buf)
 void GPUCodeGenerate::CGdatatag(FlatNode *actor,stringstream &buf)
 {
 	vector<FlatNode*>::iterator iter,iter_1;
-	buf<<"\t//读写的标志位\n";
+	buf<<"//读写的标志位\n";
 	for (int i = 0; i < nGpu_; i++)
 	{
 		for (iter=actor->inFlatNodes.begin();iter!=actor->inFlatNodes.end();iter++)
@@ -2536,7 +2535,7 @@ void GPUCodeGenerate::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
 
 void GPUCodeGenerate::CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts)
 {
-    buf << "\tvoid initVarAndState() {\n";
+    buf << "void initVarAndState() {\n";
     if (stmts != NULL)
     {
         for (auto it : *stmts)

@@ -26,10 +26,10 @@ void CodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string path, StageAssign
     system(command.c_str());
 }
 
-void GPUCodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string path, StageAssignment *psa, GPULBPartition *mp)
+void GPUCodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string path, StageAssignment *psa, GPULBPartition *hlbp)
 {
     cout<<"-----------生成GPU(OpenCL)代码-----------"<<endl;
-    GPUCodeGenerate *GPUCode = new GPUCodeGenerate(sssg,"",psa,mp);
+    GPUCodeGenerate *GPUCode = new GPUCodeGenerate(sssg,"",psa,hlbp);
     GPUCode->CGGlobalvar();//生成全局变量
     GPUCode->CGGlobalvarextern();
     GPUCode->CGThreads();
@@ -38,4 +38,7 @@ void GPUCodeGeneration(int CpuCoreNum, SchedulerSSG *sssg, string path, StageAss
     GPUCode->CGAllKernel();
     GPUCode->CGglobalCpp();
     GPUCode->CGMain();//生成启动线程的main文件
+    /* 拷贝程序运行所需要的库文件 */
+    string command = "cp " +  origin_path+"/gpulib/* .";
+    system(command.c_str());
 }

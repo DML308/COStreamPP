@@ -52,4 +52,6 @@
   CGdeclList  	SPL2GPU_List(state, 0);
   CGlogicInit
 
+  4.新前端已经增加了对operter中有无状态的判断，合并后取消注释ActorStateDetector 的函数即可使用
 
+global.h que dong xi

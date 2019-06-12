@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 
         // (7) 输入为SDF图，输出为目标代码
         GPULBPartition *HLBP = (GPULBPartition*)mp;
-        GPUCodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
+        GPUCodeGeneration(CpuCoreNum, SSSG, "", pSA, HLBP);
     }
     else
     {

@@ -13,8 +13,7 @@ using namespace std;
 /*********************GPU(OpenCL)代码生成*******************/
 /***************************************************/
 extern list<Node *> *Program;
-bool PrintTime = false;//cwb 打印各部分的运行时间
-bool IsMod = true;//缓冲区取数据时是否使用取余操作
+
 //生成多个文件
 class GPUCodeGenerate
 {
@@ -69,6 +68,8 @@ public:
 
 
 private:
+    bool PrintTime = false;//cwb 打印各部分的运行时间
+    bool IsMod = true;//缓冲区取数据时是否使用取余操作
 	StageAssignment *pSa;
 	GPULBPartition *Maflp;
 	SchedulerSSG *sssg_;	

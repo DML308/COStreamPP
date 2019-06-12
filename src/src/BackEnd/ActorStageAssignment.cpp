@@ -369,3 +369,20 @@ vector<FlatNode*> StageAssignment::FindDataOfActor(int stage)
 	}
 	return flatVec;
 }
+
+int StageAssignment::MaxStageNumForGPU()
+{
+	multimap<int,FlatNode*>::iterator iter1=Stage2Actor.end();
+	iter1--;
+	/*cout<<Stage2DataOfActor.size()<<endl;*/
+	if (Stage2DataOfActor.size())
+	{
+		multimap<int,FlatNode*>::iterator iter2=Stage2DataOfActor.end();
+		iter2--;
+		return (iter1->first+1)>(iter2->first+1)?(iter1->first+1):(iter2->first+1);
+	}
+	else
+	{
+		return iter1->first+1;
+	}
+}
