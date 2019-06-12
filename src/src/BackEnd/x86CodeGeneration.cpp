@@ -486,7 +486,7 @@ void X86CodeGeneration::CGactors()
         /* composite 中init函数 */
         CGactorsInit(buf, init);
         /* composite中work函数 */
-        CGactorsWork(buf, work);
+        CGactorsWork(buf, work, flatNodes_[i]);
         /* 类体结束*/
         buf << "};\n";
         buf << "#endif";
@@ -659,10 +659,18 @@ void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)
         buf << init->toString();
     buf << "\t}\n";
 }
-void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
+void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work, FlatNode* actor)
 {
     buf << "\tvoid work(){ \n";
     /* work中的还含有流形式参数需要被替换 等符号表实现*/
+    if(actor == fileReaderActor)
+    {
+        buf << "\t\twhile(!ringBuffer.read((char*)&sourceBuff));\n";
+        buf << "\t\tfor(int i=0;i<" << workLen << ";i++)\n";
+		buf << "\t\t{\n";
+		buf << "\t\t\tSource[i].x=sourceBuff.buffer[i].x;\n";
+		buf << "\t\t}\n";
+    }
     if (work != NULL)
         buf << work->toString();
     buf << "\n\t\tpushToken();\n";
@@ -799,8 +807,31 @@ void X86CodeGeneration::CGMain()
     buf << "#include \"setCpu.h\"\n";
     buf << "#include \"lock_free_barrier.h\"	//包含barrier函数\n";
     buf << "#include \"Global.h\"\n";
+    buf << "#include \"RingBuffer.h\"\n";
     buf << "using namespace std;\n";
     buf << "int MAX_ITER=1;//默认的执行次数是1\n";
+    if(IOHandler)
+    {
+        //定义环形缓冲区和数据批次数
+        buf << "struct source{\n";
+		buf << "\tint " << "buffer[" << workLen << "];\n";
+		buf << "};\n";
+		buf << "RingBuffer<source> ringBuffer(1024,sizeof(source));\n";
+        buf << "int workExecuteTimes=0;\n";
+        buf <<  "\n";
+        //生成文件读取线程
+        buf << "void* thread_io_fun_start(void *arg)\n";
+		buf << "{\n";
+		buf << "\tsource iobuff;\n";
+        buf << "\tifstream inSource(\"input.bin\",ios::binary);\n";
+		buf << "\tfor(int i=0;i<workExecuteTimes;i++)\n";
+		buf << "\t{\n";
+		buf << "\t\tinSource.read((char*)iobuff.buffer,sizeof(int)*"<<workLen << ");\n";
+		buf << "\t\twhile(!ringBuffer.write((char*)&iobuff));\n";
+		buf << "\t}\n";
+		buf << "}\n";
+    }
+
     for (int i = 0; i < nCpucore_; i++)
     {
         buf << "extern void thread_" << i << "_fun();\n";
@@ -818,6 +849,26 @@ void X86CodeGeneration::CGMain()
     buf << "int main(int argc,char **argv)\n{\n";
     buf << "\tvoid setRunIterCount(int,char**);\n";
     buf << "\tsetRunIterCount(argc,argv);\n";
+    //主线程计算输入文件的数据批次，默认输入源为当前目录下的input.bin
+    if(IOHandler)
+    {
+        buf << "\tifstream in(\"input.bin\",ios::binary);\n";
+		buf << "\tin.seekg(0,ios::end);\n";
+		buf << "\tint length = in.tellg();\n";
+		buf << "\tin.seekg(0,ios::beg);\n";
+		buf << "\tworkExecuteTimes=length/(sizeof(int)*"<<workLen << ");\n";
+        //workExecuteTimes代表文件数据量能够支持work函数执行的次数
+        //由于程序执行分为初态调度和稳态调度，所以要对MAX_ITER进行计算
+        //初态调度消耗的数据量为 初态调度次数*一次work函数消耗的数据量(初态调度在一次程序执行时只会执行一次)
+        //稳态调度消耗的数据量为 稳态调度次数*一次work函数消耗的数据量*MAX_ITER
+        //如果.cos文件中不存在peek!=pop的节点的话，那么初态调度次数一定为0
+        //初态调度似乎是为了流媒体处理中填充边界数据加入的特性，因为peek!=pop节点的引入会导致后续处理变的复杂
+        //MAX_ITER的计算方式这里还是采取肖硕学长的计算方式MAX_ITER=(总数据量-初态调度次数*一次work函数消耗的数据量)/(稳态调度次数*一次work函数消耗的数据量)
+        //由于可以获取到头节点work函数执行的数据量，因此MAX_ITER=(workExecuteTimes-头节点初态调度次数)/头节点稳态调度次数
+        int initworkcount = sssg_->GetInitCount(flatNodes_[0]);
+        int steadyworkcount = sssg_->GetSteadyCount(flatNodes_[0]);
+        buf << "\tMAX_ITER = (workExecuteTimes-"<<initworkcount<<")/"<<steadyworkcount<<";\n";
+    }
     buf << "\tset_cpu(0);\n";
     buf << "\tallocBarrier(" << nCpucore_ << ");\n";
     buf << "\tpthread_t tid[" << nCpucore_ - 1 << "];\n";
@@ -825,7 +876,25 @@ void X86CodeGeneration::CGMain()
     {
         buf << "\tpthread_create (&tid[" << i - 1 << "], NULL, thread_" << i << "_fun_start, (void*)NULL);\n";
     }
+    if(IOHandler)
+    {
+		buf << "\tif(!ringBuffer.Initialize())\n";
+		buf << "\t{\n";
+		buf << "\t\treturn -1;\n";
+		buf << "\t}\n";
+		buf << "\tpthread_t th;\n";
+		buf << "\tint ret = pthread_create (&th, NULL, thread_io_fun_start, (void*)NULL);\n";
+    }
     buf << "\tthread_0_fun();\n";
+    if(IOHandler)
+    {
+		buf << "\tret = pthread_join(th,NULL);\n";
+		buf << "\tif(ret!=0)\n";
+		buf << "\t{\n";
+		buf << "\t\tcout<<\"join error\"<<endl;\n";
+		buf << "\t\treturn -1;\n";
+		buf << "\t}\n";
+    }
     buf << "\treturn 0;\n";
     buf << "}\n";
     buf << "\/\/设置运行次数\n";
