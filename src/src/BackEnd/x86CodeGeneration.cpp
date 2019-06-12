@@ -28,7 +28,7 @@ X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const c
             string str = iter1->name + "_" + iter3->name;
             mapActor2OutEdge.insert(make_pair(iter1, str));
         }
-        if((iter1->name).find("FileReader")!=-1)
+        if((iter1->name).find("FILEREADER")!=-1)
         {
             //如果找到了名字为FileReader的节点则证明有IO读取操作，保存节点的结构
             fileReaderActor = iter1;
@@ -166,6 +166,15 @@ void X86CodeGeneration::CGGlobalHeader()
                     }
                 }
             }
+            for(auto it : *(((compositeNode*)iter1)->body->stmt_List)){
+                if(it->type == StrDcl){
+                    for(auto stdcl : ((strdclNode*)it)->id_list){
+                        cout<< stdcl->name<<stdcl->valType<<endl;
+                        typeSet.insert(make_pair(stdcl->valType,stdcl->name));
+                    }
+                }
+            }
+            cout<<"end"<<endl;
         }
     }
     //写入数据流数据类型结构体
@@ -668,7 +677,7 @@ void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work, FlatNode* ac
         buf << "\t\twhile(!ringBuffer.read((char*)&sourceBuff));\n";
         buf << "\t\tfor(int i=0;i<" << workLen << ";i++)\n";
 		buf << "\t\t{\n";
-		buf << "\t\t\tSource[i].x=sourceBuff.buffer[i].x;\n";
+		buf << "\t\t\tSource[i].x=sourceBuff.buffer[i];\n";//默认流中变量一定为int x
 		buf << "\t\t}\n";
     }
     if (work != NULL)
@@ -802,6 +811,7 @@ void X86CodeGeneration::CGMain()
 {
     stringstream buf;
     buf << "#include <iostream>\n";
+    buf << "#include <fstream>\n";
     buf << "#include <stdlib.h>\n";
     buf << "#include <pthread.h>\n";
     buf << "#include \"setCpu.h\"\n";
@@ -829,6 +839,7 @@ void X86CodeGeneration::CGMain()
 		buf << "\t\tinSource.read((char*)iobuff.buffer,sizeof(int)*"<<workLen << ");\n";
 		buf << "\t\twhile(!ringBuffer.write((char*)&iobuff));\n";
 		buf << "\t}\n";
+        buf << "\treturn 0;\n";
 		buf << "}\n";
     }
 

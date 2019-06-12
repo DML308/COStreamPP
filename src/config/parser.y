@@ -184,9 +184,9 @@ stream.declaring.list:
           stream.type.specifier IDENTIFIER    {
                                                   line("Line:%-4d",@1.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
-                                                  idNode *id=new idNode(*($2),@2);
-                                                  top->put(*($2),id);
-                                                  ((strdclNode*)($1))->id_list.push_back(id);
+                                                  //idNode *id=new idNode(*($2),@2);
+                                                  //top->put(*($2),id);
+                                                  //((strdclNode*)($1))->id_list.push_back(id);
                                                   $$ = $1 ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
@@ -200,7 +200,7 @@ stream.declaring.list:
         ;
 stream.type.specifier:
           STREAM '<' stream.declaration.list '>'{
-                                                    line("Line:%-4d",@1.first_line);
+                                                    line("Litype.specifier:ne:%-4d",@1.first_line);
                                                     debug ("stream.type.specifier ::=  STREAM '<' stream.declaration.list(%s) '>' \n",$3->toString().c_str());
                                                     $$ = $3 ;
                                                 }
