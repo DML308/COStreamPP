@@ -186,7 +186,8 @@ stream.declaring.list:
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
                                                   idNode *id=new idNode(*($2),@2);
                                                   //top->put(*($2),id);
-                                                  ((strdclNode*)($1))->id_list.push_back(id);
+                                                  //issue : 声明的变量和stream内部变量放在了一起
+                                                  ((strdclNode*)($1))->declare_stream_id.push_back(id);
                                                   $$ = $1 ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
@@ -194,7 +195,7 @@ stream.declaring.list:
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
                                                   idNode *id=new idNode(*($3),@3);
                                                   //top->put(*($3),id);
-                                                  ((strdclNode*)($1))->id_list.push_back(id);
+                                                  ((strdclNode*)($1))->declare_stream_id.push_back(id);
                                                   $$ = $1 ;
                                               }
         ;

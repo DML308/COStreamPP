@@ -616,7 +616,8 @@ class tumblingNode : public Node
 class strdclNode : public Node
 {
   public:
-    list<idNode *> id_list;
+    list<idNode *> id_list;// stream 内部变量
+    list<idNode *> declare_stream_id; // 声明的 stream 类型
     strdclNode(idNode *id, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -665,7 +666,7 @@ class paramNode;
 class operBodyNode : public Node
 {
   public:
-    paramNode *param; // ! 语法分析中没有这个属性
+    paramNode *param; // issue :语法分析中没有这个属性
     list<Node *> stmt_list;
     Node *init;
     Node *work;
@@ -718,6 +719,11 @@ class inOutdeclNode : public Node
         this->type = InOutdcl;
         this->strType = strType;
         this->id = id;
+        static_cast<strdclNode *>(this->strType)->declare_stream_id.push_back(id);//添加声明的stream变量
+    }
+    inOutdeclNode()
+    {
+
     }
     ~inOutdeclNode() {}
     void print() {}

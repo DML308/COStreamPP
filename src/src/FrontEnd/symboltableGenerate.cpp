@@ -73,6 +73,7 @@ void generatorPipelineNode(pipelineNode * pipelineNode);
 void generateComposite(compositeNode* composite);
 void generatorBlcokNode(blockNode *blockNode);
 void generateDeclareNode(declareNode* dlcNode);
+void generateStrDlcNode(strdclNode* streamDeclearNode);
 
 // 解析 NodeList
 void generateNodeList(list<Node *> id_list){
@@ -225,8 +226,18 @@ void generateDeclareNode(declareNode* dlcNode){
     }
 }
 
+// 处理 stream 声明变量的语句
 void generateStrDlcNode(strdclNode* streamDeclearNode){  //stream "<int x,int y>" 这部分
-    list<idNode *> id_list = streamDeclearNode->id_list;
+    list<idNode *> id_list = streamDeclearNode->declare_stream_id;
+    for(auto it = id_list.begin();it!=id_list.end();it++){
+        // 创建一个 stream 声明节点
+        inOutdeclNode *stream_dlc = new inOutdeclNode();
+        stream_dlc->strType = streamDeclearNode;
+        stream_dlc->id = *it;
+        stream_dlc->type = InOutdcl;
+        top->InserIdentifySymbol(stream_dlc);
+    }
+
 }
 void generatorBlcokNode(blockNode *blockNode){
     list<Node *> stmt_list =blockNode->stmt_list;
@@ -459,7 +470,7 @@ void generateComposite(compositeNode* composite){
         body_stmt = body->stmt_List;
     
 
-        //解析 输入输出流 
+        //解析 输入输出流 stream 作为参数加入符号表
         if(inout != NULL){
             list<Node *> *input_List = inout->input_List; //输入流
             list<Node *> *output_List = inout->output_List; //输出流
