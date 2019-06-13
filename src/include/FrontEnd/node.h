@@ -665,7 +665,7 @@ class paramNode;
 class operBodyNode : public Node
 {
   public:
-    paramNode *param;
+    paramNode *param; // ! 语法分析中没有这个属性
     list<Node *> stmt_list;
     Node *init;
     Node *work;

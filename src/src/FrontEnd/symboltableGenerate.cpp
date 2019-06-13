@@ -41,6 +41,7 @@ bool checkIdentify(Node* node){
             break;
         }
     }
+
     Node* act_node = top->LookupIdentifySymbol(name);
 
     if(isOperatorCheck && operator_state_identify.find(name) != operator_state_identify.end()){ // 判断是否是有状态operator 
@@ -123,7 +124,7 @@ void genrateStmt(Node *stmt){
             break;
         }
         case StrDcl:{
-            static_cast<strdclNode *>(stmt);
+            generateStrDlcNode( static_cast<strdclNode *>(stmt)); 
             break;
         }
         case Operator_:{
@@ -285,15 +286,15 @@ void generatorOperatorNode(operatorNode * optNode){
     } 
 
     if(body != NULL){
-        paramNode *param = body->param;
+        //paramNode *param = body->param;
         list<Node *> stmt_list = body->stmt_list; // 其中定义的为变量 在 work中被使用 会使 operator变为 有状态节点
         Node *init = body->init;
         Node *work = body->work; //
         windowNode *win = body->win;
 
-        if(param != NULL){
-            generateNodeList(*(param->param_list)); 
-        }
+        //if(param != NULL){
+        //    generateNodeList(*(param->param_list)); 
+        //}
         //解析 operator 中的语句
         isOperatorState = true; // 收集 operator 在init work 外定义的变量
         if(&stmt_list != NULL){
