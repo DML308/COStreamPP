@@ -35,7 +35,7 @@ class SymbolTable
     void InsertCompositeSymbol(string name, compositeNode *);
     compositeNode *LookupCompositeSymbol(string name);
 
-    void InserIdentifySymbol(Node *node);
+    void InsertIdentifySymbol(Node *node);
     Node* LookupIdentifySymbol(string name);
 
     void InsertFunctionSymbol(funcDclNode *func);

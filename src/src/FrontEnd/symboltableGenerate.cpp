@@ -25,7 +25,7 @@ void ExitScopeFn(){
 }
 
 // 检查 变量 是否已经定义
-bool checkIdentify(Node* node){
+Node* checkIdentify(Node* node){
     string name;
     switch(node->type){
         case Id:{
@@ -56,15 +56,25 @@ bool checkIdentify(Node* node){
 
     if(act_node != NULL){
         if(node->type!=WindowStmt){
-            node = act_node;  //替换成真实 node 节点
+           // node = act_node;  //替换成真实 node 节点
         }     
-        return true;
+        return act_node;
     }else{
         cout<<name<<" is not defined"<<endl; 
-        return false;
+        return NULL;
     }
 }
-
+bool checkStreamIdentify(Node *stream, Node* node){
+    string name = static_cast<idNode *>(node)->name;
+    list<idNode *> id_list = static_cast<strdclNode *>(static_cast<inOutdeclNode *>(stream)->strType)->id_list;
+    for(auto it = id_list.begin();it!=id_list.end();it++){
+        if((*it)->name.compare(name) == 0){
+            return true;
+        }
+    }
+    cout<<name<<" is undefined in stream "<< static_cast<inOutdeclNode *>(stream)->id->name <<endl;
+    return false;
+}
 
 // 前置声明
 void generatorOperatorNode(operatorNode * optNode);
@@ -78,7 +88,7 @@ void generateStrDlcNode(strdclNode* streamDeclearNode);
 // 解析 NodeList
 void generateNodeList(list<Node *> id_list){
     for(auto it = id_list.begin();it!=id_list.end();it++){
-        top->InserIdentifySymbol(static_cast<idNode *>(*it));
+        top->InsertIdentifySymbol(static_cast<idNode *>(*it));
         static_cast<idNode *>(*it)->level = Level;
         static_cast<idNode *>(*it)->version = current_version[Level];
     }
@@ -91,13 +101,16 @@ void genrateStmt(Node *stmt){
     {
         // exp 节点
         case Binop:{
-            expNode *left = static_cast<binopNode *>(stmt)->left;
-            expNode *right = static_cast<binopNode *>(stmt)->right; 
+            Node *left = static_cast<binopNode *>(stmt)->left;
+            Node *right = static_cast<binopNode *>(stmt)->right; 
             if((static_cast<binopNode *>(stmt)->op).compare(".") == 0){
                 // 对于 点运算  比如: 取 stream 中的 变量
+                Node* stream_node = checkIdentify(left);
+                checkStreamIdentify(stream_node,right);
+            }else{
+                genrateStmt(left);
+                genrateStmt(right);
             }
-            genrateStmt(left);
-            genrateStmt(right);
             break;
         }
         case Unary:{
@@ -166,7 +179,7 @@ void genrateStmt(Node *stmt){
         case Call:{
             funcDclNode *func = top->LookupFunctionSymbol(static_cast<callNode *>(stmt)->name);
             // print pow 等函数调用 如何与自定义函数 区分 
-            //assert(func != NULL);
+            //func != NULL;
             static_cast<callNode *>(stmt)->actual_callnode = func;
             // 检查传入的参数是否存在
             break;
@@ -219,7 +232,7 @@ void generateDeclareNode(declareNode* dlcNode){
         // 处理初始化值
         Node* init_value = (*it)->init;
         generateInitNode(init_value); // 解析初始化值
-        top->InserIdentifySymbol(*it);
+        top->InsertIdentifySymbol(*it);
         if(isOperatorState){
             operator_state_identify.insert(make_pair((*it)->name,*it));
         }
@@ -235,7 +248,7 @@ void generateStrDlcNode(strdclNode* streamDeclearNode){  //stream "<int x,int y>
         stream_dlc->strType = streamDeclearNode;
         stream_dlc->id = *it;
         stream_dlc->type = InOutdcl;
-        top->InserIdentifySymbol(stream_dlc);
+        top->InsertIdentifySymbol(stream_dlc);
     }
 
 }
@@ -287,12 +300,12 @@ void generatorOperatorNode(operatorNode * optNode){
 
     if(input_List != NULL){  //检查
         for(auto it = input_List->begin();it!=input_List->end();it++){
-           assert(checkIdentify(*it));
+           checkIdentify(*it);
         }
     }
     if(output_List != NULL){ //检查 
         for(auto it = output_List->begin();it!=output_List->end();it++){
-           assert(checkIdentify(*it));
+           checkIdentify(*it);
         }  
     } 
 
@@ -356,12 +369,12 @@ void generatorSplitjoinNode(splitjoinNode * splitjoinNode){
         2.查找符号表 identifier是否出现过 */
     if(outputs != NULL){  
         for(auto it = outputs->begin();it!=outputs->end();it++){
-            assert(checkIdentify(*it));
+            checkIdentify(*it);
         }
     }
     if(inputs != NULL){
         for(auto it = inputs->begin();it!=inputs->end();it++){
-            assert(checkIdentify(*it));
+            checkIdentify(*it);
         }  
     } 
     
@@ -374,7 +387,10 @@ void generatorSplitjoinNode(splitjoinNode * splitjoinNode){
             } 
         }else if(node->type == Duplicate){
             // 需要实现 值的获取
-            genrateStmt(static_cast<duplicateNode *>(node)->exp);
+            if(static_cast<duplicateNode *>(node)->exp != NULL){
+                genrateStmt(static_cast<duplicateNode *>(node)->exp);
+            }
+            
         }
     }
     if(stmt_list != NULL){
@@ -405,12 +421,12 @@ void generatorPipelineNode(pipelineNode *pipelineNode){
 
     if(outputs != NULL){  
         for(auto it = outputs->begin();it!=outputs->end();it++){
-            assert(checkIdentify(*it));
+            checkIdentify(*it);
         }
     }
     if(inputs != NULL){
         for(auto it = inputs->begin();it!=inputs->end();it++){
-            assert(checkIdentify(*it));
+            checkIdentify(*it);
         }  
     } 
 
@@ -421,7 +437,7 @@ void generatorPipelineNode(pipelineNode *pipelineNode){
     }
 }
 
-// 入口
+//入口 传入整棵 AST树
 void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
     for(int i=0;i<MAX_SCOPE_DEPTH;i++){
         for(int j=0;j<MAX_SCOPE_DEPTH;j++){
@@ -431,7 +447,7 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
     S = new SymbolTable(NULL);
     symbol_tables[0][0] = &S;
     top = &S; 
-    assert(program != NULL);
+    program != NULL;
     for (auto it : *(program))
     {
         switch(it->type){
@@ -476,12 +492,12 @@ void generateComposite(compositeNode* composite){
             list<Node *> *output_List = inout->output_List; //输出流
             if(input_List != NULL){
                 for(auto it = input_List->begin();it!=input_List->end();it++){
-                    top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
+                    top->InsertIdentifySymbol(static_cast<inOutdeclNode *>(*it));
                 }
             }
             if(output_List != NULL){
                 for(auto it = output_List->begin();it!=output_List->end();it++){
-                     top->InserIdentifySymbol(static_cast<inOutdeclNode *>(*it));
+                     top->InsertIdentifySymbol(static_cast<inOutdeclNode *>(*it));
                 }  
             } 
         } 
@@ -507,8 +523,9 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
             if(symbol_tables[i][j] != NULL){
                 cout<<"[Symbol Table] -- Level -- "<<i<<" Version -- "<<j<<"--------"<<endl;
                 symbol_tables[i][j]->printSymbolTables();
+                cout<<endl;   
             }
-            
+                   
         }
     }
 }

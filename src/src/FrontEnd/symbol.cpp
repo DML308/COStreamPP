@@ -147,7 +147,7 @@ idNode *SymbolTable::get(string s)
 }
 
 
-void SymbolTable::InserIdentifySymbol(Node *node){
+void SymbolTable::InsertIdentifySymbol(Node *node){
     string name;
     switch(node->type){
         case Id:{
