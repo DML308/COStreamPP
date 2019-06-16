@@ -293,17 +293,9 @@ void X86CodeGeneration::CGGlobal()
                 int stageminus;//表示两个actor所分配的阶段差
                 int size;//缓冲区的大小
                 stageminus = psa_->FindStage(child)-psa_->FindStage(father);//发送方和接受方的软件流水阶段差
-                vector<FlatNode*>::iterator iter = father->outFlatNodes.begin();
                     
-                int edgePos = 0;
-                //获取父节点outFlatNodes的迭代器，如果与子节点相等代表该子节点在父节点的第几条边上
-                while (iter != father->outFlatNodes.end())
-                {
-                        if (*iter == child)
-                            break;
-                        edgePos++;
-                        iter++;
-                }
+                int edgePos = j; //获取该子节点在父节点的第几条边上
+               
                 int perSteadyPushCount = sssg_->GetSteadyCount(father)*father->outPushWeights.at(edgePos);//稳态时产生的数据量
                 int copySize = 0, copyStartPos = 0;
                 size = perSteadyPushCount*(stageminus + 2);
