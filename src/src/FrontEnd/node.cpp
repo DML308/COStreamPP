@@ -106,7 +106,7 @@ string castNode::toString()
 
 string callNode::toString()
 {
-    if (name == "print")
+    if (name == "print" || name == "printf")
         return "cout<<" + listToString(arg_list);
     else if (name == "println")
         return "cout<<" + listToString(arg_list) + "<<endl";
