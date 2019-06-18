@@ -149,7 +149,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     }
                     else if (type == Sliding)
                     {
-                        flatNode->outPushWeights[j] = 0;
+                        flatNode->outPushWeights[j] = 1;
                     }
                 }
             }
