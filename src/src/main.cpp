@@ -17,7 +17,7 @@
 #include "CodeGeneration.h"
 #include "GPULBPartition.h"
 
-bool GPUBackend = true;
+bool GPUBackend = false;
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 {
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
-    int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
+    int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
     int GpuNum =1;
     int MultiNum =1;
     //===----------------------------------------------------------------------===//

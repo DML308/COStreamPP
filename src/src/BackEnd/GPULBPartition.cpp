@@ -41,13 +41,13 @@ void GPULBPartition::SssgPartition(SchedulerSSG *sssg)
 	//步骤7，记录划分结果
 	AddPartitionNum(sssg);
 	
-	SetMultiNum2FlatNode();
+	SetMultiNum2FlatNode(sssg);
 }
 
-void GPULBPartition::SetMultiNum2FlatNode()
+void GPULBPartition::SetMultiNum2FlatNode(SchedulerSSG *SSSG)
 {
 	vector<FlatNode *>::iterator iter_1;
-	for (iter_1=flatNodes_.begin();iter_1!=flatNodes_.end();++iter_1)//遍历所有结点
+	for (iter_1=SSSG->flatNodes.begin();iter_1!=SSSG->flatNodes.end();++iter_1)//遍历所有结点
 	{
 		if((*iter_1)->GPUPart == GPUNum)
 			MultiNum2FlatNode.insert(make_pair((*iter_1),K));

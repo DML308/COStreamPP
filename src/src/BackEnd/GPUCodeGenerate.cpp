@@ -728,11 +728,12 @@ void GPUCodeGenerate::CGglobalHeader()
 				if (!DataDependence(*iter_1,*iter_2))
 				{
 					if((*iter_1)->GPUPart != (*iter_2)->GPUPart && (*iter_1)->GPUPart == nGpu_)
-						buf << "extern " << EdgeNameToDefinetype[edgename] <<" " << edgename << "[" << stageminus << "][" << (sssg_->GetInitCount(*iter_1) + sssg_->GetSteadyCount(*iter_1)*Maflp->MultiNum2FlatNode[*iter_1])*(*iter_1)->outPushWeights[outflatnodeindex] << "];\n";
+						//buf << "extern " << EdgeNameToDefinetype[edgename] <<" " << edgename << "[" << stageminus << "][" << (sssg_->GetInitCount(*iter_1) + sssg_->GetSteadyCount(*iter_1)*Maflp->MultiNum2FlatNode[*iter_1])*(*iter_1)->outPushWeights[outflatnodeindex] << "];\n";
+						buf << "extern " << EdgeNameToDefinetype[edgename] <<" " << edgename << "[" << stageminus << "][" << (sssg_->GetInitCount(*iter_1) + sssg_->GetSteadyCount(*iter_1)) *MultiNum*(*iter_1)->outPushWeights[outflatnodeindex] << "];\n";
 					else if((*iter_1)->GPUPart != (*iter_2)->GPUPart && (*iter_2)->GPUPart == nGpu_)
-						buf << "extern " << EdgeNameToDefinetype[edgename] <<" " << edgename << "[" << stageminus << "][" << (sssg_->GetInitCount(*iter_1) + sssg_->GetSteadyCount(*iter_1)*Maflp->MultiNum2FlatNode[*iter_1] * nGpu_)*(*iter_1)->outPushWeights[outflatnodeindex] << "];\n";
+						buf << "extern " << EdgeNameToDefinetype[edgename] <<" " << edgename << "[" << stageminus << "][" << (sssg_->GetInitCount(*iter_1) + sssg_->GetSteadyCount(*iter_1)*MultiNum)*(*iter_1)->outPushWeights[outflatnodeindex] << "];\n";
 					else	
-						buf << "extern " << EdgeNameToDefinetype[edgename] <<" " <<edgename<<"["<<stageminus+1<<"]["<<(sssg_->GetInitCount(*iter_1)+sssg_->GetSteadyCount(*iter_1)*Maflp->MultiNum2FlatNode[*iter_1])*(*iter_1)->outPushWeights[outflatnodeindex]<<"];\n";
+						buf << "extern " << EdgeNameToDefinetype[edgename] <<" " <<edgename<<"["<<stageminus+1<<"]["<<(sssg_->GetInitCount(*iter_1)+sssg_->GetSteadyCount(*iter_1)*MultiNum)*(*iter_1)->outPushWeights[outflatnodeindex]<<"];\n";
 				}
 				else
 				{
@@ -1076,14 +1077,9 @@ void GPUCodeGenerate::CGactor(FlatNode *actor)
 		for (auto it : *outputs)
 			outEdgeName.push_back(((idNode *)it)->name);
 	}
-	//ptrname.clear();
-	//ptrtype.clear();
-	//ptrdim.clear();
-	//buf<<"\tinclude \""<<classNmae<<".h\"\n";
 	buf <<"class "<<classNmae<<"{\n"; // 类块开始
 	parameterBuf.str(""); // 清空parameterBuf内容
 	thisBuf.str(""); // 清空thisBuf内容
-	//buf << SRbuf.str();
 	buf<<"private:\n\t";
 	//写入读写标志位
 	CGdatatag(actor,buf);
@@ -1682,7 +1678,8 @@ void GPUCodeGenerate::CGthis(FlatNode *actor, stringstream &buf,vector<string> i
 	buf << thisBuf.str();
 	//buf << "\t\tRepeatCount = rc;\n ";
 	//	buf<< "\t\tsteadyScheduleCount = "<<sssg_->GetSteadyCount(actor)*Maflp->MultiNum2FlatNode[actor]/NCpuThreads<<";\n";
-	buf<< "\t\tsteadyScheduleCount = "<<sssg_->GetSteadyCount(actor)*Maflp->MultiNum2FlatNode[actor]<<";\n";
+	//buf<< "\t\tsteadyScheduleCount = "<<sssg_->GetSteadyCount(actor)*Maflp->MultiNum2FlatNode[actor]<<";\n";
+	buf<< "\t\tsteadyScheduleCount = "<<sssg_->GetSteadyCount(actor)<<";\n";
 	cout<<sssg_->GetSteadyCount(actor);
 	buf<< "\t\tinitScheduleCount = "<<sssg_->GetInitCount(actor)<<";\n";
 	CGdatataginit(actor,buf);

@@ -61,7 +61,7 @@ public:
 	void sort(std::vector<FlatNode *> &statelessNode);
 
 	vector<FlatNode *> FindNodeInOneDevice(int parts);
-	void SetMultiNum2FlatNode();
+	void SetMultiNum2FlatNode(SchedulerSSG *SSSG);
 public:
 	std::map<FlatNode *, int> MultiNum2FlatNode;
 	int K;                //扩大因子  //不在使用扩大因子 ，直接K=1；
@@ -91,7 +91,7 @@ private:
 	vector<int> edge;//划分的K个子图每个子图的通信边的权重
 
 	int nvtxs;    //定义顶点个数
-	std::vector<FlatNode *> flatNodes_;
+	//std::vector<FlatNode *> flatNodes_;
 	int GPUCPU_SPEEDUP = 50;
 
 };

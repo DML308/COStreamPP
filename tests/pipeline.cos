@@ -7,11 +7,12 @@ composite Combine(output stream<double x>Out, input stream<double x>In)
 
 	Out = CombineDFTX(In)
 	{
-		double wn_r = cos(2 * PI / 8);
-		double wn_i = sin(2 * PI / 8);
+
 		work
 		{
 			int i;
+			double wn_r = 0.99990604996;
+			double wn_i = 0.06975647374;
 			double w_r = 1, w_i = 0;
 			double results[2 * 8];
 			double y0_r, y0_i, y1_r, y1_i;
