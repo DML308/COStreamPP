@@ -914,11 +914,6 @@ double det(double matrix[][ MATRIX_MAX_SIZE], int rank)
 				index = i;
 			}
 		}
-		if (matrix1[k][k] == 0)
-		{
-			res = 0;
-			break;
-		}
 		if (index != k)
 		{
 			ratio = -ratio;
@@ -929,6 +924,11 @@ double det(double matrix[][ MATRIX_MAX_SIZE], int rank)
 				matrix1[k][j] = matrix1[index][j];
 			for (j = 0; j < n; j++)
 				matrix1[index][j] = tmp[j];
+		}
+        if (matrix1[k][k] == 0)
+		{
+			res = 0;
+			break;
 		}
 #ifdef PARALLEL
 		//并行方式（卷帘分块）
