@@ -23,6 +23,7 @@ class Node
     void setLoc(YYLTYPE loc);
     virtual void print() = 0;
     virtual string toString() = 0;
+    static Node* copyNode(Node *);
 };
 
 string listToString(list<Node *> list);
@@ -681,7 +682,36 @@ class operBodyNode : public Node
     void print() {}
     string toString() { return "operBodyNode"; }
 };
-
+class operatorNode : public Node
+{
+  public:
+    string operName;
+    list<Node *> *inputs;
+    list<Node *> *outputs;
+    operBodyNode *operBody;
+    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
+    {
+        this->type = Operator_;
+        this->outputs = outputs;
+        this->operName = operName;
+        this->inputs = inputs;
+        this->operBody = operBody;
+    }
+    ~operatorNode() {}
+    void print() {}
+    string toString();
+};
+class streamsNode : public Node
+{
+  public:
+    list<Node *> *streamList;
+    streamsNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): streamList(list) {
+      this->type = Streams;
+    }
+    ~streamsNode() {}
+    void print() {}
+    string toString() {}
+};
 class callNode : public Node
 {
   public:
@@ -766,64 +796,6 @@ class paramNode : public Node
     void print() {}
     string toString() {}
 };
-
-class funcBodyNode : public Node
-{
-  public:
-    list<Node *> *stmt_list;
-    funcBodyNode(list<Node *> *stmt_list)
-    {
-        this->stmt_list = stmt_list;
-    }
-    ~funcBodyNode() {}
-    void print() {}
-    string toString() ;
-};
-
-class compBodyNode : public Node
-{
-  public:
-    paramNode *param;
-    list<Node *> *stmt_List;
-    compBodyNode(paramNode *param, list<Node *> *stmt_list)
-    {
-        this->type = CompBody;
-        this->param = param;
-        this->stmt_List = stmt_list;
-    }
-    compBodyNode(compBodyNode &body)
-    {
-        this->type = CompBody;
-        this->param = body.param;
-        this->stmt_List = new list<Node *>();
-        *(this->stmt_List) = *(body.stmt_List);
-    }
-    ~compBodyNode() {}
-    void print() {}
-    string toString() {}
-};
-
-class funcDclNode : public Node
-{
-  public:
-    primNode *prim;
-    string name;
-    list<Node *> param_list;
-    funcBodyNode *funcBody;
-    funcDclNode(primNode *prim, string *name, list<Node *> *param_list, funcBodyNode *funcBody)
-    {
-        this->type = FuncDcl;
-        this->prim = prim;
-        this->name = *name;
-        if (param_list)
-            this->param_list = *param_list;
-        this->funcBody = funcBody;
-    }
-    ~funcDclNode() {}
-    void print() {}
-    string toString();
-};
-
 class compositeCallNode : public Node
 {
   public:
@@ -846,6 +818,73 @@ class compositeCallNode : public Node
     string toString();
 };
 
+class compBodyNode : public Node
+{
+  public:
+    paramNode *param;
+    list<Node *> *stmt_List;
+    compBodyNode(paramNode *param, list<Node *> *stmt_list)
+    {
+        this->type = CompBody;
+        this->param = param;
+        this->stmt_List = stmt_list;
+    }
+    compBodyNode(compBodyNode &body)
+    {
+        this->type = CompBody;
+        this->param = body.param;
+        this->stmt_List = new list<Node *>();
+        *(this->stmt_List) = *(body.stmt_List);
+    }
+    compBodyNode(compBodyNode *body)
+    {
+      this->type = CompBody;
+      this->param = body->param;
+      list<Node *> *stmt_List = new list<Node *>();
+      for (auto it : *body->stmt_List) {
+        Node *temp = copyNode(it);
+        stmt_List->push_back(temp);
+      }
+      this->stmt_List = stmt_List;
+      cout<<"compBodyNode"<<endl;
+    }
+    ~compBodyNode() {}
+    void print() {}
+    string toString() {}
+};
+class funcBodyNode : public Node
+{
+  public:
+    list<Node *> *stmt_list;
+    funcBodyNode(list<Node *> *stmt_list)
+    {
+        this->stmt_list = stmt_list;
+    }
+    ~funcBodyNode() {}
+    void print() {}
+    string toString() ;
+};
+class funcDclNode : public Node
+{
+  public:
+    primNode *prim;
+    string name;
+    list<Node *> param_list;
+    funcBodyNode *funcBody;
+    funcDclNode(primNode *prim, string *name, list<Node *> *param_list, funcBodyNode *funcBody)
+    {
+        this->type = FuncDcl;
+        this->prim = prim;
+        this->name = *name;
+        if (param_list)
+            this->param_list = *param_list;
+        this->funcBody = funcBody;
+    }
+    ~funcDclNode() {}
+    void print() {}
+    string toString();
+};
+
 class compHeadNode : public Node
 {
   public:
@@ -856,6 +895,12 @@ class compHeadNode : public Node
         this->type = CompHead;
         this->compName = compName;
         this->inout = inout;
+    }
+    compHeadNode(compHeadNode* head)
+    {
+        this->type = CompHead;
+        this->compName = head->compName;
+        this->inout = head->inout; // ???
     }
     ~compHeadNode() {}
     void print() {}
@@ -875,30 +920,20 @@ class compositeNode : public Node
         this->body = body;
         this->compName = head->compName;
     }
+    compositeNode(compositeNode *comp)
+    {
+      compHeadNode* head = new compHeadNode(comp->head);
+      compBodyNode* body = new compBodyNode(comp->body);
+      this->type = Composite;
+      this->head = head;
+      this->body = body;
+      this->compName = head->compName;
+    }
     ~compositeNode() {}
     void print() {}
     string toString() {}
 };
 
-class operatorNode : public Node
-{
-  public:
-    string operName;
-    list<Node *> *inputs;
-    list<Node *> *outputs;
-    operBodyNode *operBody;
-    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
-    {
-        this->type = Operator_;
-        this->outputs = outputs;
-        this->operName = operName;
-        this->inputs = inputs;
-        this->operBody = operBody;
-    }
-    ~operatorNode() {}
-    void print() {}
-    string toString();
-};
 class squentialNode : public Node
 {
   public:

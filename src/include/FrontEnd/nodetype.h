@@ -45,7 +45,7 @@ typedef enum {
   Layer,
   
   /********1********新文法**********/
-  Add
+  Add, Streams
   /*
   删除掉的节点： Var,Graph,StreamFor,StreamIf,StreamIfElse,Eviction,Trigger,logic
   修改过的节点： comBodyNode,PipelineNode,SplitJoinNode,slidingNode,tumblingNode

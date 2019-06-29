@@ -500,7 +500,9 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     //cout<<"compName = "<<comp->compName<<endl;
     list<Node *> *stmt_list = NULL;
     assert(comp->body != NULL);
-    stmt_list = comp->body->stmt_List;
+    compositeNode  *newComp = new compositeNode(comp);
+    stmt_list = newComp->body->stmt_List;
+    // stmt_list = comp->body->stmt_List;
     assert(stmt_list != NULL);
     //cout<<"stmts.size()= "<<stmt_list->size();
     Node *top = stmt_list->front();
@@ -558,7 +560,8 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         }
     }
     }
-    return comp;
+    return newComp;
+    // return comp;
 }
 
 /* style标识输入流还是输出流 */
@@ -973,7 +976,6 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         ((layerNode *)*iter)->level = ++currentLevel;
         ((layerNode *)*iter)->nextLayer  = ((layerNode *)*(iter+1));
         ((layerNode *)*(iter+1))->prevLayer  = ((layerNode *)*iter);
-        // assert(((constantNode *)(((layerNode *)*iter)->arg_list->front()))->style == "integer");
     }
     ((layerNode *)compositeCall_list.back())->level = ++currentLevel;
     Node *weightType = new primNode("double");
@@ -990,10 +992,9 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
         Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
         Program->push_front(weightDecl);
-        cout<<"Program size=" << Program->size() << endl;
         prevDim = dim;
     }
-    cout<<"Program size=" << Program->size() << endl;
+    // cout<<"Program size=" << Program->size() << endl;
     // 取得输入到squential的训练集
     list<Node *> *temp_stream = new list<Node *>({inputs->front()});
     // 取得输入到squential的标签

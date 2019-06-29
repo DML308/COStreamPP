@@ -672,6 +672,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
                               //当类型为splitjoin，pipeline，operator，compositecall时设置输出流
                               if($3->type==SplitJoin){
+
                                     list<Node*> *outputs=new list<Node*>({$1});
                                     ((splitjoinNode*)$3)->outputs=outputs;
                               }
@@ -688,6 +689,18 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                                     ((squentialNode *)$3)->outputs=new list<Node*>({$1});
                               }
                         }
+        | '(' argument.expression.list ')' assignment.operator exp {
+                                    line("Line:%-4d",@1.first_line);
+                                    debug("multiple outputs\n");
+                                    // 将list如何转化为expNode*
+                                    Node* streams = new streamsNode($2, @1);
+                                    $$ = new binopNode((expNode*)streams,*($4),(expNode*)$5,@4 ) ;
+                                    if ($5->type  == Operator_) {
+                                          ((operatorNode*)$5)->outputs= $2;
+                                    } else if ($5->type  == CompositeCall) {
+                                          ((compositeCallNode*)$5)->outputs= $2;
+                                    }
+                              }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
         | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@1) ; }
         | FILEREADER '(' ')' '(' stringConstant ')'   { 

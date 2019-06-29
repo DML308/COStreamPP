@@ -1,0 +1,57 @@
+composite Temp(input stream<double x> In, output stream<double x> Out) {
+    Out = temp(In) {
+        work {
+            Out[0].x = In[0].x + 1;
+        }
+        window {
+            In sliding(1, 1);
+            Out tumbling(1);
+        }
+    };
+}
+composite Solo (input stream<double x> In, output stream<double x> Out) {
+    Out = solo(In) {
+        work {
+            Out[0].x = In[0].x + 2;
+        }
+        window {
+            In sliding(1, 1);
+            Out tumbling(1);
+        }
+    };
+}
+
+composite Main () {
+    stream<double x> data, out1, out2, out3, out4;
+    data = Data() {
+        work {
+            data[0].x = 1;
+        }
+        window {
+            data tumbling(1);
+        }
+    };
+    (out1, out2) = Fun (data) {
+        work {
+            out1[0].x = data[0].x + 1;
+            out2[0].x = data[0].x + 2;
+        }
+        window {
+            out1 tumbling(1);
+            out2 tumbling(1);
+            data sliding(1, 1);
+        }
+    };
+    out3 = Temp(out1)();
+    out4 = Temp(out2)();
+    Sink(out3, out4) {
+        work {
+            double a = out4[0].x + out3[0].x;
+            print(a);
+        }
+        window {
+            out4 sliding(1, 1);
+            out3 sliding(1, 1);
+        }
+    };
+}
