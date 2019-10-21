@@ -1020,7 +1020,6 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     compositeNode *tempActualComposite = makeInputComposite((layerNode *)(*compositeCall_list.begin()), temp_call_inputs, temp_call_outputs);
     compositeCallNode *tempCall = new compositeCallNode(temp_call_outputs, "copySquentialInput", NULL, temp_call_inputs, tempActualComposite);
     comCallList.push_back(tempCall);
-    // 继续, 更新temp_stream_list, temp_stream
     // 用于存储前向传播给反向传播的数据流
     // 输入squential的训练集在反向传播中仍然需要
     list<list<Node *>*> *temp_stream_list = new list<list<Node *>*>({new list<Node *>({inputCopy2})});
@@ -1596,7 +1595,6 @@ operatorNode* UnfoldComposite::makeInputOperator(layerNode *layer, list<Node *> 
     Node* const_zero = new constantNode("integer", (long long)0);
 
     idNode* x = new idNode("x");
-    // 继续,使用循环每次输出num个数据
     // Node *forInitI = NULL, *forCondI = NULL, *forNextI = NULL;
     idNode* input = new idNode(static_cast<idNode *>(inputs->front())->name);
     idNode* copy1 = new idNode(static_cast<idNode *>(outputs->front())->name);

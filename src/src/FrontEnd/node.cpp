@@ -303,9 +303,9 @@ string declareNode::toString()
 
 string constantNode::toString()
 {
-    if (style == "double")
+    if (valueType == "double")
         return to_string(dval);
-    else if (style == "integer")
+    else if (valueType == "interger")
         return to_string(llval);
     else
         return "\"" + sval + "\"";
