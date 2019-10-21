@@ -29,11 +29,17 @@ class UnfoldComposite
     void modifyStreamName(operatorNode *oper,list<Node*> *stream ,bool style );
     void modifyWorkName(Node *u,string replaceName,string name);
     Node* workNodeCopy(Node *u);
+    compositeNode* makeInputComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeInputOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeForwardComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeBackComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeLossComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* MakeDenseInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* MakeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeActivationOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeLossOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeDDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* MakeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif
