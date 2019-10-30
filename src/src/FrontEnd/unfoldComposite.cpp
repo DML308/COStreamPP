@@ -1084,7 +1084,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     string name = "squential_loss";
     comCallList.push_back(new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite));
     cout<<"unfold forward propagation"<<endl;
-    temp_stream->pop_back();
+    temp_stream->clear();
     temp_stream->push_back(call_outputs->front());
     for (auto iter = compositeCall_list.rbegin(); iter != compositeCall_list.rend(); iter++) {
         list<Node *> *call_inputs, *call_outputs;
@@ -1099,7 +1099,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         } else {
             call_outputs = new list<Node *>({outputs->front()});
         }
-        temp_stream->pop_back();
+        temp_stream->clear();
         temp_stream->push_back(call_outputs->front());
         temp_stream_list->pop_back();
         compositeNode* actual_composite = makeBackComposite((layerNode *) *iter,call_inputs, call_outputs);
@@ -1107,26 +1107,6 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         ((layerNode *) *iter)-> bp_composite = call; 
         comCallList.push_back(call);
     }
-    // 额外创建一个新的节点计算dL/dy
-    // 暂时搁置
-    /*for (auto iter = compositeCall_list.rbegin(); iter != compositeCall_list.rend(); iter++) {
-        list<Node *> *call_inputs, *call_outputs;
-        string name = "B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
-        string namePrefix = "B" + streamName + "_" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
-        string tempName =  namePrefix + ((layerNode *)*iter)->prevLayer->layerName + to_string(((layerNode *)*iter)->prevLayer->level);
-        idNode *id = new idNode(tempName);
-        call_inputs = new list<Node *>({temp_stream->front(), temp_stream->back()});
-        call_outputs = new list<Node *>({id});
-        temp_stream->clear();
-        temp_stream->push_back(call_outputs->front());
-        // 上面的未实现,这里就会有问题
-        temp_stream->push_back(((layerNode *)*iter)->fp_composite->outputs->back());
-        // 构造实际的正向传播composite  ???未完成
-        // compositeNode* actual_composite = makeBackComposite((layerNode *) *iter,call_inputs, call_outputs);
-        // compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
-        // ((layerNode *) *iter)-> bp_composite = call; 
-        // comCallList.push_back(call);
-    }*/
     cout<<"unfold back propogation"<<endl;
     // ...
     // 生成squential composite
@@ -1362,9 +1342,9 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     Node* num = layer->arg_list->front();
     slidingNode *slid = new slidingNode(new list<Node *>({num, num}));
     winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
-    // winStmtNode *win2 = new winStmtNode(((idNode *)(inputs->back()))->name, slid);
+    winStmtNode *win2 = new winStmtNode(((idNode *)(inputs->back()))->name, slid);
     winStmt->push_back(win1);
-    // winStmt->push_back(win2);
+    winStmt->push_back(win2);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({num}));
     winStmtNode *win3 = new winStmtNode(((idNode *)(outputs->front()))->name, tumb);
     winStmt->push_back(win3);

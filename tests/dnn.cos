@@ -1,0 +1,31 @@
+composite Main() {
+    stream<double x> In, Out, Y;
+    (In, Y) = Start() {
+        int i = 0;
+        work {
+            for(i = 0; i < 784; i++) {
+                In[i].x = 1;
+            }
+            for(i = 0; i < 10; i++) {
+                Y[i].x = 0;
+            } 
+        }
+        window {
+            In tumbling(784);
+            Y tumbling(10);
+        }
+    };
+    Out = squential (In, Y) (784) {
+        add Dense(200);
+        add Dense(100);
+        add Dense(10);
+    };
+    sink(Out) {
+        work {
+            print(Out[0].x);
+        }
+        window{
+            Out sliding(10, 10);
+        }
+    };
+}
