@@ -67,7 +67,6 @@ void X86CodeGeneration::CGGlobalvar()
     cout << "Program  size=" << Program->size() << endl;
     for (auto iter : *Program)
     {
-        cout << "iter type" << iter -> type << endl;
         if (iter->type == Decl)
             buf << iter->toString() << "\n";
     }

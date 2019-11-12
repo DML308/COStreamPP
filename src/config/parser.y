@@ -536,11 +536,6 @@ squential.statement.list:
                                                                 debug("squential.statement.list ::= operator.squential.add\n");
                                                                 $$ = new list<Node *>({$1});
                                                              }
-        | squential.statement.list statement                 {
-                                                                line("Line:%-4d", @1.first_line);
-                                                                debug("squential.statement.list ::= squential.statement.list statement\n");
-                                                                $$ ->push_back($2);
-                                                             }
         | squential.statement.list operator.squential.add    {
                                                                 line("Line:%-4d", @1.first_line);
                                                                 debug("squential.statement.list ::= squential.statement.list operator.squential.add\n");

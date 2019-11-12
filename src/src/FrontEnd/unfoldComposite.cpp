@@ -944,7 +944,6 @@ void UnfoldComposite::modifyWorkName(Node *u, string replaceName, string name)
 }
 compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     globalSquential = node;
-    cout<<node->body_stmts->size()<<endl;
     compositeCallFlow(node->body_stmts); // 将通过add加入的层,依次push到compositeCall_list中
     vector<compositeCallNode *> comCallList; // 用于存储展开后的compositeCallNode
     compositeNode *squential = NULL;
@@ -955,22 +954,16 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     list<Node *> *outputs = node->outputs;
     list<Node *> *arg_list = node->arg_list;
     list<Node *> *comp_stmts = new list<Node *>();
-    cout<<"unfold squential"<<endl;
+    cout<<"Unfold squential"<<endl;
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
-    // ???
-    // EnterScope();
-    // ???
     SymbolTable *top = new SymbolTable(NULL);
     // squential有两个输入流, 分别是是训练集和标签
     assert(inputs != NULL && outputs != NULL);
-    //  temp del
-    // assert(inputs->size() == 2);
     int levelNum = compositeCall_list.size();
     int currentLevel = 0;
-    // next step在composite中加入stream的声明!!!!
-    cout << ((constantNode *)(node->arg_list->front()))->style << endl;
+    assert(levelNum != 0);
     // assert(((constantNode *)(node->arg_list->front()))->style == "integer");
     // 将层连接起来
     for (auto iter = compositeCall_list.begin(); (iter + 1) != compositeCall_list.end(); iter++) {
@@ -995,7 +988,6 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         Program->push_front(weightDecl);
         prevDim = dim;
     }
-    // cout<<"Program size=" << Program->size() << endl;
     // 取得输入到squential的训练集
     list<Node *> *temp_stream = new list<Node *>({inputs->front()});
     // 取得输入到squential的标签
@@ -1029,10 +1021,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
         list<Node *> *call_inputs, *call_outputs;
         string name = ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
-        // cout<<((layerNode *)*iter)->level<<endl;
         if (*iter != compositeCall_list.back()) {
-            // cout<< ((layerNode *)*iter)->layerName;
-            // cout<< to_string(((layerNode *)*iter)->level)<<endl;
             string namePrefix = streamName + "_F" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
             // 正向传递给下一层的stream名称
             string tempName1 = namePrefix + "F" + ((layerNode *)*iter)->nextLayer->layerName + to_string(((layerNode *)*iter)->nextLayer->level);
@@ -1053,13 +1042,11 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
             temp_stream->pop_back();
             temp_stream->push_back(call_outputs->front());
         } else {
-            // (fp保留)
             // 对正向传播过程的最后一层要做特别的处理, 他只有一个输出流
             // call_inputs = new list<Node *>({temp_stream->front()});
             // 只有正向传播的时候, output为输出 
             // call_outputs = new list<Node *>({outputs->front()});
             // 带有反向传播
-            cout<<"forward last layer"<<endl;
             string tempName =  streamName  + "_F" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)-> level);
             idNode *id = new idNode(tempName);
             call_inputs = new list<Node *>({temp_stream->front()});
@@ -1083,7 +1070,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     compositeNode* actual_composite = makeLossComposite((layerNode *)(compositeCall_list.back()), call_inputs, call_outputs);
     string name = "squential_loss";
     comCallList.push_back(new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite));
-    cout<<"unfold forward propagation"<<endl;
+    cout<<"Unfold forward propagation"<<endl;
     temp_stream->clear();
     temp_stream->push_back(call_outputs->front());
     for (auto iter = compositeCall_list.rbegin(); iter != compositeCall_list.rend(); iter++) {
@@ -1107,7 +1094,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         ((layerNode *) *iter)-> bp_composite = call; 
         comCallList.push_back(call);
     }
-    cout<<"unfold back propogation"<<endl;
+    cout<<"Unfold back propogation"<<endl;
     // ...
     // 生成squential composite
     // 将声明的数据流加入
@@ -1117,7 +1104,6 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         comp_stmts->push_back(nd);
     body = new compBodyNode(NULL, comp_stmts);
     squential = new compositeNode(head, body);
-    // ++num; // ???
     compositeCall_list.clear();
     return squential;
 }
@@ -1202,10 +1188,8 @@ Node* UnfoldComposite::MakeDenseInit(layerNode *layer, list<Node *> *inputs, lis
     ((idNode *)weightId)->isArray = 1;
     // 利用for循环初始化
     constantNode *const_zero = new constantNode("integer", (long long)0);
-    constantNode *const_i = new constantNode("integer", (long long)0);
-    constantNode *const_j = new constantNode("integer", (long long)0);
-    initNode *init_i = new initNode(const_i);
-    initNode *init_j = new initNode(const_j);
+    initNode *init_i = new initNode(const_zero);
+    initNode *init_j = new initNode(const_zero);
     idNode *id_i = new idNode("i"), *id_j = new idNode("j");
     id_i->init = init_i;
     id_j->init = init_j;
@@ -1245,12 +1229,9 @@ Node* UnfoldComposite::MakeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     Node*  weightId = new idNode(weightName);
     ((idNode *)weightId)->isArray = 1;
 
-    // int i = 0, j = 0;
-    constantNode *const_zero = new  constantNode("integer", (long long)0);
-    constantNode *const_i = new constantNode("integer", (long long)0);
-    constantNode *const_j = new constantNode("integer", (long long)0);
-    initNode *init_i = new initNode(const_i);
-    initNode *init_j = new initNode(const_j);
+    constantNode *const_zero = new constantNode("integer", (long long)0);
+    initNode *init_i = new initNode(const_zero);
+    initNode *init_j = new initNode(const_zero);
     idNode *id_i = new idNode("i"), *id_j = new idNode("j");
     id_i->init = init_i;
     id_j->init = init_j;
@@ -1327,7 +1308,7 @@ compositeNode* UnfoldComposite::makeLossComposite(layerNode *layer, list<Node *>
     comp_stmt_list->push_back(lossExp);
     compBody = new compBodyNode(NULL, comp_stmt_list);
     compositeNode *comp = new compositeNode(compHead, compBody);
-    cout << "make loss composite"<<endl;
+    cout << "Make loss composite"<<endl;
     return comp;
 }
 
@@ -1353,8 +1334,7 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     // workNode
     list<Node *> *stmts = new list<Node *>();
     constantNode *const_zero = new  constantNode("integer", (long long)0);
-    constantNode *const_i = new constantNode("integer", (long long)0);
-    initNode *init_i = new initNode(const_i);
+    initNode *init_i = new initNode(const_zero);
     idNode *id_i = new idNode("i");
     id_i->init = init_i;
     primNode *prim = new primNode("int");
@@ -1546,7 +1526,7 @@ compositeNode* UnfoldComposite::makeInputComposite(layerNode *layer, list<Node *
     comp_stmt_list->push_back(inputExp);
     compBody = new compBodyNode(NULL, comp_stmt_list);
     compositeNode *comp = new compositeNode(compHead, compBody);
-    cout << "make input composite"<<endl;
+    cout << "Make input composite"<<endl;
     return comp;
 }
 // 暂时保留layerNode,每次只复制一条数据
@@ -1555,7 +1535,6 @@ operatorNode* UnfoldComposite::makeInputOperator(layerNode *layer, list<Node *> 
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
-    // Node* const_one = new constantNode("integer", (long long)1);
     // window
     list<Node *> *winStmt = new list<Node *>();
     Node* num = globalSquential->arg_list->front();
