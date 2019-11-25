@@ -34,7 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token SQUENTIAL DENSE
+%token SQUENTIAL DENSE CONV2D
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -83,10 +83,10 @@ extern void yyerror (const char *msg);
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
 /* 语法分析器自己的结构 6. 深度学习扩展文法*/
-%type<str> DENSE
+%type<str> DENSE CONV2D
 %type<node> operator.layer operator.squential.add
 %type<list> squential.statement.list
-
+%type<node> tumple
 /* C. 优先级标记,从上至下优先级从低到高排列 */
 %right '='
 %left OROR
@@ -275,6 +275,15 @@ initializer.list:
                         }
         ;
 /*************************************************************************/
+/*                      1.1.5 tumple ( (1, 2) )                          */
+/*************************************************************************/
+tumple:
+          '(' argument.expression.list ')' {
+                            $$ = new tumpleNode($2, @1);
+                            line("Line:%-4d",@1.first_line);
+                            debug("tumple");
+                        }
+/*************************************************************************/
 /*              1.2 function.definition 函数声明                          */
 /*                      1.2.1 parameter.list                             */
 /*                      1.2.1 function.body {函数体}                      */
@@ -411,6 +420,7 @@ costream.composite.statement:
 /*             2.1   ADD operator.pipeline                                   */
 /*             2.2   ADD operator.splitjoin                                  */
 /*             2.3   ADD operator.default.call                               */
+/*             2.4   ADD operator.layer                                      */
 /*****************************************************************************/
 composite.body.operator:
           operator.file.writer      {
@@ -461,12 +471,16 @@ operator.layer:
           DENSE '(' argument.expression.list ')' ';'      {
                                                                 line("Line%-4d", @1.first_line);
                                                                 debug("operator.layer ::=DENSE ( argument.expression.list );\n");
-                                                                /* $$ = new layerNode(*($1), $3, @1); */
                                                                 $$ = new layerNode("dense", $3, @1);
-                                                                /* $$ = new layerNode(); */
-                                                                debug("create one layer!\n");
+                                                                debug("Create dense layer!\n");
                                                           }
-        /* other layer, for example conv2 */
+          | CONV2D '(' argument.expression.list ')' ';'      {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=CONV2 ( argument.expression.list );\n");
+                                                                $$ = new layerNode("conv2d", $3, @1);
+                                                                debug("Create conv2d layer!\n");  
+                                                          }
+        /* other layer, for example conv2d */
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
@@ -514,8 +528,10 @@ join.statement:
           JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,@1) ;}
         ;
 argument.expression.list:
-          exp                                               {  $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
-        | argument.expression.list ',' exp                  {  $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push param\n");         }
+          exp                                               { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
+        | tumple                                            { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
+        | argument.expression.list ',' exp                  { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push param\n");}
+        | argument.expression.list ',' tumple               { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push tumple param\n"); }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
@@ -631,6 +647,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                             //$1=top->get(static_cast<idNode*>$1->name);
                             $$ = $1 ;  }
         | constant        { $$ = $1 ; }
+        /* | tumple          { $$ = $1 ; } */
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
         | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
@@ -684,16 +701,14 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                                     ((squentialNode *)$3)->outputs=new list<Node*>({$1});
                               }
                         }
-        | '(' argument.expression.list ')' assignment.operator exp {
+        | tumple assignment.operator exp {
                                     line("Line:%-4d",@1.first_line);
                                     debug("multiple outputs\n");
-                                    // 将list如何转化为expNode*
-                                    Node* streams = new streamsNode($2, @1);
-                                    $$ = new binopNode((expNode*)streams,*($4),(expNode*)$5,@4 ) ;
-                                    if ($5->type  == Operator_) {
-                                          ((operatorNode*)$5)->outputs= $2;
-                                    } else if ($5->type  == CompositeCall) {
-                                          ((compositeCallNode*)$5)->outputs= $2;
+                                    $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
+                                    if ($3->type  == Operator_) {
+                                          ((operatorNode*)$3)->outputs= ((tumpleNode *)$1)->tumpleList;
+                                    } else if ($3->type  == CompositeCall) {
+                                          ((compositeCallNode*)$3)->outputs= ((tumpleNode *)$1)->tumpleList;
                                     }
                               }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }

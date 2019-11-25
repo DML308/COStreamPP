@@ -86,6 +86,7 @@ FileReader  { return FILEREADER; }
 FileWriter  { return FILEWRITER; }
 add         { return ADD; }
 Dense       { return DENSE; }
+Conv2d      { return CONV2D; }
 
 param        { return PARAM; }
 init         { return INIT; }

@@ -1,0 +1,31 @@
+composite Main() {
+    stream<double x> In, Out, Y;
+    (In, Y) = Start() {
+        int i = 0;
+        work {
+            for(i = 0; i < 784; i++) {
+                In[i].x = 1;
+            }
+            for(i = 0; i < 10; i++) {
+                Y[i].x = 0;
+            } 
+        }
+        window {
+            In tumbling(784);
+            Y tumbling(10);
+        }
+    };
+    Out = squential (In, Y) ((1, 28, 28)) {
+        // filters, kernel_size, strides, padding, activation, use_bias  
+        add Conv2d(10, (3, 3), (1, 1), (0, 0), 'relu', false);git
+        add Conv2d(5, (2, 2), (1, 1), (0, 0), 'relu', false);
+    };
+    sink(Out) {
+        work {
+            print(Out[0].x);
+        }
+        window{
+            Out sliding(10, 10);
+        }
+    };
+}

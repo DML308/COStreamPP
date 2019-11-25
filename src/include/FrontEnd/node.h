@@ -701,14 +701,14 @@ class operatorNode : public Node
     void print() {}
     string toString();
 };
-class streamsNode : public Node
+class tumpleNode : public Node
 {
   public:
-    list<Node *> *streamList;
-    streamsNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): streamList(list) {
+    list<Node *> *tumpleList;
+    tumpleNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): tumpleList(list) {
       this->type = Streams;
     }
-    ~streamsNode() {}
+    ~tumpleNode() {}
     void print() {}
     string toString() {}
 };
@@ -951,9 +951,10 @@ class squentialNode : public Node
       this->arg_list = param;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
+      // to be deleted
       cout<< "inputs " << inputs->size() << endl;
       cout<< "arg_list " << param->size() << endl;
-      for(auto iter = param->begin(); iter != param->end(); iter++) {
+      for(auto iter = body_stmts->begin(); iter != body_stmts->end(); iter++) {
         cout<< (*iter)->type  << endl;
       }
     }
