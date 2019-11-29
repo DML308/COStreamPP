@@ -111,7 +111,7 @@ void workCompute(Node *node)
                 {
                     tmp = FLOAT_ARITH_OP;
                 }
-                else if (((constantNode *)exp)->style == "integer")
+                else if (((constantNode *)exp)->style == "long long")
                 {
                     tmp = INT_ARITH_OP;
                 }
@@ -138,7 +138,7 @@ void workCompute(Node *node)
                         if (binop->op == "/") //仅当浮点的除法需要x16
                             tmp *= 16;
                     }
-                    else if (((constantNode *)right)->style == "integer")
+                    else if (((constantNode *)right)->style == "long long")
                     {
                         tmp = INT_ARITH_OP;
                     }

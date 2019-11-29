@@ -3,7 +3,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
-extern int errno; //用于创建文件夹的报错, 参考https://blog.csdn.net/u011866460/article/details/40888943
+//extern int errno; //用于创建文件夹的报错, 参考https://blog.csdn.net/u011866460/article/details/40888943
 
 FILE *changeTabToSpace()
 {

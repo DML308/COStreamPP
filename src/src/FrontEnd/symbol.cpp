@@ -1,11 +1,14 @@
 #include "symbol.h"
 int Level=0;
 int current_version[MAX_SCOPE_DEPTH]={0};
-
+list<SymbolTable *> symbol_tables;
+bool isSorted = false;
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 
-SymbolTable::SymbolTable(SymbolTable *p){
+SymbolTable::SymbolTable(SymbolTable *p,YYLTYPE *loc){
+    this->loc = loc;
     prev = p;
+    symbol_tables.push_back(this);
     symboltables[Level][current_version[Level]] = this;
     //current_version[Level]++; //创建了新的符号表,当前层的 version + 1 
 }
@@ -146,14 +149,19 @@ idNode *SymbolTable::get(string s)
     return NULL;
 }
 
-
 void SymbolTable::InsertIdentifySymbol(Node *node){
     string name;
+    Variable *variable = NULL;
     switch(node->type){
         case Id:{
-            name = static_cast<idNode *>(node)->name;
+            idNode * id = static_cast<idNode *>(node);
+            name = id->name;
+            string type = id->valType;
+            variable = new Variable(type,name);
             static_cast<idNode *>(node)->level = Level;
             static_cast<idNode *>(node)->version = current_version[Level];
+            variable->level = Level;
+            variable->version = current_version[Level];
             break;
         }
         case InOutdcl:{
@@ -162,10 +170,10 @@ void SymbolTable::InsertIdentifySymbol(Node *node){
             break;
         }
     }
-    auto iter = identifyTable.find(name);
-    if (iter == identifyTable.end())
+    auto iter = variableTable.find(name);
+    if (iter == variableTable.end())
     {
-        identifyTable.insert(make_pair(name, node));
+        variableTable.insert(make_pair(name, variable));
     }
     else
     {
@@ -174,7 +182,99 @@ void SymbolTable::InsertIdentifySymbol(Node *node){
     }
 }
 
-Node* SymbolTable::LookupIdentifySymbol(string name){
+void SymbolTable::InsertIdentifySymbol(Variable *variable){
+
+    string name = variable->name;
+    variable->level = Level;
+    variable->version = current_version[Level];
+
+    auto iter = variableTable.find(name);
+    if (iter == variableTable.end())
+    {
+        variableTable.insert(make_pair(name, variable));
+    }
+    else
+    {
+        cout << name<<" had been declared!";
+        exit(-1);
+    }
+}
+
+void SymbolTable::InsertStreamSymbol(string name,inOutdeclNode* inOutNode){
+    auto iter = streamTable.find(name);
+    if(iter == streamTable.end()){
+        streamTable.insert(make_pair(name,inOutNode));
+    }else{
+        cout << "stream " << name <<" had been declared!";
+        exit(-1);
+    }
+}
+
+inOutdeclNode* SymbolTable::LookUpStreamSymbol(string name){
+    auto it = streamTable.find(name);
+    if(it != streamTable.end()){
+        return it->second;
+    }else{
+        return NULL;
+    }
+}
+void SymbolTable::InsertIdentifySymbol(Node *node,Constant *constant){
+    string name;
+    Variable *variable = NULL;
+    switch(node->type){
+        case Id:{
+            idNode * id = static_cast<idNode *>(node);
+            name = id->name;
+            string type = id->valType;
+            variable = new Variable(type,name,constant);
+            static_cast<idNode *>(node)->level = Level;
+            static_cast<idNode *>(node)->version = current_version[Level];
+            variable->level = Level;
+            variable->version = current_version[Level];
+            break;
+        }
+        case InOutdcl:{
+            name = static_cast<inOutdeclNode *>(node)->id->name;
+            // 是否需要设置 level version ?
+            break;
+        }
+    }
+    auto iter = variableTable.find(name);
+    if (iter == variableTable.end())
+    {
+        variableTable.insert(make_pair(name, variable));
+    }
+    else
+    {
+        cout << name<<" had been declared!";
+        exit(-1);
+    }
+}
+
+Variable* SymbolTable::LookupIdentifySymbol(string name){
+    SymbolTable *right_pre;
+    auto iter = variableTable.find(name);
+    if(!(iter == variableTable.end())){
+        return iter->second;
+    }else{ // 往上层作用域查找
+        if(prev == NULL) return NULL;
+        right_pre = prev;
+        while(right_pre!=NULL){
+            iter = right_pre->variableTable.find(name);
+            if(iter != right_pre->variableTable.end()){
+                break;
+            }
+            right_pre = right_pre->prev;
+        }
+        if(right_pre == NULL){
+            return NULL;
+        }else{
+            return iter->second;
+        }
+    }
+}
+
+/*Node* SymbolTable::LookupIdentifySymbol(string name){
     SymbolTable *right_pre;
     auto iter = identifyTable.find(name);
     if(!(iter == identifyTable.end())){
@@ -195,7 +295,7 @@ Node* SymbolTable::LookupIdentifySymbol(string name){
             return iter->second;
         }
     }
-}
+}*/
 
 void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
     auto iter = funcTable.find(func->name);
@@ -261,13 +361,115 @@ void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
 
 void SymbolTable::printSymbolTables(){
     cout<<"---------- Identify Table: ----------\n";
-    for(auto it = identifyTable.begin();it!=identifyTable.end();it++){
-        cout<<it->first<<endl;
+    for(auto it = variableTable.begin();it!=variableTable.end();it++){
+        cout<<it->first<<":\t";
+        string type = it->first;
+        if(it->second != NULL){
+            string type = it->second->type;
+            if(type.compare("array") == 0){
+                it->second->array->print();
+            }else{
+                if(!it->second->value){
+                    cout<<"undefined"<<endl;
+                }else{
+                    it->second->value->print(false);
+                }
+                
+            }  
+        }else{
+            cout<<endl;
+        }   
     }
     cout<<"---------- Composite Table: ----------\n";
     for(auto it = compTable.begin();it!=compTable.end();it++){
-        cout<<it->first<<endl;
+        cout<<it->first<<endl;  
     }
 
 }
 
+// 查找第一个大于 target 的 值
+int getFirstBigger(int target,list<SymbolTable *> symbol_tables) {
+    int count = 0;
+    int left = 0,
+        right = symbol_tables.size() - 1,
+        middle = 0;
+    while (left <= right) {
+        middle = (left + right) / 2;
+        list<SymbolTable*>::iterator it = symbol_tables.begin();
+        advance(it,middle-1);
+        if ((*it)->loc->last_line > target)
+            right = middle - 1;
+        else if ((*it)->loc->last_line < target)
+            left = middle + 1;
+        else
+            return middle;
+    }
+    return left;
+}
+
+// 查找最后 一个小于 target 的 值
+int getLastSmaller(int target,list<SymbolTable *> symbol_tables) {
+    int left = 0,
+    right = symbol_tables.size() - 1,
+        middle = 0;
+    while (left <= right) {
+        middle = (left + right) / 2;
+        list<SymbolTable*>::iterator it = symbol_tables.begin();
+        advance(it,middle-1);
+        if ((*it)->loc->first_line > target)
+            right = middle - 1;
+        else if ((*it)->loc->first_line < target)
+            left = middle + 1;
+        else
+            return middle;
+    }
+   return right;
+}
+
+list<SymbolTable *> first_symbol_tables(symbol_tables.size()),last_symbol_tables(symbol_tables.size());
+
+bool compareFirst(SymbolTable *a,SymbolTable *b){
+    return a->loc->first_line - b->loc->first_line;
+}
+bool compareLast(SymbolTable *a,SymbolTable *b){
+    return a->loc->last_line - b->loc->last_line;
+}
+
+SymbolTable* FindRightSymbolTable(int target) {
+    if(!isSorted){
+        copy(symbol_tables.begin(),symbol_tables.end(),last_symbol_tables.begin()); 
+        copy(symbol_tables.begin(),symbol_tables.end(),first_symbol_tables.begin()); 
+        first_symbol_tables.sort(compareFirst);
+        last_symbol_tables.sort(compareLast);
+        isSorted = true;
+    }
+    int line_start, line_end;
+    line_end = getFirstBigger(target,last_symbol_tables);
+    line_start = getLastSmaller(target,first_symbol_tables);
+    
+    list<SymbolTable*>::iterator itLast = last_symbol_tables.begin();
+    advance(itLast,line_end-1);
+    YYLTYPE *last_loc = (*itLast)->loc;
+
+    list<SymbolTable*>::iterator itFirst = first_symbol_tables.begin();
+    advance(itFirst,line_start-1);
+    YYLTYPE *first_loc = (*itFirst)->loc;
+
+    if(last_loc->first_line<= target && last_loc->last_line >= target){
+        return (*itLast);
+    }else {
+        return (*itFirst);
+    }
+}
+
+void ArrayConstant::print(){
+    int count = 0;
+      for(auto it : values){
+        if(count != 0){
+          cout<<",";
+        }
+        count++;
+        (it)->print(true);
+      }
+      cout<<endl;
+}

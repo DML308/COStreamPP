@@ -109,11 +109,20 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     {
                         Node *winType = ((winStmtNode *)it)->winType;
                         list<Node *> *args = ((slidingNode *)winType)->arg_list;
-                        assert(args != NULL && args->size() == 2);
-                        Node *first = args->front();
-                        Node *second = args->back();
-                        long long first_val = ((constantNode *)first)->llval;
-                        long long second_val = ((constantNode *)second)->llval;
+                        assert(args != NULL);
+                         long long first_val;
+                         long long second_val;
+                        if(args->size() == 2){
+                            Node *first = args->front();
+                            Node *second = args->back();
+                            first_val = ((constantNode *)first)->llval; //peek
+                            second_val = ((constantNode *)second)->llval; //pop
+                        }else{
+                            Node *first = args->front();
+                            first_val = ((constantNode *)first)->llval; //peek
+                            second_val = first_val; //pop
+                        }
+                        
                         if (first_val < second_val)
                         {
                             error("peek must be greater than pop!\npeek = %d, pop = %d\n", first_val, second_val);
@@ -125,7 +134,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     else if (type == Tumbling)
                     {
                         Node *winType = ((winStmtNode *)it)->winType;
-                        Node *val = ((tumblingNode *)winType)->arg_list->front();
+                        Node *val = ((tumblingNode *)winType)->arg_list->front();//常量
                         assert(val->type == constant);
                         flatNode->inPeekWeights[j] = ((constantNode *)val)->llval;
                         flatNode->inPopWeights[j] = flatNode->inPeekWeights[j];

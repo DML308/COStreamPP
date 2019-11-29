@@ -50,14 +50,29 @@ class constantNode : public Node
     string sval;
     double dval;
     long long llval;
+    long lval;
+    int ival;
     constantNode(string type, string str, YYLTYPE loc = YYLTYPE()) : style(type), sval(str)
     {
         setLoc(loc);
         this->type = constant;
     }
-    constantNode(string type, long long l, YYLTYPE loc = YYLTYPE()) : style(type), llval(l)
+    constantNode(string type, int l, YYLTYPE loc = YYLTYPE()) : style(type)
     {
         setLoc(loc);
+        ival = l;
+        this->type = constant;
+    }
+    constantNode(string type, long long l, YYLTYPE loc = YYLTYPE()) : style(type)
+    {
+        setLoc(loc);
+        llval = l;
+        this->type = constant;
+    }
+    constantNode(string type, long l, YYLTYPE loc = YYLTYPE()) : style(type)
+    {
+        setLoc(loc);
+        lval = l;
         this->type = constant;
     }
     constantNode(string type, double d, YYLTYPE loc = YYLTYPE()) : style(type), dval(d)
@@ -845,6 +860,7 @@ class compositeCallNode : public Node
     compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
+        this->stream_List = stream_List;
         this->type = CompositeCall;
         this->compName = compName;
         this->inputs = inputs;
@@ -860,11 +876,13 @@ class compHeadNode : public Node
   public:
     string compName;
     ComInOutNode *inout;
+    ComInOutNode *originalInOut;
     compHeadNode(string compName, ComInOutNode *inout)
     {
         this->type = CompHead;
         this->compName = compName;
         this->inout = inout;
+        this->originalInOut = NULL;
     }
     ~compHeadNode() {}
     void print() {}
@@ -879,8 +897,9 @@ class compositeNode : public Node
     int level; // 如果composite 也可以嵌套定义
     int version;
     string compName;
-    compositeNode(compHeadNode *head, compBodyNode *body)
+    compositeNode(compHeadNode *head, compBodyNode *body,YYLTYPE loc = YYLTYPE())
     {
+        this->setLoc(loc);
         this->type = Composite;
         this->head = head;
         this->body = body;

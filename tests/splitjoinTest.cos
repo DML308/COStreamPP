@@ -66,3 +66,20 @@ composite Main () {
 		}
 	};
 }
+
+composite splitjoin(data){
+	param
+		int N;
+	int i, j; 
+	split duplicate();
+		for (i = 0; i < N; i++) {
+			add splitjoin {
+				split roundrobin();
+				for (j = 0; j < i; j++) {
+					add rTest();
+				}
+				join roundrobin();
+			}
+		}
+	join roundrobin();
+}

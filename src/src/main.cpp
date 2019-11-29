@@ -21,6 +21,8 @@ extern FILE *yyin;                               // flex uses yyin as input file
 extern int yyparse();                            // parser.cc provides yyparse()
 string PhaseName = "undefined";                  //阶段名
 UnfoldComposite *unfold = new UnfoldComposite(); //用于展开splitjoin，pipeline节点
+list<SymbolTable *> runningStack;                //用于展开splitjoin，pipeline,记录 compositeCall 调用的执行上下文链
+SymbolTable *runningTop;                         //执行上下文顶端 top
 list<Node *> *Program = NULL;                    //用于存储语法树节点
 compositeNode *gMainComposite = NULL;            //compositeMain
 StaticStreamGraph *SSG = NULL;
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 
     // (3) 语义检查
     PhaseName = "SemCheck";
-    // 生成符号表 语义检查
+    // 生成符号表 语义检查 常量传播
     generateSymbolTable(Program,symboltables);
     printSymbolTable(symboltables);
     /* 找到Main composite */

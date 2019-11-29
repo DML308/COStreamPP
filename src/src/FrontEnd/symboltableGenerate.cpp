@@ -11,11 +11,11 @@ map<string,Node *> operator_state_identify; // operator 中 init work 外定义�
 bool isOperatorState = false; //是否进行 变量收集
 bool isOperatorCheck = false; //是否进行 状态判断
 
-void EnterScopeFn(){
+void EnterScopeFn(Node *node){
     EnterScope(); /* 进入 composite 块级作用域 */ 
     saved.push_back(top);
     //saved=top;
-    top=new SymbolTable(top);
+    top=new SymbolTable(top,node->loc);
 }
 
 void ExitScopeFn(){
@@ -24,7 +24,7 @@ void ExitScopeFn(){
     saved.pop_back();
 }
 
-// 检查 变量 是否已经定义
+// todo 检查 变量 是否已经定义 
 Node* checkIdentify(Node* node){
     string name;
     switch(node->type){
@@ -42,27 +42,8 @@ Node* checkIdentify(Node* node){
         }
     }
 
-    Node* act_node = top->LookupIdentifySymbol(name);
+    Variable* act_node = top->LookupIdentifySymbol(name);
 
-    if(isOperatorCheck && operator_state_identify.find(name) != operator_state_identify.end()){ // 判断是否是有状态operator 
-        int identify_level = static_cast<idNode *>(act_node)->level; //必然是变量节点
-        int identify_version = static_cast<idNode *>(act_node)->version;
-        if(symboltables[identify_level][identify_version] == right_opt_symboltable){
-                right_opt->hasState = true;
-                isOperatorCheck = false; // 找到一个变量就可以判断为 有状态operator 停止继续寻找
-            }
-        cout<<right_opt->operName<<" state :"<<right_opt->hasState<<endl;
-    }
-
-    if(act_node != NULL){
-        if(node->type!=WindowStmt){
-           // node = act_node;  //替换成真实 node 节点
-        }     
-        return act_node;
-    }else{
-        cout<<name<<" is not defined"<<endl; 
-        return NULL;
-    }
 }
 bool checkStreamIdentify(Node *stream, Node* node){
     string name = static_cast<idNode *>(node)->name;
@@ -94,6 +75,632 @@ void generateNodeList(list<Node *> id_list){
     }
 }
 
+// 常量传播
+void constantPropagation(Node *left,Node *right){
+    string vName = static_cast<idNode *>(left)->name;
+    Variable *realVariable = top->LookupIdentifySymbol(vName);
+    //static_cast<idNode *>(realVariable)->init = right;
+}
+
+Constant* getResult(string op,Constant *left,Constant *right){
+    if(left && right){
+if(op.compare("+") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival+right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval+right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval+right->llval);
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->fval+right->fval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("int") == 0){
+            return new Constant("float",left->fval+right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->ival+right->fval);
+        }
+        
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival+right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval+right->ival);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("long") == 0){
+            return new Constant("float",left->fval+right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->lval+right->fval);
+        }
+        
+        if(left->type.compare("double") == 0 && right->type.compare("long") == 0){
+            return new Constant("double",left->dval+right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->lval+right->dval);
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval+right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("int") == 0){
+            return new Constant("double",left->fval+right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->ival+right->dval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval+right->dval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("float") == 0){
+            return new Constant("double",left->dval+right->fval);
+        }
+        
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            return new Constant("string",left->sval+right->sval);
+        }  
+    }
+    if(op.compare("-") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival-right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval-right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval-right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival-right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval-right->ival);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("long") == 0){
+            return new Constant("float",left->fval-right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->lval-right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("long") == 0){
+            return new Constant("double",left->dval-right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->lval-right->dval);
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->fval-right->fval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("int") == 0){
+            return new Constant("float",left->fval-right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->ival-right->fval);
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval-right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("int") == 0){
+            return new Constant("double",left->fval-right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->ival-right->dval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval-right->dval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("float") == 0){
+            return new Constant("double",left->dval-right->fval);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法相减";
+            exit(-1);
+        }
+
+    }
+    if(op.compare("*") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival*right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval*right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval*right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival*right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval*right->ival);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("long") == 0){
+            return new Constant("float",left->fval*right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->lval*right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("long") == 0){
+            return new Constant("double",left->dval*right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->lval*right->dval);
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->fval*right->fval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("int") == 0){
+            return new Constant("float",left->fval*right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->ival*right->fval);
+        }
+        
+
+
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval*right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("int") == 0){
+            return new Constant("double",left->fval*right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->ival*right->dval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval*right->dval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("float") == 0){
+            return new Constant("double",left->dval*right->fval);
+        }
+        
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法相乘";
+            exit(-1);
+        }
+
+    }
+    if(op.compare("/") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival/right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval/right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval/right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival/right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval/right->ival);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("long") == 0){
+            return new Constant("float",left->fval/right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->lval/right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("long") == 0){
+            return new Constant("double",left->dval/right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->lval/right->dval);
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->fval/right->fval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("int") == 0){
+            return new Constant("float",left->fval/right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("float") == 0){
+            return new Constant("float",left->ival/right->fval);
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval/right->fval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("int") == 0){
+            return new Constant("double",left->fval/right->ival);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->ival/right->dval);
+        }
+        if(left->type.compare("float") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->fval/right->dval);
+        }
+        if(left->type.compare("double") == 0 && right->type.compare("float") == 0){
+            return new Constant("double",left->dval/right->fval);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法相除";
+            exit(-1);
+        }  
+    }
+    if(op.compare("%") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival%right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval%right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval%right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival%right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval%right->ival);
+        }
+
+        if(left->type.compare("double") == 0 || right->type.compare("double")){
+             cout << "浮点数无法取余";
+             exit(-1);
+        }
+        if(left->type.compare("float") == 0 || right->type.compare("float")){
+            cout << "浮点数无法取余";
+            exit(-1);
+        }
+        if(left->type.compare("string") == 0 || right->type.compare("string")){
+            cout << "字符串无法取余";
+            exit(-1);
+        }
+    }
+    if(op.compare("|") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival|right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval|right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval|right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival|right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval|right->ival);
+        }
+
+        if(left->type.compare("double") == 0 || right->type.compare("double")){
+             cout << "浮点数无法或运算";
+             exit(-1);
+        }
+        if(left->type.compare("float") == 0 || right->type.compare("float")){
+            cout << "浮点数无法或运算";
+            exit(-1);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法或运算";
+            exit(-1);
+        }  
+    }
+    if(op.compare("&") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival&right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval&right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval&right->llval);
+        }
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival&right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval&right->ival);
+        }
+
+        if(left->type.compare("double") == 0 || right->type.compare("double")){
+             cout << "浮点数无法且运算";
+             exit(-1);
+        }
+        if(left->type.compare("float") == 0 || right->type.compare("float")){
+            cout << "浮点数无法且运算";
+            exit(-1);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法且运算";
+            exit(-1);
+        }  
+    }
+    if(op.compare("^") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival^right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval^right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval^right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival^right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval^right->ival);
+        }
+
+        if(left->type.compare("double") == 0 || right->type.compare("double")){
+             cout << "浮点数无法异或运算";
+             exit(-1);
+        }
+        if(left->type.compare("float") == 0 || right->type.compare("float")){
+            cout << "浮点数无法异或运算";
+            exit(-1);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法异或运算";
+            exit(-1);
+        }  
+    }
+    if(op.compare("<<") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival<<right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval<<right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval<<right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival<<right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval<<right->ival);
+        }
+
+        if(left->type.compare("double") == 0 || right->type.compare("double")){
+             cout << "浮点数无法左移运算";
+             exit(-1);
+        }
+        if(left->type.compare("float") == 0 || right->type.compare("float")){
+            cout << "浮点数无法左移运算";
+            exit(-1);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法左移运算";
+            exit(-1);
+        }  
+    }
+    if(op.compare(">>") == 0){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            return new Constant("int",left->ival>>right->ival);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->lval>>right->lval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+            return new Constant("long long",left->llval>>right->llval);
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            return new Constant("long",left->ival>>right->lval);
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            return new Constant("long",left->lval>>right->ival);
+        }
+
+        if(left->type.compare("double") == 0 || right->type.compare("double")){
+             cout << "浮点数无法右移运算";
+             exit(-1);
+        }
+        if(left->type.compare("float") == 0 || right->type.compare("float")){
+            cout << "浮点数无法右移运算";
+            exit(-1);
+        }
+
+        if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+            cout << "字符串无法右移运算";
+            exit(-1);
+        }  
+    }
+    
+    }else if(!left && right){ // 先不支持 ++i,仅支持 i++
+        if(op.compare("+") == 0){
+            if(left){
+                if(left->type.compare("int") == 0){
+                    return new Constant("int",+left->ival);
+                }
+                if(left->type.compare("long") == 0){
+                    return new Constant("long",+left->lval);
+                }
+                if(left->type.compare("long long") == 0){
+                    return new Constant("long long",+left->llval);
+                }
+                if(left->type.compare("float") == 0){
+                    return new Constant("float",+left->fval);
+                }
+                if(left->type.compare("double") == 0){
+                    return new Constant("double",+left->dval);
+                } 
+            }
+        }
+        if(op.compare("-") == 0){
+            if(left){
+                if(left->type.compare("int") == 0){
+                    return new Constant("int",-left->ival);
+                }
+                if(left->type.compare("long") == 0){
+                    return new Constant("long",-left->lval);
+                }
+                if(left->type.compare("long long") == 0){
+                    return new Constant("long long",-left->llval);
+                }
+                if(left->type.compare("float") == 0){
+                    return new Constant("float",-left->fval);
+                }
+                if(left->type.compare("double") == 0){
+                    return new Constant("double",-left->dval);
+                } 
+            }
+        }
+        if(op.compare("~") == 0){
+            if(left){
+                if(left->type.compare("int") == 0){
+                    return new Constant("int",~left->ival);
+                }
+                if(left->type.compare("long") == 0){
+                    return new Constant("long",~left->lval);
+                }
+                if(left->type.compare("double") == 0 || right->type.compare("double")){
+                    cout << "浮点数无法求补码运算";
+                    exit(-1);
+                }
+                if(left->type.compare("float") == 0 || right->type.compare("float")){
+                    cout << "浮点数无法求补码运算";
+                    exit(-1);
+                }
+
+                if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+                    cout << "字符串无法求补码运算";
+                    exit(-1);
+                }  
+            }
+        }
+    
+
+    }else if(left && !right){
+        if(op.compare("++") == 0){
+            if(left){
+                if(left->type.compare("int") == 0){
+                    return new Constant("int",left->ival++);
+                }
+                if(left->type.compare("long") == 0){
+                    return new Constant("long",left->lval++);
+                }
+                if(left->type.compare("long long") == 0){
+                    return new Constant("long long",left->llval++);
+                }
+                if(left->type.compare("float") == 0){
+                    return new Constant("float",left->fval++);
+                }
+                if(left->type.compare("double") == 0){
+                    return new Constant("double",left->dval++);
+                } 
+            }
+        }
+        if(op.compare("--") == 0){
+            if(left->type.compare("int") == 0){
+                    return new Constant("int",left->ival--);
+                }
+                if(left->type.compare("long") == 0){
+                    return new Constant("long",left->lval--);
+                }
+                if(left->type.compare("long long") == 0){
+                    return new Constant("long long",left->llval--);
+                }
+                if(left->type.compare("float") == 0){
+                    return new Constant("float",left->fval--);
+                }
+                if(left->type.compare("double") == 0){
+                    return new Constant("double",left->dval--);
+                } 
+        }
+    }
+
+    cout << "运算类型不匹配";
+    exit(-1);
+}
+// 计算表达式结果
+Constant* getOperationResult(Node* exp){
+    switch (exp->type)
+    {
+    case Id:
+        {
+            string name = static_cast<idNode *>(exp)->name;
+            Variable *val = top->LookupIdentifySymbol(name);
+            if(val){
+                return val->value;
+            }else{
+
+            }
+            
+            break;
+        }
+    case Binop:{
+        Node *left = static_cast<binopNode *>(exp)->left;
+        Node *right = static_cast<binopNode *>(exp)->right;
+        Constant *leftV,*rightV;
+        if(left){
+            leftV =  getOperationResult(static_cast<binopNode *>(exp)->left);
+        }
+        if(right){
+            rightV = getOperationResult(static_cast<binopNode *>(exp)->right);
+        }
+        string op = static_cast<binopNode *>(exp)->op;
+        if(leftV && rightV){
+            return getResult(op,leftV,rightV);
+        }else{
+            return NULL;
+        }
+        
+        break;
+    }
+    case constant:{
+        constantNode *value = static_cast<constantNode *>(exp);
+        string type = value->style;
+        Constant *constant;
+        if(type.compare("int") == 0){
+            constant = new Constant("int",value->ival);
+        }
+        if(type.compare("long") == 0){
+            constant = new Constant("long",value->lval);
+        }
+        if(type.compare("long long") == 0){
+            constant = new Constant("long long",value->llval);
+        }
+        if(type.compare("double") == 0){
+            constant = new Constant("double",value->dval);
+        }
+        if(type.compare("float") == 0){
+            constant = new Constant("float",value->dval);
+        }
+        if(type.compare("string") == 0){
+            constant = new Constant("string",value->sval);
+        }
+        return constant;
+        break;
+    }
+    case Call:{
+        callNode* call = static_cast<callNode* >(exp);
+        //return new Constant("int",0);
+        return NULL;
+        //call->arg_list
+        break;
+    }
+    default:
+        break;
+    }
+}
 
 // 解析 语句
 void genrateStmt(Node *stmt){
@@ -103,13 +710,29 @@ void genrateStmt(Node *stmt){
         case Binop:{
             Node *left = static_cast<binopNode *>(stmt)->left;
             Node *right = static_cast<binopNode *>(stmt)->right; 
-            if((static_cast<binopNode *>(stmt)->op).compare(".") == 0){
+            string op = static_cast<binopNode *>(stmt)->op;
+            if(op.compare(".") == 0){
                 // 对于 点运算  比如: 取 stream 中的 变量
-                Node* stream_node = checkIdentify(left);
-                checkStreamIdentify(stream_node,right);
+                //Node* stream_node = checkIdentify(left);
+                //checkStreamIdentify(stream_node,right);
             }else{
                 genrateStmt(left);
                 genrateStmt(right);
+            }
+            // 常量传播
+            if(op.compare("=") == 0){
+                Variable* variable;
+                if(left->type == Binop){
+                    //todo 处理数组
+                }else if(left->type == Id && right->type == Binop){
+                    if(static_cast<binopNode *>(right)->op.compare(".") == 0){
+                        return;
+                    }
+                    variable = top->LookupIdentifySymbol(static_cast<idNode*>(left)->name);
+                    variable->value  = getOperationResult(right);
+                }
+                
+               
             }
             break;
         }
@@ -144,7 +767,7 @@ void genrateStmt(Node *stmt){
         case Operator_:{
             right_opt = static_cast<operatorNode *>(stmt);
             top->InsertOperatorSymbol(static_cast<operatorNode *>(stmt)->operName,static_cast<operatorNode *>(stmt));
-            EnterScopeFn();
+            EnterScopeFn(stmt);
             generatorOperatorNode(static_cast<operatorNode *>(stmt));  //解析 operator 节点
             ExitScopeFn();
             break;
@@ -154,21 +777,21 @@ void genrateStmt(Node *stmt){
             break;
         }
         case While:{
-            EnterScopeFn();
+            EnterScopeFn(stmt);
             genrateStmt(static_cast<whileNode *>(stmt)->exp);
             genrateStmt(static_cast<whileNode *>(stmt)->stmt);
             ExitScopeFn();
             break;
         }
         case Do:{
-            EnterScopeFn();
+            EnterScopeFn(stmt);
             genrateStmt(static_cast<doNode *>(stmt)->exp);
             genrateStmt(static_cast<doNode *>(stmt)->stmt);
             ExitScopeFn();
             break;
         }
         case For:{
-            EnterScopeFn();
+            EnterScopeFn(stmt);
             genrateStmt(static_cast<forNode *>(stmt)->init);
             genrateStmt(static_cast<forNode *>(stmt)->cond);
             genrateStmt(static_cast<forNode *>(stmt)->next);
@@ -185,7 +808,7 @@ void genrateStmt(Node *stmt){
             break;
         }
         case CompositeCall:{
-            compositeNode *actual_comp = top->LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName);
+            compositeNode *actual_comp = S.LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName);
             static_cast<compositeCallNode *>(stmt)->actual_composite = actual_comp;
             // 检查传入的参数是否存在 以及 获得参数值 
             break;
@@ -204,8 +827,8 @@ void genrateStmt(Node *stmt){
     }
 }
 
-// 
-void generateInitNode(Node* init_value){
+// 解析声明语句中的 常量 初始化部分
+Constant* generateInitNode(Node* init_value){
     if(init_value != NULL){
         switch (init_value->type)
         {
@@ -218,11 +841,38 @@ void generateInitNode(Node* init_value){
             }
             default:{
                 genrateStmt(init_value);
+                return getOperationResult(init_value);
                 break;
             }
                 
         }
     }
+}
+
+// 解析声明语句中 数组的初始化
+list<Constant *> *generateInitArray(Node* init_value){
+    idNode *id = (idNode *)init_value;
+    //ArrayConstant *array = new ArrayConstant(id->valType);
+    list<Constant *> *values = new list<Constant *>();
+    if(init_value != NULL){
+        switch (init_value->type)
+        {
+            case Initializer:{
+                list<Node *> init_values = static_cast<initNode *>(init_value)->value;
+                for(auto it = init_values.begin();it!=init_values.end();it++){
+                    values->push_back(generateInitNode(*it));
+                }
+                break;
+            }
+            default:{
+                genrateStmt(init_value);
+                values->push_back(getOperationResult(init_value)); 
+                break;
+            }
+                
+        }
+    }
+    return values;
 }
 // 解析 Declare 节点
 void generateDeclareNode(declareNode* dlcNode){
@@ -231,8 +881,15 @@ void generateDeclareNode(declareNode* dlcNode){
     for(auto it = id_list.begin();it!=id_list.end();it++){
         // 处理初始化值
         Node* init_value = (*it)->init;
-        generateInitNode(init_value); // 解析初始化值
-        top->InsertIdentifySymbol(*it);
+        if((*it)->isArray){
+            ArrayConstant *array = new ArrayConstant((*it)->valType);
+            array->values = *generateInitArray(init_value); // todo
+            Variable *variable = new Variable("array",(*it)->name,array);
+            top->InsertIdentifySymbol(variable);
+        }else{
+             Constant *constant = generateInitNode(init_value); // 解析初始化值
+             top->InsertIdentifySymbol(*it,constant);
+        }
         if(isOperatorState){
             operator_state_identify.insert(make_pair((*it)->name,*it));
         }
@@ -333,7 +990,7 @@ void generatorOperatorNode(operatorNode * optNode){
         }
         
         if(work != NULL){
-            EnterScopeFn();
+            EnterScopeFn(work);
             isOperatorCheck = true; //判断work中是否用到了 外部定义的变量
             generatorBlcokNode(static_cast<blockNode *>(work));
             ExitScopeFn();
@@ -345,12 +1002,14 @@ void generatorOperatorNode(operatorNode * optNode){
         }
 
         //window
-        list<Node *> *win_list = win->win_list;
-        if(win_list != NULL){
-            for(auto it = win_list->begin();it != win_list->end();it++){
-               generatorWindow(static_cast<winStmtNode *>(*it));
-            }
-        }
+        if(win){
+            list<Node *> *win_list = win->win_list;
+            if(win_list != NULL){
+                for(auto it = win_list->begin();it != win_list->end();it++){
+                generatorWindow(static_cast<winStmtNode *>(*it));
+                }
+            }   
+        } 
     }
      
 }
@@ -444,7 +1103,14 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
             symbol_tables[i][j] = NULL;
         }
     }
-    S = new SymbolTable(NULL);
+
+    YYLTYPE *loc = new YYLTYPE();
+    loc->first_column = 0;
+    loc->last_column = __INT_MAX__;
+    loc->first_line = 0;
+    loc->last_line = __INT_MAX__;
+
+    S = *new SymbolTable(NULL,loc);
     symbol_tables[0][0] = &S;
     top = &S; 
     program != NULL;
@@ -457,7 +1123,7 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
             }
             case Composite:{ 
                 top->InsertCompositeSymbol(static_cast<compositeNode *>(it)->compName,static_cast<compositeNode *>(it));
-                EnterScopeFn();/* 进入 composite 块级作用域 */ 
+                EnterScopeFn(it);/* 进入 composite 块级作用域 */ 
                 generateComposite(static_cast<compositeNode *>(it));
                 ExitScopeFn(); /* 退出 composite 块级作用域 */ 
                 break;
@@ -487,20 +1153,52 @@ void generateComposite(compositeNode* composite){
     
 
         //解析 输入输出流 stream 作为参数加入符号表
-        if(inout != NULL){
-            list<Node *> *input_List = inout->input_List; //输入流
-            list<Node *> *output_List = inout->output_List; //输出流
+        if(composite->head->originalInOut){
+
+            ComInOutNode *originalInOut = composite->head->originalInOut;
+            
+            if(inout != NULL){
+            list<Node *> *original_input_List = originalInOut->input_List; //原始输入流
+            list<Node *> *original_output_List = originalInOut->output_List; //原始输出流
+
+            list<Node *> *input_List = inout->input_List; // 流代替后 输入流 
+            list<Node *> *output_List = inout->output_List; //流代替后 输出流
+
+            
+            if(input_List != NULL && original_input_List != NULL){
+                auto original_input = original_input_List->begin();
+                for(auto it = input_List->begin();it!=input_List->end();it++){
+                    top->InsertStreamSymbol(((inOutdeclNode *)*original_input)->id->name ,static_cast<inOutdeclNode *>(*it));
+                    original_input++;
+                }
+            }
+
+            if(output_List != NULL && original_output_List != NULL){
+                auto original_output = original_output_List->begin();
+                for(auto it = output_List->begin();it!=output_List->end();it++){
+                     top->InsertStreamSymbol(((inOutdeclNode *)*original_output)->id->name ,static_cast<inOutdeclNode *>(*it));
+                     original_output++;
+                }  
+            } 
+        } 
+
+        }else{
+            if(inout != NULL){
+            list<Node *> *input_List = inout->input_List; //原始输入流
+            list<Node *> *output_List = inout->output_List; //原始输出流
             if(input_List != NULL){
                 for(auto it = input_List->begin();it!=input_List->end();it++){
-                    top->InsertIdentifySymbol(static_cast<inOutdeclNode *>(*it));
+                    top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
                 }
             }
             if(output_List != NULL){
                 for(auto it = output_List->begin();it!=output_List->end();it++){
-                     top->InsertIdentifySymbol(static_cast<inOutdeclNode *>(*it));
+                     top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
                 }  
             } 
-        } 
+            } 
+        }
+        
 
     // 解析 param
         if(param != NULL){
@@ -528,4 +1226,122 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
                    
         }
     }
+}
+
+
+SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList){
+    top = new SymbolTable();
+
+    generateComposite(composite);
+    
+    compBodyNode *body = composite->body; //body
+    paramNode *param;
+
+    list<Constant*>::iterator paramValue =  paramList.begin();
+    if(body != NULL){
+        param = body->param; // param
+    // 解析 param
+        if(param != NULL){
+            list<Node *> param_list = *(param->param_list);
+            for(auto it = param_list.begin();it != param_list.end();it++){
+                Variable *variable = top->LookupIdentifySymbol(((idNode *)(*it))->name);
+                 variable->value = (*paramValue);
+                /*if(variable->type.compare((*paramValue)->type) == 0){ //todo 参数类型匹配
+                    variable->value = (*paramValue);
+                }else{
+                    cout<<"参数类型不匹配";
+                    exit(-1);
+                }*/ 
+            }
+        }
+        //解析window
+        for (auto it : *body->stmt_List)
+        {
+            if (it->type == Operator_)
+            {
+                operatorNode *exp = ((operatorNode *)it);
+                //cout<<"exp->type ="<<exp->type<<endl;
+                // 解析window
+                
+                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
+                operBodyNode *operBody = exp->operBody;
+                //paramNode *param = operBody->param;
+                list<Node *> stmts = operBody->stmt_list;
+                list<Node *> *win_list = new list<Node *>();
+                /*动态分配生成新的windowNode*/ // 求出具体window大小
+                for (auto it : *operBody->win->win_list)
+                {
+                    Node *winType = ((winStmtNode *)it)->winType;
+                    string winName = ((winStmtNode *)it)->winName;
+                    winStmtNode *copy_winstmt_node;
+                    if(winType->type == Sliding){
+                        slidingNode *sliding = (slidingNode *)winType;
+                        list<Node *> *sliding_list = sliding->arg_list;
+                        list<Node *> *copy_list = new list<Node *>();
+                        for (auto it : *sliding_list){
+                            constantNode *constant_node;
+                            Constant *value = getOperationResult(it);
+                            if(value->type.compare("int") == 0){ //todo
+                                // constant_node = new constantNode(value->type,value->ival);
+                            }
+                            if(value->type.compare("long") == 0){
+                                constant_node = new constantNode(value->type,value->lval);
+                            }
+                            if(value->type.compare("long long") == 0){
+                                constant_node = new constantNode(value->type,value->llval);
+                            }
+                            copy_list->push_back(constant_node);
+                        }
+                        slidingNode *copy_sliding = new slidingNode(copy_list);
+                        copy_winstmt_node = new winStmtNode(winName,copy_sliding);
+                    }
+                    if(winType->type == Tumbling){
+                        slidingNode *sliding = (slidingNode *)winType;
+                        list<Node *> *sliding_list = sliding->arg_list;
+                        list<Node *> *copy_list = new list<Node *>();
+                        for (auto it : *sliding_list){
+                            constantNode *constant_node;
+                            Constant *value = getOperationResult(it);
+                            if(value->type.compare("int") == 0){ //todo
+                                // constant_node = new constantNode(value->type,value->ival);
+                            }
+                            if(value->type.compare("long") == 0){
+                                // constant_node = new constantNode(value->type,value->lval);
+                            }
+                            if(value->type.compare("long long") == 0){
+                                constant_node = new constantNode(value->type,value->llval);
+                            }
+                            copy_list->push_back(constant_node);
+                        }
+                        tumblingNode *copy_sliding = new tumblingNode(copy_list);
+                        copy_winstmt_node = new winStmtNode(winName,copy_sliding);
+                    }
+                    win_list->push_back(copy_winstmt_node);
+                }
+                operBody->win->win_list = win_list;
+                //windowNode *win = new windowNode(win_list);  
+            }   
+        }
+    }
+    top->printSymbolTables();
+    return top;
+}
+
+
+list<Constant *> generateStreamList(list<Node *> *stream_List,int target){
+    list<Constant *> paramList;
+    top = FindRightSymbolTable(target);
+    for(auto it = stream_List->begin();it != stream_List->end();it++){
+        paramList.push_back(getOperationResult((*it)));
+    }
+    return paramList;
+}
+
+list<Constant *> generateStreamList(list<Node *> *stream_List,SymbolTable *s){
+    list<Constant *> paramList;
+    top = s;
+    for(auto it = stream_List->begin();it != stream_List->end();it++){
+        paramList.push_back(getOperationResult((*it)));
+    }
+    return paramList;
 }

@@ -2,9 +2,14 @@
 #include "staticStreamGragh.h"
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
+#include "symboltableGenerate.h"
 
 static StaticStreamGraph *ssg = NULL;
 extern UnfoldComposite *unfold;
+extern list<SymbolTable *> runningStack;
+extern SymbolTable *runningTop;
+extern SymbolTable S;
+
 /*
 * 功能：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
 * 输入参数：composite
@@ -32,7 +37,28 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             else if (exp->type == CompositeCall)
             {
                 debug("compositeCall %s\n",exp->toString().c_str());
+                //runningTop = new SymbolTable(runningTop,exp->loc);
+                
+                list<Node *> *stream_List = ((compositeCallNode *)(exp))->stream_List;
+                list<Constant*> paramList;
+
+                if(stream_List){
+                    if(runningTop){
+                        paramList = generateStreamList(stream_List,runningTop); //获得参数的值
+                    }else{
+                        paramList = generateStreamList(stream_List,exp->loc->first_line-1); //获得参数的值
+                    }
+                }
+
+                runningTop = generateCompositeRunningContext(((compositeCallNode *)(exp))->actual_composite,paramList); //传入参数,并生成 composite 调用的执行上下文环境
+                runningStack.push_back(runningTop); // 调用栈
+
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
+
+                //出栈
+                runningStack.pop_back();
+                runningTop = runningStack.back();
+                
             }
             else if (exp->type == SplitJoin)
             {
@@ -57,7 +83,27 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         case CompositeCall:
         {
             debug("compositeCall %s\n", it->toString().c_str());
+
+            list<Node *> *stream_List = ((compositeCallNode *)(it))->stream_List;
+            list<Constant*> paramList;
+            if(stream_List){
+                if(runningTop){
+                    paramList = generateStreamList(stream_List,runningTop); //获得参数的值
+                }else{
+                    paramList = generateStreamList(stream_List,(*it).loc->first_line-1); //嵌套调用 composite 获得参数的值
+                }
+            }
+            runningTop = generateCompositeRunningContext(((compositeCallNode *)(it))->actual_composite,paramList); //传入参数,并生成 composite调用的执行上下文环境
+            // 确定window大小
+            
+            runningStack.push_back(runningTop); // 调用栈
+
             GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
+
+            //出栈
+            runningStack.pop_back();
+            runningTop = runningStack.back();
+
             break;
         }
         case SplitJoin:
@@ -96,7 +142,15 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     ssg = new StaticStreamGraph();
     streamFlow(mainComposite);
     debug("--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n");
+
+    list<Constant*> paramList;
+    runningTop = &S; //传入参数,并生成 composite 调用的执行上下文环境
+    runningStack.push_back(runningTop); // 调用栈
     GraphToOperators(mainComposite, mainComposite);
+    //出栈
+    runningStack.pop_back();
+    runningTop = runningStack.back();
+
     ssg->SetTopNode();
     /* 将每个composite重命名 */
     ssg->ResetFlatNodeNames();

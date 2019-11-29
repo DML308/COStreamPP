@@ -50,7 +50,7 @@ string constantNode::toString()
 {
     if (style == "double")
         return to_string(dval);
-    else if (style == "integer")
+    else if (style == "long long")
         return to_string(llval);
     else
         return "\"" + sval + "\"";

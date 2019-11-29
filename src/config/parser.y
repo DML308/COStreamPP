@@ -338,7 +338,7 @@ composite.definition:
       composite.head composite.body {
                                           line("Line:%-4d",@1.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
-                                          $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2) ;
+                                          $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2,@1) ;
                                           //S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
                                     }
     ;
@@ -777,7 +777,7 @@ rblock: '}' {
 
 constant:
           doubleConstant    { $$ = new constantNode("double",$1,@1) ; }
-        | integerConstant   { $$ = new constantNode("integer",$1,@1) ; }
+        | integerConstant   { $$ = new constantNode("long long",$1,@1) ; }
         | stringConstant    { $$ = new constantNode("string",*($1),@1) ; }
         ;
 type.specifier:

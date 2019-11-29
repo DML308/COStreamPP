@@ -1,7 +1,9 @@
 #include "compositeFlow.h"
 #include "unfoldComposite.h"
+#include "symboltableGenerate.h"
 extern UnfoldComposite *unfold;
 extern vector<Node *> compositeCall_list;
+extern SymbolTable *runningTop;
 
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void compositeCallFlow(list<Node *> *stmts)
@@ -38,6 +40,8 @@ void compositeCallFlow(list<Node *> *stmts)
             Node *init = for_nd->init;
             expNode *cond = for_nd->cond;
             expNode *next = for_nd->next;
+            string con_op;
+            string con_id;
             list<Node *> *stmts = NULL;
             if (init->type == Decl)
             {
@@ -51,25 +55,92 @@ void compositeCallFlow(list<Node *> *stmts)
                 }
                 initNode *init_nd = (initNode *)(id_nd->init);
                 Node *con_init = init_nd->value.front();
-                assert(con_init->type == constant && ((constantNode *)con_init)->style == "integer");
-                initial = ((constantNode *)con_init)->llval;
+                assert(con_init->type == constant && ((constantNode *)con_init)->style == "long long");
+                initial = ((constantNode *)con_init)->llval; //todo 支持浮点数
+                con_id = id_nd->name;
             }
             else if (init->type == Binop)
             {
-                binopNode *init_b = (binopNode *)init;
-                assert(init_b->right->type == constant);
-                constantNode *con_init = (constantNode *)(init_b->right);
-                assert(con_init->style == "integer");
-                initial = con_init->llval;
+                binopNode *init_b = (binopNode *)(init);
+                Node *left = init_b->left;
+                if(init_b->op.compare("=") == 0){
+                    con_id = ((idNode *)left)->name;
+                }
+                Constant *con_init = getOperationResult(init_b->right);
+                //binopNode *init_b = (binopNode *)init;
+                //assert(init_b->right->type == constant);
+                //constantNode *con_init = (constantNode *)(init_b->right);
+                //assert(con_init->style == "integer");
+                if(con_init->type.compare("int") == 0){
+                    initial = con_init->ival;
+                }
+                if(con_init->type.compare("long") == 0){
+                    initial = con_init->lval;
+                }
+                if(con_init->type.compare("long long") == 0){
+                    initial = con_init->llval;
+                }
             }
             /* 获取cond值 */
             if (cond->type == Binop)
             {
                 binopNode *cond_b = (binopNode *)cond;
-                assert(cond_b->right->type == constant);
-                constantNode *con_cond = (constantNode *)(cond_b->right);
-                assert(con_cond->style == "integer");
-                condition = con_cond->llval;
+                //assert(cond_b->right->type == constant); todo
+                //assert(con_cond->style == "integer");
+                Constant *con_cond = getOperationResult(cond_b->right);
+                if(con_cond->type.compare("int") == 0){
+                    condition = con_cond->ival;
+                }
+                if(con_cond->type.compare("long") == 0){
+                    condition = con_cond->lval;
+                }
+                if(con_cond->type.compare("long long") == 0){
+                    condition = con_cond->llval;
+                }
+                /*if(condition_variable->type.compare("double") == 0){ // TODO 支持浮点数
+                    condition = condition_variable->value->dval;
+                }
+                if(condition_variable->type.compare("float") == 0){
+                    condition =  condition_variable->value->dval;
+                }
+                if(condition_variable->type.compare("string") == 0){
+                    cout<<"string is not suitable in for";
+                    exit(-1);
+                }
+                /*if(cond_b->right->type == constant){
+                    constantNode *con_cond = (constantNode *)(cond_b->right);
+                    condition = con_cond->llval;
+                }else if(cond_b->right->type == Id){
+                    //获得变量对应的值
+                    idNode *con_cond = (idNode *)(cond_b->right);
+                    Variable *condition_variable = runningTop->LookupIdentifySymbol(con_cond->name);
+                    if(condition_variable->type.compare("int") == 0){
+                        condition = condition_variable->value->llval;
+                    }
+                    if(condition_variable->type.compare("long") == 0){
+                        condition = condition_variable->value->llval;
+                    }
+                    if(condition_variable->type.compare("long long") == 0){
+                        condition = condition_variable->value->llval;
+                    }
+                    if(condition_variable->type.compare("integer") == 0){ // attention!
+                        condition = condition_variable->value->llval;
+                    }
+                    /*if(condition_variable->type.compare("double") == 0){
+                        condition = condition_variable->value->dval;
+                    }
+                    if(condition_variable->type.compare("float") == 0){
+                        condition =  condition_variable->value->dval;
+                    }
+                    if(condition_variable->type.compare("string") == 0){
+                        cout<<"string is not suitable in for";
+                        exit(-1);
+                    }
+                }else if(cond_b->right->type = Binop){
+
+                }
+                */
+                con_op = cond_b->op;
                 if (cond_b->op == "<" || cond_b->op == ">")
                     condition += 0;
                 else
@@ -85,40 +156,190 @@ void compositeCallFlow(list<Node *> *stmts)
             if (next->type == Binop)
             {
                 binopNode *next_b = ((binopNode *)next);
-                expNode *right = next_b->right;
-                assert(right->type == constant);
-                long long step = ((constantNode *)right)->llval;
-                if (next_b->op == "*=")
-                {
-                    int cnt = 0;
-                    if (initial < condition)
-                    {
-                        for (int i = initial; i < condition; i *= step)
-                            cnt++;
-                        initial = 0;
-                        condition = cnt;
+                Node *right = next_b->right;
+                string op;
+                long long step;
+
+                if(right->type == constant){
+                    Constant *step_v = getOperationResult(right);
+                    if(step_v->type.compare("int") == 0){ //todo 支持浮点数
+                        step = step_v->ival;
                     }
-                    else
-                    {
-                        initial = 0;
-                        condition = 0;
+                    if(step_v->type.compare("long") == 0){
+                        step = step_v->lval;
                     }
+                    if(step_v->type.compare("long long") == 0){
+                        step = step_v->llval;
+                    }
+                    op = next_b->op;
+                }else if(right->type == Binop){ // 解析 i = i + x;
+                    Node *next_left = ((binopNode *)right)->left;
+                    Node *next_right = ((binopNode *)right)->right;
+                    Constant *step_v;
+                    if(((idNode *)next_left)->name.compare(con_id) != 0){
+                        step_v = getOperationResult(next_left);
+                    }else{
+                        step_v = getOperationResult(next_right);
+                    }
+                    step = step_v->llval;// 只支持整型
+                    op = ((binopNode *)right)->op;
                 }
-                else if (next_b->op == "/=")
-                {
-                    int cnt = 0;
-                    if (initial > condition)
+                if(con_op.compare("<") == 0 || con_op.compare("<=") == 0){
+                    if (op == "*=" || op == "*")
                     {
-                        for (int i = initial; i < condition; i /= step)
-                            cnt++;
-                        initial = 0;
-                        condition = cnt;
+                        int cnt = 0;
+                        if (initial < condition)
+                        {
+                            for (int i = initial; i < condition; i *= step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            initial = 0;
+                            condition = 0;
+                        }
                     }
-                    else
+                    else if (op == "/=" || op == "/")
                     {
+                        int cnt = 0;
+                        if (initial < condition && step < 1)
+                        {
+                            for (int i = initial; i < condition; i /= step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "+=" || op == "+"){
+                        int cnt = 0;
+                        if (initial < condition && step > 0)
+                        {
+                            for (int i = initial; i < condition; i += step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "-=" || op == "-"){
+                        int cnt = 0;
+                        if (initial < condition && step < 0) //todo 未考虑step为负
+                        {
+                            for (int i = initial; i < condition; i -= step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }       
+                }else{
+                    if (op == "*=" || op == "*")
+                    {
+                        int cnt = 0;
+                        if (initial > condition && step < 1)
+                        {
+                            for (int i = initial; i > condition; i *= step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            initial = 0;
+                            condition = 0;
+                        }
+                    }
+                    else if (op == "/=" || op == "/")
+                    {
+                        int cnt = 0;
+                        if (initial > condition)
+                        {
+                            for (int i = initial; i > condition; i /= step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "+=" || op == "+"){
+                        int cnt = 0;
+                        if (initial > condition && step < 0)
+                        {
+                            for (int i = initial; i > condition; i += step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "-=" || op == "-"){
+                        int cnt = 0;
+                        if (initial > condition && step > 0) //todo 未考虑step为负
+                        {
+                            for (int i = initial; i > condition; i -= step)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    } 
+                }
+                
+            }else if(next->type == Unary){
+                unaryNode *next_u = (unaryNode *)(next);
+                int cnt = 0;
+                if(next_u->op.compare("PREINC") == 0){
+                    if(con_op.compare("<") == 0 || con_op.compare("<=") == 0){
+                        if(initial < condition){
+                            for (int i = initial; i < condition; i ++)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }else{
+                            cout << " infinite loop " << endl;
+                            exit(-1);
+                        }
+                    }else{
                         cout << " infinite loop " << endl;
+                        exit(-1);
                     }
-                }
+                }else if(next_u->op.compare("POSTINC") == 0){
+                    if(con_op.compare(">") == 0 || con_op.compare(">=") == 0){
+                        if(initial > condition){
+                            for (int i = initial; i > condition; i--)
+                                cnt++;
+                            initial = 0;
+                            condition = cnt;
+                        }else{
+                            cout << " infinite loop " << endl;
+                            exit(-1);
+                        } 
+                    }else{
+                        cout << " infinite loop " << endl;
+                        exit(-1);
+                    }
+                }    
             }
             /* for循环中只有一条语句 */
             if (for_nd->stmt->type != Block)
@@ -126,6 +347,7 @@ void compositeCallFlow(list<Node *> *stmts)
                 Node *for_stmts = for_nd->stmt;
                 if (for_stmts->type == IfElse)
                 {
+                        // todo
                 }
                 else if (for_stmts->type == Add)
                 {
