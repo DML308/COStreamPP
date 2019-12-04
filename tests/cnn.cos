@@ -17,7 +17,7 @@ composite Main() {
     };
     Out = squential (In, Y) ((1, 28, 28)) {
         // filters, kernel_size, strides, padding, activation, use_bias  
-        add Conv2d(10, (3, 3), (1, 1), (0, 0), 'relu', false);git
+        add Conv2d(10, (3, 3), (1, 1), (0, 0), 'relu', false);
         add Conv2d(5, (2, 2), (1, 1), (0, 0), 'relu', false);
     };
     sink(Out) {

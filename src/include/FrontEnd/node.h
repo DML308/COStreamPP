@@ -701,14 +701,14 @@ class operatorNode : public Node
     void print() {}
     string toString();
 };
-class tumpleNode : public Node
+class tupleNode : public Node
 {
   public:
-    list<Node *> *tumpleList;
-    tumpleNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): tumpleList(list) {
-      this->type = Streams;
+    list<Node *> *tupleList;
+    tupleNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): tupleList(list) {
+      this->type = Tuple;
     }
-    ~tumpleNode() {}
+    ~tupleNode() {}
     void print() {}
     string toString() {}
 };
@@ -972,8 +972,6 @@ class layerNode : public Node
     layerNode *prevLayer;
     layerNode *nextLayer;
     int level;
-    // pre dim
-    // next dim
     layerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
@@ -986,8 +984,74 @@ class layerNode : public Node
       this->nextLayer = NULL;
       this->level = 0;
     }
+    layerNode () {}
     ~layerNode() {}
     void print() {}
     string toString() {}
+};
+class conv2DLayerNode : public layerNode
+{
+  public:
+    long long filters; // 输出空间的维度 （即卷积中滤波器的输出数量）
+    long long domension; // 对于conv2D, 为2
+    long long depth; // 输入空间的维度
+    vector<long long> kernel_size; // 2D 卷积窗口的宽度和高度
+    vector<long long> strides; // 卷积沿宽度和高度方向的步长
+    vector<long long> paddings; // 扩展
+    vector<long long> *size; // 输出特征图的尺寸
+    conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
+    {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerName = layerName;
+      this->bp_composite = NULL;
+      this->fp_composite = NULL;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->level = 0;
+      this->domension = 2;
+      auto iter = arg_list->begin();
+      // filters
+      this->filters = ((constantNode *)(*iter))->llval;
+      // kernel_size
+      iter++;
+      if ((*iter) -> type == Tuple) {
+        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
+          this->kernel_size.push_back(((constantNode *)(size))->llval);
+        }
+      } else {
+        for (int i = 0; i < this->domension; i++) {
+          this->kernel_size.push_back(((constantNode *)(*iter))->llval);
+        }
+      }
+      // strides
+      iter++;
+      if ((*iter) -> type == Tuple) {
+        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
+          this->strides.push_back(((constantNode *)(size))->llval);
+        }
+      } else {
+        for (int i = 0; i < this->domension; i++) {
+          this->strides.push_back(((constantNode *)(*iter))->llval);
+        }
+      }
+      //paddings
+      iter++;
+      if ((*iter) -> type == Tuple) {
+        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
+          this->paddings.push_back(((constantNode *)(size))->llval);
+        }
+      } else {
+        for (int i = 0; i < this->domension; i++) {
+          this->paddings.push_back(((constantNode *)(*iter))->llval);
+        }
+      }
+      this->size = NULL;
+    }
+    ~conv2DLayerNode() {}
+    void print() {}
+    string toString() {}
+    void init(squentialNode* squential);
 };
 #endif

@@ -53,32 +53,32 @@ Node* Node::copyNode(Node * u) {
             Node *right = copyNode(static_cast<binopNode *>(u)->right);
             binopNode *tmp = new binopNode((expNode *)left, static_cast<binopNode *>(u)->op, (expNode *)right);
             if (right->type == Operator_) {
-            if (left->type == Id) {
-                ((operatorNode *)right)->outputs = new list<Node *>({left});
-            } else if (left->type == Streams) {
-                ((operatorNode *)right)->outputs = ((streamsNode *)left)->streamList;
-            } else {
-                assert("wrong output stream");
-            }
+                if (left->type == Id) {
+                    ((operatorNode *)right)->outputs = new list<Node *>({left});
+                } else if (left->type == Tuple) {
+                    ((operatorNode *)right)->outputs = ((tupleNode *)left)->tupleList;
+                } else {
+                    assert("wrong output stream");
+                }
             } else if (right->type == CompositeCall) {
-            if (left->type == Id) {
-                ((compositeCallNode *)right)->outputs = new list<Node *>({left});
-            } else if (left->type == Streams) {
-                ((compositeCallNode *)right)->outputs = ((streamsNode *)left)->streamList;
-            } else {
-                assert("wrong output stream");
-            }
+                if (left->type == Id) {
+                    ((compositeCallNode *)right)->outputs = new list<Node *>({left});
+                } else if (left->type == Tuple) {
+                    ((compositeCallNode *)right)->outputs = ((tupleNode *)left)->tupleList;
+                } else {
+                    assert("wrong output stream");
+                }
             }
             return tmp;
             break;
         }
-        case Streams: {
-            list<Node *> *streamList = new list<Node *>();
-            for (auto it=(static_cast<streamsNode *>(u)->streamList)->begin(); it != (static_cast<streamsNode *>(u)->streamList)->end(); it++) {
-                streamList->push_back(copyNode(*it));
+        case Tuple: {
+            list<Node *> *tupleList = new list<Node *>();
+            for (auto it=(static_cast<tupleNode *>(u)->tupleList)->begin(); it != (static_cast<tupleNode *>(u)->tupleList)->end(); it++) {
+                tupleList->push_back(copyNode(*it));
             }
-            Node* newStreams = new streamsNode(streamList);
-            return newStreams;
+            Node* newTuple = new tupleNode(tupleList);
+            return newTuple;
         }
         case Paren:
         {
@@ -534,5 +534,20 @@ string funcBodyNode::toString()
             str += it->toString() + "\n";
     }
     return str;
+}
+// 根据上一层初始化本层输出特征图的尺寸和输入空间的维度
+void conv2DLayerNode::init (squentialNode* squential) {
+    vector<long long>* oldSize; 
+    if (!prevLayer && this->level == 1) {
+        for(auto iter: *(squential->arg_list)) {
+            oldSize->push_back(((constantNode *)iter)->llval);
+        }
+    } else {
+        oldSize = ((conv2DLayerNode *)(this->prevLayer))->size;
+    }
+    this->depth = oldSize->at(0);
+    for(int i = 1; i < this->domension; i++) {
+        this->size->push_back((oldSize->at(i) + 2 * this->paddings[i] - this->kernel_size[i]) / this->strides[i] + 1);
+    }
 }
 

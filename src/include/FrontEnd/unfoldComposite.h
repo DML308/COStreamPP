@@ -35,11 +35,16 @@ class UnfoldComposite
     compositeNode* makeBackComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeLossComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* MakeDenseInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* MakeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDenseInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeActivationOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeLossOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* MakeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DComp(layerNode *layer);
+    Node* makeConv2DCompBody(layerNode *layer);
+    operatorNode* makeConv2DOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif
