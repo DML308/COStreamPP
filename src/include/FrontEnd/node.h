@@ -864,6 +864,7 @@ class compositeCallNode : public Node
         this->type = CompositeCall;
         this->compName = compName;
         this->inputs = inputs;
+        this->outputs = outputs;
         this->actual_composite = actual_composite;
     }
     ~compositeCallNode() {}
@@ -920,8 +921,9 @@ class operatorNode : public Node
     int level;
     int version;
     bool hasState;
-    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
+    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody,YYLTYPE loc = YYLTYPE())
     {
+        this->setLoc(loc);
         this->type = Operator_;
         this->outputs = outputs;
         this->operName = operName;

@@ -659,11 +659,11 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-4d",@1.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4) ; 
+                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4,@1) ; 
                   //error("%s",((operatorNode*)$$)->operName.c_str());
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5) ; 
+                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5,@1) ; 
             }
         | IDENTIFIER '('  ')'  '(' ')'  { 
                   line("Line:%-3d",@1.first_line);

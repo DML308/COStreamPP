@@ -143,10 +143,20 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     streamFlow(mainComposite);
     debug("--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n");
 
-    list<Constant*> paramList;
+    //list<Constant*> paramList;
     runningTop = &S; //传入参数,并生成 composite 调用的执行上下文环境
     runningStack.push_back(runningTop); // 调用栈
+
+    //compositeCallNode *mainCompositeCall = new compositeCallNode(NULL,"main",NULL,NULL,mainComposite);
+    list<Constant*> paramList = list<Constant*>();
+    runningTop = generateCompositeRunningContext(mainComposite,paramList); //传入参数,并生成 composite 调用的执行上下文环境
+    runningStack.push_back(runningTop); // 调用栈
+
+
     GraphToOperators(mainComposite, mainComposite);
+
+    runningStack.pop_back();
+    runningTop = runningStack.back();
     //出栈
     runningStack.pop_back();
     runningTop = runningStack.back();

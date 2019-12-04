@@ -1168,7 +1168,7 @@ void generateComposite(compositeNode* composite){
             if(input_List != NULL && original_input_List != NULL){
                 auto original_input = original_input_List->begin();
                 for(auto it = input_List->begin();it!=input_List->end();it++){
-                    top->InsertStreamSymbol(((inOutdeclNode *)*original_input)->id->name ,static_cast<inOutdeclNode *>(*it));
+                    //top->InsertStreamSymbol(((inOutdeclNode *)*original_input)->id->name ,static_cast<inOutdeclNode *>(*it));
                     original_input++;
                 }
             }
@@ -1176,7 +1176,7 @@ void generateComposite(compositeNode* composite){
             if(output_List != NULL && original_output_List != NULL){
                 auto original_output = original_output_List->begin();
                 for(auto it = output_List->begin();it!=output_List->end();it++){
-                     top->InsertStreamSymbol(((inOutdeclNode *)*original_output)->id->name ,static_cast<inOutdeclNode *>(*it));
+                     //top->InsertStreamSymbol(((inOutdeclNode *)*original_output)->id->name ,static_cast<inOutdeclNode *>(*it));
                      original_output++;
                 }  
             } 
@@ -1188,12 +1188,13 @@ void generateComposite(compositeNode* composite){
             list<Node *> *output_List = inout->output_List; //原始输出流
             if(input_List != NULL){
                 for(auto it = input_List->begin();it!=input_List->end();it++){
-                    top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
+                    
+                    //top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
                 }
             }
             if(output_List != NULL){
                 for(auto it = output_List->begin();it!=output_List->end();it++){
-                     top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
+                     //top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
                 }  
             } 
             } 
@@ -1230,7 +1231,7 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 
 
 SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList){
-    top = new SymbolTable();
+    top = new SymbolTable(S);
 
     generateComposite(composite);
     

@@ -155,8 +155,11 @@ composite Main()
 		}
 	};
 	CDFT = pipeline(Source){
-	    add SecondSource(N);
-		add FFTReorder(N);
+		if(N>16){
+			add SecondSource(N);
+		}else{
+			add FFTReorder(N);
+		}
 		add CombineDFT(N);
 	};
 	FloatSink(CDFT)

@@ -1,0 +1,134 @@
+int bounds = 8;
+double pi = 3.141592654;
+
+composite LowPassFilter(output stream<double x> Out,input stream<double x> In){
+    param
+        double g,double cutoffFreq,int N;
+    
+    Out = LowPassFilterX(In){
+        double h[N];    
+        init {
+            int OFFSET = N/2;
+            int i,idx;
+            for(i=0;i<N;i++){
+                idx = i + 1;
+                if(idx == OFFSET){
+                    h[i] = g * cutoffFreq / pi;
+                }else{
+                h[i] = g * sin*(cutoffFreq * (idx - OFFSET)) / (pi * (id-OFFSET));
+                }
+            }
+        }
+        work{
+            double sum = 0;
+            int i;
+            for(i=0;i<N;i++){
+                sum += h[i]*In[i].x;
+            }
+            Out[0].x = sum;
+        }
+        window{
+            In sliding(N,1);
+        }
+    };
+}
+
+composite HighPassFilter(output stream<double x> Out,input stream<double x> In){
+    param
+    double g,double ws,int N;
+
+    Out = HighPassFilterX(In){
+        double h[N];
+        double cutoffFreg;  
+        init {
+            int OFFSET = N/2;
+            int i,idx,sign;
+            cutoffFreg = pi - ws;
+            for(i=0;i<N;i++){
+                idx = i + 1;
+                sign = ((i%2)==0?1:-1);
+                if(idx == OFFSET){
+                    h[i] = g * cutoffFreq / pi;
+                }else{
+                    h[i] = g * sin*(cutoffFreq * (idx - OFFSET)) / (pi * (id-OFFSET));
+                }
+            }
+        }
+        work{
+            double sum = 0;
+            int i;
+            for(i=0;i<N;i++){
+                sum += h[i]*In[i].x;
+            }
+            Out[0].x = sum;
+        }
+        window{
+            In sliding(N,1);
+        }     
+    };
+}
+
+composite Adder(output stream<double x> Out,input stream<double x> In){
+    param
+        int M;
+
+    Out = Adder(In){
+        work{
+            double sum = 0;
+            int i;
+            for(i=0;i<N;i++){
+                sum += In[i].x;
+            }
+            Out[0].x = sum;
+        }
+        window{
+            In sliding(M,M);
+            Out tumbling(1);    
+        }     
+    };
+}
+
+composite BandStopFilter(output stream<double x> Out,input stream<double x> In){
+    param
+        double gain,double wp,double ws,int numSamples;
+
+    Out = splitjoin(In){
+        split duplicate();
+        add splitjoin{
+            split duplicate();
+            add LowPassFilter(gain,wp,numSamples);
+            add LowPassFilter(gain,wp,numSamples);
+            join roundrobin();
+        }
+        add Adder(2);
+        join roundrobin();
+    };
+}
+
+
+
+composite Main(){
+    stream<double x> Source,FBP;
+    Source = DataSource(){
+        int n = 0;
+        double w1 = pi/10.0;
+        double w2 = pi/20.0;
+        double w3 = pi/30.0;
+        work{
+            Source[0].x = (cos(w1*n)+cos(w2*n)+cos(sw*n));
+            n++;
+        }
+        window {
+            Source tumbling(1);
+        }
+    };
+    FBP = BandStopFilter(Source)(1,(1*pi/M),((1+1)*pi/M),128);
+    FloatSink(FBP){
+        work{
+            println(FBP[0].x);
+        }
+        window {
+            FBP tumbling(1);
+        }
+    };
+}

@@ -162,6 +162,9 @@ composite Main()
 		{
 			println(CDFT[0].x);
 		}
+		window{
+			CDFT 
+		}
 	};
 }
 

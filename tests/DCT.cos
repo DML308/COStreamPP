@@ -24,10 +24,10 @@ init{
 }
 work
 {
-	//Out[0].x = From[i++];
-	float x = pow(3, i++);
-	int   y = x;//(int) x;
-	Out[0].x = y%75;
+	Out[0].x = From[i++];
+	//float x = pow(3, i++);
+	//int   y = x;//(int) x;
+	//Out[0].x = y%75;
 }
 window{
 	Out tumbling(1);

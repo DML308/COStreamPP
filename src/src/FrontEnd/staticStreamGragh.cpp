@@ -26,10 +26,13 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         //将“有向边”与其“下”端operator绑定
         mapEdge2DownFlatNode.insert(make_pair(((idNode *)it)->name, dest));
         auto pos = mapEdge2UpFlatNode.find(((idNode *)it)->name);
-        assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator
+        assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator todo
+        
         src = pos->second;
         src->AddOutEdges(dest);
         dest->AddInEdges(src);
+       
+        
     }
     //cout << "flatNode:\t" <<dest->toString() << endl<<endl;
     //cout << "mapEdge2DownFlatNode.size()= " << mapEdge2DownFlatNode.size() << endl;

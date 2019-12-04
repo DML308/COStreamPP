@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     // 生成符号表 语义检查 常量传播
     generateSymbolTable(Program,symboltables);
     printSymbolTable(symboltables);
+    
     /* 找到Main composite */
     SemCheck::findMainComposite(Program);
     // (4) 打印抽象语法树
