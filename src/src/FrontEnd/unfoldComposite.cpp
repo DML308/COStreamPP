@@ -5,7 +5,7 @@
 extern SymbolTable S;
 vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
 
-Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
+Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<constantNode *> *arguments, list<Node *> *outputs,int style)
 {
     list<Node *> *stmts = new list<Node *>();
     Node *work = NULL, *for_node = NULL;
@@ -36,19 +36,29 @@ Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<Node *> *ar
         left->arg_list.push_back(id_i);
         idNode *right = new idNode(static_cast<idNode *>(input)->name);
         right->isArray = 1;
+
         right->arg_list.push_back(next_j);
+        
 
         stmt = new binopNode((expNode *)left, "=", (expNode *)right);
         for_node = new forNode(init, (expNode *)cond, (expNode *)next_i, stmt);
 
         stmts->push_back(for_node);
+
+        if(style == 1){
+            
+        }
+        if(style == 0){
+            binopNode *reset_j = new binopNode((expNode *)id_j,"=",(expNode *)const_zero);
+            stmts->push_back(reset_j);
+        }
         pos++;
     }
     work = new blockNode(stmts);
     return work;
 }
 
-Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<Node *> *arguments, list<Node *> *outputs)
+Node *UnfoldComposite::MakeJoinWork(list<Node *> *inputs, list<constantNode *> *arguments, list<Node *> *outputs)
 {
     list<Node *> *stmts = new list<Node *>();
     Node *work = NULL, *for_node = NULL;
@@ -103,7 +113,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *inputs = new list<Node *>();
     list<Node *> *win_stmt = new list<Node *>();
-    list<Constant *> *arguments_value = new list<Constant *>(); // 存储常量传播后的值
+    list<constantNode *> *arguments_value = new list<constantNode *>(); // 存储常量传播后的值
     assert(input->type == Id);
     string input_name = ((idNode *)input)->name;
     int len = compositeCall_list.size();
@@ -118,15 +128,17 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     for (auto it : *(arguments))
     {
         Constant *value = getOperationResult(it);
-        Constant *copy;  //将整型都转化为 long long
+
+        constantNode *copy;  //将整型都转化为 long long
         if(value->type.compare("int") == 0){
-            copy = new Constant("long long",(long long)value->ival);
+            copy = new constantNode("long long",(long long)value->ival);
+            
         }
         if(value->type.compare("long") == 0){
-            copy = new Constant("long long",(long long)value->lval);
+            copy = new constantNode("long long",(long long)value->lval);
         }
         if(value->type.compare("long long") == 0){
-            copy = value;
+            copy = new constantNode("long long",value->llval);
         }
         if(value->type.compare("double") == 0){
             cout<<"splitjoin 指定每一个数据流大小只能为整型,现在是double";
@@ -140,6 +152,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
             cout<<"splitjoin 指定每一个数据流大小只能为整型,现在是string";
             exit(-1);
         }
+         
         arguments_value->push_back(copy);
     }
 
@@ -147,11 +160,11 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     if (arguments_value->size() == 0)
     {
         //constantNode *nd = new constantNode("long long", (long long)1);
-        Constant *constant = new Constant("long long",(long long)1);
+        constantNode *constant = new constantNode("long long",(long long)1);
         //arguments->push_back(nd);
         arguments_value->push_back(constant);
     }
-    Constant *arg = arguments_value->front();
+    constantNode *arg = arguments_value->front();
 
     if (arguments_value->size() == 1)
     {
@@ -171,13 +184,13 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
         outputs->push_back(id);
         constantNode *argument = new constantNode("long long",it->llval); //将得到的常量值重新封装为语法树的一个节点
         /* 此处可以抽出写为函数 */
-        if (style == 1)
+        if (style == 1)//roundrobin 分割
         {
             tumblingNode *tum = new tumblingNode(new list<Node *>({argument}));
             winStmtNode *win = new winStmtNode(tempName, tum);
             win_stmt->push_back(win);
         }
-        else if (style == 0)
+        else if (style == 0) //duplicate 重复
         {
             slidingNode *slid = new slidingNode(new list<Node *>({argument, argument}));
             winStmtNode *win = new winStmtNode(tempName, slid);
@@ -204,7 +217,7 @@ operatorNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> *argu
     }
     // cout<<"win_stmt.size()= "<<win_stmt->size()<<endl;
     // cout<<"outputs.size()= "<<outputs->size()<<endl;
-    work = MakeRoundrobinWork(inputs, arguments, outputs);
+    work = MakeRoundrobinWork(inputs, arguments_value, outputs,style);
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName[style], inputs, body);
@@ -226,7 +239,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     long long sum = 0;
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *win_stmt = new list<Node *>();
-    list<Constant *> *arguments_value = new list<Constant *>(); // 存储常量传播后的值
+    list<constantNode *> *arguments_value = new list<constantNode *>(); // 存储常量传播后的值
     //当arguments为空，即分配内存
     if (arguments == NULL)
         arguments = new list<Node *>();
@@ -237,15 +250,15 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     for (auto it : *(arguments))
     {
         Constant *value = getOperationResult(it);
-        Constant *copy;  //将整型都转化为 long long
+        constantNode *copy;  //将整型都转化为 long long
         if(value->type.compare("int") == 0){
-            copy = new Constant("long long",(long long)value->ival);
+            copy = new constantNode("long long",(long long)value->ival);
         }
         if(value->type.compare("long") == 0){
-            copy = new Constant("long long",(long long)value->lval);
+            copy = new constantNode("long long",(long long)value->lval);
         }
         if(value->type.compare("long long") == 0){
-            copy = value;
+            copy = new constantNode("long long",value->llval);
         }
         if(value->type.compare("double") == 0){
             cout<<"splitjoin 指定每一个数据流大小只能为整型,现在是double";
@@ -268,11 +281,11 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     if (arguments_value->size() == 0)
     {
         //constantNode *nd = new constantNode("long long", (long long)1);
-        Constant *constant = new Constant("long long",(long long)1);
+        constantNode *constant = new constantNode("long long",(long long)1);
         //arguments->push_back(nd);
         arguments_value->push_back(constant);
     }
-    Constant *arg = arguments_value->front();
+    constantNode *arg = arguments_value->front();
 
     if (arguments_value->size() == 1)
     {
@@ -301,7 +314,7 @@ operatorNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> *inpu
     winStmtNode *win = new winStmtNode(output_name, tum);
     win_stmt->push_back(win);
     /*end*/
-    work = MakeJoinWork(inputs, arguments, outputs);
+    work = MakeJoinWork(inputs, arguments_value, outputs);
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName, inputs, body);
@@ -415,7 +428,10 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     list<Node *> *tempList = new list<Node *>();
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
     /* arg_list表示split roundrobin(size);的size参数列表 */
-    list<Node *> *arg_list = ((roundrobinNode *)node->split->dup_round)->arg_list;
+    expNode *exp = ((duplicateNode *)(node->split->dup_round))->exp;
+    list<Node *> *arg_list = new list<Node*>();
+    arg_list->push_back(exp);
+    
     list<Node *> *inputs_split = node->inputs;
     list<Node *> *outputs = node->outputs;
     list<Node *> *inputs_join = new list<Node *>();

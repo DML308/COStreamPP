@@ -161,7 +161,10 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     }
                     else if (type == Sliding)
                     {
-                        flatNode->outPushWeights[j] = 0;
+                        //todo 
+                        Node *winType = ((winStmtNode *)it)->winType;
+                        Node *val = ((slidingNode *)winType)->arg_list->back();
+                        flatNode->outPushWeights[j] = ((constantNode *)val)->llval;
                     }
                 }
             }
