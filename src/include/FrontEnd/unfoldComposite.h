@@ -41,10 +41,11 @@ class UnfoldComposite
     operatorNode* makeLossOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeConv2DComp(layerNode *layer);
-    Node* makeConv2DCompBody(layerNode *layer);
-    operatorNode* makeConv2DOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeConv2DInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeConv2DWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeStream(string name, string type);
+    compositeNode* makeConv2DLayer(layerNode *layer);
+    Node* makeConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DKernelInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DKernelWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif

@@ -643,7 +643,7 @@ operatorNode* UnfoldComposite::makeInputOperator(layerNode *layer, list<Node *> 
     return new operatorNode(outputs, operName, inputs, body);
 }
 
-operatorNode* UnfoldComposite::makeConv2DOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+Node* UnfoldComposite::makeConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     string operName = "conv2D";
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
@@ -676,8 +676,8 @@ operatorNode* UnfoldComposite::makeConv2DOperator(layerNode *layer, list<Node *>
     winStmtNode *win3 = new winStmtNode(((idNode *)(*(++outputIter)))->name, tumb);
     win_stmt->push_back(win3);
     window = new windowNode(win_stmt);
-    init = makeConv2DInit(layer, inputs, outputs);
-    work = makeConv2DWork(layer, inputs, outputs);
+    init = makeConv2DKernelInit(layer, inputs, outputs);
+    work = makeConv2DKernelWork(layer, inputs, outputs);
     body = new operBodyNode(NULL, init, work, window);
     return new operatorNode(outputs, operName, inputs, body);
 }
@@ -695,8 +695,8 @@ Node* getDimVal (layerNode* layer, int dim) {
     }
     return val;
 }
-
-Node* UnfoldComposite::makeConv2DInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+// 根据传入composite的filters_index初始化参数,而不是对该层所有的参数初始化
+Node* UnfoldComposite::makeConv2DKernelInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     list<Node *> *stmts = new list<Node *>();
     Node *init = NULL;
     string weightName = "_weight_" + to_string(layer-> level);
@@ -757,57 +757,68 @@ Node* UnfoldComposite::makeConv2DInit(layerNode *layer, list<Node *> *inputs, li
     return init;
 }
 
-Node* UnfoldComposite::makeConv2DWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+Node* UnfoldComposite::makeConv2DKernelWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     Node* work = NULL;
 }
 
-Node* UnfoldComposite::makeConv2DComp(layerNode *layer) {
-    Node *compHead = NULL, *compBody = NULL, *comp = NULL, *compInOut = NULL;
+compositeNode* UnfoldComposite::makeConv2DLayer(layerNode *layer) {
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     // composite.head.inout.member.list:
     list<Node *> *inputs = new list<Node *>(), *outputs = new list<Node *>();
-    idNode *streamId = new idNode("x");
-    primNode *valTypeDouble = new primNode("double");
-    streamId->valType = valTypeDouble->name;
-    strdclNode *strDcl  = new strdclNode(streamId);
-    // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2)); ???
-    idNode *inputId = new idNode("input");
-    // top->put(*($2),id); ??? 符号表
-    Node* input = new inOutdeclNode(strDcl, inputId);
+    Node* input = makeStream("input", "double");
     inputs->push_back(input);
-    idNode *outputId1 = new idNode("output1");
-    Node* output1 = new inOutdeclNode(strDcl, outputId1);
+    Node* output1 = makeStream("outputs1", "double");
     outputs->push_back(output1);
-    idNode *outputId2 = new idNode("output2");
-    Node* output2 = new inOutdeclNode(strDcl, outputId2);
+    Node* output2 = makeStream("outputs2", "double");
     outputs->push_back(output2);
     compInOut = new ComInOutNode(inputs, outputs);
     compHead = new compHeadNode("conv2D_" + layer->level, (ComInOutNode *)compInOut);
-    // compBody = makeConv2DCompBody(layer);
+    // compBody = makeConv2DCompBody(layer, inputs, outputs);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     // S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$); ???
     return comp;
 }
 
-// Node* UnfoldComposite::makeConv2DCompBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
-//     Node *body = NULL;
-//     list<Node *> *stmt_list = new list<Node *>(), *splitjoin_stmt_list = new list<Node *>();
-//     idNode *output = new idNode("output");
-//     idNode *id_i = new idNode("i");
-//     primNode *prim = new primNode("int");
-//     declareNode *decl_i = new declareNode(prim, id_i);
-//     splitjoin_stmt_list->push_back(decl_i);
-//     Node* splitjoin = NULL;
-//     duplicateNode *duplicate = new duplicateNode(NULL);
-//     splitNode *split = new splitNode(duplicate);
-//     roundrobinNode *roundrobin = new roundrobinNode(NULL);
-//     joinNode *join = new joinNode(roundrobin);
-//     splitjoinNode *splitjoin = new splitjoinNode(inputs, )
-//     return body;
-// }
+Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    Node *body = NULL;
+    list<Node *> *stmtList = new list<Node *>(), *splitjoinStmtList = new list<Node *>(), *splitjoinBodyStmts = new list<Node *>();
+    Node *output = makeStream("output", "double");
+    list<Node *> *tempOutputs = new list<Node *>({output});
+    idNode *idI = new idNode("i");
+    primNode *prim = new primNode("int");
+    declareNode *declI = new declareNode(prim, idI);
+    splitjoinStmtList->push_back(declI);
+    Node* splitjoin = NULL;
+    duplicateNode *duplicate = new duplicateNode(NULL);
+    splitNode *split = new splitNode(duplicate);                                                                                                
+    roundrobinNode *roundrobin = new roundrobinNode(NULL);
+    constantNode *constZero = new constantNode("integer", (long long)0);
+    constantNode *constFilters = new constantNode("integer", (long long)(((conv2DLayerNode *)layer)->filters));
+    Node *init = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *cond = new binopNode((expNode *)idI, "<", (expNode *)(constFilters));
+    Node *next = new unaryNode("POSTINC", (expNode *)idI);
+    Node *forStmt = NULL;
+    list<Node *> *blockStmtList = new list<Node *>();
+    string compName = "conv2DKernel_" + layer -> level;
+    list<Node *> *argList = new list<Node *>({idI}); 
+    // ??? makeConv2DKernel 并且在该方法中InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$); 
+    Node *kernel = new compositeCallNode(tempOutputs, compName, argList, inputs, S.LookupCompositeSymbol(compName));
+    Node *add = new addNode(kernel);
+    blockStmtList -> push_back(add);
+    Node *block = new blockNode(blockStmtList);
+    Node *splitjoinFor = new forNode(init, (expNode *)cond, (expNode *)next, forStmt);
+    splitjoinBodyStmts -> push_back(splitjoinFor);
+    joinNode *join = new joinNode(roundrobin);
+    splitjoinNode *splitjoin = new splitjoinNode(inputs, tempOutputs, split, splitjoinStmtList, splitjoinBodyStmts,join);
+    return body;
+}
 
-// Node* UnfoldComposite::makeStream(string name, string type) {
-//     idNode *x = new idNode("x");
-//     primNode *prim = new primNode(type);
-//     x->valType = prim->name;
-//     strdclNode *strdcl = new strdclNode(x);
-// }
+Node* UnfoldComposite::makeStream(string name, string type) {
+    idNode *val = new idNode("x");
+    primNode *valType = new primNode(type);
+    val->valType = valType->name;
+    strdclNode *strdcl = new strdclNode(val);
+    idNode *inputId = new idNode(name);
+    return new inOutdeclNode(strdcl, inputId);
+}
