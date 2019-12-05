@@ -127,7 +127,7 @@ int size;
 Out = splitjoin(In)
 {	
 int i;
-split roundrobin(1);
+split duplicate(1);
 for (i = 0; i < size; i++)
 {
 	add DCT_1D(size); 
