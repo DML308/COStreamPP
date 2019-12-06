@@ -343,7 +343,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
 {
     string streamName = "Rstream";
     static int number1 = 0;
-    vector<compositeCallNode *> comCallList;
+    list<Node *> *comCallList = new list<Node *>();
     compositeNode *roundrobin = NULL;
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
     list<Node *> *tempList = new list<Node *>();
@@ -371,43 +371,107 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
     tempList = splitOperator->outputs;
     auto iter = tempList->begin();
     int cnt = 0;
+
     for (auto it : compositeCall_list)
     {
-        assert(it->type == CompositeCall);
+        if (it->type == CompositeCall)
+        {
+            //cout << "--------------------------------------" << it << "-------------------------------" << endl;
+            // if (it->type == SplitJoin || it->type == Pipeline)
+            // {
+            //     comCallList->push_back(it);
+            // }
+            //cout << "--------------------" << endl;
+            string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
+            idNode *id = new idNode(tempName);
+            //compositeCall的输出流是join节点的输入流
+            inputs_join->push_back(id);
+            list<Node *> *call_outputs = new list<Node *>({id});
+            //compositeCall的输入流
+            list<Node *> *call_inputs = new list<Node *>({*iter});
+            /* 1.若为compositecall 将compositeCall替换为实际的composite */
+            /*修改composite节点的输入流,输出流*/
+            string name = (((compositeCallNode *)it)->compName);
+            compositeNode *comp = S.LookupCompositeSymbol(name);
+            assert(comp != NULL);
+            compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
 
-        string name = (((compositeCallNode *)it)->compName);
+            //传参
+            list<Node *> *copy_stream_List = NULL;
+            if(((compositeCallNode *)it)->stream_List){
+                list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
+                list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
+                std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+            }
+            else{
+                copy_stream_List = new list<Node *>();
+            }
 
-        string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
-        idNode *id = new idNode(tempName);
-        //compositeCall的输出流是join节点的输入流
-        inputs_join->push_back(id);
-        list<Node *> *call_outputs = new list<Node *>({id});
-        //compositeCall的输入流
-        list<Node *> *call_inputs = new list<Node *>({*iter});
-        compositeNode *comp = S.LookupCompositeSymbol(name);
+            compositeCallNode *call = new compositeCallNode(call_outputs, tempName, copy_stream_List, call_inputs, actual_composite,*(it)->loc);
+            //cout<<"compName= "<<tempName<<endl;
+            comCallList->push_back(call);
+        }
+        /* 2.todo 若为splitjoin或者pipeline结构，赋予其输入和输出流 */
+        else if (it->type == SplitJoin)
+        {
+           
+            string split_join_name = MakeCompositeName("splitjoin");
+            string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
+            idNode *id = new idNode(tempName);
+                
+            // splitjoin 的输出为上一层join节点的输入
+            inputs_join->push_back(id);
 
-        assert(comp != NULL);
-        /*修改composite节点的输入流,输出流*/
-        compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
-        //cout << "---------------------------roundRobin---------------------------" << endl;
+            //compositeCall的输入流
+            list<Node *> *call_inputs = new list<Node *>({*iter});
+            list<Node *> *call_outputs = new list<Node *>({id});
 
-        //传参
-        list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
-        list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
-        std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+            ComInOutNode *com_splitjoin_inout = new ComInOutNode(call_inputs,call_outputs);
+            compHeadNode *com_splitjoin_head = new compHeadNode(split_join_name,com_splitjoin_inout);
 
-        //修改compositeCall的输入输出流
-        compositeCallNode *call = new compositeCallNode(call_outputs, name, copy_stream_List, call_inputs, actual_composite,*node->loc);
-        //cout<<"address: "<<&(call->inputs)<<endl;
-        comCallList.push_back(call);
+            list<Node*> *com_splitjoin_body_list = new list<Node *>();
+
+            //改造splitjoin 输入输出
+            splitjoinNode *sp_node = (splitjoinNode *)(it);
+            sp_node->inputs = call_inputs;
+            sp_node->outputs = call_outputs;
+
+            com_splitjoin_body_list->push_back(it);
+            compBodyNode *com_splitjoin_body = new compBodyNode(NULL,com_splitjoin_body_list);
+            compositeNode *com_splitjoin = new compositeNode(com_splitjoin_head,com_splitjoin_body);
+                
+
+            //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
+            //第三个为传参 param,这里是空
+            compositeCallNode *call = new compositeCallNode(call_outputs, split_join_name, NULL, call_inputs, com_splitjoin,*(it)->loc);
+
+            comCallList->push_back(call);
+
+        }
+
+        else if (it->type == Pipeline)
+        {
+            string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
+            idNode *id = new idNode(tempName);
+            //compositeCall的输出流是join节点的输入流
+            inputs_join->push_back(id);
+            list<Node *> *call_outputs = new list<Node *>({id});
+            //compositeCall的输入流
+            list<Node *> *call_inputs = new list<Node *>({*iter});
+            //1.指定嵌套结构中pipeline的输入和输出流
+            ((pipelineNode *)it)->inputs = call_inputs;
+            ((pipelineNode *)it)->outputs = call_outputs;
+            comCallList->push_back(it);
+        }
 
         iter++;
         cnt++;
     }
+
     /*3.构建joinOperator，与compositeCall的输入输出流关联 */
     joinOperator = MakeJoinOperator(outputs->front(), inputs_join, join_arg_list); // //join 大小 常量传播
     comp_stmt_List->push_back(splitOperator);
-    for (auto it : comCallList)
+    for (auto it : *comCallList)
     {
         comp_stmt_List->push_back(it);
     }
@@ -478,9 +542,15 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
             compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
 
             //传参
-            list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
-            list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
-            std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+            list<Node *> *copy_stream_List = NULL;
+            if(((compositeCallNode *)it)->stream_List){
+                list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
+                list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
+                std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+            }
+            else{
+                copy_stream_List = new list<Node *>();
+            }
 
             compositeCallNode *call = new compositeCallNode(call_outputs, tempName, copy_stream_List, call_inputs, actual_composite,*(it)->loc);
             //cout<<"compName= "<<tempName<<endl;
@@ -649,9 +719,16 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
                 compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
         
                 //传参
-                list<Node *> *stream_List = ((compositeCallNode *)*it)->stream_List;
-                list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
-                std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+                list<Node *> *copy_stream_List = NULL;
+                if(((compositeCallNode *)*it)->stream_List){
+                    list<Node *> *stream_List = ((compositeCallNode *)*it)->stream_List;
+                    list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
+                    std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+                }
+                else{
+                    copy_stream_List = new list<Node *>();
+                }
+
 
                 compositeCallNode *call = new compositeCallNode(call_outputs, name, copy_stream_List, call_inputs, actual_composite,*(*it)->loc);
                 //cout<<"actual composite name ="<<actual_composite->compName<<endl;
@@ -721,11 +798,15 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 modifyStreamName(oper, outputs, false);
                 stmt_list->push_back(oper);
 
+
                 // param
-                list<Node *> *param_list = comp->body->param->param_list;
-                list<Node *> *copy_param_list = new list<Node*>(param_list->size());
-                std::copy(param_list->begin(),param_list->end(),copy_param_list->begin());
-                paramNode *param = new paramNode(copy_param_list);
+                paramNode *param = NULL;
+                if(comp->body->param){
+                    list<Node *> *param_list = comp->body->param->param_list;
+                    list<Node *> *copy_param_list = new list<Node*>(param_list->size());
+                    std::copy(param_list->begin(),param_list->end(),copy_param_list->begin());
+                    param = new paramNode(copy_param_list);
+                }
 
                 compBodyNode *com_body = new compBodyNode(param, stmt_list);
                 copy = new compositeNode(head, com_body,*comp->loc);

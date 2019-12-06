@@ -74,7 +74,7 @@ void MyVisitNode(FlatNode *node)
             //joiners may have null upstream neighbors
             assert(node->inFlatNodes[i] != NULL);
             buf << node->inFlatNodes[i]->name << " -> " << node->name;
-            buf << "[label=\"" << node->inPeekWeights[i] << "\"];\n";
+             buf << "[label=\"1\"];\n"; //输出权重固定为1
         }
     }
 
