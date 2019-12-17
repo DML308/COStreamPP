@@ -397,6 +397,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
             compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
 
             //传参
+            /*
             list<Node *> *copy_stream_List = NULL;
             if(((compositeCallNode *)it)->stream_List){
                 list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
@@ -405,9 +406,9 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
             }
             else{
                 copy_stream_List = new list<Node *>();
-            }
-
-            compositeCallNode *call = new compositeCallNode(call_outputs, tempName, copy_stream_List, call_inputs, actual_composite,*(it)->loc);
+            }*/
+            list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
+            compositeCallNode *call = new compositeCallNode(call_outputs, tempName, stream_List, call_inputs, actual_composite,*(it)->loc);
             //cout<<"compName= "<<tempName<<endl;
             comCallList->push_back(call);
         }
@@ -542,7 +543,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
             compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
 
             //传参
-            list<Node *> *copy_stream_List = NULL;
+            /*list<Node *> *copy_stream_List = NULL;
             if(((compositeCallNode *)it)->stream_List){
                 list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
                 copy_stream_List = new list<Node*>(stream_List->size());
@@ -550,9 +551,9 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
             }
             else{
                 copy_stream_List = new list<Node *>();
-            }
-
-            compositeCallNode *call = new compositeCallNode(call_outputs, tempName, copy_stream_List, call_inputs, actual_composite,*(it)->loc);
+            }*/
+            list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
+            compositeCallNode *call = new compositeCallNode(call_outputs, tempName, stream_List, call_inputs, actual_composite,*(it)->loc);
             //cout<<"compName= "<<tempName<<endl;
             comCallList->push_back(call);
         }
@@ -719,7 +720,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
                 compositeNode *actual_composite = compositeCallStreamReplace(comp, call_inputs, call_outputs);
         
                 //传参
-                list<Node *> *copy_stream_List = NULL;
+                /*list<Node *> *copy_stream_List = NULL;
                 if(((compositeCallNode *)*it)->stream_List){
                     list<Node *> *stream_List = ((compositeCallNode *)*it)->stream_List;
                     copy_stream_List = new list<Node*>(stream_List->size());
@@ -727,10 +728,10 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
                 }
                 else{
                     copy_stream_List = new list<Node *>();
-                }
+                }*/
 
-
-                compositeCallNode *call = new compositeCallNode(call_outputs, name, copy_stream_List, call_inputs, actual_composite,*(*it)->loc);
+                list<Node *> *stream_List = ((compositeCallNode *)*it)->stream_List;
+                compositeCallNode *call = new compositeCallNode(call_outputs, name, stream_List, call_inputs, actual_composite,*(*it)->loc);
                 //cout<<"actual composite name ="<<actual_composite->compName<<endl;
 
                 comCallList.push_back(call);
