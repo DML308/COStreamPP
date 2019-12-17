@@ -44,8 +44,11 @@ class UnfoldComposite
     Node* makeStream(string name, string type);
     compositeNode* makeConv2DLayer(layerNode *layer);
     Node* makeConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeConv2DKernelInit(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeConv2DKernelWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeConv2DKernel(layerNode *layer);
+    Node* makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DKernelOperInit(layerNode *layer);
+    Node* makeConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeCopyComp();
 };
 #endif
