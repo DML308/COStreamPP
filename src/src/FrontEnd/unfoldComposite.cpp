@@ -400,7 +400,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
             list<Node *> *copy_stream_List = NULL;
             if(((compositeCallNode *)it)->stream_List){
                 list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
-                list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
+                copy_stream_List = new list<Node*>(stream_List->size());
                 std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
             }
             else{
@@ -545,7 +545,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
             list<Node *> *copy_stream_List = NULL;
             if(((compositeCallNode *)it)->stream_List){
                 list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
-                list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
+                copy_stream_List = new list<Node*>(stream_List->size());
                 std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
             }
             else{
@@ -722,7 +722,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
                 list<Node *> *copy_stream_List = NULL;
                 if(((compositeCallNode *)*it)->stream_List){
                     list<Node *> *stream_List = ((compositeCallNode *)*it)->stream_List;
-                    list<Node *> *copy_stream_List = new list<Node*>(stream_List->size());
+                    copy_stream_List = new list<Node*>(stream_List->size());
                     std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
                 }
                 else{
@@ -975,6 +975,21 @@ Node *UnfoldComposite::workNodeCopy(Node *u)
     }
     switch (u->type)
     {
+    case CompositeCall:{
+        list<Node *> *outputs = new list<Node *>();
+        
+        list<Node *> *inputs = new list<Node *>();
+        compositeCallNode * comCallNode = static_cast<compositeCallNode *>(u);
+        compositeNode *actual_composite = comCallNode->actual_composite;
+        int length = comCallNode->stream_List->size();
+        list<Node *> *stream_List = comCallNode->stream_List;
+        list<Node *> *copy_stream_List =  new list<Node *>(length);
+        std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+        string compName = comCallNode->compName;
+        compositeCallNode *tmp = new compositeCallNode(outputs, compName, copy_stream_List, inputs,actual_composite);
+        return tmp;
+        break;
+    }
     case Split:
     {
         Node *dup_round = workNodeCopy(static_cast<splitNode *>(u)->dup_round);

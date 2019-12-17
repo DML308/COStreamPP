@@ -524,66 +524,1010 @@ if(op.compare("+") == 0){
         }  
     }
     
+    //逻辑运算
+    if(op.compare("<")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival < right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval < right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval < right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival < right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval < right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval < right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval < right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival < right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval < right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval < right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval < right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare("<=")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival <= right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval <= right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval <= right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival <= right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval <= right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval <= right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval <= right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival <= right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval <= right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval <= right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval <= right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare(">")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival > right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval > right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval > right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival > right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval > right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval > right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval > right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival > right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval > right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval > right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval > right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare(">=")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival >= right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval >= right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval >= right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival >= right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval >= right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval >= right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval >= right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival >= right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval >= right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval >= right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval >= right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare("==")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival == right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval == right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval == right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival == right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval == right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval == right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval == right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival == right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval == right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval == right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval == right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare("!=")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival != right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval != right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval != right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival != right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval != right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval != right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval != right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival != right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval != right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval != right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval != right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare("&&")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival && right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval && right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval && right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival && right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval && right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval && right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval && right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival && right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval && right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval && right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval && right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("bool")){
+            if(left->bval && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("bool")){
+            if(left->ival && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("int")){
+            if(left->bval && right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("long")){
+            if(left->bval && right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("bool")){
+            if(left->lval && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("long long")){
+            if(left->bval && right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("bool")){
+            if(left->llval && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+            if(left->dval && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+            if(left->bval && right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("bool")){
+            if(left->fval && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+            if(left->bval && right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+            if(left->dval && right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    if(op.compare("||")){
+        if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
+            if(left->ival || right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long") == 0 && right->type.compare("long") == 0){
+            if(left->lval || right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("long long") == 0){
+           if(left->llval || right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long") == 0){
+            if(left->ival || right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("int") == 0){
+            if(left->lval || right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("long long") == 0){
+            if(left->lval || right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("long") == 0){
+            if(left->llval || right->lval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("long long") == 0){
+            if(left->ival || right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("int") == 0){
+            if(left->llval || right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("double")){
+             if(left->dval || right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+        
+        if(left->type.compare("float") == 0 && right->type.compare("float")){
+            if(left->fval || right->fval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("bool")){
+            if(left->bval || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("int") == 0 && right->type.compare("bool")){
+            if(left->ival || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("int")){
+            if(left->bval || right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("long")){
+            if(left->bval || right->ival){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long") == 0 && right->type.compare("bool")){
+            if(left->lval || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("long long")){
+            if(left->bval || right->llval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("long long") == 0 && right->type.compare("bool")){
+            if(left->llval || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+            if(left->dval || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+            if(left->bval || right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("float") == 0 && right->type.compare("bool")){
+            if(left->fval || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+            if(left->bval || right->dval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+            if(left->dval || right->bval){
+                return new Constant("bool",true);
+            }else{
+                return new Constant("bool",false);
+            }
+        }
+
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
+            cout << "字符串无法比较";
+            exit(-1);
+        }
+    }
+    
     }else if(!left && right){ // 先不支持 ++i,仅支持 i++
         if(op.compare("+") == 0){
-            if(left){
-                if(left->type.compare("int") == 0){
-                    return new Constant("int",+left->ival);
+            if(right){
+                if(right->type.compare("int") == 0){
+                    return new Constant("int",+right->ival);
                 }
-                if(left->type.compare("long") == 0){
-                    return new Constant("long",+left->lval);
+                if(right->type.compare("long") == 0){
+                    return new Constant("long",+right->lval);
                 }
-                if(left->type.compare("long long") == 0){
-                    return new Constant("long long",+left->llval);
+                if(right->type.compare("long long") == 0){
+                    return new Constant("long long",+right->llval);
                 }
-                if(left->type.compare("float") == 0){
-                    return new Constant("float",+left->fval);
+                if(right->type.compare("float") == 0){
+                    return new Constant("float",+right->fval);
                 }
-                if(left->type.compare("double") == 0){
-                    return new Constant("double",+left->dval);
+                if(right->type.compare("double") == 0){
+                    return new Constant("double",+right->dval);
                 } 
             }
         }
         if(op.compare("-") == 0){
-            if(left){
-                if(left->type.compare("int") == 0){
-                    return new Constant("int",-left->ival);
+            if(right){
+                if(right->type.compare("int") == 0){
+                    return new Constant("int",-right->ival);
                 }
-                if(left->type.compare("long") == 0){
-                    return new Constant("long",-left->lval);
+                if(right->type.compare("long") == 0){
+                    return new Constant("long",-right->lval);
                 }
-                if(left->type.compare("long long") == 0){
-                    return new Constant("long long",-left->llval);
+                if(right->type.compare("long long") == 0){
+                    return new Constant("long long",-right->llval);
                 }
-                if(left->type.compare("float") == 0){
-                    return new Constant("float",-left->fval);
+                if(right->type.compare("float") == 0){
+                    return new Constant("float",-right->fval);
                 }
-                if(left->type.compare("double") == 0){
-                    return new Constant("double",-left->dval);
+                if(right->type.compare("double") == 0){
+                    return new Constant("double",-right->dval);
                 } 
             }
         }
         if(op.compare("~") == 0){
-            if(left){
-                if(left->type.compare("int") == 0){
-                    return new Constant("int",~left->ival);
+            if(right){
+                if(right->type.compare("int") == 0){
+                    return new Constant("int",~right->ival);
                 }
-                if(left->type.compare("long") == 0){
-                    return new Constant("long",~left->lval);
+                if(right->type.compare("long") == 0){
+                    return new Constant("long",~right->lval);
                 }
-                if(left->type.compare("double") == 0 || right->type.compare("double")){
+                if(right->type.compare("double")){
                     cout << "浮点数无法求补码运算";
                     exit(-1);
                 }
-                if(left->type.compare("float") == 0 || right->type.compare("float")){
+                if(right->type.compare("float")){
                     cout << "浮点数无法求补码运算";
                     exit(-1);
                 }
 
-                if(left->type.compare("string") == 0 && right->type.compare("string") == 0){
+                if(right->type.compare("string") == 0){
                     cout << "字符串无法求补码运算";
                     exit(-1);
                 }  
+            }
+        }
+        if(op.compare("!")){
+            if(right){
+                if(right->type.compare("int") == 0){
+                    return new Constant("bool",!right->ival);
+                }
+                if(right->type.compare("long") == 0){
+                    return new Constant("bool",!right->lval);
+                }
+                if(right->type.compare("long long") == 0){
+                    return new Constant("bool",!right->llval);
+                }
+                if(right->type.compare("float") == 0){
+                    return new Constant("bool",!right->fval);
+                }
+                if(right->type.compare("double") == 0){
+                    return new Constant("bool",!right->dval);
+                }
+                if(right->type.compare("bool") == 0){
+                    return new Constant("bool",!right->bval);
+                } 
             }
         }
     

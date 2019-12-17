@@ -4,6 +4,132 @@
 extern UnfoldComposite *unfold;
 extern vector<Node *> compositeCall_list;
 extern SymbolTable *runningTop;
+extern SymbolTable *top;
+extern list<SymbolTable *> runningStack;
+
+/*
+    功能：替换 CompositeCall 语句中的变量为常量
+    输入参数：
+*/
+void variableReplace(Node *node){
+        if(node->type == CompositeCall){
+                compositeCallNode *call_composite = (compositeCallNode *)node;
+                list<Node *> *params= call_composite->stream_List;
+                list<Node *> *actual_params = new list<Node *>();
+                if(params){
+                for(auto param : *params){
+                    if(param->type == Id){
+                        Variable *value = runningTop->LookupIdentifySymbol(((idNode *)param)->name);
+                        string type = value->value->type;
+                        constantNode *constant_value;
+                        if(type.compare("long long") == 0){
+                            constant_value = new constantNode(type,value->value->llval);
+                        }
+                        if(type.compare("int") == 0){
+                            constant_value = new constantNode(type,value->value->ival);
+                        }
+                        if(type.compare("long") == 0){
+                            constant_value = new constantNode(type,value->value->lval);
+                        }
+                        if(type.compare("float") == 0){
+                            constant_value = new constantNode(type,value->value->fval);
+                        }
+                        if(type.compare("double") == 0){
+                            constant_value = new constantNode(type,value->value->dval);
+                        }
+                        actual_params->push_back(constant_value);
+                    }
+                    else if(param->type == constant){
+                        actual_params->push_back(param);
+                    }else if(param->type == Binop || param->type == Unary){
+                        
+                        Constant *value = getOperationResult(param);
+                        string type = value->type;
+                        constantNode *constant_value;
+                        if(type.compare("long long") == 0){
+                            constant_value = new constantNode(type,value->llval);
+                        }
+                        if(type.compare("int") == 0){
+                            constant_value = new constantNode(type,value->ival);
+                        }
+                        if(type.compare("long") == 0){
+                            constant_value = new constantNode(type,value->lval);
+                        }
+                        if(type.compare("float") == 0){
+                            constant_value = new constantNode(type,value->fval);
+                        }
+                        if(type.compare("double") == 0){
+                            constant_value = new constantNode(type,value->dval);
+                        }
+                        actual_params->push_back(constant_value);
+                    }
+                    call_composite->stream_List = actual_params;
+                }
+                }
+        }
+        if(node->type == SplitJoin){
+            //找到for中的变量,然后替换,不支持for中变量的赋值
+        }
+        if(node->type == Pipeline){
+
+        }
+}
+
+/*
+    功能：解析 for 语句中的 CompositeCall,添加到 compositeCall_list 中,其他调用compositeFlow递归解析
+    输入参数： 
+*/
+void addComposite(list<Node *> stmts){
+    for(auto it : stmts){
+        if (it->type == IfElse)
+        {
+            list<Node*> *if_list = new list<Node *>();
+            if_list->push_back(it);
+            compositeCallFlow(if_list);
+        }
+        else if(it->type == If){
+            list<Node*> *if_list = new list<Node *>();
+            if_list->push_back(it);
+            compositeCallFlow(if_list);
+        }
+        else if (it->type == Add)
+        {
+                //cout << "type==" << ((addNode *)for_stmts)->content->type << endl;
+            if (((addNode *)it)->content->type == CompositeCall)
+            {
+                compositeCallNode* composite_call = (compositeCallNode *)((addNode *)it)->content;
+                //compositeCallNode* replace_composite = 
+                Node *nd = unfold->workNodeCopy(((addNode *)it)->content);
+                variableReplace(nd);
+                compositeCall_list.push_back(nd);
+            }
+            /* add splitjoin{} */
+            else if (((addNode *)it)->content->type == SplitJoin)
+            {
+                Node *nd = unfold->workNodeCopy(((addNode *)it)->content);
+                variableReplace(nd);
+                compositeCall_list.push_back(nd);
+            }
+            /* add pipeline{}的情况 */
+            else if (((addNode *)it)->content->type == Pipeline)
+            {
+                Node *nd = unfold->workNodeCopy(((addNode *)it)->content);
+                variableReplace(nd);
+                compositeCall_list.push_back(nd);
+            }
+
+        }else if(it->type == For){
+            list<Node*> *for_list = new list<Node *>();
+            for_list->push_back(it);
+            compositeCallFlow(for_list);
+        }else if(it->type == Block){
+            addComposite( ((blockNode *)it)->stmt_list);
+        }else{
+            genrateStmt(it); //解析变量值的变化
+        }
+    }
+}
+
 
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void compositeCallFlow(list<Node *> *stmts)
@@ -33,6 +159,8 @@ void compositeCallFlow(list<Node *> *stmts)
         }
         else if (nd->type == For)
         {
+            runningTop = new SymbolTable(runningTop,NULL);
+            top = runningTop; // test
             /*获得for循环中的init，cond和next值 目前只处理for循环中数据是整型的情况 */
             long long initial = MAX_INF;
             long long condition = MAX_INF;
@@ -43,6 +171,8 @@ void compositeCallFlow(list<Node *> *stmts)
             string con_op;
             string con_id;
             list<Node *> *stmts = NULL;
+
+            
             if (init->type == Decl)
             {
                 declareNode *init_d = static_cast<declareNode *>(init);
@@ -81,6 +211,11 @@ void compositeCallFlow(list<Node *> *stmts)
                     initial = con_init->llval;
                 }
             }
+
+            // 将循环变量加入到 执行上下文 的 符号表
+            Variable *init_v = new Variable("long long",con_id,initial);
+            runningTop->InsertIdentifySymbol(init_v);
+
             /* 获取cond值 */
             if (cond->type == Binop)
             {
@@ -153,6 +288,7 @@ void compositeCallFlow(list<Node *> *stmts)
                 exit(-1);
             }
             /* 获取next值 */
+            list<long long> step_value = list<long long>(); //存储每次循环变量的值,不支持循环体内部改变该值
             if (next->type == Binop)
             {
                 binopNode *next_b = ((binopNode *)next);
@@ -191,9 +327,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial < condition)
                         {
                             for (int i = initial; i < condition; i *= step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -207,9 +344,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial < condition && step < 1)
                         {
                             for (int i = initial; i < condition; i /= step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -221,9 +359,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial < condition && step > 0)
                         {
                             for (int i = initial; i < condition; i += step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -235,9 +374,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial < condition && step < 0) //todo 未考虑step为负
                         {
                             for (int i = initial; i < condition; i -= step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -251,9 +391,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial > condition && step < 1)
                         {
                             for (int i = initial; i > condition; i *= step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -267,9 +408,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial > condition)
                         {
                             for (int i = initial; i > condition; i /= step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -281,9 +423,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial > condition && step < 0)
                         {
                             for (int i = initial; i > condition; i += step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -295,9 +438,10 @@ void compositeCallFlow(list<Node *> *stmts)
                         if (initial > condition && step > 0) //todo 未考虑step为负
                         {
                             for (int i = initial; i > condition; i -= step)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }
                         else
                         {
@@ -309,13 +453,14 @@ void compositeCallFlow(list<Node *> *stmts)
             }else if(next->type == Unary){
                 unaryNode *next_u = (unaryNode *)(next);
                 int cnt = 0;
-                if(next_u->op.compare("PREINC") == 0){
+                if(next_u->op.compare("POSTINC") == 0){ //++
                     if(con_op.compare("<") == 0 || con_op.compare("<=") == 0){
                         if(initial < condition){
                             for (int i = initial; i < condition; i ++)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }else{
                             cout << " infinite loop " << endl;
                             exit(-1);
@@ -324,13 +469,14 @@ void compositeCallFlow(list<Node *> *stmts)
                         cout << " infinite loop " << endl;
                         exit(-1);
                     }
-                }else if(next_u->op.compare("POSTINC") == 0){
+                }else if(next_u->op.compare("POSTDEC") == 0){ //--
                     if(con_op.compare(">") == 0 || con_op.compare(">=") == 0){
                         if(initial > condition){
                             for (int i = initial; i > condition; i--)
-                                cnt++;
+                                step_value.push_back(i);
+                                //cnt++;
                             initial = 0;
-                            condition = cnt;
+                            //condition = cnt;
                         }else{
                             cout << " infinite loop " << endl;
                             exit(-1);
@@ -341,8 +487,14 @@ void compositeCallFlow(list<Node *> *stmts)
                     }
                 }    
             }
+            for(auto it : step_value){
+                list<Node *> stmt = list<Node *>();
+                init_v->value->llval = it;
+                stmt.push_back(for_nd->stmt);
+                addComposite(stmt);
+            }
             /* for循环中只有一条语句 */
-            if (for_nd->stmt->type != Block)
+            /*if (for_nd->stmt->type != Block)
             {
                 Node *for_stmts = for_nd->stmt;
                 if (for_stmts->type == IfElse)
@@ -358,13 +510,13 @@ void compositeCallFlow(list<Node *> *stmts)
                         {
                             compositeCall_list.push_back(((addNode *)for_stmts)->content);
                         }
-                        /* add splitjoin{} */
+                        //add splitjoin{} 
                         else if (((addNode *)for_stmts)->content->type == SplitJoin)
                         {
                             Node *nd = unfold->workNodeCopy(((addNode *)for_stmts)->content);
                             compositeCall_list.push_back(nd);
                         }
-                        /* add pipeline{}的情况 */
+                        // add pipeline{}的情况 
                         else if (((addNode *)for_stmts)->content->type == Pipeline)
                         {
                             Node *nd = unfold->workNodeCopy(((addNode *)for_stmts)->content);
@@ -373,7 +525,7 @@ void compositeCallFlow(list<Node *> *stmts)
                     }
                 }
             }
-            else
+            else // for语句中多句
             {
                 stmts = &((blockNode *)(for_nd->stmt))->stmt_list;
                 auto ptr = stmts->front();
@@ -386,30 +538,55 @@ void compositeCallFlow(list<Node *> *stmts)
                     {
                         compositeCall_list.push_back(((addNode *)ptr)->content);
                     }
-                    /* add splitjoin{} */
+                    //add splitjoin{} 
                     else if (((addNode *)ptr)->content->type == SplitJoin)
                     {
                         Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
                         compositeCall_list.push_back(nd);
                     }
-                    /* add pipeline{}的情况 */
+                    //add pipeline{}的情况 
                     else if (((addNode *)ptr)->content->type == Pipeline)
                     {
                         Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
                         compositeCall_list.push_back(nd);
                     }
                 }
-            }
+            }*/
         }
-        else if(nd->type == SplitJoin){
-            compositeCall_list.push_back(unfold->UnfoldSplitJoin((splitjoinNode *)nd));
-        }
-        else if(nd->type == Pipeline){
-            compositeCall_list.push_back(unfold->UnfoldPipeline((pipelineNode *)nd));
+        else if (nd->type == IfElse)
+        {
+            runningTop = new SymbolTable(runningTop,NULL);
+            top = runningTop; // test
 
+            list<Node *> *ifelse_list = new list<Node*>();
+            ifElseNode *if_node = (ifElseNode *)nd;
+            Constant *bool_result = getOperationResult(if_node->exp);
+            if(bool_result->bval){
+                ifelse_list->push_back(if_node->stmt1);
+            }else{
+                ifelse_list->push_back(if_node->stmt2);
+            }
+            compositeCallFlow(ifelse_list);
+            // todo
+        }
+        else if(nd->type == If){
+            runningTop = new SymbolTable(runningTop,NULL); // 新作用域
+            top = runningTop; // test
+
+            list<Node *> *ifelse_list = new list<Node*>();
+            ifNode *if_node = (ifNode *)nd;
+            Constant *bool_result = getOperationResult(if_node->exp);
+            if(bool_result->bval){
+                ifelse_list->push_back(if_node->stmt);
+            }
+            compositeCallFlow(ifelse_list);
+        }else{
+            genrateStmt(nd);
         }
     }
 }
+
+
 
 /*
 *   功能：对所有Main composite的composite调用进行实际流边量名的替换

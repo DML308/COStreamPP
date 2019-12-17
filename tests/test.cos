@@ -1,16 +1,15 @@
 int bounds = 8;
 
 composite adder(output stream<int x>Out,input stream<int x>In){
-    param 
-        int round;
-
-    Out = splitjoin(In){
-        int i = 0;
-        split roundrobin(1);
-        for(i=0;i<=round;i++){
-            add subber();
+    Out = adder(In){
+        work{
+            Out[0].x = Out[0].x + Out[1].x;
+            Out[1].x = Out[0].x + Out[1].x;
         }
-        join roundrobin(1);
+        window{
+            In sliding(2,2);
+            Out tumbling(2);
+        }
     };
 }
 
@@ -28,11 +27,17 @@ composite subber(output stream<int x>Out,input stream<int x>In){
 }
 
 composite BandStopFilter(output stream<int x>Out,input stream<int x>In){
-    int i = 0,j=0;
+    int i = 0;
     Out = splitjoin(In){
-       split roundrobin(1);
-        for(i=0;i<4;i++){
-            add adder(i);
+        split roundrobin(1,1,2);
+        for(i=0;i<2;i++){
+            add splitjoin{
+                split roundrobin(1);
+                for(j=0;j<2;j++){
+                    add subber(i);
+                }
+                join roundrobin(1);
+            }
         }
         join roundrobin(1);
     };

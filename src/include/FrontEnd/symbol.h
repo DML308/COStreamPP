@@ -20,6 +20,7 @@ class Constant{
     long long llval;
     float fval;
     double dval;
+    bool bval;
     string sval;
     string type;
     Constant(string type, int i) :type(type), ival(i){}
@@ -28,6 +29,7 @@ class Constant{
     Constant(string type, float f) :type(type), fval(f){}
     Constant(string type, double d) :type(type), dval(d){}
     Constant(string type, string str) :type(type), sval(str){}
+    Constant(string type, bool b) :type(type), bval(b){}
     ~Constant() {}
 
     void print(bool isArray){
@@ -48,6 +50,9 @@ class Constant{
       }
       if(type.compare("string") == 0){
           cout<<sval;
+      }
+      if(type.compare("bool") == 0){
+          cout<<bval;
       }
       if(!isArray){
         cout<<endl;

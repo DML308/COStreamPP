@@ -191,6 +191,7 @@ class unaryNode : public Node
         setLoc(loc);
         this->exp = exp;
         this->op = op;
+        this->type = Unary;
     }
     ~unaryNode() {}
     void print() {}
