@@ -960,7 +960,7 @@ class squentialNode : public Node
     }
     ~squentialNode() {};
     void print() {};
-    string toString() {};
+    string toString() { return "squential"; };
 };
 class layerNode : public Node
 {
