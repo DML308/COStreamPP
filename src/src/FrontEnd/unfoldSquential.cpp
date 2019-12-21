@@ -189,7 +189,8 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node
         comp_stmt_list->push_back(layerExp);
     } else if (layer->layerName == "conv2d") {
         compositeNode *layerComp = makeConv2DLayer(layer);
-        Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, layerComp);
+        compositeNode *actualLayerComp = compositeCallStreamReplace(layerComp, inputs, outputs);
+        Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, actualLayerComp);
         Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
         comp_stmt_list->push_back(layerExp);
     }
@@ -1025,7 +1026,7 @@ Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *input
     splitjoinNode *splitjoin = new splitjoinNode(inputs, tempOutputs, split, splitjoinStmtList, splitjoinBodyStmts,join);
     Node* conv = new binopNode((expNode *)((inOutdeclNode *)output) -> id, "=", (expNode *)splitjoin);
     stmtList->push_back(conv);
-    compositeNode *actualCopy = makeCopyComp();
+    compositeNode *actualCopy = compositeCallStreamReplace(makeCopyComp(), tempOutputs, outputs);
     compositeCallNode *callCopy = new compositeCallNode(outputs, "copy", NULL, tempOutputs, actualCopy);
     Node* copy = new binopNode((expNode *)((inOutdeclNode *)output) -> id, "=", (expNode *)callCopy);
     stmtList->push_back(copy);
@@ -1083,4 +1084,49 @@ compositeNode* UnfoldComposite::makeCopyComp() {
     compBody = new compBodyNode(NULL, compBodyStmtList);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     return comp;
+}
+// 生成名为"conv2DLayer_" + level 的卷积层反向传播计算节点
+compositeNode* UnfoldComposite::makeDConv2DLayer(layerNode *layer) {
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    Node *error = makeStream("input2", "double");
+    Node *in = makeStream("input1", "double");
+    Node *out = makeStream("output", "double");
+    list<Node *> *inputs = new list<Node *>({error, in}),
+                 *outputs = new list<Node *>({out});
+    compInOut = new ComInOutNode(inputs, outputs);
+    compHead = new compHeadNode("dConv2DLayer_" + layer->level, (ComInOutNode *)compInOut);
+    compBody = makeDConv2DLayerBody(layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+
+Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    compositeNode *res = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    string streamName = "DConv2dStream";
+    string compName = "DConv2D_" + layer -> level;
+    list<Node *> *tempList = new list<Node *>();
+    operatorNode *splitOperator = NULL, *joinOperator = NULL;
+    list<Node *> *inputs_split = new list<Node *>();
+    list<Node *> *outputs = new list<Node *>();
+    list<Node *> *inputs_join = new list<Node *>();
+    list<Node *> *call_outputs = NULL;
+    // filters 本层的卷积核个数
+    list<Node *> *arg_list = new list<Node *>();
+    Node* input1 = makeStream("input1", "double");
+    inputs_split->push_back(input1);
+    Node* input2 = makeStream("input2", "double");
+    inputs_split->push_back(input2);
+    Node* output = makeStream("output", "double");
+    outputs->push_back(output);
+    compInOut = new ComInOutNode(inputs_split, outputs);
+    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
+    list<Node *> *comp_stmt_List = new list<Node *>();
+    return res;   
+    
+}
+// 由于反向传播每一层有两个输入流 不可以直接使用splitjoin结构
+// 将输入的数据复制成layer->filters份
+operatorNode *UnfoldComposite::MakeConv2DSplitOperator(Node *input, layerNode *layer) {
 }
