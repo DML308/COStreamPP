@@ -55,16 +55,16 @@ Node* Node::copyNode(Node * u) {
             if (right->type == Operator_) {
             if (left->type == Id) {
                 ((operatorNode *)right)->outputs = new list<Node *>({left});
-            } else if (left->type == Streams) {
-                ((operatorNode *)right)->outputs = ((streamsNode *)left)->streamList;
+            } else if (left->type == Tuple) {
+                ((operatorNode *)right)->outputs = ((tupleNode *)left)->tupleList;
             } else {
                 assert("wrong output stream");
             }
             } else if (right->type == CompositeCall) {
             if (left->type == Id) {
                 ((compositeCallNode *)right)->outputs = new list<Node *>({left});
-            } else if (left->type == Streams) {
-                ((compositeCallNode *)right)->outputs = ((streamsNode *)left)->streamList;
+            } else if (left->type == Tuple) {
+                ((compositeCallNode *)right)->outputs = ((tupleNode *)left)->tupleList;
             } else {
                 assert("wrong output stream");
             }
@@ -72,12 +72,12 @@ Node* Node::copyNode(Node * u) {
             return tmp;
             break;
         }
-        case Streams: {
-            list<Node *> *streamList = new list<Node *>();
-            for (auto it=(static_cast<streamsNode *>(u)->streamList)->begin(); it != (static_cast<streamsNode *>(u)->streamList)->end(); it++) {
-                streamList->push_back(copyNode(*it));
+        case Tuple: {
+            list<Node *> *tupleList = new list<Node *>();
+            for (auto it=(static_cast<tupleNode *>(u)->tupleList)->begin(); it != (static_cast<tupleNode *>(u)->tupleList)->end(); it++) {
+                tupleList->push_back(copyNode(*it));
             }
-            Node* newStreams = new streamsNode(streamList);
+            Node* newStreams = new tupleNode(tupleList);
             return newStreams;
         }
         case Paren:

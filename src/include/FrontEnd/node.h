@@ -701,14 +701,14 @@ class operatorNode : public Node
     void print() {}
     string toString();
 };
-class tumpleNode : public Node
+class tupleNode : public Node
 {
   public:
-    list<Node *> *tumpleList;
-    tumpleNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): tumpleList(list) {
-      this->type = Streams;
+    list<Node *> *tupleList;
+    tupleNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): tupleList(list) {
+      this->type = Tuple;
     }
-    ~tumpleNode() {}
+    ~tupleNode() {}
     void print() {}
     string toString() {}
 };

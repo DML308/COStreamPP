@@ -86,7 +86,7 @@ extern void yyerror (const char *msg);
 %type<str> DENSE CONV2D
 %type<node> operator.layer operator.squential.add
 %type<list> squential.statement.list
-%type<node> tumple
+%type<node> tuple
 /* C. 优先级标记,从上至下优先级从低到高排列 */
 %right '='
 %left OROR
@@ -275,13 +275,13 @@ initializer.list:
                         }
         ;
 /*************************************************************************/
-/*                      1.1.5 tumple ( (1, 2) )                          */
+/*                      1.1.5 tuple ( (1, 2) )                          */
 /*************************************************************************/
-tumple:
+tuple:
           '(' argument.expression.list ')' {
-                            $$ = new tumpleNode($2, @1);
+                            $$ = new tupleNode($2, @1);
                             line("Line:%-4d",@1.first_line);
-                            debug("tumple");
+                            debug("tuple");
                         }
 /*************************************************************************/
 /*              1.2 function.definition 函数声明                          */
@@ -529,9 +529,9 @@ join.statement:
         ;
 argument.expression.list:
           exp                                               { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
-        | tumple                                            { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
+        | tuple                                            { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
         | argument.expression.list ',' exp                  { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push param\n");}
-        | argument.expression.list ',' tumple               { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push tumple param\n"); }
+        | argument.expression.list ',' tuple               { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push tuple param\n"); }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
@@ -647,7 +647,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                             //$1=top->get(static_cast<idNode*>$1->name);
                             $$ = $1 ;  }
         | constant        { $$ = $1 ; }
-        /* | tumple          { $$ = $1 ; } */
+        /* | tuple          { $$ = $1 ; } */
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
         | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
@@ -701,14 +701,14 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                                     ((squentialNode *)$3)->outputs=new list<Node*>({$1});
                               }
                         }
-        | tumple assignment.operator exp {
+        | tuple assignment.operator exp {
                                     line("Line:%-4d",@1.first_line);
                                     debug("multiple outputs\n");
                                     $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
                                     if ($3->type  == Operator_) {
-                                          ((operatorNode*)$3)->outputs= ((tumpleNode *)$1)->tumpleList;
+                                          ((operatorNode*)$3)->outputs= ((tupleNode *)$1)->tupleList;
                                     } else if ($3->type  == CompositeCall) {
-                                          ((compositeCallNode*)$3)->outputs= ((tumpleNode *)$1)->tumpleList;
+                                          ((compositeCallNode*)$3)->outputs= ((tupleNode *)$1)->tupleList;
                                     }
                               }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
