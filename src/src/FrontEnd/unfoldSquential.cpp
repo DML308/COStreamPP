@@ -12,7 +12,6 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     vector<compositeCallNode *> comCallList; // 用于存储展开后的compositeCallNode
     compositeNode *squential = NULL;
     string streamName = "Sstream";
-    static int num = 0;
     string comName = MakeCompositeName("squential");
     list<Node *> *inputs = node->inputs;
     list<Node *> *outputs = node->outputs;
@@ -1105,28 +1104,106 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     compositeNode *res = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     string streamName = "DConv2dStream";
-    string compName = "DConv2D_" + layer -> level;
-    list<Node *> *tempList = new list<Node *>();
-    operatorNode *splitOperator = NULL, *joinOperator = NULL;
+    string compName = "DConv2D_" + to_string(layer -> level);
+    list<Node *> *errorList = NULL, *fpInputList = NULL;
+    // splitOperator1 将误差duplicate成filters份, splitOperator2 将传入正向传播的输入再次传入到反向传播中,并duplicate成多份
+    operatorNode *splitOperator1 = NULL, *splitOperator2 = NULL, *joinOperator = NULL;
+
     list<Node *> *inputs_split = new list<Node *>();
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *inputs_join = new list<Node *>();
-    list<Node *> *call_outputs = NULL;
+    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
     // filters 本层的卷积核个数
-    list<Node *> *arg_list = new list<Node *>();
-    Node* input1 = makeStream("input1", "double");
-    inputs_split->push_back(input1);
-    Node* input2 = makeStream("input2", "double");
-    inputs_split->push_back(input2);
+    Node* error = makeStream("input1", "double");
+    inputs_split->push_back(error);
+    Node* fpInput = makeStream("input2", "double");
+    inputs_split->push_back(fpInput);
     Node* output = makeStream("output", "double");
     outputs->push_back(output);
     compInOut = new ComInOutNode(inputs_split, outputs);
     compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
-    list<Node *> *comp_stmt_List = new list<Node *>();
-    return res;   
-    
+    compBodyNode *compBody = NULL;
+    list<Node *> *compStmtList = new list<Node *>();
+
+    splitOperator1 = makeConv2DSplitOperator(error, layer);
+    splitOperator2 = makeConv2DSplitOperator(fpInput, layer);
+    errorList = splitOperator1 -> outputs;
+    fpInputList = splitOperator2 -> outputs;
+    auto errorIter = errorList -> begin();
+    auto fpInputIter = fpInputList -> begin();
+    compositeNode *dKernelComp = makeDConv2DKernel(layer);
+    for (int i = 0; i < ((conv2DLayerNode *)layer) -> filters; i++) {
+        string tempName = streamName + "_" + to_string(i);
+        idNode *id = new idNode(tempName);
+        //compositeCall的输出流是join节点的输入流
+        inputs_join->push_back(id);
+        list<Node *> *call_outputs = new list<Node *>({id});
+        //compositeCall的输入流
+        list<Node *> *call_inputs = new list<Node *>({*errorIter, *fpInputIter});
+        compositeNode *actual_composite = compositeCallStreamReplace(dKernelComp, call_inputs, call_outputs);
+        compositeCallNode *call = new compositeCallNode(call_outputs, tempName, NULL, call_inputs, actual_composite);
+        //cout<<"compName= "<<tempName<<endl;
+        comCallList->push_back(call);
+        errorIter++;
+        fpInputIter++;
+    }
+    // arg_list?
+    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, NULL);
+    compStmtList->push_back(splitOperator1);
+    compStmtList->push_back(splitOperator2);
+    for (auto it : *comCallList)
+    {
+        compStmtList->push_back(it);
+    }
+    compStmtList->push_back(joinOperator);
+    compBody = new compBodyNode(NULL, compStmtList);
+    res = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return res;
 }
 // 由于反向传播每一层有两个输入流 不可以直接使用splitjoin结构
 // 将输入的数据复制成layer->filters份
-operatorNode *UnfoldComposite::MakeConv2DSplitOperator(Node *input, layerNode *layer) {
+operatorNode *UnfoldComposite::makeConv2DSplitOperator(Node *input, layerNode *layer) {
+    operatorNode *res = NULL;
+    Node *work = NULL;
+    windowNode *window = NULL;
+    operBodyNode *body = NULL;
+    string operName = "dConv2D_Duplicate";
+    string streamName = "dConv2dDup";
+    list<Node *> *outputs = new list<Node *>();
+    list<Node *> *inputs = new list<Node *>({input});
+    list<Node *> *winStmt = new list<Node *>();
+    string inputName = ((idNode *)input) -> name;
+    Node *constOne = new constantNode("intager", (long long)1);
+    Node *constZero = new constantNode("intager", (long long)0);
+    // 输出窗口
+    for(int i = 0; i < layer -> level; i++) {
+        string tempName = streamName + "_" + to_string(layer->level) + "_" + to_string(i);
+        idNode *id = new idNode(tempName);
+        outputs -> push_back(id);
+        tumblingNode *tum = new tumblingNode(new list<Node *>({constOne}));
+        winStmtNode *win = new winStmtNode(tempName, tum);
+        winStmt->push_back(win);
+    }
+    // 输入窗口
+    slidingNode *slid = new slidingNode(new list<Node *>({constOne, constOne}));
+    winStmtNode *win = new winStmtNode(inputName, slid);
+    // work
+    list<Node *> *stmts = new list<Node *>();
+    // 遍历outputs, 并赋值
+    for(auto output : *outputs) {
+        idNode *left = new idNode(((idNode *)output)->name);
+        left->isArray = 1;
+        left->arg_list.push_back(constZero);
+        idNode *right = new idNode(static_cast<idNode *>(input)->name);
+        right->isArray = 1;
+        right->arg_list.push_back(constZero);
+        Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
+        stmts -> push_back(stmt);
+    }
+    work = new blockNode(stmts);
+    winStmt->push_back(win);
+    window = new windowNode(winStmt);
+    body = new operBodyNode(NULL, NULL, work, window);
+    res = new operatorNode(outputs, operName, inputs, body);
+    return res;
 }

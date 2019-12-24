@@ -57,6 +57,6 @@ class UnfoldComposite
     Node* makeDConv2DKernelOperInit(layerNode *layer);
     Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    operatorNode* MakeConv2DSplitOperator(Node *input, layerNode *layer);
+    operatorNode* makeConv2DSplitOperator(Node *input, layerNode *layer);
 };
 #endif
