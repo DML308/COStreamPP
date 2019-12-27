@@ -934,7 +934,7 @@ class compositeNode : public Node
     string toString() {}
 };
 
-class squentialNode : public Node
+class sequentialNode : public Node
 {
   public:
     list<Node *> *outputs;
@@ -942,10 +942,10 @@ class squentialNode : public Node
     list<Node *> *body_stmts;
     list<Node *> *arg_list;
     compositeNode *replace_composite;
-    squentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
+    sequentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
-      this->type = Squential;
+      this->type = Sequential;
       this->outputs = outputs;
       this->inputs = inputs;
       this->arg_list = param;
@@ -958,7 +958,7 @@ class squentialNode : public Node
         cout<< (*iter)->type  << endl;
       }
     }
-    ~squentialNode() {};
+    ~sequentialNode() {};
     void print() {};
     string toString() {};
 };
@@ -1052,6 +1052,6 @@ class conv2DLayerNode : public layerNode
     ~conv2DLayerNode() {}
     void print() {}
     string toString() {}
-    void init(squentialNode* squential);
+    void init(sequentialNode* sequential);
 };
 #endif

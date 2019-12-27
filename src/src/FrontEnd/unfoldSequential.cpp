@@ -3,26 +3,26 @@
 #include <string.h>
 extern SymbolTable S;
 extern list<Node*> *Program;
-extern squentialNode *globalSquential;
+extern sequentialNode *globalSequential;
 extern vector<Node *> compositeCall_list;
 
-compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
-    globalSquential = node;
+compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
+    globalSequential = node;
     compositeCallFlow(node->body_stmts); // 将通过add加入的层,依次push到compositeCall_list中
     vector<compositeCallNode *> comCallList; // 用于存储展开后的compositeCallNode
-    compositeNode *squential = NULL;
+    compositeNode *sequential = NULL;
     string streamName = "Sstream";
-    string comName = MakeCompositeName("squential");
+    string comName = MakeCompositeName("sequential");
     list<Node *> *inputs = node->inputs;
     list<Node *> *outputs = node->outputs;
     list<Node *> *arg_list = node->arg_list;
     list<Node *> *comp_stmts = new list<Node *>();
-    cout<<"Unfold squential"<<endl;
+    cout<<"Unfold sequential"<<endl;
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
     SymbolTable *top = new SymbolTable(NULL);
-    // squential有两个输入流, 分别是是训练集和标签
+    // sequential有两个输入流, 分别是是训练集和标签
     assert(inputs != NULL && outputs != NULL);
     int levelNum = compositeCall_list.size();
     int currentLevel = 0;
@@ -35,7 +35,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         ((layerNode *)*(iter+1))->prevLayer  = ((layerNode *)*iter);
         if (((layerNode *)*iter)->layerName == "conv2D") {
             // 计算卷积层输出的尺寸
-            ((conv2DLayerNode *)*iter)->init(globalSquential);
+            ((conv2DLayerNode *)*iter)->init(globalSequential);
         }
     }
     ((layerNode *)compositeCall_list.back())->level = ++currentLevel;
@@ -55,9 +55,9 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
         Program->push_front(weightDecl);
         prevDim = dim;
     }
-    // 取得输入到squential的训练集
+    // 取得输入到sequential的训练集
     list<Node *> *temp_stream = new list<Node *>({inputs->front()});
-    // 取得输入到squential的标签
+    // 取得输入到sequential的标签
     list<Node *> *y_stream = new list<Node *>({inputs->back()});
     // 声明stream stream<double x>...
     idNode *streamDeclId = new idNode("x");
@@ -69,18 +69,18 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     // streamDecl->id_list.push_back()
    
     idNode *inputCopy1 = NULL, *inputCopy2 = NULL;
-    inputCopy1 = new idNode("squential_input_copy_1");
-    inputCopy2 = new idNode("squential_input_copy_2");
+    inputCopy1 = new idNode("sequential_input_copy_1");
+    inputCopy2 = new idNode("sequential_input_copy_2");
     ((strdclNode*)streamDecl)->id_list.push_back(inputCopy1);
     ((strdclNode*)streamDecl)->id_list.push_back(inputCopy2);
     list<Node *> *temp_call_inputs, *temp_call_outputs;
     temp_call_inputs = new list<Node *>({temp_stream->front()});
     temp_call_outputs = new list<Node *>({inputCopy1, inputCopy2});
     compositeNode *tempActualComposite = makeInputComposite((layerNode *)(*compositeCall_list.begin()), temp_call_inputs, temp_call_outputs);
-    compositeCallNode *tempCall = new compositeCallNode(temp_call_outputs, "copySquentialInput", NULL, temp_call_inputs, tempActualComposite);
+    compositeCallNode *tempCall = new compositeCallNode(temp_call_outputs, "copySequentialInput", NULL, temp_call_inputs, tempActualComposite);
     comCallList.push_back(tempCall);
     // 用于存储前向传播给反向传播的数据流
-    // 输入squential的训练集在反向传播中仍然需要
+    // 输入sequential的训练集在反向传播中仍然需要
     list<list<Node *>*> *temp_stream_list = new list<list<Node *>*>({new list<Node *>({inputCopy2})});
     temp_stream->pop_back();
     temp_stream->push_back(inputCopy1);
@@ -135,7 +135,7 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     ((strdclNode*)streamDecl)->id_list.push_back(lossStreamId);
     list<Node *> *call_outputs = new list<Node *>({lossStreamId});
     compositeNode* actual_composite = makeLossComposite((layerNode *)(compositeCall_list.back()), call_inputs, call_outputs);
-    string name = "squential_loss";
+    string name = "sequential_loss";
     comCallList.push_back(new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite));
     cout<<"Unfold forward propagation"<<endl;
     temp_stream->clear();
@@ -163,16 +163,16 @@ compositeNode *UnfoldComposite::UnfoldSquential(squentialNode *node) {
     }
     cout<<"Unfold back propogation"<<endl;
     // ...
-    // 生成squential composite
+    // 生成sequential composite
     // 将声明的数据流加入
     comp_stmts->push_back(streamDecl);
     // 遍历计算节点, 依次加入
     for (auto nd : comCallList)
         comp_stmts->push_back(nd);
     body = new compBodyNode(NULL, comp_stmts);
-    squential = new compositeNode(head, body);
+    sequential = new compositeNode(head, body);
     compositeCall_list.clear();
-    return squential;
+    return sequential;
 }
 compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     cout << "makeForwardComposite"<<endl;
@@ -222,7 +222,7 @@ operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> 
     if (layer->prevLayer != NULL) {
         row = layer->prevLayer->arg_list->front();
     } else {
-        row = globalSquential->arg_list->front();
+        row = globalSequential->arg_list->front();
     }
     col = layer->arg_list->front();
     
@@ -274,7 +274,7 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer, list<Node *> *inputs, lis
     Node *init2 = NULL, *cond2 = NULL, *next_j = NULL, *stmt2 = NULL, *forNode2;
     init1 = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
     if (layer->prevLayer == NULL) {
-        cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(globalSquential->arg_list->front()));
+        cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(globalSequential->arg_list->front()));
     } else {
         cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(layer->prevLayer->arg_list->front()));
     }
@@ -455,7 +455,7 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     if (layer->prevLayer != NULL) {
         row = layer->prevLayer->arg_list->front();
     } else {
-        row = globalSquential->arg_list->front();
+        row = globalSequential->arg_list->front();
     }
     col = layer->arg_list->front();
 
@@ -492,7 +492,7 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     if (layer->prevLayer != NULL) {
         row = layer->prevLayer->arg_list->front();
     } else {
-        row = globalSquential->arg_list->front();
+        row = globalSequential->arg_list->front();
     }
     col = layer->arg_list->front();
     // 循环修改w, 循环传递误差
@@ -590,7 +590,7 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
 // 暂时,优化可与makeLossComposite合并
 compositeNode* UnfoldComposite::makeInputComposite(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
-    string comName = MakeCompositeName("SquentialInput");
+    string comName = MakeCompositeName("SequentialInput");
     compHeadNode *compHead = new compHeadNode(comName, inout);
     compBodyNode *compBody = NULL;
     list<Node *> *comp_stmt_list = new list<Node*>();
@@ -604,13 +604,13 @@ compositeNode* UnfoldComposite::makeInputComposite(layerNode *layer, list<Node *
 }
 // 暂时保留layerNode,每次只复制一条数据
 operatorNode* UnfoldComposite::makeInputOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
-    string operName = "squential_input";
+    string operName = "sequential_input";
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
     // window
     list<Node *> *winStmt = new list<Node *>();
-    Node* num = globalSquential->arg_list->front();
+    Node* num = globalSequential->arg_list->front();
     slidingNode *slid = new slidingNode(new list<Node *>({num, num}));
     winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
     winStmt->push_back(win1);
@@ -657,7 +657,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
     // 输入窗口
     auto inputIter = inputs->begin();
-    auto inputSize = layer->prevLayer != NULL ? layer->prevLayer->arg_list->front() : globalSquential->arg_list->front();
+    auto inputSize = layer->prevLayer != NULL ? layer->prevLayer->arg_list->front() : globalSequential->arg_list->front();
     if (inputSize -> type == constant) {
         inRow = inputSize;
         inCol = inputSize;
@@ -715,7 +715,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
 Node* getDimVal (layerNode* layer, int dim) {
     Node *val = NULL;
     if (layer->prevLayer == NULL) {
-        auto iter = ((tupleNode *)(globalSquential->arg_list->front()))->tupleList->begin();
+        auto iter = ((tupleNode *)(globalSequential->arg_list->front()))->tupleList->begin();
         for (int i = 0; i < dim; i++) {
             iter++;
         }
@@ -1207,3 +1207,135 @@ operatorNode *UnfoldComposite::makeConv2DSplitOperator(Node *input, layerNode *l
     res = new operatorNode(outputs, operName, inputs, body);
     return res;
 }
+
+compositeNode* UnfoldComposite::makeDConv2DKernel(layerNode *layer) {
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    list<Node *> *inputs = new list<Node *>(), *outputs = new list<Node *>();
+    Node* error = makeStream("error", "double");
+    inputs->push_back(error);
+    Node* fpInput = makeStream("fpInput", "double");
+    inputs->push_back(error);
+    Node* output = makeStream("output", "double");
+    outputs->push_back(output);
+    compInOut = new ComInOutNode(inputs, outputs);
+    string compName = "dConv2DKernel_" + layer->level;
+    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
+    compBody = makeDConv2DKernelBody((conv2DLayerNode *)layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+
+Node* UnfoldComposite::makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    Node* body = NULL;
+    list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
+    Node *kernelIndex = new idNode("kernelIndex");
+    ((idNode *)kernelIndex) -> valType = "integer";
+    paramList -> push_back(kernelIndex);
+    operatorNode *oper  = makeDConv2DKernelOper(layer, inputs, outputs);
+    Node *binop = new binopNode((expNode *)(outputs -> front()), "=", (expNode *)oper) ;
+    stmtList -> push_back(binop);
+    paramNode *param = new paramNode(paramList);
+    body = new compBodyNode(param, stmtList);
+    return body;
+}
+// 
+// input1为经扩展和膨胀后的误差矩阵
+// 尺寸为[newHeight][newWidth][kernel_number]
+// newHeight = (layer -> size[0] - 1) * stride + 1;
+// [i][j][d] => [padding_y + i * stride_y][padding_x + j * stride_x][d]
+// ?需要判断上一层的类型,现在假设是卷积层
+operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs) {
+    string operName = "dConv2D";
+    operBodyNode *body = NULL;
+    Node *init = NULL, *work = NULL;
+    windowNode *window = NULL;
+    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    // *****输入窗口*****
+    //[dim0][dim1]
+    long long errInputDim0 = (((conv2DLayerNode *)layer) -> size -> at(0) - 1 ) * ((conv2DLayerNode *)layer) -> strides[0] + 1 + 2 * ((conv2DLayerNode *)layer) -> paddings[0];
+    long long errInputDim1 = (((conv2DLayerNode *)layer) -> size -> at(1) - 1 ) * ((conv2DLayerNode *)layer) -> strides[1] + 1 + 2 * ((conv2DLayerNode *)layer) -> paddings[1];
+    // 经反向传播计算逐层传递的误差
+    auto inputIter = inputs->begin();
+    long long errPopVal = errInputDim0 * errInputDim1 * ((conv2DLayerNode *)layer) -> filters;
+    Node *errPop = new constantNode("integer", errPopVal);
+    slidingNode *slid1 = new slidingNode(new list<Node *>({errPop, errPop}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid1);
+    winStmt->push_back(win1);
+
+    // 经正向传播传入该层的输入
+    inputIter++;
+    Node *fpInputDim0, *fpInputDim1;
+    auto inputSize = layer->prevLayer != NULL ? layer->prevLayer->arg_list->front() : globalSequential->arg_list->front();
+    if (inputSize -> type == constant) {
+        fpInputDim0 = inputSize;
+        fpInputDim1 = inputSize;
+    } else {
+        fpInputDim0 = ((tupleNode *)inputSize)->tupleList->front();
+        fpInputDim1 = ((tupleNode *)inputSize)->tupleList->back();
+    }
+    long long fpInputPopVal = ((constantNode *)fpInputDim0)->llval * ((constantNode *)fpInputDim1)->llval * ((conv2DLayerNode *)layer)->depth;
+    Node *fpInputPop = new constantNode("integer", fpInputPopVal);
+    slidingNode *slid2 = new slidingNode(new list<Node *>({fpInputPop, fpInputPop}));
+    winStmtNode *win2 = new winStmtNode(((idNode *)(* inputIter))->name, slid2);
+    winStmt->push_back(win2);
+
+    // *****输出窗口*****
+    auto outputIter = inputs->begin();
+    long long pushVal;
+    if (layer -> prevLayer) {
+        conv2DLayerNode *prevLayer = (conv2DLayerNode *)(layer -> prevLayer);
+        // 上一层是卷积层,需要对计算的误差做膨胀和扩展
+        if (layer -> prevLayer -> layerName == "conv2d") {
+            
+            long long dim0 =  (prevLayer -> size -> at(0) - 1) * prevLayer -> strides[0] + 1 + 2 * prevLayer -> paddings[0];
+            long long dim1 =  (prevLayer -> size -> at(1) - 1) * prevLayer -> strides[1] + 1 + 2 * prevLayer -> paddings[1];
+            pushVal = dim0 * dim1 * prevLayer -> filters;
+        }
+    } else {
+        // 当前到达第一层 ???
+    }
+    Node *push = new constantNode("integer", pushVal);
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
+    winStmtNode *win3 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
+    winStmt->push_back(win3);
+    window = new windowNode(winStmt);
+
+    primNode *primInt = new primNode("int"),
+             *primDouble = new primNode("double");
+    idNode *idI = new idNode("i"),
+           *idJ = new idNode("j"),
+           *idN = new idNode("n"),
+           *idM = new idNode("m"),
+           *idK = new idNode("k"),
+           *idPushIndex = new idNode("pushIndex"),
+           *idTemp = new idNode("temp");
+    // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2)); ???
+    Node *declInt = new declareNode(primInt, idI),
+        //  *declJ = new declareNode(primInt, idJ),
+        //  *declN = new declareNode(primInt, idN),
+        //  *declM = new declareNode(primInt, idM),
+        //  *declK = new declareNode(primInt, idK),
+        //  *declPushIndex = new declareNode(primInt, idPushIndex),
+         *declDouble = new declareNode(primDouble, idTemp);
+    ((declareNode *)declInt )-> id_list.push_back(idJ);
+    ((declareNode *)declInt )-> id_list.push_back(idN);
+    ((declareNode *)declInt )-> id_list.push_back(idM);
+    ((declareNode *)declInt )-> id_list.push_back(idK);
+    ((declareNode *)declInt )-> id_list.push_back(idPushIndex);
+    bodyStmtList -> push_back(declInt);
+    bodyStmtList -> push_back(declDouble);
+    init = makeDConv2DKernelOperInit(layer);
+    work = makeDConv2DKernelOperWork(layer, inputs, outputs);
+    body = new operBodyNode(bodyStmtList, init, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+
+Node* UnfoldComposite::makeDConv2DKernelOperInit(layerNode *layer) {
+    return NULL;
+}
+
+Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    return NULL;
+}
+

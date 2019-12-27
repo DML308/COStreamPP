@@ -21,7 +21,7 @@ string PhaseName = "undefined";                  //阶段名
 UnfoldComposite *unfold = new UnfoldComposite(); //用于展开splitjoin，pipeline节点
 list<Node *> *Program = NULL;                    //用于存储语法树节点
 compositeNode *gMainComposite = NULL;            //compositeMain
-squentialNode *globalSquential = NULL;           // 用于存储squential节点, 也为了确保仅有一个squential节点
+sequentialNode *globalSequential = NULL;           // 用于存储sequential节点, 也为了确保仅有一个sequential节点
 StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 SymbolTable S;

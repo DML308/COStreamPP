@@ -152,8 +152,8 @@ void X86CodeGeneration::CGGlobalHeader()
             }
         }
     }
-    // 为squential添加数据流数据类型
-    if (globalSquential != NULL)  {
+    // 为sequential添加数据流数据类型
+    if (globalSequential != NULL)  {
         typeSet.insert(make_pair("double", "x"));
     }
     //写入数据流数据类型结构体

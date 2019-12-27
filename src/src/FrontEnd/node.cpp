@@ -536,10 +536,10 @@ string funcBodyNode::toString()
     return str;
 }
 // 根据上一层初始化本层输出特征图的尺寸和输入空间的维度
-void conv2DLayerNode::init (squentialNode* squential) {
+void conv2DLayerNode::init (sequentialNode* sequential) {
     vector<long long>* oldSize; 
     if (!prevLayer && this->level == 1) {
-        for(auto iter: *(squential->arg_list)) {
+        for(auto iter: *(sequential->arg_list)) {
             oldSize->push_back(((constantNode *)iter)->llval);
         }
     } else {

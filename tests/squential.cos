@@ -14,7 +14,7 @@ composite Main() {
             Y tumbling(1);
         }
     };
-    Out = squential (In, Y) (4) {
+    Out = sequential (In, Y) (4) {
         add Dense(3);
         add Dense(2);
         add Dense(1);

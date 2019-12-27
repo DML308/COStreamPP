@@ -101,7 +101,7 @@ split        { return SPLIT; }
 join         { return JOIN; }
 duplicate    { return DUPLICATE; }
 roundrobin   { return ROUNDROBIN; }
-squential    { return SQUENTIAL; }
+sequential    { return SEQUENTIAL; }
 
 {identifier} { yylval.str = new string(yytext);
                return IDENTIFIER; }

@@ -41,7 +41,7 @@ typedef enum {
   Join,
   RoundRobin,
   Duplicate,
-  Squential,
+  Sequential,
   Layer,
   
   /********1********新文法**********/

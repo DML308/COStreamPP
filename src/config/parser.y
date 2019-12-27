@@ -34,7 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token SQUENTIAL DENSE CONV2D
+%token SEQUENTIAL DENSE CONV2D
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -84,8 +84,8 @@ extern void yyerror (const char *msg);
 %type<str> stringConstant IDENTIFIER
 /* 语法分析器自己的结构 6. 深度学习扩展文法*/
 %type<str> DENSE CONV2D
-%type<node> operator.layer operator.squential.add
-%type<list> squential.statement.list
+%type<node> operator.layer operator.sequential.add
+%type<list> sequential.statement.list
 %type<node> tuple
 /* C. 优先级标记,从上至下优先级从低到高排列 */
 %right '='
@@ -460,10 +460,10 @@ operator.add:
 operator.pipeline:
           PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
         ;
-operator.squential.add:
+operator.sequential.add:
           ADD operator.layer              {
                                                 line("Line:%-4d",@1.first_line);
-                                                debug("operator.squential.add ::= ADD operator.layer \n");
+                                                debug("operator.sequential.add ::= ADD operator.layer \n");
                                                 $$ = new addNode((layerNode*)$2, @1);
                                           }
         ;
@@ -542,20 +542,20 @@ operator.default.call:
                   $$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
             }
         ;
-squential.statement.list:
+sequential.statement.list:
           statement                                          {
                                                                 line("Line:%-4d", @1.first_line);
-                                                                debug("squential.statement.list ::= statement \n");
+                                                                debug("sequential.statement.list ::= statement \n");
                                                                 $$ = new list<Node *>({$1});
                                                              }
-        | operator.squential.add                             {
+        | operator.sequential.add                             {
                                                                 line("Line:%-4d", @1.first_line);
-                                                                debug("squential.statement.list ::= operator.squential.add\n");
+                                                                debug("sequential.statement.list ::= operator.sequential.add\n");
                                                                 $$ = new list<Node *>({$1});
                                                              }
-        | squential.statement.list operator.squential.add    {
+        | sequential.statement.list operator.sequential.add    {
                                                                 line("Line:%-4d", @1.first_line);
-                                                                debug("squential.statement.list ::= squential.statement.list operator.squential.add\n");
+                                                                debug("sequential.statement.list ::= sequential.statement.list operator.sequential.add\n");
                                                                 $$ ->push_back($2);
                                                              }
         ;
@@ -698,8 +698,8 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                               }
                               else if($3->type==Operator_){
                                      ((operatorNode*)$3)->outputs=new list<Node*>({$1});
-                              } else if($3->type==Squential){
-                                    ((squentialNode *)$3)->outputs=new list<Node*>({$1});
+                              } else if($3->type==Sequential){
+                                    ((sequentialNode *)$3)->outputs=new list<Node*>({$1});
                               }
                         }
         | tuple assignment.operator exp {
@@ -762,12 +762,12 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
-        |   SQUENTIAL '(' argument.expression.list ')'  '(' argument.expression.list ')' lblock squential.statement.list rblock {
+        |   SEQUENTIAL '(' argument.expression.list ')'  '(' argument.expression.list ')' lblock sequential.statement.list rblock {
                   /*     1.argument.expression.list是一个identifier
                   2. argument.expression.list*/
                   line("Line%-4d", @1.first_line);
-                  debug("exp ::= SQUENTIAL\n");
-                  $$ = new squentialNode(NULL,$3,$6,$9,@1); 
+                  debug("exp ::= SEQUENTIAL\n");
+                  $$ = new sequentialNode(NULL,$3,$6,$9,@1); 
         }
         ;
 

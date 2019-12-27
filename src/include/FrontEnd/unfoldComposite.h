@@ -19,7 +19,7 @@ class UnfoldComposite
     compositeNode *UnfoldDuplicate(string comName, splitjoinNode *node);
     compositeNode *UnfoldPipeline(pipelineNode *node);
     compositeNode *UnfoldSplitJoin(splitjoinNode *node);
-    compositeNode *UnfoldSquential(squentialNode *node);
+    compositeNode *UnfoldSequential(sequentialNode *node);
     Node *MakeRoundrobinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     Node *MakeJoinWork(list<Node *> *input, list<Node *> *arguments, list<Node*> *outputs);
     operatorNode *MakeSplitOperator(Node *input, list<Node *> *arguments, int style);
