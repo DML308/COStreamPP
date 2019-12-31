@@ -2234,9 +2234,18 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
         //解析window 不能放这里
         for (auto it : *body->stmt_List)
         {
+            operatorNode *exp = NULL;
+            if(it->type == Binop){
+                Node *right = ((binopNode *)it)->right;
+                if(right->type == Operator_){
+                    exp = (operatorNode *)right;
+                }
+            }
             if (it->type == Operator_)
             {
-                operatorNode *exp = ((operatorNode *)it);
+                exp = ((operatorNode *)it);
+            }
+            if(exp!=NULL){
                 //cout<<"exp->type ="<<exp->type<<endl;
                 // 解析window
                 
@@ -2298,6 +2307,7 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
                 operBody->win->win_list = win_list;
                 //windowNode *win = new windowNode(win_list);  
             }   
+            
         }
     }
     top->printSymbolTables();

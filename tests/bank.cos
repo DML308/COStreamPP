@@ -34,6 +34,7 @@ composite LowPassFilter(output stream<double x>Out, input stream<double x>In)
 		}
 		window {
 			In sliding(N,1);
+			Out tumbling(N);
 		}
 	};
 }
@@ -74,6 +75,7 @@ composite HighPassFilter(output stream<double x>Out, input stream<double x>In)
 		}
 		window {
 			In sliding(N,1);
+			Out tumbling(N);
 		}
 	};
 }
@@ -139,6 +141,7 @@ composite Compressor(output stream<double x>Out, input stream<double x>In)
 		}
 		window {
 			In sliding(M,M);
+			Out tumbling(M);
 		}
 	};
 }
@@ -157,6 +160,7 @@ composite Expander(output stream<double x>Out, input stream<double x>In)
 				Out[i].x = 0;
 		}
 		window {
+			In sliding(M,M);
 			Out tumbling(M);
 		}
 	};	
@@ -253,7 +257,7 @@ composite Main()
 		}
 		window
 		{
-			Out sliding(1,1);
+			FBP sliding(1,1);
 		}
 	};
 }
