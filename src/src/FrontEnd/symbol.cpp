@@ -212,11 +212,25 @@ void SymbolTable::InsertStreamSymbol(inOutdeclNode* inOutNode){
 }
 
 inOutdeclNode* SymbolTable::LookUpStreamSymbol(string name){
-    auto it = streamTable.find(name);
-    if(it != streamTable.end()){
-        return it->second;
-    }else{
-        return NULL;
+    SymbolTable *right_pre;
+    auto iter = streamTable.find(name);
+    if(!(iter == streamTable.end())){
+        return iter->second;
+    }else{ // 往上层作用域查找
+        if(prev == NULL) return NULL;
+        right_pre = prev;
+        while(right_pre!=NULL){
+            iter = right_pre->streamTable.find(name);
+            if(iter != right_pre->streamTable.end()){
+                break;
+            }
+            right_pre = right_pre->prev;
+        }
+        if(right_pre == NULL){
+            return NULL;
+        }else{
+            return iter->second;
+        }
     }
 }
 void SymbolTable::InsertIdentifySymbol(Node *node,Constant *constant){

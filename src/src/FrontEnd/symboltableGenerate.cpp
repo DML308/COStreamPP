@@ -2182,9 +2182,13 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 }
 
 
-SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList,list<Node *> *inputs,list<Node *> *outputs){
-    top = new SymbolTable(S);
-
+SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList,list<Node *> *inputs,list<Node *> *outputs,SymbolTable *scope){
+    if(scope){
+        top = new SymbolTable(scope,NULL);
+    }else{
+        top = new SymbolTable(S);
+    }
+    
     generateComposite(composite);
     
     compBodyNode *body = composite->body; //body

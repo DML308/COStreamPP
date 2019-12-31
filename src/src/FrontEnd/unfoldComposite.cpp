@@ -479,6 +479,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
             list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
             compositeCallNode *call = new compositeCallNode(call_outputs, tempName, stream_List, call_inputs, comp,*(it)->loc);
             //cout<<"compName= "<<tempName<<endl;
+            call->scope = runningTop;
             comCallList->push_back(call);
         }
         /* 2.todo 若为splitjoin或者pipeline结构，赋予其输入和输出流 */
@@ -541,7 +542,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
                 //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
                 //第三个为传参 param,这里是空
                 compositeCallNode *call = new compositeCallNode(call_outputs, split_join_name, NULL, call_inputs, com_splitjoin,*(it)->loc);
-
+                call->scope = runningTop;
                 comCallList->push_back(call);
 
             
@@ -602,6 +603,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
                 //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
                 //第三个为传参 param,这里是空
                 compositeCallNode *call = new compositeCallNode(call_outputs, pipeline_name, NULL, call_inputs, com_pipeline,*(it)->loc);
+                call->scope = runningTop;
                 comCallList->push_back(call);
 
             
@@ -697,6 +699,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
             }*/
             list<Node *> *stream_List = ((compositeCallNode *)it)->stream_List;
             compositeCallNode *call = new compositeCallNode(call_outputs, tempName, stream_List, call_inputs, comp,*(it)->loc);
+            call->scope = runningTop;
             //cout<<"compName= "<<tempName<<endl;
             comCallList->push_back(call);
         }
@@ -760,7 +763,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
                 //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
                 //第三个为传参 param,这里是空
                 compositeCallNode *call = new compositeCallNode(call_outputs, split_join_name, NULL, call_inputs, com_splitjoin,*(it)->loc);
-
+                call->scope = runningTop;
                 comCallList->push_back(call);
 
         }
@@ -819,6 +822,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
                 //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
                 //第三个为传参 param,这里是空
                 compositeCallNode *call = new compositeCallNode(call_outputs, pipeline_name, NULL, call_inputs, com_pipeline,*(it)->loc);
+                call->scope = runningTop;
                 comCallList->push_back(call);
         }
 
@@ -940,7 +944,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
                 //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
                 //第三个为传参 param,这里是空
                 compositeCallNode *call = new compositeCallNode(call_outputs, split_join_name, NULL, call_inputs, com_splitjoin,*(*it)->loc);
-    
+                call->scope = runningTop;
                 comCallList.push_back(call);
 
 
@@ -1045,6 +1049,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
                 //compositeNode* unfold_splitjoin_node = UnfoldSplitJoin((splitjoinNode *)*it);
                 //第三个为传参 param,这里是空
                 compositeCallNode *call = new compositeCallNode(call_outputs, pipeline_name, NULL, call_inputs, com_pipeline,*(*it)->loc);
+                call->scope = runningTop;
                 comCallList.push_back(call);
 
                 break;
@@ -1087,6 +1092,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 
                 list<Node *> *stream_List = ((compositeCallNode *)*it)->stream_List;
                 compositeCallNode *call = new compositeCallNode(call_outputs, name, stream_List, call_inputs, comp,*(*it)->loc);
+                call->scope = runningTop;
                 //cout<<"actual composite name ="<<actual_composite->compName<<endl;
 
                 comCallList.push_back(call);

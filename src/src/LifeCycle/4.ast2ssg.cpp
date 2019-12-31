@@ -157,8 +157,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                     }
                 }
 
-
-                runningTop = generateCompositeRunningContext(((compositeCallNode *)(exp))->actual_composite,paramList,inputs,outputs); //传入参数,并生成 composite 调用的执行上下文环境
+                SymbolTable *scope;
+                compositeCallNode *call = ((compositeCallNode *)(exp));
+                if(call->scope){
+                    scope = call->scope;
+                }
+                runningTop = generateCompositeRunningContext(((compositeCallNode *)(exp))->actual_composite,paramList,inputs,outputs,scope); //传入参数,并生成 composite 调用的执行上下文环境
                 
                 runningStack.push_back(runningTop); // 调用栈
 
@@ -207,7 +211,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                     paramList = generateStreamList(stream_List,(*it).loc->first_line-1); //嵌套调用 composite 获得参数的值
                 }
             }
-            runningTop = generateCompositeRunningContext(((compositeCallNode *)(it))->actual_composite,paramList,inputs,outputs); //传入参数,并生成 composite调用的执行上下文环境
+            SymbolTable *scope = NULL;
+            compositeCallNode *call = ((compositeCallNode *)(it));
+            if(call->scope){
+                scope = call->scope;
+            }
+            runningTop = generateCompositeRunningContext(((compositeCallNode *)(it))->actual_composite,paramList,inputs,outputs,scope); //传入参数,并生成 composite调用的执行上下文环境
             // 确定window大小
             
             runningStack.push_back(runningTop); // 调用栈
@@ -267,7 +276,8 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     list<Constant*> paramList = list<Constant*>();
     list<Node *> *inputs =new list<Node*>();
     list<Node *> *outputs =new list<Node*>();
-    runningTop = generateCompositeRunningContext(mainComposite,paramList,inputs,outputs); //传入参数,并生成 composite 调用的执行上下文环境
+
+    runningTop = generateCompositeRunningContext(mainComposite,paramList,inputs,outputs,NULL); //传入参数,并生成 composite 调用的执行上下文环境
     runningStack.push_back(runningTop); // 调用栈
 
 

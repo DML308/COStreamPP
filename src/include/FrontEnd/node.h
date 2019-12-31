@@ -6,6 +6,8 @@
 #include <list>
 #include <vector>
 
+class SymbolTable;
+
 class Node
 {
   public:
@@ -858,6 +860,7 @@ class compositeCallNode : public Node
     list<Node *> *inputs;
     list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
+    SymbolTable *scope;
     compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -867,6 +870,7 @@ class compositeCallNode : public Node
         this->inputs = inputs;
         this->outputs = outputs;
         this->actual_composite = actual_composite;
+        this->scope = NULL;
     }
     ~compositeCallNode() {}
     void print() {}
