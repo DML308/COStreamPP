@@ -547,7 +547,10 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
     }
     this->depth = oldSize->at(0);
     for(int i = 1; i < this->domension; i++) {
-        this->size->push_back((oldSize->at(i) + 2 * this->paddings[i] - this->kernel_size[i]) / this->strides[i] + 1);
+        this->size->push_back((oldSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
+    }
+    if (this -> prevLayer -> layerName == "conv2D") {
+        
     }
 }
 

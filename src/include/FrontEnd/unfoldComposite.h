@@ -54,7 +54,6 @@ class UnfoldComposite
     Node* makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeDConv2DKernel(layerNode *layer);
     Node* makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    Node* makeDConv2DKernelOperInit(layerNode *layer);
     Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeConv2DSplitOperator(Node *input, layerNode *layer);

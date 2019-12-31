@@ -1109,24 +1109,13 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     // splitOperator1 将误差duplicate成filters份, splitOperator2 将传入正向传播的输入再次传入到反向传播中,并duplicate成多份
     operatorNode *splitOperator1 = NULL, *splitOperator2 = NULL, *joinOperator = NULL;
 
-    list<Node *> *inputs_split = new list<Node *>();
-    list<Node *> *outputs = new list<Node *>();
     list<Node *> *inputs_join = new list<Node *>();
     list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
-    // filters 本层的卷积核个数
-    Node* error = makeStream("input1", "double");
-    inputs_split->push_back(error);
-    Node* fpInput = makeStream("input2", "double");
-    inputs_split->push_back(fpInput);
-    Node* output = makeStream("output", "double");
-    outputs->push_back(output);
-    compInOut = new ComInOutNode(inputs_split, outputs);
-    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
-    compBodyNode *compBody = NULL;
     list<Node *> *compStmtList = new list<Node *>();
 
-    splitOperator1 = makeConv2DSplitOperator(error, layer);
-    splitOperator2 = makeConv2DSplitOperator(fpInput, layer);
+    auto inputIter = inputs -> begin();
+    splitOperator1 = makeConv2DSplitOperator(*inputIter, layer);
+    splitOperator2 = makeConv2DSplitOperator(*(++inputIter), layer);
     errorList = splitOperator1 -> outputs;
     fpInputList = splitOperator2 -> outputs;
     auto errorIter = errorList -> begin();
@@ -1157,8 +1146,7 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     }
     compStmtList->push_back(joinOperator);
     compBody = new compBodyNode(NULL, compStmtList);
-    res = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
-    return res;
+    return compBody;
 }
 // 由于反向传播每一层有两个输入流 不可以直接使用splitjoin结构
 // 将输入的数据复制成layer->filters份
@@ -1245,7 +1233,7 @@ Node* UnfoldComposite::makeDConv2DKernelBody(layerNode *layer, list<Node *> *inp
 // newHeight = (layer -> size[0] - 1) * stride + 1;
 // [i][j][d] => [padding_y + i * stride_y][padding_x + j * stride_x][d]
 // ?需要判断上一层的类型,现在假设是卷积层
-operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs) {
+operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs) {
     string operName = "dConv2D";
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
@@ -1325,17 +1313,16 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode* layer, list<Node 
     ((declareNode *)declInt )-> id_list.push_back(idPushIndex);
     bodyStmtList -> push_back(declInt);
     bodyStmtList -> push_back(declDouble);
-    init = makeDConv2DKernelOperInit(layer);
+    init = NULL;
     work = makeDConv2DKernelOperWork(layer, inputs, outputs);
     body = new operBodyNode(bodyStmtList, init, work, window);
     return new operatorNode(outputs, operName, inputs, body);
 }
 
-Node* UnfoldComposite::makeDConv2DKernelOperInit(layerNode *layer) {
-    return NULL;
-}
-
 Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    Node *work = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    
     return NULL;
 }
 

@@ -995,10 +995,11 @@ class conv2DLayerNode : public layerNode
     long long filters; // 输出空间的维度 （即卷积中滤波器的输出数量）
     long long domension; // 对于conv2D, 为2
     long long depth; // 输入空间的维度
-    vector<long long> kernel_size; // 2D 卷积窗口的宽度和高度
-    vector<long long> strides; // 卷积沿宽度和高度方向的步长
-    vector<long long> paddings; // 扩展
+    vector<long long> *kernel_size; // 2D 卷积窗口的宽度和高度
+    vector<long long> *strides; // 卷积沿宽度和高度方向的步长
+    vector<long long> *paddings; // 扩展
     vector<long long> *size; // 输出特征图的尺寸
+    vector<long long> *transformedSize; //经扩展膨胀后的尺寸
     conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
@@ -1016,35 +1017,38 @@ class conv2DLayerNode : public layerNode
       this->filters = ((constantNode *)(*iter))->llval;
       // kernel_size
       iter++;
+      this->kernel_size = new vector<long long>();
       if ((*iter) -> type == Tuple) {
         for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
-          this->kernel_size.push_back(((constantNode *)(size))->llval);
+          this->kernel_size->push_back(((constantNode *)(size))->llval);
         }
       } else {
         for (int i = 0; i < this->domension; i++) {
-          this->kernel_size.push_back(((constantNode *)(*iter))->llval);
+          this->kernel_size->push_back(((constantNode *)(*iter))->llval);
         }
       }
       // strides
       iter++;
+      this->strides = new vector<long long>();
       if ((*iter) -> type == Tuple) {
         for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
-          this->strides.push_back(((constantNode *)(size))->llval);
+          this->strides->push_back(((constantNode *)(size))->llval);
         }
       } else {
         for (int i = 0; i < this->domension; i++) {
-          this->strides.push_back(((constantNode *)(*iter))->llval);
+          this->strides->push_back(((constantNode *)(*iter))->llval);
         }
       }
       //paddings
       iter++;
+      this->paddings = new vector<long long>();
       if ((*iter) -> type == Tuple) {
         for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
-          this->paddings.push_back(((constantNode *)(size))->llval);
+          this->paddings->push_back(((constantNode *)(size))->llval);
         }
       } else {
         for (int i = 0; i < this->domension; i++) {
-          this->paddings.push_back(((constantNode *)(*iter))->llval);
+          this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
       this->size = NULL;
