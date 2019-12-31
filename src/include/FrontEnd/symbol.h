@@ -138,7 +138,7 @@ class SymbolTable
 
     void InsertIdentifySymbol(Variable *variable);
 
-    void InsertStreamSymbol(string name,inOutdeclNode* inOutNode);
+    void InsertStreamSymbol(inOutdeclNode* inOutNode);
 
     inOutdeclNode* LookUpStreamSymbol(string name);
     //old
@@ -154,6 +154,10 @@ class SymbolTable
     void InsertOperatorSymbol(string name, operatorNode *opt);
 
     void printSymbolTables();
+    
+    map<string, inOutdeclNode *> getStreamTable(){
+      return this->streamTable;
+    }
 
   private:
     

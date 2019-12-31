@@ -2,6 +2,7 @@
 #define _STATIC_STREAM_GRAPH_H_
 
 #include "flatNode.h"
+#include "symbol.h"
 /* 保存所有的展开 operator */
 class StaticStreamGraph
 {

@@ -1849,7 +1849,7 @@ void generateStrDlcNode(strdclNode* streamDeclearNode){  //stream "<int x,int y>
         stream_dlc->strType = streamDeclearNode;
         stream_dlc->id = *it;
         stream_dlc->type = InOutdcl;
-        top->InsertIdentifySymbol(stream_dlc);
+        top->InsertStreamSymbol(stream_dlc);
     }
 
 }
@@ -2097,7 +2097,29 @@ void generateComposite(compositeNode* composite){
     
 
         //解析 输入输出流 stream 作为参数加入符号表
-        if(composite->head->originalInOut){
+        if(inout != NULL){
+            list<Node *> *input_List = inout->input_List; //原始输入流
+            list<Node *> *output_List = inout->output_List; //原始输出流
+            if(input_List != NULL){
+                for(auto it = input_List->begin();it!=input_List->end();it++){
+                    inOutdeclNode *copy_inoutdeclNode = new inOutdeclNode();
+                    copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
+                    idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
+                    copy_inoutdeclNode->id = copy_id;
+                    top->InsertStreamSymbol(copy_inoutdeclNode);
+                }
+            }
+            if(output_List != NULL){
+                for(auto it = output_List->begin();it!=output_List->end();it++){
+                    inOutdeclNode *copy_inoutdeclNode = new inOutdeclNode();
+                    copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
+                    idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
+                    copy_inoutdeclNode->id = copy_id;
+                    top->InsertStreamSymbol(copy_inoutdeclNode);
+                } 
+            } 
+        } 
+        /*if(composite->head->originalInOut){
 
             ComInOutNode *originalInOut = composite->head->originalInOut;
             
@@ -2127,23 +2149,9 @@ void generateComposite(compositeNode* composite){
         } 
 
         }else{
-            if(inout != NULL){
-            list<Node *> *input_List = inout->input_List; //原始输入流
-            list<Node *> *output_List = inout->output_List; //原始输出流
-            if(input_List != NULL){
-                for(auto it = input_List->begin();it!=input_List->end();it++){
-                    
-                    //top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
-                }
-            }
-            if(output_List != NULL){
-                for(auto it = output_List->begin();it!=output_List->end();it++){
-                     //top->InsertStreamSymbol(((inOutdeclNode *)*it)->id->name ,static_cast<inOutdeclNode *>(*it));
-                }  
-            } 
-            } 
+            
         }
-        
+    */
 
     // 解析 param
         if(param != NULL){
@@ -2174,14 +2182,34 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 }
 
 
-SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList){
+SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList,list<Node *> *inputs,list<Node *> *outputs){
     top = new SymbolTable(S);
 
     generateComposite(composite);
     
     compBodyNode *body = composite->body; //body
     paramNode *param;
+    if(composite->head->inout){
+        list<Node *> *comp_inputs = composite->head->inout->input_List;
+        list<Node *> *comp_outputs = composite->head->inout->output_List;
+        auto comp_it = comp_inputs->begin();
+        //生成 stream 符号表
+        for(auto it : *inputs){
+            string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
+            string real_name = ((idNode *)it)->name;
+            (top->LookUpStreamSymbol(comp_name)->id)->name = real_name;
+            comp_it++;
+        }
 
+        comp_it = comp_outputs->begin();
+        for(auto it : *outputs){
+            string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
+            string real_name = ((idNode *)it)->name;
+            (top->LookUpStreamSymbol(comp_name)->id)->name = real_name;
+            comp_it++;
+        }
+    }
+   
     list<Constant*>::iterator paramValue =  paramList.begin();
     if(body != NULL){
         param = body->param; // param
@@ -2199,7 +2227,7 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
                 }*/ 
             }
         }
-        //解析window
+        //解析window 不能放这里
         for (auto it : *body->stmt_List)
         {
             if (it->type == Operator_)

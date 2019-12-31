@@ -41,7 +41,7 @@ composite Main () {
 	};
 	y = splitjoin (data) {
 		int i, j; 
-		split duplicate();
+		split duplicate(1);
 			for (i = 0; i < 3; i++) {
 				add splitjoin {
 					split roundrobin();
@@ -65,21 +65,4 @@ composite Main () {
 			y sliding (1, 1);
 		}
 	};
-}
-
-composite splitjoin(data){
-	param
-		int N;
-	int i, j; 
-	split duplicate();
-		for (i = 0; i < N; i++) {
-			add splitjoin {
-				split roundrobin();
-				for (j = 0; j < i; j++) {
-					add rTest();
-				}
-				join roundrobin();
-			}
-		}
-	join roundrobin();
 }

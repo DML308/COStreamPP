@@ -19,7 +19,7 @@ void variableReplace(Node *node){
                 if(params){
                 for(auto param : *params){
                     if(param->type == Id){
-                        Variable *value = runningTop->LookupIdentifySymbol(((idNode *)param)->name);
+                        Variable *value = top->LookupIdentifySymbol(((idNode *)param)->name);
                         string type = value->value->type;
                         constantNode *constant_value;
                         if(type.compare("long long") == 0){
@@ -68,7 +68,7 @@ void variableReplace(Node *node){
                 }
         }
         if(node->type == SplitJoin){
-            //找到for中的变量,然后替换,不支持for中变量的赋值
+            //todo 找到for中的变量,然后替换,不支持for中变量的赋值
         }
         if(node->type == Pipeline){
 
@@ -98,7 +98,7 @@ void addComposite(list<Node *> stmts){
             if (((addNode *)it)->content->type == CompositeCall)
             {
                 compositeCallNode* composite_call = (compositeCallNode *)((addNode *)it)->content;
-                //compositeCallNode* replace_composite = 
+                //compositeCallNode* replace_composite =  todo 是否需要worknodeCopy
                 Node *nd = unfold->workNodeCopy(((addNode *)it)->content);
                 variableReplace(nd);
                 compositeCall_list.push_back(nd);
@@ -134,6 +134,7 @@ void addComposite(list<Node *> stmts){
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void compositeCallFlow(list<Node *> *stmts)
 {
+    top = runningTop;
     //cout<<"stmts.size() = "<<stmts->size()<<endl;
     /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到compositeCall_list中*/
     for (auto nd : *(stmts))
@@ -159,8 +160,8 @@ void compositeCallFlow(list<Node *> *stmts)
         }
         else if (nd->type == For)
         {
-            runningTop = new SymbolTable(runningTop,NULL);
-            top = runningTop; // test
+            top = new SymbolTable(top,NULL);
+            //top = runningTop; // test
             /*获得for循环中的init，cond和next值 目前只处理for循环中数据是整型的情况 */
             long long initial = MAX_INF;
             long long condition = MAX_INF;
@@ -214,7 +215,7 @@ void compositeCallFlow(list<Node *> *stmts)
 
             // 将循环变量加入到 执行上下文 的 符号表
             Variable *init_v = new Variable("long long",con_id,initial);
-            runningTop->InsertIdentifySymbol(init_v);
+            top->InsertIdentifySymbol(init_v);
 
             /* 获取cond值 */
             if (cond->type == Binop)
@@ -555,8 +556,8 @@ void compositeCallFlow(list<Node *> *stmts)
         }
         else if (nd->type == IfElse)
         {
-            runningTop = new SymbolTable(runningTop,NULL);
-            top = runningTop; // test
+            top = new SymbolTable(top,NULL);
+            //top = runningTop; // test
 
             list<Node *> *ifelse_list = new list<Node*>();
             ifElseNode *if_node = (ifElseNode *)nd;
@@ -570,8 +571,8 @@ void compositeCallFlow(list<Node *> *stmts)
             // todo
         }
         else if(nd->type == If){
-            runningTop = new SymbolTable(runningTop,NULL); // 新作用域
-            top = runningTop; // test
+            top = new SymbolTable(top,NULL); // 新作用域
+            //top = runningTop; // test
 
             list<Node *> *ifelse_list = new list<Node*>();
             ifNode *if_node = (ifNode *)nd;

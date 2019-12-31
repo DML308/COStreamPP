@@ -1,9 +1,14 @@
 #include "staticStreamGragh.h"
+
+extern SymbolTable *runningTop;
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
     //cout<<"-----------------"<<u->operName<<"--------------------"<<endl;
     FlatNode *src = NULL, *dest = NULL;
     src = new FlatNode(u, oldComposite, newComposite);
+
+    src->compositecall_runnningtop = runningTop;
+
     list<Node *> *outputs = NULL;
     list<Node *> *inputs = NULL;
     outputs = (u->outputs != NULL) ? u->outputs : new list<Node *>();
@@ -12,7 +17,14 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     for (auto it : *outputs)
     {
         //cout<<"output Name = "<<((idNode*)it)->name<<endl;
-        mapEdge2UpFlatNode.insert(make_pair(((idNode *)it)->name, src));
+        string real_name;
+        inOutdeclNode* real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name);
+        if(real_stream){
+            real_name = real_stream->id->name;
+        }else{
+            real_name = ((idNode *)it)->name;
+        }
+        mapEdge2UpFlatNode.insert(make_pair(real_name, src));
     }
     //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
     //cout << "operatorNode:\t" << u->toString() << endl << "    ↓" << endl;
@@ -24,8 +36,15 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     {
         //cout<<"input name= "<<((idNode*)it)->name<<endl;
         //将“有向边”与其“下”端operator绑定
-        mapEdge2DownFlatNode.insert(make_pair(((idNode *)it)->name, dest));
-        auto pos = mapEdge2UpFlatNode.find(((idNode *)it)->name);
+        string real_name;
+        inOutdeclNode* real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name);
+        if(real_stream){
+            real_name = real_stream->id->name;
+        }else{
+            real_name = ((idNode *)it)->name;
+        }
+        mapEdge2DownFlatNode.insert(make_pair(real_name, dest));
+        auto pos = mapEdge2UpFlatNode.find(real_name);
         assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator todo
         
         src = pos->second;
@@ -72,6 +91,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
         FlatNode *flatNode = flatNodes[i];
         operatorNode *contents = flatNode->contents;
         list<Node *> *win_stmts = contents->operBody->win->win_list;
+        SymbolTable *compositecall_runningTop = flatNode->compositecall_runnningtop;
         // if(win_stmts!=NULL)
         // cout<<"win_stmt.size()= "<<win_stmts->size()<<endl;
         for (int j = 0; j < flatNode->nIn; j++)
@@ -96,7 +116,9 @@ void StaticStreamGraph::SetFlatNodesWeights()
             for (auto it : *win_stmts)
             {
                 assert(it->type == WindowStmt);
-                string edgeName = ((winStmtNode *)it)->winName;
+                string param_eageName = ((winStmtNode *)it)->winName;
+                string edgeName = compositecall_runningTop->LookUpStreamSymbol(param_eageName)->id->name;
+
                 auto pos = mapEdge2UpFlatNode.find(edgeName);
                 assert(pos != mapEdge2UpFlatNode.end());
                 src = pos->second; // 每条边有且只有一个上端节点

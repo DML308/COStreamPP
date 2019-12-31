@@ -200,7 +200,8 @@ void SymbolTable::InsertIdentifySymbol(Variable *variable){
     }
 }
 
-void SymbolTable::InsertStreamSymbol(string name,inOutdeclNode* inOutNode){
+void SymbolTable::InsertStreamSymbol(inOutdeclNode* inOutNode){
+    string name = ((idNode *)(inOutNode->id))->name;
     auto iter = streamTable.find(name);
     if(iter == streamTable.end()){
         streamTable.insert(make_pair(name,inOutNode));
