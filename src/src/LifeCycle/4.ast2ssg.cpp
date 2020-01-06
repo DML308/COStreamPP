@@ -166,7 +166,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 }
                 
                 //传入参数,并生成 composite 调用的执行上下文环境
-                runningTop = generateCompositeRunningContext(call->actual_composite,paramList,inputs,outputs,scope,call->count); 
+                runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs);
                 runningStack.push_back(runningTop); // 调用栈
 
                 GraphToOperators(call->actual_composite, exp);
@@ -219,7 +219,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             if(call->scope){
                 scope = call->scope;
             }
-            runningTop = generateCompositeRunningContext(call->actual_composite,paramList,inputs,outputs,scope,call->count); //传入参数,并生成 composite调用的执行上下文环境
+            runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs); //传入参数,并生成 composite调用的执行上下文环境
             // 确定window大小
             
             runningStack.push_back(runningTop); // 调用栈
@@ -280,7 +280,7 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     list<Node *> *inputs =new list<Node*>();
     list<Node *> *outputs =new list<Node*>();
 
-    runningTop = generateCompositeRunningContext(mainComposite,paramList,inputs,outputs,NULL,0); //传入参数,并生成 composite 调用的执行上下文环境
+    runningTop = generateCompositeRunningContext(NULL,mainComposite,paramList,inputs,outputs); //传入参数,并生成 composite 调用的执行上下文环境
     runningStack.push_back(runningTop); // 调用栈
 
 

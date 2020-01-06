@@ -2185,15 +2185,21 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 }
 
 
-SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList,list<Node *> *inputs,list<Node *> *outputs,SymbolTable *scope,int count){
-    if(scope){
-        top = new SymbolTable(scope,NULL);
+SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNode *composite,list<Constant *> paramList,list<Node *> *inputs,list<Node *> *outputs){
+    if(call){
+        if(call->scope){
+            top = new SymbolTable(call->scope,NULL);
+        }else{
+            top = new SymbolTable(S);
+        }
+        top->count = call->count;
     }else{
         top = new SymbolTable(S);
+        top->count = 0;
     }
     
     generateComposite(composite);
-    top->count = count;
+    
     compBodyNode *body = composite->body; //body
     paramNode *param;
 
@@ -2204,10 +2210,10 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
         auto comp_it = comp_inputs->begin();
         //生成 stream 符号表
         for(auto it : *inputs){
-            string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
-            inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name);
+            string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name; //composite中的参数名
             string real_name;
-            if(!real_stream->isInOut){
+            if(call->isOriginal){
+                inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name); //compositecall传入的参数名
                 real_name = real_stream->id->name;
             }else{
                 real_name = ((idNode *)it)->name;
@@ -2219,9 +2225,9 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
         comp_it = comp_outputs->begin();
         for(auto it : *outputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
-            inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name);
             string real_name;
-            if(!real_stream->isInOut){
+            if(call->isOriginal){
+                inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name); //compositecall传入的参数名
                 real_name = real_stream->id->name;
             }else{
                 real_name = ((idNode *)it)->name;
@@ -2236,7 +2242,7 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
         inOutdeclNode *stream = it.second;
 
         if(!stream->isInOut){
-            stream->id->name = stream->id->name + to_string(count);
+            stream->id->name = stream->id->name + to_string(top->count);
         }
     }
 

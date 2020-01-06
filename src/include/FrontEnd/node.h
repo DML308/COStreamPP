@@ -863,6 +863,7 @@ class compositeCallNode : public Node
     compositeNode *actual_composite; //保存composite展开节点
     SymbolTable *scope;
     int count = 0;// 用于区分compositecall调用同一个composite
+    bool isOriginal = true;//是否是程序原生的compositecall,不是展开过程生成的
     compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);

@@ -1,0 +1,79 @@
+composite dTest(input stream<int i>In, output stream<int i>Out) {
+	Out = dtest (In) {
+		work {
+			printf("d: ");
+			printf(In[0].i);
+			Out[0].i = In[0].i;
+		}
+		window {
+			In sliding(2, 2);
+			Out tumbling(2);
+		}
+	};
+}
+composite rTest(input stream<int i>In, output stream<int i>Out) {
+	stream<int i> BF;
+	BF = rtest(In) {
+		work {
+			printf("r: ");
+			printf(In[0].i);
+			Out[0].i = In[0].i;
+		}
+		window {
+			In sliding(2, 2);
+			BF tumbling(2);
+		}
+	};
+	Out = dtest (BF) {
+		work {
+			printf("d: ");
+			printf(In[0].i);
+			Out[0].i = In[0].i;
+		}
+		window {
+			BF sliding(2, 2);
+			Out tumbling(2);
+		}
+	};
+}
+composite Main () {
+	stream<int i>data, x, y;
+	data = start () {
+		int i = 0; 
+		work {
+			i++;
+			if (i == 32) {
+				i = 0;
+			}
+			data[0].i = i;
+		}
+		window {
+			data tumbling(2, 2);
+		}
+	};
+	y = splitjoin (data) {
+		int i, j; 
+		split duplicate(1);
+		add splitjoin {
+			split roundrobin();
+			for (j = 0; j < 2; j++) {
+				add rTest();
+			}
+			join roundrobin();
+		}
+        add rTest();
+		join roundrobin();
+	};
+	sink(y) {
+		int i;
+		work {
+			for (i = 0; i < 2; i++) {
+				printf("sink: ");
+				printf(y[i].i);
+			}
+		}
+		window {
+			y sliding (2, 2);
+		}
+	};
+}
