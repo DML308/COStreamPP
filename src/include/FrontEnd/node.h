@@ -731,6 +731,7 @@ class inOutdeclNode : public Node
   public:
     Node *strType;
     idNode *id;
+    bool isInOut = false;
     inOutdeclNode(Node *strType, idNode *id, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -861,6 +862,7 @@ class compositeCallNode : public Node
     list<Node *> *outputs;
     compositeNode *actual_composite; //保存composite展开节点
     SymbolTable *scope;
+    int count = 0;// 用于区分compositecall调用同一个composite
     compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -871,6 +873,18 @@ class compositeCallNode : public Node
         this->outputs = outputs;
         this->actual_composite = actual_composite;
         this->scope = NULL;
+    }
+    compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite,int count, YYLTYPE loc = YYLTYPE())
+    {
+        this->setLoc(loc);
+        this->stream_List = stream_List;
+        this->type = CompositeCall;
+        this->compName = compName;
+        this->inputs = inputs;
+        this->outputs = outputs;
+        this->actual_composite = actual_composite;
+        this->scope = NULL;
+        this->count = count;
     }
     ~compositeCallNode() {}
     void print() {}

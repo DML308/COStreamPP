@@ -161,12 +161,15 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 compositeCallNode *call = ((compositeCallNode *)(exp));
                 if(call->scope){
                     scope = call->scope;
+                }else{
+                    scope = runningTop;
                 }
-                runningTop = generateCompositeRunningContext(((compositeCallNode *)(exp))->actual_composite,paramList,inputs,outputs,scope); //传入参数,并生成 composite 调用的执行上下文环境
                 
+                //传入参数,并生成 composite 调用的执行上下文环境
+                runningTop = generateCompositeRunningContext(call->actual_composite,paramList,inputs,outputs,scope,call->count); 
                 runningStack.push_back(runningTop); // 调用栈
 
-                GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
+                GraphToOperators(call->actual_composite, exp);
 
                 //出栈
                 runningStack.pop_back();
@@ -216,12 +219,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             if(call->scope){
                 scope = call->scope;
             }
-            runningTop = generateCompositeRunningContext(((compositeCallNode *)(it))->actual_composite,paramList,inputs,outputs,scope); //传入参数,并生成 composite调用的执行上下文环境
+            runningTop = generateCompositeRunningContext(call->actual_composite,paramList,inputs,outputs,scope,call->count); //传入参数,并生成 composite调用的执行上下文环境
             // 确定window大小
             
             runningStack.push_back(runningTop); // 调用栈
 
-            GraphToOperators(((compositeCallNode *)it)->actual_composite, it);
+            GraphToOperators(call->actual_composite, it);
 
             //出栈
             runningStack.pop_back();
@@ -277,7 +280,7 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     list<Node *> *inputs =new list<Node*>();
     list<Node *> *outputs =new list<Node*>();
 
-    runningTop = generateCompositeRunningContext(mainComposite,paramList,inputs,outputs,NULL); //传入参数,并生成 composite 调用的执行上下文环境
+    runningTop = generateCompositeRunningContext(mainComposite,paramList,inputs,outputs,NULL,0); //传入参数,并生成 composite 调用的执行上下文环境
     runningStack.push_back(runningTop); // 调用栈
 
 

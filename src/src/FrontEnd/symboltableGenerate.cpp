@@ -1,5 +1,6 @@
 #include "symboltableGenerate.h"
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
+extern SymbolTable *runningTop;
 SymbolTable S ;//全局
 SymbolTable *top; //当前作用域
 list<SymbolTable *>saved; //作用域栈
@@ -1752,7 +1753,7 @@ void genrateStmt(Node *stmt){
             break;
         }
         case CompositeCall:{
-            compositeNode *actual_comp = S.LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName);
+            compositeNode *actual_comp = S.LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName)->composite;
             static_cast<compositeCallNode *>(stmt)->actual_composite = actual_comp;
             // 检查传入的参数是否存在 以及 获得参数值 
             break;
@@ -1847,7 +1848,7 @@ void generateStrDlcNode(strdclNode* streamDeclearNode){  //stream "<int x,int y>
         // 创建一个 stream 声明节点
         inOutdeclNode *stream_dlc = new inOutdeclNode();
         stream_dlc->strType = streamDeclearNode;
-        stream_dlc->id = *it;
+        stream_dlc->id =new idNode((*it)->name);
         stream_dlc->type = InOutdcl;
         top->InsertStreamSymbol(stream_dlc);
     }
@@ -2106,6 +2107,7 @@ void generateComposite(compositeNode* composite){
                     copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
                     idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
                     copy_inoutdeclNode->id = copy_id;
+                    copy_inoutdeclNode->isInOut = true;
                     top->InsertStreamSymbol(copy_inoutdeclNode);
                 }
             }
@@ -2115,6 +2117,7 @@ void generateComposite(compositeNode* composite){
                     copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
                     idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
                     copy_inoutdeclNode->id = copy_id;
+                    copy_inoutdeclNode->isInOut = true;
                     top->InsertStreamSymbol(copy_inoutdeclNode);
                 } 
             } 
@@ -2182,7 +2185,7 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 }
 
 
-SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList,list<Node *> *inputs,list<Node *> *outputs,SymbolTable *scope){
+SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Constant*> paramList,list<Node *> *inputs,list<Node *> *outputs,SymbolTable *scope,int count){
     if(scope){
         top = new SymbolTable(scope,NULL);
     }else{
@@ -2190,9 +2193,11 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
     }
     
     generateComposite(composite);
-    
+    top->count = count;
     compBodyNode *body = composite->body; //body
     paramNode *param;
+
+    //在符号表中将数据流替换为真实数据流
     if(composite->head->inout){
         list<Node *> *comp_inputs = composite->head->inout->input_List;
         list<Node *> *comp_outputs = composite->head->inout->output_List;
@@ -2200,20 +2205,41 @@ SymbolTable* generateCompositeRunningContext(compositeNode *composite,list<Const
         //生成 stream 符号表
         for(auto it : *inputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
-            string real_name = ((idNode *)it)->name;
-            (top->LookUpStreamSymbol(comp_name)->id)->name = real_name;
+            inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name);
+            string real_name;
+            if(!real_stream->isInOut){
+                real_name = real_stream->id->name;
+            }else{
+                real_name = ((idNode *)it)->name;
+            }
+            (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
         }
 
         comp_it = comp_outputs->begin();
         for(auto it : *outputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
-            string real_name = ((idNode *)it)->name;
-            (top->LookUpStreamSymbol(comp_name)->id)->name = real_name;
+            inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name);
+            string real_name;
+            if(!real_stream->isInOut){
+                real_name = real_stream->id->name;
+            }else{
+                real_name = ((idNode *)it)->name;
+            }
+            (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
         }
     }
    
+   //多次调用同一个 composite,其内部声明的数据流通过count来进行区分
+   for(auto it : top->getStreamTable()){
+        inOutdeclNode *stream = it.second;
+
+        if(!stream->isInOut){
+            stream->id->name = stream->id->name + to_string(count);
+        }
+    }
+
     list<Constant*>::iterator paramValue =  paramList.begin();
     if(body != NULL){
         param = body->param; // param

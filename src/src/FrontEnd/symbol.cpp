@@ -59,6 +59,8 @@ void SymbolTable::InsertSymbol(idNode *node)
     }
 }
 
+
+
 /* 必须查找上层作用域名 还未修改*/
 bool SymbolTable::LookupSymbol(string name)
 {
@@ -75,12 +77,13 @@ bool SymbolTable::LookupSymbol(string name)
 
 void SymbolTable::InsertCompositeSymbol(string name, compositeNode *comp)
 {
-    compTable.insert(make_pair(name, comp));
+    CompositeSymbol *comp_s = new CompositeSymbol(comp);
+    compTable.insert(make_pair(name, comp_s));
     static_cast<compositeNode *>(comp)->level = Level;
     static_cast<compositeNode *>(comp)->version = current_version[Level];
 }
 
-compositeNode *SymbolTable::LookupCompositeSymbol(string name)
+CompositeSymbol *SymbolTable::LookupCompositeSymbol(string name)
 {
     SymbolTable *right_pre;
     auto iter = compTable.find(name);
@@ -104,6 +107,7 @@ compositeNode *SymbolTable::LookupCompositeSymbol(string name)
         }
     }
 }
+
 
 idNode *SymbolTable::operator[](string str)
 {

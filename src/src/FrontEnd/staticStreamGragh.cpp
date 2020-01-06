@@ -14,6 +14,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
     outputs = (u->outputs != NULL) ? u->outputs : new list<Node *>();
     inputs = (u->inputs != NULL) ? u->inputs : new list<Node *>();
     /* 寻找输出流  建立节点的输入输出流关系*/
+    int count = runningTop->count;
     for (auto it : *outputs)
     {
         //cout<<"output Name = "<<((idNode*)it)->name<<endl;
@@ -24,6 +25,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         }else{
             real_name = ((idNode *)it)->name;
         }
+        
         mapEdge2UpFlatNode.insert(make_pair(real_name, src));
     }
     //cout << "mapEdge2UpFlatNode.size()= " << mapEdge2UpFlatNode.size() << endl;
@@ -43,6 +45,7 @@ void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, c
         }else{
             real_name = ((idNode *)it)->name;
         }
+        
         mapEdge2DownFlatNode.insert(make_pair(real_name, dest));
         auto pos = mapEdge2UpFlatNode.find(real_name);
         assert(pos != mapEdge2UpFlatNode.end()); //确保每一条输入边都有operator todo
@@ -117,8 +120,9 @@ void StaticStreamGraph::SetFlatNodesWeights()
             {
                 assert(it->type == WindowStmt);
                 string param_eageName = ((winStmtNode *)it)->winName;
-                string edgeName = compositecall_runningTop->LookUpStreamSymbol(param_eageName)->id->name;
-
+                inOutdeclNode *real_stream = compositecall_runningTop->LookUpStreamSymbol(param_eageName);
+                string edgeName = real_stream->id->name;
+                
                 auto pos = mapEdge2UpFlatNode.find(edgeName);
                 assert(pos != mapEdge2UpFlatNode.end());
                 src = pos->second; // 每条边有且只有一个上端节点

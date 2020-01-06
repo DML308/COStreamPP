@@ -108,6 +108,17 @@ class Variable {
   };
 };
 
+class CompositeSymbol
+{ 
+    public:
+      compositeNode *composite;
+      int count;
+      CompositeSymbol(compositeNode *comp){
+        this->composite = comp;
+        this->count = 0;
+      }   
+};
+
 class SymbolTable
 {
   public:
@@ -129,8 +140,10 @@ class SymbolTable
     map<string, bool> firstScanFuncTable;
     map<string, bool> firstScanCompTable;
 
+    int count = 0;//用于区分同一个composite
+
     void InsertCompositeSymbol(string name, compositeNode *);
-    compositeNode *LookupCompositeSymbol(string name);
+    CompositeSymbol *LookupCompositeSymbol(string name);
 
     void InsertIdentifySymbol(Node *node,Constant *constant);
     
@@ -168,11 +181,11 @@ class SymbolTable
 
     map<string, funcDclNode *> funcTable;
 
-    map<string, inOutdeclNode *> streamTable;
+    map<string, inOutdeclNode *> streamTable; //stream
 
     map<string, Node *> identifyTable; //变量
     map<string, Variable *> variableTable; //变量
-    map<string, compositeNode *> compTable; // composite
+    map<string, CompositeSymbol *> compTable; // composite
     map<string, operatorNode *> optTable; //operator
 
     

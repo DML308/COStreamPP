@@ -12,7 +12,8 @@ composite dTest(input stream<int i>In, output stream<int i>Out) {
 	};
 }
 composite rTest(input stream<int i>In, output stream<int i>Out) {
-	Out = rtest(In) {
+	stream<int i> BF;
+	BF = rtest(In) {
 		work {
 			printf("r: ");
 			printf(In[0].i);
@@ -20,6 +21,17 @@ composite rTest(input stream<int i>In, output stream<int i>Out) {
 		}
 		window {
 			In sliding(1, 1);
+			BF tumbling(1);
+		}
+	};
+	Out = dtest (BF) {
+		work {
+			printf("d: ");
+			printf(In[0].i);
+			Out[0].i = In[0].i;
+		}
+		window {
+			BF sliding(1, 1);
 			Out tumbling(1);
 		}
 	};
