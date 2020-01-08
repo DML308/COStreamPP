@@ -999,7 +999,7 @@ class conv2DLayerNode : public layerNode
     vector<long long> *strides; // 卷积沿宽度和高度方向的步长
     vector<long long> *paddings; // 扩展
     vector<long long> *size; // 输出特征图的尺寸
-    vector<long long> *transformedSize; //经扩展膨胀后的尺寸
+    vector<long long> *errorSize; // 误差经扩展膨胀后的尺寸
     conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
@@ -1051,7 +1051,9 @@ class conv2DLayerNode : public layerNode
           this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
-      this->size = NULL;
+      cout << this -> paddings -> front() << endl;
+      this -> size = NULL;
+      this -> errorSize = NULL;
     }
     ~conv2DLayerNode() {}
     void print() {}

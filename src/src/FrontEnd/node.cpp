@@ -537,20 +537,29 @@ string funcBodyNode::toString()
 }
 // 根据上一层初始化本层输出特征图的尺寸和输入空间的维度
 void conv2DLayerNode::init (sequentialNode* sequential) {
-    vector<long long>* oldSize; 
+    this -> size = new vector<long long>();
+    // 本层反向传播过程中 传入误差的尺寸
+    this -> errorSize = new vector<long long>();
+    vector<long long>* prevSize = new vector<long long>(); 
     if (!prevLayer && this->level == 1) {
         for(auto iter: *(sequential->arg_list)) {
-            oldSize->push_back(((constantNode *)iter)->llval);
+            prevSize->push_back(((constantNode *)iter)->llval);
+        }
+        this->depth = prevSize -> at(0);
+        // 继续
+        for(int i = 0; i < this->domension; i++) {
+            this->size->push_back((prevSize->at(i + 1) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
         }
     } else {
-        oldSize = ((conv2DLayerNode *)(this->prevLayer))->size;
+        prevSize = ((conv2DLayerNode *)(this->prevLayer))->size;  
+        this->depth = ((conv2DLayerNode *)(this -> prevLayer ))-> filters;
+        for(int i = 0; i < this->domension; i++) {
+            this->size->push_back((prevSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
+        }
     }
-    this->depth = oldSize->at(0);
     for(int i = 1; i < this->domension; i++) {
-        this->size->push_back((oldSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
-    }
-    if (this -> prevLayer -> layerName == "conv2D") {
-        
+        // 2 * padding + (size - 1) * stride + 1
+        this -> errorSize -> push_back((this -> size -> at(i) - 1) * this -> strides -> at(i) + 1 + 2 * this -> paddings -> at(i));
     }
 }
 
