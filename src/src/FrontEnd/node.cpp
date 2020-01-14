@@ -557,7 +557,7 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
             this->size->push_back((prevSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
         }
     }
-    for(int i = 1; i < this->domension; i++) {
+    for(int i = 0; i < this->domension; i++) {
         // 2 * padding + (size - 1) * stride + 1
         this -> errorSize -> push_back((this -> size -> at(i) - 1) * this -> strides -> at(i) + 1 + 2 * this -> paddings -> at(i));
     }

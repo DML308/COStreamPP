@@ -42,20 +42,21 @@ class UnfoldComposite
     operatorNode* makeDDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeStream(string name, string type);
-    compositeNode* makeConv2DLayer(layerNode *layer);
+    compositeNode* makeConv2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeConv2DKernel(layerNode *layer);
     Node* makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeConv2DKernelOperInit(layerNode *layer);
     Node* makeConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    compositeNode* makeCopyComp();
-    compositeNode* makeDConv2DLayer(layerNode *layer);
+    compositeNode* makeCopyComp(list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeDConv2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeDConv2DKernel(layerNode *layer);
     Node* makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeConv2DSplitOperator(Node *input, layerNode *layer);
+    operatorNode* makeConv2DJoinOperator(Node *output, list<Node *> *inputs, layerNode *layer);
 };
 #endif

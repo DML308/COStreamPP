@@ -27,7 +27,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             else if (exp->type == CompositeCall)
             {
-                cout<< "compositeCall'outputs = "<<((idNode *)(((compositeCallNode *)(exp))->outputs->front()))->name<<endl;
                 GraphToOperators(((compositeCallNode *)(exp))->actual_composite, exp);
             }
             else if (exp->type == SplitJoin)

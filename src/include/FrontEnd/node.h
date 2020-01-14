@@ -846,7 +846,6 @@ class compBodyNode : public Node
         stmt_List->push_back(temp);
       }
       this->stmt_List = stmt_List;
-      cout<<"compBodyNode"<<endl;
     }
     ~compBodyNode() {}
     void print() {}
@@ -951,9 +950,6 @@ class sequentialNode : public Node
       this->arg_list = param;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
-      // to be deleted
-      cout<< "inputs " << inputs->size() << endl;
-      cout<< "arg_list " << param->size() << endl;
       for(auto iter = body_stmts->begin(); iter != body_stmts->end(); iter++) {
         cout<< (*iter)->type  << endl;
       }
@@ -1051,7 +1047,6 @@ class conv2DLayerNode : public layerNode
           this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
-      cout << this -> paddings -> front() << endl;
       this -> size = NULL;
       this -> errorSize = NULL;
     }
