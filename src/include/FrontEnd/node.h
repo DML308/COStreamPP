@@ -917,6 +917,8 @@ class compositeNode : public Node
     compBodyNode *body;
     int level; // 如果composite 也可以嵌套定义
     int version;
+    bool isUnfoldComposite = false;
+    int splitType;
     string compName;
     compositeNode(compHeadNode *head, compBodyNode *body,YYLTYPE loc = YYLTYPE())
     {

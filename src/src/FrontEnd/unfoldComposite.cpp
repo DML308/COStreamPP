@@ -254,6 +254,9 @@ compositeCallNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> 
     compBodyNode *split_comp_body = new compBodyNode(NULL,split_comp_stmts);
     compositeNode *split_comp = new compositeNode(split_comp_head,split_comp_body);
 
+    split_comp->isUnfoldComposite = true;
+    split_comp->splitType = style ? RoundRobin : Duplicate;
+
     compositeCallNode *split_call = new compositeCallNode(res->outputs,compName, NULL, res->inputs, split_comp);
     split_call->isOriginal = false;
 
@@ -381,6 +384,9 @@ compositeCallNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> 
     join_comp_stmts->push_back(res);
     compBodyNode *join_comp_body = new compBodyNode(NULL,join_comp_stmts);
     compositeNode *join_comp = new compositeNode(join_comp_head,join_comp_body);
+
+    join_comp->isUnfoldComposite = true;
+    join_comp->splitType = RoundRobin;
 
     compositeCallNode *join_call = new compositeCallNode(res->outputs,compName, NULL, res->inputs, join_comp);
     join_call->isOriginal = false;
