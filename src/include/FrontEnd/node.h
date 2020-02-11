@@ -140,8 +140,8 @@ class arrayNode : public Node
     list<Node *> arg_list;
     arrayNode(expNode *exp, YYLTYPE loc = YYLTYPE())
     {
-        if (exp)
-            arg_list.push_back(exp);
+        //这里即使 exp 为 NULL 也要加入, 以保证数组维度正确
+        arg_list.push_back(exp);
         setLoc(loc);
     }
     ~arrayNode() {}
@@ -437,14 +437,14 @@ class forNode : public Node
 class blockNode : public Node
 {
   public:
-    list<Node *> *stmt_list;
+    list<Node *> stmt_list;
     YYLTYPE right;
     blockNode(list<Node *> *stmt_list, YYLTYPE left = YYLTYPE(), YYLTYPE right = YYLTYPE())
     {
         this->setLoc(left);
         this->right = right;
         this->type = Block;
-        this->stmt_list = stmt_list;
+        if(stmt_list) this->stmt_list = *stmt_list;
     }
     ~blockNode() {}
     void print() {}
@@ -563,7 +563,7 @@ class splitjoinNode : public Node
     }
     ~splitjoinNode() {}
     void print() {}
-    string toString() {}
+    string toString() { return "splitjoinNode"; }
 };
 
 
@@ -666,14 +666,14 @@ class operBodyNode : public Node
 {
   public:
     paramNode *param;
-    list<Node *> *stmt_list;
+    list<Node *> stmt_list;
     Node *init;
     Node *work;
     windowNode *win;
     operBodyNode(list<Node *> *stmt_list, Node *init, Node *work, windowNode *win)
     {
         this->type = OperBody;
-        this->stmt_list = stmt_list;
+        if(stmt_list){ this->stmt_list = *stmt_list;}
         this->init = init;
         this->work = work;
         this->win = win;
@@ -759,6 +759,20 @@ class ComInOutNode : public Node
     {
         this->setLoc(loc);
         this->type = ComInOut;
+        this->input_List = input_list;
+        this->output_List = output_list;
+    }
+    ComInOutNode(ComInOutNode *inout)
+    {
+        this->setLoc(YYLTYPE());
+        this->type = ComInOut;
+        list<Node *> *input_list = new list<Node *>(), *output_list = new list<Node *>();
+        for (auto input: *(inout -> input_List)) {
+          input_list -> push_back(copyNode(input));
+        }
+        for (auto output: *(inout -> output_List)) {
+          output_list -> push_back(copyNode(output));
+        }
         this->input_List = input_list;
         this->output_List = output_list;
     }
@@ -899,7 +913,7 @@ class compHeadNode : public Node
     {
         this->type = CompHead;
         this->compName = head->compName;
-        this->inout = head->inout; // ???
+        this->inout = new ComInOutNode(head->inout);
     }
     ~compHeadNode() {}
     void print() {}

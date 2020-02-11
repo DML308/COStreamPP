@@ -1,8 +1,6 @@
 #include "GreedyPartition.h"
-void GreedyPartition::SssgPartition(SchedulerSSG *sssg, int level)
+void GreedyPartition::SssgPartition(SchedulerSSG *sssg)
 {
-    assert(level == 1);
-
     if (this->mnparts == 1)
     {
         for (int i = 0; i < nvtxs; i++)
@@ -564,6 +562,12 @@ void GreedyPartition::upDateFlatNodeState(FlatNode *p)
     }
 }
 
+/**
+ * 静态子图间的通信优化, 为节点分类: 1.内部节点 2.边界节点 3.孤零节点
+ * 对应汪亮论文中3.3节内容
+ * 实际上,正如论文中所述,该算法只处理了"首要考虑移动"的 孤零节点 ,
+ * 而对"可以考虑移动"的 边界节点 未做任何处理.
+ */
 void GreedyPartition::doTabuSearch(SchedulerSSG *sssg, int k)
 {                                           //禁忌搜索优化算法
     int total_edge = getTotalEdge(sssg, k); //得到通信量
@@ -575,9 +579,11 @@ void GreedyPartition::doTabuSearch(SchedulerSSG *sssg, int k)
             imax = w[i];
         }
     }
+    //孤零节点集合声明
     vector<FlatNode *> aloneVec;
+    //下面的循环会识别孤零节点并添加入 aloneVec
     for (int i = 0; i < X.size(); i++)
-    { //得到每个节点的状态
+    {
         for (int j = 0; j < X[i].size(); j++)
         {
             FlatNodeState p = getFlatNodeState(X[i][j]);
@@ -631,7 +637,8 @@ void GreedyPartition::doTabuSearch(SchedulerSSG *sssg, int k)
                     choosePart = partNum;
                 }
             }
-
+            /*下面是算法回溯部分,尝试将一个孤零节点移动为边界节点且纪录了imax2 total_edge2后
+            将状态恢复至移动前的状态 */
             auto iter2 = find(X[partNum].begin(), X[partNum].end(), p);
             X[partNum].erase(iter2);
             w[partNum] -= vwgt[index];
@@ -751,11 +758,12 @@ int GreedyPartition::orderPartitionResult()
     return index;
 }
 
+//设置每个节点的权重(实际上对每个节点: 权重 = 工作量*调度次数)
 void GreedyPartition::setActorWorkload(SchedulerSSG *sssg)
 {
     vector<FlatNode *> V = sssg->flatNodes;                           //sssg所有顶点的vector
     map<FlatNode *, int> stadyWork = sssg->mapSteadyWork2FlatNode;        //存放各个operator的稳态工作量估计
-    map<FlatNode *, int> steadyCount = sssg->mapSteadyCount2FlatNode; // SDF图所有节点稳定状态调度序列<节点，执行次数>
+    map<FlatNode *, int> steadyCount = sssg->mapFlatNode2SteadyCount; // SDF图所有节点稳定状态调度序列<节点，执行次数>
     sssg->total_work = 0.0;                                           //计算SDF总的节点工作量
     for (int i = 0; i < nvtxs; i++)
     {

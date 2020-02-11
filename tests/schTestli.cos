@@ -1,0 +1,67 @@
+
+composite A(output stream<int x>Out, input stream<int x>In)
+{
+    Out=A(In)
+    {
+        work
+        {
+        
+        }
+        window
+        {
+            In sliding(3,3);
+            Out tumbling(5);
+        }    
+    };          
+}
+
+composite B(output stream<int x>Out, input stream<int x>In)
+{
+    Out=B(In)
+    {
+        work{}
+        window
+        {
+            In sliding(3,3);
+            Out tumbling(3);
+        }
+    };
+}
+
+composite C(output stream<int x>Out, input stream<int x>In)
+{
+    Out=C(In)
+    {
+        work{}
+        window
+        {
+            In sliding(10,10);
+            Out tumbling(1);
+        }
+    };
+}
+
+composite Main()
+{
+    stream<int x> Source,CDFT;
+    Source=Init()
+    {
+        work{}
+        window
+        {
+            Source tumbling(2);        
+        }
+    };
+    CDFT=pipeline(Source)
+    {
+        add A();
+        add B();
+        add C();
+
+    };
+    D(CDFT)
+    {
+        work {}
+        window {CDFT sliding(2,2);}
+    };
+}

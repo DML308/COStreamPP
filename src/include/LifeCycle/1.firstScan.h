@@ -10,5 +10,6 @@ FILE *changeTabToSpace();
 FILE *recordFunctionAndCompositeName();
 void removeTempFile();
 static string getFileNameAll(string str);
-
+string getFileName(string str);
+void setOutputPath();
 #endif

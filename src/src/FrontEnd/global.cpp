@@ -1,8 +1,9 @@
 #include "global.h"
 
 string infile_name ;          // input file's name
-string outfile_name = "stdout";    // output file's name
+string output_path = "stdout";    // output file's name
 string temp_name = "stdin";
+string origin_path;
 FILE *infp = NULL;   // input file's pointer, default is stdin
 FILE *outfp = NULL;  // output file's pointer, default is stdout
 
