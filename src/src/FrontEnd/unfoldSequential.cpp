@@ -1037,7 +1037,18 @@ compositeNode* UnfoldComposite::makeCopyComp(list<Node *>  *inputs, list<Node *>
     workStmtList -> push_back(exp1);
     workStmtList -> push_back(exp2);
     Node *work = new blockNode(workStmtList);
-    operBodyNode *operBody = new operBodyNode(NULL, NULL, work, NULL);
+    list<Node *> *winList = new list<Node *>();
+    constantNode *constOne = new constantNode("integer", (long long)1);
+    tumblingNode *tum = new tumblingNode(new list<Node *>({constOne}));
+    for (auto output : *outputs) {
+        winStmtNode *winStmt = new winStmtNode(((idNode *)output) -> name, tum);
+        winList -> push_back(winStmt);
+    }
+    slidingNode *slid = new slidingNode(new list<Node *>({constOne, constOne}));
+    winStmtNode *winStmt = new winStmtNode(((idNode *)(inputs -> front())) -> name, slid);
+    winList -> push_back(winStmt);
+    windowNode *win = new windowNode(winList);
+    operBodyNode *operBody = new operBodyNode(NULL, NULL, work, win);
     Node* oper = new operatorNode(outputs, "copy", inputs, operBody);
     Node* exp = new binopNode((expNode *)new tupleNode(outputs), "=", (expNode *)oper);
     compBodyStmtList->push_back(exp);
