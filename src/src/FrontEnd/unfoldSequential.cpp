@@ -680,16 +680,10 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     auto inputIter = inputs->begin();
     long long popVal = 1;
     if (layer->prevLayer != NULL) {
-        auto inputSize = layer->prevLayer->arg_list->front();
-        if (inputSize -> type == constant) {
-        inRow = inputSize;
-        inCol = inputSize;
-        } else {
-            inRow = ((tupleNode *)inputSize)->tupleList->front();
-            inCol = ((tupleNode *)inputSize)->tupleList->back();
-        }
+        layerNode *prevLayer = layer -> prevLayer;
+        vector<long long> *inputSize = ((conv2DLayerNode *)prevLayer)->size;
         // depth * width * height
-        popVal = ((constantNode *)inRow)->llval * ((constantNode *)inCol)->llval * ((conv2DLayerNode *)layer)->depth;
+        popVal = inputSize -> at(0)* inputSize -> at(1) * ((conv2DLayerNode *)layer)->depth;
     } else {
         auto iter = globalSequential -> arg_list -> begin();
         for (int i = 0; i < 3; i++) {
@@ -697,6 +691,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
             iter++;
         }
     }
+    cout << "倦極核輸入尺寸" << popVal << endl;
     Node *pop = new constantNode("integer", popVal);
     slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
     winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
@@ -705,6 +700,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     // 输出窗口
     auto outputIter = outputs->begin();
     long long pushVal = ((conv2DLayerNode *)layer)->size->at(0) * ((conv2DLayerNode *)layer)->size->at(1);
+    cout << "倦極核輸出尺寸" << pushVal << endl;
     Node *push = new constantNode("integer", pushVal);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
     winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
