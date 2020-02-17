@@ -1067,7 +1067,7 @@ compositeNode* UnfoldComposite::makeDConv2DLayer(layerNode *layer, list<Node *> 
 Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     compositeNode *res = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
-    string streamName = "DConv2dStream";
+    string streamName = "DConv2dStream_" + to_string(layer -> level);
     string compName = "DConv2D_" + to_string(layer -> level);
     list<Node *> *errorList = NULL, *fpInputList = NULL;
     // splitOperator1 将误差duplicate成filters份, splitOperator2 将传入正向传播的输入再次传入到反向传播中,并duplicate成多份
@@ -1090,7 +1090,12 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
     Node *streamDecl = new strdclNode(streamDeclId);
-    compositeNode *dKernelComp = makeDConv2DKernel(layer);
+    for(auto error : *errorList) {
+        ((strdclNode*)streamDecl)->id_list.push_back((idNode *)error);
+    }
+    for(auto fpInput : *fpInputList) {
+        ((strdclNode*)streamDecl)->id_list.push_back((idNode *)fpInput);
+    }
     for (int i = 0; i < ((conv2DLayerNode *)layer) -> filters; i++) {
         string tempName = streamName + "_" + to_string(i);
         idNode *kernelOutput = new idNode(tempName);
@@ -1103,8 +1108,8 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
         list<Node *> *argList = new list<Node *>({arg});
         //compositeCall的输入流
         list<Node *> *call_inputs = new list<Node *>({*errorIter, *fpInputIter});
-        compositeNode *actual_composite = compositeCallStreamReplace(dKernelComp, call_inputs, call_outputs);
-        compositeCallNode *call = new compositeCallNode(call_outputs, tempName, argList, call_inputs, actual_composite);
+        compositeNode *dKernelComp = makeDConv2DKernel(layer, call_inputs, call_outputs);
+        compositeCallNode *call = new compositeCallNode(call_outputs, tempName, argList, call_inputs, dKernelComp);
         comCallList->push_back(call);
         errorIter++;
         fpInputIter++;
@@ -1134,12 +1139,14 @@ operatorNode *UnfoldComposite::makeConv2DSplitOperator(Node *input, layerNode *l
     list<Node *> *outputs = new list<Node *>();
     list<Node *> *inputs = new list<Node *>({input});
     list<Node *> *winStmt = new list<Node *>();
+    static int index = 0;
+    index++;
     string inputName = ((idNode *)input) -> name;
     Node *constOne = new constantNode("intager", (long long)1);
     Node *constZero = new constantNode("intager", (long long)0);
     // 输出窗口
     for(int i = 0; i < ((conv2DLayerNode *)layer) -> filters; i++) {
-        string tempName = streamName + "_" + to_string(layer->level) + "_" + to_string(i);
+        string tempName = streamName + "_" + to_string(index) + "_" + to_string(layer->level) + "_" + to_string(i);
         idNode *id = new idNode(tempName);
         outputs -> push_back(id);
         tumblingNode *tum = new tumblingNode(new list<Node *>({constOne}));
@@ -1207,16 +1214,9 @@ operatorNode *UnfoldComposite::makeConv2DJoinOperator(Node *output, list<Node *>
     return res;
 }
 
-compositeNode* UnfoldComposite::makeDConv2DKernel(layerNode *layer) {
+compositeNode* UnfoldComposite::makeDConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
-    list<Node *> *inputs = new list<Node *>(), *outputs = new list<Node *>();
-    Node* error = makeStream("error", "double");
-    inputs->push_back(error);
-    Node* fpInput = makeStream("fpInput", "double");
-    inputs->push_back(error);
-    Node* output = makeStream("output", "double");
-    outputs->push_back(output);
     compInOut = new ComInOutNode(inputs, outputs);
     string compName = "dConv2DKernel_" + layer->level;
     compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);

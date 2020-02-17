@@ -52,7 +52,7 @@ class UnfoldComposite
     compositeNode* makeCopyComp(list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeDConv2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    compositeNode* makeDConv2DKernel(layerNode *layer);
+    compositeNode* makeDConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
