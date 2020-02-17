@@ -956,7 +956,8 @@ Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *input
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
     Node *streamDecl = new strdclNode(streamDeclId);
-    Node *res = new idNode("result");
+    string resName = "conv2D_result_" + to_string(layer -> level);
+    Node *res = new idNode(resName);
     ((strdclNode *)streamDecl)->id_list.push_back((idNode *)res);
     list<Node *> *tempStream = new list<Node *>({res});
     idNode *idI = new idNode("i");
@@ -990,9 +991,8 @@ Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *input
     Node* conv = new binopNode((expNode *)((idNode *)res), "=", (expNode *)splitjoin);
     stmtList->push_back(conv);
     compositeNode *copyComp = makeCopyComp(tempStream, outputs);
-    compositeCallNode *callCopy = new compositeCallNode(outputs, "copy", NULL, tempStream, copyComp);
-    Node* copy = new binopNode((expNode *)((inOutdeclNode *)output) -> id, "=", (expNode *)callCopy);
-    stmtList->push_back(copy);
+    Node *callCopy = new compositeCallNode(outputs, "copy", NULL, tempStream, copyComp);
+    stmtList->push_back(callCopy);
     body = new compBodyNode(NULL, stmtList);
     return body;
 }
@@ -1056,7 +1056,6 @@ compositeNode* UnfoldComposite::makeCopyComp(list<Node *>  *inputs, list<Node *>
 compositeNode* UnfoldComposite::makeDConv2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
-    Node *error = makeStream("input2", "double");
     compInOut = new ComInOutNode(inputs, outputs);
     compHead = new compHeadNode("dConv2DLayer_" + layer->level, (ComInOutNode *)compInOut);
     compBody = makeDConv2DLayerBody(layer, inputs, outputs);
