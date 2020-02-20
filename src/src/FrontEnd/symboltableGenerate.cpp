@@ -2188,7 +2188,7 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNode *composite,list<Constant *> paramList,list<Node *> *inputs,list<Node *> *outputs){
     if(call){
         if(call->scope){
-            top = new SymbolTable(call->scope,NULL);
+            top = new SymbolTable(call->scope,NULL); //call->scope 上一层执行上下文
         }else{
             top = new SymbolTable(S);
         }
@@ -2207,8 +2207,10 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
     if(composite->head->inout){
         list<Node *> *comp_inputs = composite->head->inout->input_List;
         list<Node *> *comp_outputs = composite->head->inout->output_List;
-        auto comp_it = comp_inputs->begin();
+        
         //生成 stream 符号表
+        if(comp_inputs){
+        auto comp_it = comp_inputs->begin();
         for(auto it : *inputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name; //composite中的参数名
             string real_name;
@@ -2221,8 +2223,9 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
         }
-
-        comp_it = comp_outputs->begin();
+        }
+        if(comp_outputs){
+        auto comp_it = comp_outputs->begin();
         for(auto it : *outputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
             string real_name;
@@ -2234,6 +2237,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             }
             (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
+        }
         }
     }
    

@@ -6,11 +6,11 @@
 #include "defines.h"
 #include "node.h"
 #include <map>
+#include <unordered_map>
 #include <list>
 
 void EnterScope(void);
 void ExitScope(void);
-
 
 
 class Constant{
@@ -119,6 +119,18 @@ class CompositeSymbol
       }   
 };
 
+//哈希函数
+struct str_hash{
+        size_t operator()(const string& str) const
+        {
+                unsigned long __h = 0;
+                for (size_t i = 0 ; i < str.size() ; i ++)
+                  __h = 131*__h + str[i];
+                return size_t(__h);
+        }
+};
+
+
 class SymbolTable
 {
   public:
@@ -145,11 +157,11 @@ class SymbolTable
     void InsertCompositeSymbol(string name, compositeNode *);
     CompositeSymbol *LookupCompositeSymbol(string name);
 
-    void InsertIdentifySymbol(Node *node,Constant *constant);
+    void InsertIdentifySymbol(Node *node,Constant *constant);//√
     
     void InsertIdentifySymbol(Node *node);
 
-    void InsertIdentifySymbol(Variable *variable);
+    void InsertIdentifySymbol(Variable *variable);//√
 
     void InsertStreamSymbol(inOutdeclNode* inOutNode);
 
@@ -168,7 +180,7 @@ class SymbolTable
 
     void printSymbolTables();
     
-    map<string, inOutdeclNode *> getStreamTable(){
+    unordered_map<string, inOutdeclNode *,str_hash> getStreamTable(){
       return this->streamTable;
     }
 
@@ -179,13 +191,14 @@ class SymbolTable
     map<string, idNode *> table;
     map<string, list<idNode *>> idTable;
 
-    map<string, funcDclNode *> funcTable;
+    map<string, funcDclNode *> funcTable; 
 
-    map<string, inOutdeclNode *> streamTable; //stream
+    unordered_map<string, inOutdeclNode *,str_hash> streamTable; //stream √
 
     map<string, Node *> identifyTable; //变量
-    map<string, Variable *> variableTable; //变量
-    map<string, CompositeSymbol *> compTable; // composite
+    //map<string, Variable *> variableTable; //变量 √
+    unordered_map<string,Variable *,str_hash>variableTable;
+    unordered_map<string, CompositeSymbol *,str_hash> compTable; // composite √
     map<string, operatorNode *> optTable; //operator
 
     

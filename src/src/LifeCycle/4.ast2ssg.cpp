@@ -146,7 +146,7 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
     }
     //由于窗口大小的改变 需要重写split join 节点的 work
     father_split_operator->operBody->work = unfold->MakeRoundrobinWork(father_split_operator->inputs,split_arguments,father_split_operator->outputs,father_split_composite->splitType);
-    father_join_operator->operBody->work = unfold->MakeRoundrobinWork(father_join_operator->inputs,join_arguments,father_join_operator->outputs,father_join_composite->splitType);
+    father_join_operator->operBody->work = unfold->MakeJoinWork(father_join_operator->inputs,join_arguments,father_join_operator->outputs);
     
 }
 /*
