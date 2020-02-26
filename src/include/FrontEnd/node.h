@@ -744,6 +744,7 @@ class inOutdeclNode : public Node
         this->setLoc(loc);
         this->type = InOutdcl;
         this->strType = strType;
+        this->id = id;
     }
     ~inOutdeclNode() {}
     void print() {}
@@ -824,6 +825,9 @@ class compositeCallNode : public Node
         this->type = CompositeCall;
         this->compName = compName;
         this->inputs = inputs;
+        if (outputs != NULL) {
+          this->outputs = outputs;
+        }
         this->actual_composite = actual_composite;
         this->stream_List = stream_List;
     }

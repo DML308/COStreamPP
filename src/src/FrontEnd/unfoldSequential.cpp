@@ -670,7 +670,7 @@ operatorNode* UnfoldComposite::makeInputOperator(layerNode *layer, list<Node *> 
 }
 
 operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
-    string operName = "conv2D";
+    string operName = "conv2D_" + to_string(layer -> level);
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
@@ -923,11 +923,15 @@ Node* UnfoldComposite::makeConv2DKernelBody(layerNode *layer, list<Node *> *inpu
 compositeNode* UnfoldComposite::makeConv2DKernel(layerNode *layer) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
-    list<Node *> *inputs = new list<Node *>(), *outputs = new list<Node *>();
-    Node* input = makeStream("input", "double");
-    inputs->push_back(input);
-    Node* output = makeStream("output", "double");
-    outputs->push_back(output);
+    list<Node *> *inputs = new list<Node *>(), *outputs = new list<Node *>(), *inputList = new list<Node *>(), *outputList = new list<Node *>();
+    Node* inputDecl = makeStream("input", "double");
+    Node* inputId = ((inOutdeclNode *)inputDecl) -> id;
+    inputList->push_back(inputDecl);
+    inputs->push_back(inputId);
+    Node* outputDecl = makeStream("output", "double");
+    Node* outputId = ((inOutdeclNode *)outputDecl) -> id;
+    outputs->push_back(outputId);
+    outputList->push_back(outputDecl);
     compInOut = new ComInOutNode(inputs, outputs);
     string compName = "conv2DKernel_" + layer->level;
     compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
@@ -1002,8 +1006,8 @@ Node* UnfoldComposite::makeStream(string name, string type) {
     primNode *valType = new primNode(type);
     val->valType = valType->name;
     strdclNode *strdcl = new strdclNode(val);
-    idNode *inputId = new idNode(name);
-    return new inOutdeclNode(strdcl, inputId);
+    idNode *streamId = new idNode(name);
+    return new inOutdeclNode(strdcl, streamId);
 }
 
 compositeNode* UnfoldComposite::makeCopyComp(list<Node *>  *inputs, list<Node *> *outputs) {
