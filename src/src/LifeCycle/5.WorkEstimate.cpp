@@ -1,5 +1,6 @@
 #include "staticStreamGragh.h"
 #include "5.workEstimate.h"
+//#include<math.h>
 
 void WorkEstimate(StaticStreamGraph *ssg)
 {
@@ -221,23 +222,55 @@ void workCompute(Node *node)
             /* for的next部分 */
             if (next_exp->type == Binop)
             {
+
                 string op = ((binopNode *)next_exp)->op;
-                if (op == "*=")
+
+                /*解决当末尾循环体增减不为1时，循环次数计算错误的问题*/
+                if(op == "+="||op =="-=")
                 {
+                    expNode *left = ((binopNode *)(next_exp))->left;
+                    expNode *right = ((binopNode *)(next_exp))->right;
+                    if(right->type==constant||left->type==constant)
+                    {
+                        if(right->type==constant)
+                        {
+                            long long span=((constantNode *)right)->llval;
+                            if(span!=1)
+                            tmp=ceil(tmp*1.0/span);
+                        }
+                        else if(left->type==constant)
+                        {
+                            long long span=((constantNode *)left)->llval;
+                            if(span!=1)
+                            tmp=ceil(tmp*1.0/span);
+                        }
+                    }
+                }
+                
+                else if (op == "*="||op == "/=")
+                {
+                    expNode *left=((binopNode *)(next_exp))->left;
+                    expNode *right=((binopNode *)(next_exp))->right;
+                    int ccc;
+                    long long span=0;
+                    if(right->type==constant||left->type==constant)
+                    {
+                        if(right->type==constant)
+                        {
+                            span=((constantNode *)right)->llval;
+                        }
+                        else if(left->type==constant)
+                        {
+                            span=((constantNode *)left)->llval;
+                        }
+                    }
                     if (condition >= init)
                         tmp = condition / init;
                     else
                         tmp = init / condition;
-                    tmp = log(tmp) / log(step);
+                    tmp =ceil(log(tmp) / log(span));
                 }
-                else if (op == "/=")
-                {
-                    if (condition >= init)
-                        tmp = condition / init;
-                    else
-                        tmp = init / condition;
-                    tmp = log(tmp) / log(step);
-                }
+                
                 else
                     tmp = (tmp + step - 1) / step;
             }
