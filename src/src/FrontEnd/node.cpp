@@ -599,29 +599,32 @@ string funcBodyNode::toString()
 }
 // 根据上一层初始化本层输出特征图的尺寸和输入空间的维度
 void conv2DLayerNode::init (sequentialNode* sequential) {
-    this -> size = new vector<long long>();
-    // 本层反向传播过程中 传入误差的尺寸
-    this -> errorSize = new vector<long long>();
-    vector<long long>* prevSize = new vector<long long>(); 
-    if (!prevLayer && this->level == 1) {
+    this -> outputFeatureMapSize = new vector<long long>();
+    // 本层反向传播过程中 传入误差的尺寸`
+    this -> inputErrorSize = new vector<long long>();
+    this -> inputSize = new vector<long long>();
+    vector<long long>* prevSize = new vector<long long>();
+    if (!this -> prevLayer && this->level == 1) {
+        // arg_list爲傳入整個sequential結構的參數列表((depth, rows, cols), ...)
         for(auto iter: *(sequential->arg_list)) {
             prevSize->push_back(((constantNode *)iter)->llval);
         }
         this->depth = prevSize -> at(0);
-        // 继续
-        for(int i = 0; i < this->domension; i++) {
-            this->size->push_back((prevSize->at(i + 1) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
+        for(int i = 0; i < this->dimension; i++) {
+            this->inputSize->push_back(prevSize->at(i + 1));
+            this->outputFeatureMapSize->push_back((prevSize->at(i + 1) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
         }
     } else {
-        prevSize = ((conv2DLayerNode *)(this->prevLayer))->size;  
+        prevSize = ((conv2DLayerNode *)(this->prevLayer))->outputFeatureMapSize;  
         this->depth = ((conv2DLayerNode *)(this -> prevLayer ))-> filters;
-        for(int i = 0; i < this->domension; i++) {
-            this->size->push_back((prevSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
+        for(int i = 0; i < this->dimension; i++) {
+            this->inputSize->push_back(prevSize->at(i));
+            this->outputFeatureMapSize->push_back((prevSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
         }
     }
-    for(int i = 0; i < this->domension; i++) {
-        // 2 * padding + (size - 1) * stride + 1
-        this -> errorSize -> push_back((this -> size -> at(i) - 1) * this -> strides -> at(i) + 1 + 2 * this -> paddings -> at(i));
+    for(int i = 0; i < this->dimension; i++) {
+        // 2 * (kernel_size - 1) + (outputFeaureMapSize - 1)* stride + 1
+        this -> inputErrorSize -> push_back(2 * (this -> kernel_size -> at(i) - 1) + (this -> outputFeatureMapSize -> at(i) - 1) * this -> strides -> at(i) + 1);
     }
 }
 

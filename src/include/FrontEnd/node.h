@@ -1007,13 +1007,14 @@ class conv2DLayerNode : public layerNode
 {
   public:
     long long filters; // 输出空间的维度 （即卷积中滤波器的输出数量）
-    long long domension; // 对于conv2D, 为2
+    long long dimension; // 对于conv2D, 为2
     long long depth; // 输入空间的维度
     vector<long long> *kernel_size; // 2D 卷积窗口的宽度和高度
     vector<long long> *strides; // 卷积沿宽度和高度方向的步长
     vector<long long> *paddings; // 扩展
-    vector<long long> *size; // 输出特征图的尺寸
-    vector<long long> *errorSize; // 误差经扩展膨胀后的尺寸
+    vector<long long> *outputFeatureMapSize; // 正向傳播過程输出的特征图的尺寸(2維)
+    vector<long long> *inputErrorSize; // 反向傳播過程输入的误差经扩展膨胀后的尺寸(2維)
+    vector<long long> *inputSize; // 正向傳播過程中輸入到該層的尺寸
     conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
@@ -1025,7 +1026,7 @@ class conv2DLayerNode : public layerNode
       this->prevLayer = NULL;
       this->nextLayer = NULL;
       this->level = 0;
-      this->domension = 2;
+      this->dimension = 2;
       auto iter = arg_list->begin();
       // filters
       this->filters = ((constantNode *)(*iter))->llval;
@@ -1037,7 +1038,7 @@ class conv2DLayerNode : public layerNode
           this->kernel_size->push_back(((constantNode *)(size))->llval);
         }
       } else {
-        for (int i = 0; i < this->domension; i++) {
+        for (int i = 0; i < this->dimension; i++) {
           this->kernel_size->push_back(((constantNode *)(*iter))->llval);
         }
       }
@@ -1049,7 +1050,7 @@ class conv2DLayerNode : public layerNode
           this->strides->push_back(((constantNode *)(size))->llval);
         }
       } else {
-        for (int i = 0; i < this->domension; i++) {
+        for (int i = 0; i < this->dimension; i++) {
           this->strides->push_back(((constantNode *)(*iter))->llval);
         }
       }
@@ -1057,20 +1058,20 @@ class conv2DLayerNode : public layerNode
       iter++;
       this->paddings = new vector<long long>();
       if ((*iter) -> type == Tuple) {
-        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
-          this->paddings->push_back(((constantNode *)(size))->llval);
+        for (auto padding : *(((tupleNode *)(*iter))->tupleList)) {
+          this->paddings->push_back(((constantNode *)(padding))->llval);
         }
       } else {
-        for (int i = 0; i < this->domension; i++) {
+        for (int i = 0; i < this->dimension; i++) {
           this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
-      this -> size = NULL;
-      this -> errorSize = NULL;
+      this -> outputFeatureMapSize = NULL;
+      this -> inputErrorSize = NULL;
     }
     ~conv2DLayerNode() {}
     void print() {}
     string toString() {}
-    void init(sequentialNode* sequential);
+    void init(sequentialNode* sequential); // 初始化outputFeatureMapSize, inputErrorSize, inputSize
 };
 #endif

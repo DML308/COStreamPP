@@ -68,7 +68,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
             Program->push_front(weightDecl);
             // 若卷积层后跟全连接层, 需要计算输出的尺寸 filters * size[0] * size[1]
-            prevDim = new constantNode("integer", ((conv2DLayerNode *)*iter) -> filters * ((conv2DLayerNode *)*iter) -> size -> at(0) * ((conv2DLayerNode *)*iter) -> size -> at(1));
+            prevDim = new constantNode("integer", ((conv2DLayerNode *)*iter) -> filters * ((conv2DLayerNode *)*iter) -> outputFeatureMapSize -> at(0) * ((conv2DLayerNode *)*iter) -> outputFeatureMapSize -> at(1));
         }
     }
     // 取得输入到sequential的训练集
@@ -681,7 +681,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     long long popVal = 1;
     if (layer->prevLayer != NULL) {
         layerNode *prevLayer = layer -> prevLayer;
-        vector<long long> *inputSize = ((conv2DLayerNode *)prevLayer)->size;
+        vector<long long> *inputSize = ((conv2DLayerNode *)prevLayer)->outputFeatureMapSize;
         // depth * width * height
         popVal = inputSize -> at(0)* inputSize -> at(1) * ((conv2DLayerNode *)layer)->depth;
     } else {
@@ -699,7 +699,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
 
     // 输出窗口
     auto outputIter = outputs->begin();
-    long long pushVal = ((conv2DLayerNode *)layer)->size->at(0) * ((conv2DLayerNode *)layer)->size->at(1);
+    long long pushVal = ((conv2DLayerNode *)layer)->outputFeatureMapSize->at(0) * ((conv2DLayerNode *)layer)->outputFeatureMapSize->at(1);
     cout << "倦極核輸出尺寸" << pushVal << endl;
     Node *push = new constantNode("integer", pushVal);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
@@ -734,21 +734,6 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     work = makeConv2DKernelOperWork(layer, inputs, outputs);
     body = new operBodyNode(bodyStmtList, init, work, window);
     return new operatorNode(outputs, operName, inputs, body);
-}
-// 用于获取某一维度的值
-Node* getInputDimVal (layerNode* layer, int dim) {
-    Node *val = NULL;
-    if (layer->prevLayer == NULL) {
-        auto iter = globalSequential->arg_list->begin();
-        iter++;
-        for (int i = 0; i < dim; i++) {
-            iter++;
-        }
-        val = *iter;
-    } else {
-        val = new constantNode("integer", ((conv2DLayerNode *)(layer->prevLayer))->size->at(dim));
-    }
-    return val;
 }
 Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
     list<Node *> *stmts = new list<Node *>();
@@ -826,12 +811,12 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *kernelDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
     Node *kernelDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
     Node *kernelDepth = new constantNode("integer", ((conv2DLayerNode *)layer) -> depth);
-    Node *outputHeight = new constantNode("integer", ((conv2DLayerNode *)layer) -> size->at(0));
-    Node *outputWidth = new constantNode("integer", ((conv2DLayerNode *)layer) -> size->at(1));
+    Node *outputHeight = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(0));
+    Node *outputWidth = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1)); 
     Node *stepHeight = new constantNode("integer", ((conv2DLayerNode *)layer) -> strides -> at(0));
     Node *stepWidth = new constantNode("integer", ((conv2DLayerNode *)layer) -> strides -> at(1));
-    Node *inputDim0 = getInputDimVal(layer, 0);
-    Node *inputDim1 = getInputDimVal(layer, 1);
+    Node *inputDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> inputSize -> at(0));
+    Node *inputDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> inputSize -> at(1));
 
     // output height
     init1 = new binopNode((expNode *)idM, "=", (expNode *)constZero);
@@ -1066,7 +1051,8 @@ compositeNode* UnfoldComposite::makeDConv2DLayer(layerNode *layer, list<Node *> 
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     return comp;
 }
-
+// 先將輸入的誤差擴展和膨脹
+// 將倆個輸入流分別復制分發給
 Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     compositeNode *res = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
@@ -1129,6 +1115,17 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     compStmtList->push_back(joinOperator);
     compBody = new compBodyNode(NULL, compStmtList);
     return compBody;
+}
+
+operatorNode *UnfoldComposite::makeConv2DDilateAndExtendOperator(list<Node *>inputs, list<Node *>outputs, layerNode *layer) {
+    operatorNode *res = NULL;
+    Node *work = NULL;
+    windowNode *window = NULL;
+    operBodyNode *body = NULL;
+    string operName = "conv2D_Dilate_Extend";
+    long long pop = 0, push = 0;
+
+    return res;
 }
 // 由于反向传播每一层有两个输入流 不可以直接使用splitjoin结构
 // 将输入的数据复制成layer->filters份
@@ -1255,8 +1252,8 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
     list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
     // *****输入窗口*****
     //[dim0][dim1]
-    long long errInputDim0 = ((conv2DLayerNode *)layer) -> errorSize -> at(0);
-    long long errInputDim1 = ((conv2DLayerNode *)layer) -> errorSize -> at(1);
+    long long errInputDim0 = ((conv2DLayerNode *)layer) -> inputErrorSize -> at(0);
+    long long errInputDim1 = ((conv2DLayerNode *)layer) -> inputErrorSize -> at(1);
     // 经反向传播计算逐层传递的误差
     auto inputIter = inputs->begin();
     long long errPopVal = errInputDim0 * errInputDim1 * ((conv2DLayerNode *)layer) -> filters;
@@ -1267,16 +1264,8 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
 
     // 经正向传播传入该层的输入
     inputIter++;
-    Node *fpInputDim0, *fpInputDim1;
-    auto inputSize = layer->prevLayer != NULL ? layer->prevLayer->arg_list->front() : globalSequential->arg_list->front();
-    if (inputSize -> type == constant) {
-        fpInputDim0 = inputSize;
-        fpInputDim1 = inputSize;
-    } else {
-        fpInputDim0 = ((tupleNode *)inputSize)->tupleList->front();
-        fpInputDim1 = ((tupleNode *)inputSize)->tupleList->back();
-    }
-    long long fpInputPopVal = ((constantNode *)fpInputDim0)->llval * ((constantNode *)fpInputDim1)->llval * ((conv2DLayerNode *)layer)->depth;
+    auto inputSize = ((conv2DLayerNode *)layer)->inputSize;
+    long long fpInputPopVal = inputSize->at(0) * inputSize->at(1) * ((conv2DLayerNode *)layer)->depth;
     Node *fpInputPop = new constantNode("integer", fpInputPopVal);
     slidingNode *slid2 = new slidingNode(new list<Node *>({fpInputPop, fpInputPop}));
     winStmtNode *win2 = new winStmtNode(((idNode *)(* inputIter))->name, slid2);
@@ -1289,11 +1278,11 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
         conv2DLayerNode *prevLayer = (conv2DLayerNode *)(layer -> prevLayer);
         // 上一层是卷积层,需要对计算的误差做膨胀和扩展
         if (prevLayer -> layerName == "conv2D") {
-            pushVal = prevLayer -> errorSize -> at(0) * prevLayer -> errorSize -> at(1) * prevLayer -> filters;
+            pushVal = prevLayer -> inputErrorSize -> at(0) * prevLayer -> inputErrorSize -> at(1) * prevLayer -> filters;
         }
     } else {
         // 当前到达第一层
-        pushVal = ((conv2DLayerNode *)layer) -> size -> at(0) * ((conv2DLayerNode *)layer) -> size -> at(1) * ((conv2DLayerNode *)layer) -> depth;
+        pushVal = ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(0) * ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1) * ((conv2DLayerNode *)layer) -> depth;
     }
     Node *push = new constantNode("integer", pushVal);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
@@ -1353,10 +1342,10 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *kernelDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
     Node *kernelDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
     Node *kernelDepth = new constantNode("integer", ((conv2DLayerNode *)layer) -> depth);
-    Node *inputDim0Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> errorSize -> at(0));
-    Node *inputDim1Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> errorSize -> at(1));
-    Node *resDim0Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> size -> at(0));
-    Node *resDim1Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> size -> at(1));
+    Node *inputDim0Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> inputErrorSize -> at(0));
+    Node *inputDim1Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> inputErrorSize -> at(1));
+    Node *resDim0Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(0));
+    Node *resDim1Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1));
     Node *outputDim0Val = NULL,
          *outputDim1Val = NULL,
          *prevPaddingDim0 = NULL,
@@ -1364,15 +1353,15 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
          *prevStrideDim0 = NULL,
          *prevStrideDim1 = NULL;
     if (layer -> prevLayer != NULL) {
-        outputDim0Val = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> errorSize -> at(0));
-        outputDim1Val = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> errorSize -> at(1));
+        outputDim0Val = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> inputErrorSize -> at(0));
+        outputDim1Val = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> inputErrorSize -> at(1));
         prevPaddingDim0 = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> paddings -> at(0));
         prevPaddingDim1 = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> paddings -> at(1));
         prevStrideDim0 = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> strides -> at(0));
         prevStrideDim1 = new constantNode("integer", ((conv2DLayerNode *)(layer -> prevLayer)) -> strides -> at(1));
     } else {
-        outputDim0Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> size -> at(0));
-        outputDim1Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> size -> at(1));
+        outputDim0Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(0));
+        outputDim1Val = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1));
         prevPaddingDim0 = constZero;
         prevPaddingDim1 = constZero;
         prevStrideDim0 = constOne;
