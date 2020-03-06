@@ -26,7 +26,7 @@ composite Main() {
             print(Out[0].x);
         }
         window{
-            Out sliding(10, 10);
+            Out sliding(12, 12);
         }
     };
 }

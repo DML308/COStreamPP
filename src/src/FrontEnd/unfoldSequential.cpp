@@ -240,8 +240,15 @@ operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> 
     Node *row = NULL, *col = NULL;
     list<Node *> *win_stmt = new list<Node *>();
     // In0 sliding(row, row);
+    // dense層輸入參數 ??? 繼續修改 符合現在整體傳參的規則
     if (layer->prevLayer != NULL) {
-        row = layer->prevLayer->arg_list->front();
+        if (layer ->prevLayer -> layerName == "dense") {
+            row = layer->prevLayer->arg_list->front();
+        } else {
+            auto inputSize = ((conv2DLayerNode *)(layer->prevLayer)) -> outputFeatureMapSize;
+            long long rowVal = inputSize -> at(0) * inputSize -> at(1) * ((conv2DLayerNode *)(layer->prevLayer)) -> filters;
+            row  = new constantNode("integer", rowVal);
+        }
     } else {
         row = globalSequential->arg_list->front();
     }
@@ -474,8 +481,15 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     Node *row = NULL, *col = NULL;
     list<Node *> *win_stmt = new list<Node *>();
     if (layer->prevLayer != NULL) {
-        row = layer->prevLayer->arg_list->front();
+        if (layer ->prevLayer -> layerName == "dense") {
+            row = layer->prevLayer->arg_list->front();
+        } else {
+            auto inputSize = ((conv2DLayerNode *)(layer->prevLayer)) -> outputFeatureMapSize;
+            long long rowVal = inputSize -> at(0) * inputSize -> at(1) * ((conv2DLayerNode *)(layer->prevLayer)) -> filters;
+            row  = new constantNode("integer", rowVal);
+        }
     } else {
+        // ??? 按整體傳參的規則重新修改 繼續
         row = globalSequential->arg_list->front();
     }
     col = layer->arg_list->front();
@@ -674,7 +688,6 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
-    Node *inRow = NULL, *inCol = NULL;
     list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
     // 输入窗口
     auto inputIter = inputs->begin();
@@ -708,11 +721,6 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
            *idTemp = new idNode("temp");
     // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2)); ???
     Node *declInt = new declareNode(primInt, idI),
-        //  *declJ = new declareNode(primInt, idJ),
-        //  *declN = new declareNode(primInt, idN),
-        //  *declM = new declareNode(primInt, idM),
-        //  *declK = new declareNode(primInt, idK),
-        //  *declPushIndex = new declareNode(primInt, idPushIndex),
          *declDouble = new declareNode(primDouble, idTemp);
     ((declareNode *)declInt )-> id_list.push_back(idJ);
     ((declareNode *)declInt )-> id_list.push_back(idN);
@@ -1057,20 +1065,26 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
     list<Node *> *compStmtList = new list<Node *>();
 
-    auto inputIter = inputs -> begin();
-    splitOperator1 = makeConv2DSplitOperator(*inputIter, layer);
-    // 繼續 調用makeConv2DDilateAndExtendOpera生成的oper
-    cout<<((idNode *)(*inputIter))->name << endl;
-    splitOperator2 = makeConv2DSplitOperator(*(++inputIter), layer);
-    cout<<((idNode *)(*inputIter))->name << endl;
-    errorList = splitOperator1 -> outputs;
-    fpInputList = splitOperator2 -> outputs;
-    auto errorIter = errorList -> begin();
-    auto fpInputIter = fpInputList -> begin();
+    // 繼續 調用makeConv2DDilateAndExtendOpera生成的oper ???
     idNode *streamDeclId = new idNode("x");
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
     Node *streamDecl = new strdclNode(streamDeclId);
+    Node *dilateAndExtendStream = new idNode("dilateAndExtend_" + to_string(layer -> level));
+    ((strdclNode*)streamDecl)->id_list.push_back((idNode *)dilateAndExtendStream);
+    list<Node *> *dilateAndExtendOperInputs = new list<Node *>({inputs -> front()});
+    list<Node *> *dilateAndExtendOperOutputs = new list<Node *>({dilateAndExtendStream});
+    operatorNode *dilateAndExtendOper = makeConv2DDilateAndExtendOperator(layer, dilateAndExtendOperInputs, dilateAndExtendOperOutputs);
+    compStmtList -> push_back(dilateAndExtendOper);
+    cout << "after dilate and extend" << endl;
+    auto inputIter = inputs -> begin();
+    splitOperator1 = makeConv2DSplitOperator(dilateAndExtendStream, layer);
+    splitOperator2 = makeConv2DSplitOperator(*(++inputIter), layer);
+    errorList = splitOperator1 -> outputs;
+    fpInputList = splitOperator2 -> outputs;
+    auto errorIter = errorList -> begin();
+    auto fpInputIter = fpInputList -> begin();
+    
     for(auto error : *errorList) {
         ((strdclNode*)streamDecl)->id_list.push_back((idNode *)error);
     }
@@ -1109,16 +1123,35 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     return compBody;
 }
 
-operatorNode *UnfoldComposite::makeConv2DDilateAndExtendOperator(list<Node *>inputs, list<Node *>outputs, layerNode *layer) {
+operatorNode *UnfoldComposite::makeConv2DDilateAndExtendOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     operatorNode *res = NULL;
     Node *work = NULL;
     windowNode *window = NULL;
     operBodyNode *body = NULL;
-    string operName = "conv2D_Dilate_Extend";
-    long long pop = 0, push = 0;
+    string operName = "conv2D_Dilate_Extend_" + to_string(layer -> level);
 
-    return res;
-}
+    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    auto inputErrorSize = ((conv2DLayerNode *) layer) -> inputErrorSize;
+    auto outputFeatureMapSize = ((conv2DLayerNode *) layer) -> outputFeatureMapSize;
+    long long popVal, pushVal;
+    popVal = outputFeatureMapSize -> at(0) * outputFeatureMapSize -> at(1) * ((conv2DLayerNode *) layer) -> filters;
+    pushVal = inputErrorSize -> at(0) * inputErrorSize -> at(1) * ((conv2DLayerNode *) layer) -> filters;
+    // 输入窗口
+    Node *pop = new constantNode("integer", popVal);
+    slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
+    winStmt->push_back(win1);
+    // 输出窗口
+    Node *push = new constantNode("integer", pushVal);
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
+    winStmtNode *win2 = new winStmtNode(((idNode *)(outputs->front()))->name, tumb);
+    winStmt->push_back(win2);
+    window = new windowNode(winStmt);
+    // 繼續
+    work = NULL;
+    body = new operBodyNode(bodyStmtList, NULL, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}   
 // 由于反向传播每一层有两个输入流 不可以直接使用splitjoin结构
 // 将输入的数据复制成layer->filters份
 operatorNode *UnfoldComposite::makeConv2DSplitOperator(Node *input, layerNode *layer) {
@@ -1265,7 +1298,7 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
 
     // *****输出窗口*****
     auto outputIter = outputs->begin();
-    long long pushVal = fpInputPopVal;
+    long long pushVal = inputSize->at(0) * inputSize->at(1);
     Node *push = new constantNode("integer", pushVal);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
     winStmtNode *win3 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
