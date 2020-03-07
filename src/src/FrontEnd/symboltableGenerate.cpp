@@ -2190,7 +2190,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         if(call->scope){
             top = new SymbolTable(call->scope,NULL); //call->scope 上一层执行上下文
         }else{
-            top = new SymbolTable(S);
+            top = new SymbolTable(&S,NULL);
         }
         top->count = call->count;
     }else{

@@ -29,7 +29,7 @@ composite subber(output stream<int x>Out,input stream<int x>In){
 composite BandStopFilter(output stream<int x>Out,input stream<int x>In){
     int i = 0;
     Out = splitjoin(In){
-        split roundrobin(1,1,2);
+        split roundrobin(1);
         for(i=0;i<2;i++){
             add splitjoin{
                 split roundrobin(1);
@@ -39,6 +39,7 @@ composite BandStopFilter(output stream<int x>Out,input stream<int x>In){
                 join roundrobin(1);
             }
         }
+        add adder();
         join roundrobin(1);
     };
 }
