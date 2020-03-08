@@ -1074,4 +1074,24 @@ class conv2DLayerNode : public layerNode
     string toString() {}
     void init(sequentialNode* sequential); // 初始化outputFeatureMapSize, inputErrorSize, inputSize
 };
+
+class denseLayerNode : public layerNode
+{
+  public:
+    long long rows; // 輸入
+    long long cols; // 輸出
+    denseLayerNode(string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerName = layerName;
+      this->bp_composite = NULL;
+      this->fp_composite = NULL;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->level = 0;
+      this -> cols = ((constantNode *)(arg_list -> front())) -> llval;
+    }
+    void init(sequentialNode* sequential); // 初始化rows
+};
 #endif

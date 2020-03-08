@@ -471,7 +471,7 @@ operator.layer:
           DENSE '(' argument.expression.list ')' ';'      {
                                                                 line("Line%-4d", @1.first_line);
                                                                 debug("operator.layer ::=DENSE ( argument.expression.list );\n");
-                                                                $$ = new layerNode("dense", $3, @1);
+                                                                $$ = new denseLayerNode("dense", $3, @1);
                                                                 debug("Create dense layer!\n");
                                                           }
           | CONV2D '(' argument.expression.list ')' ';'      {

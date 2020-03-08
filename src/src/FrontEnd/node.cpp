@@ -628,3 +628,32 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
     }
 }
 
+void denseLayerNode::init (sequentialNode * sequential) {
+    if (!this -> prevLayer) {
+        Node *arg = sequential -> arg_list -> front();
+        switch (arg -> type)
+        {
+            case Tuple: {
+                long long temp = 1;
+                for (auto iter : *(((tupleNode *)arg) -> tupleList)) {
+                    temp *= ((constantNode *)iter) -> llval;
+                }
+                this -> rows = temp;
+                break;
+            }
+            
+            default: {
+                this -> rows = ((constantNode *)arg) -> llval;
+                break;
+            }
+        }
+    } else {
+        if (this -> prevLayer -> layerName == "dense") {
+            this -> rows = ((constantNode *)(this -> arg_list -> front())) -> llval;
+        } else if (this -> prevLayer -> layerName == "conv2D") {
+            conv2DLayerNode *prevLayer = (conv2DLayerNode *) this -> prevLayer;
+            this -> rows = prevLayer -> filters * prevLayer -> outputFeatureMapSize -> at(0) * prevLayer -> outputFeatureMapSize -> at(1);
+        }
+    }
+}
+

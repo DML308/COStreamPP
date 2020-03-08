@@ -36,14 +36,17 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         if (((layerNode *)*iter)->layerName == "conv2D") {
             // 计算卷积层输出的尺寸
             ((conv2DLayerNode *)*iter)->init(globalSequential);
+        } else if(((layerNode *)*iter)->layerName == "dense") {
+            ((denseLayerNode *)*iter)->init(globalSequential);
         }
     }
     if (((layerNode *)(compositeCall_list.back()))->layerName == "conv2D") {
         ((conv2DLayerNode *)(compositeCall_list.back()))->init(globalSequential);
+    } else if(((layerNode *)(compositeCall_list.back()))->layerName == "dense") {
+        ((denseLayerNode *)(compositeCall_list.back()))->init(globalSequential);
     }
     ((layerNode *)compositeCall_list.back())->level = ++currentLevel;
     Node *weightType = new primNode("double");
-    Node *prevDim = new constantNode("integer",((constantNode *)(node->arg_list->front()))->llval);
     // 以全局变量声明参数
     for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
         string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
@@ -51,24 +54,24 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         ((idNode *)weight)->isArray = 1;
         if (((layerNode *)*iter) -> layerName == "dense") {
             // 声明_weight_[prevDim][dim]
-            Node *dim = new constantNode("integer", ((constantNode *)(((layerNode *)*iter)->arg_list->front()))->llval);
-            Node* arrDecl = new arrayNode((expNode *)prevDim);
-            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)dim);
+            Node *rows = new constantNode("integer", ((denseLayerNode *)(*iter))->rows);
+            Node *cols = new constantNode("integer", ((denseLayerNode *)(*iter))->cols);
+            Node* arrDecl = new arrayNode((expNode *)rows);
+            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)cols);
             (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
             Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
             Program->push_front(weightDecl);
-            prevDim = dim;
         } else if (((layerNode *)*iter) -> layerName == "conv2D") {
             // 声明_weight_[depth][kernelSizeDim0][kernelSizeDim1]
+            Node *filters = new constantNode("integer", ((conv2DLayerNode *)*iter) -> filters);
             Node *depth = new constantNode("integer", ((conv2DLayerNode *)*iter) -> depth);
-            Node* arrDecl = new arrayNode((expNode *)depth);
+            Node* arrDecl = new arrayNode((expNode *)filters);
+            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(depth));
             (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("integer", ((conv2DLayerNode *)*iter) -> kernel_size -> at(0))));
             (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("integer", ((conv2DLayerNode *)*iter) -> kernel_size -> at(1))));
             (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
             Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
             Program->push_front(weightDecl);
-            // 若卷积层后跟全连接层, 需要计算输出的尺寸 filters * size[0] * size[1]
-            prevDim = new constantNode("integer", ((conv2DLayerNode *)*iter) -> filters * ((conv2DLayerNode *)*iter) -> outputFeatureMapSize -> at(0) * ((conv2DLayerNode *)*iter) -> outputFeatureMapSize -> at(1));
         }
     }
     // 取得输入到sequential的训练集
@@ -237,30 +240,17 @@ operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> 
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
-    Node *row = NULL, *col = NULL;
+    Node *rows = new constantNode("integer", ((denseLayerNode *)layer) -> rows),
+         *cols = new constantNode("integer", ((denseLayerNode *)layer) -> cols);
     list<Node *> *win_stmt = new list<Node *>();
-    // In0 sliding(row, row);
-    // dense層輸入參數 ??? 繼續修改 符合現在整體傳參的規則
-    if (layer->prevLayer != NULL) {
-        if (layer ->prevLayer -> layerName == "dense") {
-            row = layer->prevLayer->arg_list->front();
-        } else {
-            auto inputSize = ((conv2DLayerNode *)(layer->prevLayer)) -> outputFeatureMapSize;
-            long long rowVal = inputSize -> at(0) * inputSize -> at(1) * ((conv2DLayerNode *)(layer->prevLayer)) -> filters;
-            row  = new constantNode("integer", rowVal);
-        }
-    } else {
-        row = globalSequential->arg_list->front();
-    }
-    col = layer->arg_list->front();
     
     // 添加输入窗口
     auto iter = inputs->front();
-    slidingNode *slid = new slidingNode(new list<Node *>({row, row}));
+    slidingNode *slid = new slidingNode(new list<Node *>({rows, rows}));
     winStmtNode *win1 = new winStmtNode(((idNode *)iter)->name, slid);
     win_stmt->push_back(win1);
     // 添加输出窗口
-    tumblingNode *tumb = new tumblingNode(new list<Node *>({col}));
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({cols}));
     iter = outputs->front();
     winStmtNode *win2 = new winStmtNode(((idNode *)iter)->name, tumb);
     win_stmt->push_back(win2);
@@ -283,6 +273,8 @@ operatorNode* UnfoldComposite::makeActivationOperator(layerNode* layer, list<Nod
 Node* UnfoldComposite::makeDenseInit(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
     list<Node *> *stmts = new list<Node *>();
     Node *init =  NULL;
+    Node *rows = new constantNode("integer", ((denseLayerNode *)layer) -> rows),
+         *cols = new constantNode("integer", ((denseLayerNode *)layer) -> cols);
     // 获得当前层的权值id
     string weightName = "_weight_" + to_string(layer-> level);
     Node*  weightId = new idNode(weightName);
@@ -301,14 +293,10 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer, list<Node *> *inputs, lis
     Node *init1 = NULL, *cond1 = NULL, *next_i = NULL, *stmt1 = NULL, *forNode1;
     Node *init2 = NULL, *cond2 = NULL, *next_j = NULL, *stmt2 = NULL, *forNode2;
     init1 = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    if (layer->prevLayer == NULL) {
-        cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(globalSequential->arg_list->front()));
-    } else {
-        cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(layer->prevLayer->arg_list->front()));
-    }
+    cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(rows));
     next_i = new unaryNode("POSTINC", (expNode *)id_i);
     init2 = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
-    cond2 = new binopNode((expNode *)id_j, "<", (expNode *)(layer->arg_list->front()));
+    cond2 = new binopNode((expNode *)id_j, "<", (expNode *)cols);
     next_j = new unaryNode("POSTINC", (expNode *)id_j);
     Node *weightArrDec = new arrayNode((expNode *)id_i);
     (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_j);
@@ -326,6 +314,10 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer, list<Node *> *inputs, lis
 Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
     list<Node *> *stmts = new list<Node *>();
     Node *work =  NULL;
+
+    Node *rows = new constantNode("integer", ((denseLayerNode *)layer) -> rows),
+         *cols = new constantNode("integer", ((denseLayerNode *)layer) -> cols);
+
     string weightName = "_weight_" + to_string(layer-> level);
     Node*  weightId = new idNode(weightName);
     ((idNode *)weightId)->isArray = 1;
@@ -348,14 +340,14 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
 
     Node *forNode1 = NULL, *init1 = NULL, *cond1 = NULL, *next_j = NULL, *stmt1 = NULL;
     init1 = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
-    cond1 = new binopNode((expNode *)id_j, "<", (expNode *)(layer->arg_list->front()));
+    cond1 = new binopNode((expNode *)id_j, "<", (expNode *)cols);
     next_j = new unaryNode("POSTINC", (expNode *)id_j);
     list<Node *> *stmts1 = new list<Node *>();
     stmts1->push_back(new binopNode((expNode *)id_temp, "=", (expNode *)const_zero));
 
     Node *forNode2 = NULL, *init2 = NULL, *cond2 = NULL, *next_i = NULL, *stmt2 = NULL, *block2 = NULL;
     init2 = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    cond2 = new binopNode((expNode *)id_i, "<", (expNode *)(* (layer->arg_list->begin()++)));
+    cond2 = new binopNode((expNode *)id_i, "<", (expNode *)rows);
     next_i = new unaryNode("POSTINC", (expNode *)id_i);
     list<Node *> *stmts2 = new list<Node *>();
     // 取得_weight_level[i][j]
@@ -421,7 +413,15 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
 
     // window
     list<Node *> *winStmt = new list<Node *>();
-    Node* num = layer->arg_list->front();
+    Node* num = NULL;
+    if (layer -> layerName == "dense") {
+        num = layer->arg_list->front();
+    } else if (layer -> layerName == "conv2D") {
+        auto outputSize = ((conv2DLayerNode *)layer) -> outputFeatureMapSize;
+        long long numVal = ((conv2DLayerNode *)layer) -> filters * outputSize -> at(0) * outputSize -> at(1);
+        num = new constantNode("integer", numVal);
+    }
+    
     slidingNode *slid = new slidingNode(new list<Node *>({num, num}));
     winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
     winStmtNode *win2 = new winStmtNode(((idNode *)(inputs->back()))->name, slid);
@@ -443,7 +443,7 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     stmts->push_back(declI);
     Node *forNode1 = NULL, *forInitI = NULL, *forCondI = NULL, *forNextI = NULL;
     forInitI = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    forCondI = new binopNode((expNode *)id_i, "<", (expNode *)(* (layer->arg_list->begin()++)));
+    forCondI = new binopNode((expNode *)id_i, "<", (expNode *)(num));
     forNextI = new unaryNode("POSTINC", (expNode *)id_i);
     list<Node *> *forStmts = new list<Node *>();
     // 取得In1[i].x, In2[i].x
@@ -478,35 +478,23 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
-    Node *row = NULL, *col = NULL;
+    Node *rows = new constantNode("integer", ((denseLayerNode *)layer) -> rows),
+         *cols = new constantNode("integer", ((denseLayerNode *)layer) -> cols);
     list<Node *> *win_stmt = new list<Node *>();
-    if (layer->prevLayer != NULL) {
-        if (layer ->prevLayer -> layerName == "dense") {
-            row = layer->prevLayer->arg_list->front();
-        } else {
-            auto inputSize = ((conv2DLayerNode *)(layer->prevLayer)) -> outputFeatureMapSize;
-            long long rowVal = inputSize -> at(0) * inputSize -> at(1) * ((conv2DLayerNode *)(layer->prevLayer)) -> filters;
-            row  = new constantNode("integer", rowVal);
-        }
-    } else {
-        // ??? 按整體傳參的規則重新修改 繼續
-        row = globalSequential->arg_list->front();
-    }
-    col = layer->arg_list->front();
 
     // 添加输入窗口
     auto iter = inputs->front();
-    slidingNode *slid1 = new slidingNode(new list<Node *>({col, col}));
+    slidingNode *slid1 = new slidingNode(new list<Node *>({cols, cols}));
     winStmtNode *dIn = new winStmtNode(((idNode *)iter)->name, slid1);
     win_stmt->push_back(dIn);
     iter = inputs->back();
-    slidingNode *slid2 = new slidingNode(new list<Node *>({row, row}));
+    slidingNode *slid2 = new slidingNode(new list<Node *>({rows, rows}));
     winStmtNode *in = new winStmtNode(((idNode *)iter)->name, slid2);
     win_stmt->push_back(in);
 
     // 添加输出窗口
     iter = outputs->front();
-    tumblingNode *tumb = new tumblingNode(new list<Node *>({row}));
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({rows}));
     winStmtNode *dOut = new winStmtNode(((idNode *)iter)->name, tumb);
     win_stmt->push_back(dOut);
     window = new windowNode(win_stmt);
@@ -523,13 +511,9 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     string weightName = "_weight_" + to_string(layer-> level);
     Node*  weightId = new idNode(weightName);
     ((idNode *)weightId)->isArray = 1;
-    Node *row = NULL, *col = NULL;
-    if (layer->prevLayer != NULL) {
-        row = layer->prevLayer->arg_list->front();
-    } else {
-        row = globalSequential->arg_list->front();
-    }
-    col = layer->arg_list->front();
+    Node *rows = new constantNode("integer", ((denseLayerNode *)layer) -> rows),
+         *cols = new constantNode("integer", ((denseLayerNode *)layer) -> cols);
+    
     // 循环修改w, 循环传递误差
     constantNode *const_zero = new  constantNode("integer", (long long)0);
     constantNode *const_i = new constantNode("integer", (long long)0);
@@ -552,10 +536,10 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     // 计算传播误差
     Node *forInitI = NULL, *forCondI = NULL, *forNextI = NULL, *forInitJ = NULL, *forCondJ = NULL, *forNextJ = NULL;
     forInitI = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    forCondI = new binopNode((expNode *)id_i, "<", (expNode *)(row));
+    forCondI = new binopNode((expNode *)id_i, "<", (expNode *)(rows));
     forNextI = new unaryNode("POSTINC", (expNode *)id_i);
     forInitJ = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
-    forCondJ = new binopNode((expNode *)id_j, "<", (expNode *)(col));
+    forCondJ = new binopNode((expNode *)id_j, "<", (expNode *)(cols));
     forNextJ = new unaryNode("POSTINC", (expNode *)id_j);
     // 取得 weight_level[i][j]
     Node *weightArrDec = NULL;
