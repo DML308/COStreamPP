@@ -1434,7 +1434,8 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)kernelIndex);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)(new binopNode((expNode *)(new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(0))), "-", (expNode *)idI)));
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)(new binopNode((expNode *)(new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(1))), "-", (expNode *)idJ)));
-    Node *weightId = new idNode("_weight" + layer -> level);
+    string weightName = "_weight_" + to_string(layer -> level);
+    Node *weightId = new idNode(weightName);
     ((idNode *)weightId) -> isArray = 1;
     ((idNode *)weightId) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
     // inputError 卷积运算 weight = output[(padding0 + m * stride0, padding1 + n * stride1, d)]
