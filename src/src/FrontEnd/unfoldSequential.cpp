@@ -767,7 +767,6 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
            *idX = new idNode("x"),
            *idPushIndex = new idNode("pushIndex"),
            *idTemp = new idNode("temp");
-    // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2)); ???
     Node *declInt = new declareNode(primInt, idI),
          *declDouble = new declareNode(primDouble, idTemp);
     ((declareNode *)declInt )-> id_list.push_back(idJ);
@@ -792,22 +791,22 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *kernelDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
     Node *kernelDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
     Node *kernelDepth = new constantNode("integer", ((conv2DLayerNode *)layer) -> depth);
-    Node *outputHeight = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(0));
-    Node *outputWidth = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1)); 
-    Node *stepHeight = new constantNode("integer", ((conv2DLayerNode *)layer) -> strides -> at(0));
-    Node *stepWidth = new constantNode("integer", ((conv2DLayerNode *)layer) -> strides -> at(1));
+    Node *outputDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(0));
+    Node *outputDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1)); 
+    Node *strideDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> strides -> at(0));
+    Node *strideDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> strides -> at(1));
     Node *inputDim0 = new constantNode("integer", ((conv2DLayerNode *)layer) -> inputSize -> at(0));
     Node *inputDim1 = new constantNode("integer", ((conv2DLayerNode *)layer) -> inputSize -> at(1));
 
     // output height
     init1 = new binopNode((expNode *)idM, "=", (expNode *)constZero);
-    cond1 = new binopNode((expNode *)idM, "<", (expNode *)outputHeight);
-    Node *nextMExp = new binopNode((expNode *)idM, "+", (expNode *)stepHeight);
+    cond1 = new binopNode((expNode *)idM, "<", (expNode *)outputDim0);
+    Node *nextMExp = new binopNode((expNode *)idM, "+", (expNode *)strideDim0);
     nextM = new binopNode((expNode *)idM, "=", (expNode *)nextMExp);
     // output width
     init2 = new binopNode((expNode *)idN, "=", (expNode *)constZero);
-    cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputWidth);
-    Node *nextKExp = new binopNode((expNode *)idN, "+", (expNode *)stepWidth);
+    cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1);
+    Node *nextKExp = new binopNode((expNode *)idN, "+", (expNode *)strideDim1);
     nextN = new binopNode((expNode *)idN, "=", (expNode *)nextKExp);
     // kernel depth
     init3 = new binopNode((expNode *)idD, "=", (expNode *)constZero);
@@ -821,15 +820,15 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     init5 = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
     cond5 = new binopNode((expNode *)idJ, "<", (expNode *)kernelDim1);
     nextJ = new unaryNode("POSTINC", (expNode *)idJ);
-    // weight[kernelIndex][n][i][j] * in[d * sizeH * sizeW + (m * strideH + i) * sizeW + n * stridesW + j]????
+    
     Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
          *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
     ((idNode *)output) -> isArray = 1;
     ((idNode *)input) -> isArray = 1;
     // 繼續 檢查???
-    Node *stepY = new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)stepHeight)), "+", (expNode *)idI);
+    Node *stepY = new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)strideDim0)), "+", (expNode *)idI);
     Node *offsetY =  new binopNode((expNode *)stepY, "*", (expNode *)(new binopNode((expNode *)inputDim1, "*", (expNode *)kernelDepth)));
-    Node *stepX = new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)stepWidth)), "+", (expNode *)idJ);
+    Node *stepX = new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)strideDim1)), "+", (expNode *)idJ);
     Node *offsetX = new binopNode((expNode *)stepY, "*", (expNode *)kernelDepth);
     Node *inputIndex = new binopNode((expNode *)(new binopNode((expNode *)idD, "+", (expNode *)offsetX)), "+", (expNode *)offsetY);
     ((idNode *)input) -> arg_list.push_back(inputIndex);
@@ -1048,7 +1047,6 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
     list<Node *> *compStmtList = new list<Node *>();
 
-    // 繼續 調用makeConv2DDilateAndExtendOpera生成的oper ???
     idNode *streamDeclId = new idNode("x");
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
@@ -1130,11 +1128,83 @@ operatorNode *UnfoldComposite::makeConv2DDilateAndExtendOperator(layerNode *laye
     winStmtNode *win2 = new winStmtNode(((idNode *)(outputs->front()))->name, tumb);
     winStmt->push_back(win2);
     window = new windowNode(winStmt);
-    // 繼續
-    work = NULL;
+
+    work = makeConv2DDilateAndExtendOperWork((conv2DLayerNode *)layer, inputs, outputs);
     body = new operBodyNode(bodyStmtList, NULL, work, window);
     return new operatorNode(outputs, operName, inputs, body);
-}   
+}
+// [dim0][dim1][filters] => [inputErrorSize0][inputErroSize1][filters]
+// [i][j][filters] => [kernel0 + i * stride0][kernel1 + j * stride1][filters]
+Node* UnfoldComposite::makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,list<Node *> *inputs, list<Node *> *outputs) {
+    Node *work = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    primNode *primInt = new primNode("int");
+    idNode *idI = new idNode("i"),
+           *idJ = new idNode("j"),
+           *idF = new idNode("filters"),
+           *idX = new idNode("x");
+    Node *declInt = new declareNode(primInt, idI);
+    ((declareNode *)declInt )-> id_list.push_back(idJ);
+    ((declareNode *)declInt )-> id_list.push_back(idF);
+    stmtList -> push_back(declInt);
+    Node *constZero = new constantNode("integer", (long long)0);
+
+    Node *init1 = NULL, *cond1 = NULL, *nextI = NULL, *stmt1 = NULL, *forNode1 = NULL;
+    Node *init2 = NULL, *cond2 = NULL, *nextJ = NULL, *stmt2 = NULL, *forNode2 = NULL;
+    Node *init3 = NULL, *cond3 = NULL, *nextF = NULL, *stmt3 = NULL, *forNode3 = NULL;
+
+    Node *filters = new constantNode("integer", layer -> filters);
+    Node *stride0 = new constantNode("integer", layer -> strides -> at(0));
+    Node *stride1 = new constantNode("integer", layer -> strides -> at(1));
+    Node *kernel0 = new constantNode("integer", layer -> kernel_size -> at(0));
+    Node *kernel1 = new constantNode("integer", layer -> kernel_size -> at(1));
+    Node *inputSizeDim0 = new constantNode("integer", layer -> outputFeatureMapSize -> at(0));
+    Node *inputSizeDim1 = new constantNode("integer", layer -> outputFeatureMapSize -> at(1));
+    Node *outputSizeDim0 = new constantNode("integer", layer -> inputErrorSize -> at(0));
+    Node *outputSizeDim1 = new constantNode("integer", layer -> inputErrorSize -> at(1));
+
+    init1 = new binopNode((expNode *)idF, "=", (expNode *)constZero);
+    cond1 = new binopNode((expNode *)idF, "<", (expNode *)filters);
+    nextF = new unaryNode("POSTINC", (expNode *)idF);
+
+    init2 = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    cond2 = new binopNode((expNode *)idI, "<", (expNode *)inputSizeDim0);
+    nextI = new unaryNode("POSTINC", (expNode *)idI);
+
+    init3 = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    cond3 = new binopNode((expNode *)idJ, "<", (expNode *)inputSizeDim1);
+    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+
+    Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+         *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
+    ((idNode *)output) -> isArray = 1;
+    ((idNode *)input) -> isArray = 1;
+
+    // i * inputDim1 * filters
+    Node *inputOffset0 = new binopNode((expNode *)idI, "*", (expNode *)(new constantNode("integer", layer -> inputErrorSize -> at(1) * layer -> filters)));
+    Node *inputOffset1 = new binopNode((expNode *)idJ, "*", (expNode *)filters);
+    Node *inputIndex = new binopNode((expNode *)(new binopNode((expNode *)inputOffset0, "+", (expNode *)inputOffset1)), "+", (expNode *)idF);
+    ((idNode *)input) -> arg_list.push_back(inputIndex);
+    Node *inputX = new binopNode((expNode *)input, ".", (expNode *)idX);
+
+    // kernel0 + i * stride0
+    Node *outputIndexDim0 = new binopNode(((expNode *)(new binopNode((expNode *)stride0, "*", (expNode *)idI))), "+", (expNode *)kernel0);
+    Node *outputOffset0 = new binopNode((expNode *)outputIndexDim0, "*", (expNode *)(new constantNode("integer", layer -> inputErrorSize -> at(1) * layer -> filters)));
+    Node *outputIndexDim1 = new binopNode(((expNode *)(new binopNode((expNode *)stride1, "*", (expNode *)idJ))), "+", (expNode *)kernel1);
+    Node *outputOffset1 = new binopNode((expNode *)outputIndexDim1, "*", (expNode *)filters);
+    Node *outputIndex = new binopNode((expNode *)(new binopNode((expNode *)outputOffset0, "+", (expNode *)outputOffset1)), "+", (expNode *)idF);
+    ((idNode *)output) -> arg_list.push_back(outputIndex);
+    Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
+
+    Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)inputX);
+    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextF, assign);
+    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextJ, forNode1);
+    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextI, forNode2);
+
+    stmtList -> push_back(forNode3);
+    work = new blockNode(stmtList);
+    return work;
+}
 // 由于反向传播每一层有两个输入流 不可以直接使用splitjoin结构
 // 将输入的数据复制成layer->filters份
 operatorNode *UnfoldComposite::makeConv2DSplitOperator(Node *input, layerNode *layer) {

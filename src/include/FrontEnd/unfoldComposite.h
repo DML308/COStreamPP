@@ -59,5 +59,6 @@ class UnfoldComposite
     operatorNode* makeConv2DSplitOperator(Node *input, layerNode *layer);
     operatorNode* makeConv2DJoinOperator(Node *output, list<Node *> *inputs, layerNode *layer);
     operatorNode* makeConv2DDilateAndExtendOperator(layerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif
