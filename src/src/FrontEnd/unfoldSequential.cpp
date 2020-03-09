@@ -667,7 +667,7 @@ operatorNode* UnfoldComposite::makeInputOperator(layerNode *layer, list<Node *> 
     return new operatorNode(outputs, operName, inputs, body);
 }
 
-operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
     string operName = "conv2D_" + to_string(layer -> level);
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
@@ -694,18 +694,18 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
     winStmt->push_back(win2);
     window = new windowNode(winStmt);
-    init = makeConv2DKernelOperInit(layer);
-    work = makeConv2DKernelOperWork(layer, inputs, outputs);
+    init = makeConv2DKernelOperInit(layer, kernelIndex);
+    work = makeConv2DKernelOperWork(layer, inputs, outputs, kernelIndex);
     body = new operBodyNode(bodyStmtList, init, work, window);
     return new operatorNode(outputs, operName, inputs, body);
 }
-Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
+Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer, Node *kernelIndex) {
     list<Node *> *stmts = new list<Node *>();
     Node *init = NULL;
     string weightName = "_weight_" + to_string(layer-> level);
     Node*  weightId = new idNode(weightName);
     ((idNode *)weightId)->isArray = 1;
-    Node *kernelIndex = new idNode("kernelIndex");
+    // Node *kernelIndex = new idNode("kernelIndex");
     constantNode *const_zero = new constantNode("integer", (long long)0);
     idNode *id_j = new idNode("j"), *id_n = new idNode("n"), *id_m = new idNode("m");
     primNode *prim = new primNode("int");
@@ -754,7 +754,7 @@ Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
     return init;
 }
 // input符合[h][w][depth]
-Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
     Node* work = NULL;
     list<Node *> *stmtList = new list<Node *>();
     primNode *primInt = new primNode("int"),
@@ -834,7 +834,7 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     ((idNode *)input) -> arg_list.push_back(inputIndex);
     Node *inputX = new binopNode((expNode *)input, ".", (expNode *)idX);
     // weight[kernelIndex][d][i][j]
-    Node *kernelIndex = new idNode("kernelIndex");
+    // Node *kernelIndex = new idNode("kernelIndex");
     Node *weightArrDec = new arrayNode((expNode *)kernelIndex);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)idD);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)idI);
@@ -870,23 +870,34 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     return work;
 }
 
-Node* UnfoldComposite::makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+Node* UnfoldComposite::makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
+    /*
+        Node* body = NULL;
+        list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
+        Node *kernelIndex = new idNode("kernelIndex");
+        // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));???
+        ((idNode *)kernelIndex) -> valType = "integer";
+        paramList -> push_back(kernelIndex);
+        operatorNode *oper  = makeConv2DKernelOper(layer, inputs, outputs, kernelIndex);
+        // 调用kernel operator
+        Node *binop = new binopNode((expNode *)(outputs -> front()), "=", (expNode *)oper) ;
+        stmtList -> push_back(binop);
+        paramNode *param = new paramNode(paramList);
+        body = new compBodyNode(param, stmtList);
+        return body; 
+    */
+
     Node* body = NULL;
-    list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
-    Node *kernelIndex = new idNode("kernelIndex");
-    // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));???
-    ((idNode *)kernelIndex) -> valType = "integer";
-    paramList -> push_back(kernelIndex);
-    operatorNode *oper  = makeConv2DKernelOper(layer, inputs, outputs);
+    list<Node *> *stmtList = new list<Node *>();
+    operatorNode *oper  = makeConv2DKernelOper(layer, inputs, outputs, kernelIndex);
     // 调用kernel operator
     Node *binop = new binopNode((expNode *)(outputs -> front()), "=", (expNode *)oper) ;
     stmtList -> push_back(binop);
-    paramNode *param = new paramNode(paramList);
-    body = new compBodyNode(param, stmtList);
+    body = new compBodyNode(NULL, stmtList);
     return body;
 }
 // 生成名为"conv2DKernel_" + level 的卷积层计算节点 单输入单输出
-compositeNode* UnfoldComposite::makeConv2DKernel(layerNode *layer) {
+compositeNode* UnfoldComposite::makeConv2DKernel(layerNode *layer, Node *kernelIndex) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     list<Node *> *inputs = new list<Node *>(), *outputs = new list<Node *>(), *inputList = new list<Node *>(), *outputList = new list<Node *>();
@@ -899,9 +910,10 @@ compositeNode* UnfoldComposite::makeConv2DKernel(layerNode *layer) {
     outputs->push_back(outputId);
     outputList->push_back(outputDecl);
     compInOut = new ComInOutNode(inputs, outputs);
-    string compName = "conv2DKernel_" + layer->level;
+    long long kernelIndexVal = ((constantNode *)kernelIndex) -> llval;
+    string compName = "conv2DKernel_" + to_string(layer->level) + "_" + to_string(kernelIndexVal);
     compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
-    compBody = makeConv2DKernelBody((conv2DLayerNode *)layer, inputs, outputs);
+    compBody = makeConv2DKernelBody((conv2DLayerNode *)layer, inputs, outputs, kernelIndex);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     S.InsertCompositeSymbol(compName, comp);
     return comp;
@@ -942,20 +954,35 @@ Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *input
     roundrobinNode *roundrobin = new roundrobinNode(NULL);
     constantNode *constZero = new constantNode("integer", (long long)0);
     constantNode *constFilters = new constantNode("integer", (long long)(((conv2DLayerNode *)layer)->filters));
-    Node *init = new binopNode((expNode *)idI, "=", (expNode *)constZero);
-    Node *cond = new binopNode((expNode *)idI, "<", (expNode *)(constFilters));
-    Node *next = new unaryNode("POSTINC", (expNode *)idI);
+    
     list<Node *> *blockStmtList = new list<Node *>();
-    string compName = "conv2DKernel_" + layer -> level;
-    list<Node *> *argList = new list<Node *>({idI});
-    // 根据layer生成相应的composite
-    compositeNode *actual_comp = makeConv2DKernel(layer);
-    Node *kernel = new compositeCallNode(NULL, compName, argList, NULL, actual_comp);
-    Node *add = new addNode(kernel);
-    blockStmtList -> push_back(add);
-    Node *block = new blockNode(blockStmtList);
-    Node *splitjoinFor = new forNode(init, (expNode *)cond, (expNode *)next, block);
-    splitjoinBodyStmts -> push_back(splitjoinFor);
+    string compName = "conv2DKernel_" + to_string(layer -> level) + "_";
+    /* 
+        Node *init = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+        Node *cond = new binopNode((expNode *)idI, "<", (expNode *)(constFilters));
+        Node *next = new unaryNode("POSTINC", (expNode *)idI);
+        list<Node *> *argList = new list<Node *>({idI});
+        // 根据layer生成相应的composite
+        compositeNode *actual_comp = makeConv2DKernel(layer);
+        Node *kernel = new compositeCallNode(NULL, compName, argList, NULL, actual_comp);
+        Node *add = new addNode(kernel);
+        blockStmtList -> push_back(add);
+        Node *block = new blockNode(blockStmtList);
+        Node *splitjoinFor = new forNode(init, (expNode *)cond, (expNode *)next, block);
+        splitjoinBodyStmts -> push_back(splitjoinFor);
+    */
+    
+    for (int i = 0; i < ((conv2DLayerNode *)layer)->filters; i++) {
+        Node *kernelIndex = new constantNode("integer", (long long)i);
+        compositeNode *actual_comp = makeConv2DKernel(layer, kernelIndex);
+        // 确保生成的每个comp的名称不可相同否则,在展开的过程中该层所有的kernel composite相同
+        string actualCompName = compName + to_string(i);
+        S.InsertCompositeSymbol(actualCompName, actual_comp);
+        Node *kernel = new compositeCallNode(NULL, actualCompName, NULL, NULL, actual_comp);
+        Node *add = new addNode(kernel);
+        splitjoinBodyStmts -> push_back(add);
+    }
+
     joinNode *join = new joinNode(roundrobin);
     splitjoinNode *splitjoin = new splitjoinNode(inputs, tempStream, (splitNode *)split, splitjoinStmtList, splitjoinBodyStmts,(joinNode *)join);
     Node* conv = new binopNode((expNode *)((idNode *)res), "=", (expNode *)splitjoin);
@@ -1081,10 +1108,11 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
         // kernel的输出流
         list<Node *> *call_outputs = new list<Node *>({kernelOutput});
         Node *arg = new constantNode("integer", (long long)i);
+        Node *index = arg;
         list<Node *> *argList = new list<Node *>({arg});
         //compositeCall的输入流
         list<Node *> *call_inputs = new list<Node *>({*errorIter, *fpInputIter});
-        compositeNode *dKernelComp = makeDConv2DKernel(layer, call_inputs, call_outputs);
+        compositeNode *dKernelComp = makeDConv2DKernel(layer, call_inputs, call_outputs, index);
         compositeCallNode *call = new compositeCallNode(call_outputs, tempName, argList, call_inputs, dKernelComp);
         comCallList->push_back(call);
         errorIter++;
@@ -1292,24 +1320,32 @@ operatorNode *UnfoldComposite::makeConv2DJoinOperator(Node *output, list<Node *>
     return res;
 }
 
-compositeNode* UnfoldComposite::makeDConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+compositeNode* UnfoldComposite::makeDConv2DKernel(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     compInOut = new ComInOutNode(inputs, outputs);
     string compName = "dConv2DKernel_" + layer->level;
     compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
-    compBody = makeDConv2DKernelBody((conv2DLayerNode *)layer, inputs, outputs);
+    compBody = makeDConv2DKernelBody((conv2DLayerNode *)layer, inputs, outputs, kernelIndex);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     return comp;
 }
 
-Node* UnfoldComposite::makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+Node* UnfoldComposite::makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
+    // Node* body = NULL;
+    // list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
+    // Node *kernelIndex = new idNode("kernelIndex");
+    // ((idNode *)kernelIndex) -> valType = "integer";
+    // paramList -> push_back(kernelIndex);
+    // operatorNode *oper  = makeDConv2DKernelOper(layer, inputs, outputs, kernelIndex);
+    // Node *binop = new binopNode((expNode *)(outputs -> front()), "=", (expNode *)oper) ;
+    // stmtList -> push_back(binop);
+    // paramNode *param = new paramNode(paramList);
+    // body = new compBodyNode(param, stmtList);
+    // return body;
     Node* body = NULL;
     list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
-    Node *kernelIndex = new idNode("kernelIndex");
-    ((idNode *)kernelIndex) -> valType = "integer";
-    paramList -> push_back(kernelIndex);
-    operatorNode *oper  = makeDConv2DKernelOper(layer, inputs, outputs);
+    operatorNode *oper  = makeDConv2DKernelOper(layer, inputs, outputs, kernelIndex);
     Node *binop = new binopNode((expNode *)(outputs -> front()), "=", (expNode *)oper) ;
     stmtList -> push_back(binop);
     paramNode *param = new paramNode(paramList);
@@ -1317,7 +1353,7 @@ Node* UnfoldComposite::makeDConv2DKernelBody(layerNode *layer, list<Node *> *inp
     return body;
 }
 
-operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs) {
+operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
     string operName = "dConv2D";
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
@@ -1355,13 +1391,13 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
 
     
     init = NULL;
-    work = makeDConv2DKernelOperWork(layer, inputs, outputs);
+    work = makeDConv2DKernelOperWork(layer, inputs, outputs, kernelIndex);
     body = new operBodyNode(bodyStmtList, init, work, window);
     return new operatorNode(outputs, operName, inputs, body);
 }
 
 // 輸出傳遞給該層的每個值關於損失函數的誤差, 未經過膨脹和擴展! ???繼續修改
-Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex) {
     Node *work = NULL;
     list<Node *> *stmtList = new list<Node *>();
     primNode *primInt = new primNode("int"),
@@ -1429,7 +1465,6 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     ((idNode *)output) -> isArray = 1;
     ((idNode *)inputError) -> isArray = 1;
     // weight[d][kernelndex][kernelDim0 - i][kernelDim1 - j]
-    Node *kernelIndex = new idNode("kernelIndex");
     Node *weightArrDec = new arrayNode((expNode *)idD);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)kernelIndex);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)(new binopNode((expNode *)(new constantNode("integer", ((conv2DLayerNode *)layer) -> kernel_size -> at(0))), "-", (expNode *)idI)));
