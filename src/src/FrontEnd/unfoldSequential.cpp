@@ -806,8 +806,8 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     // output width
     init2 = new binopNode((expNode *)idN, "=", (expNode *)constZero);
     cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1);
-    Node *nextKExp = new binopNode((expNode *)idN, "+", (expNode *)strideDim1);
-    nextN = new binopNode((expNode *)idN, "=", (expNode *)nextKExp);
+    Node *nextNExp = new binopNode((expNode *)idN, "+", (expNode *)strideDim1);
+    nextN = new binopNode((expNode *)idN, "=", (expNode *)nextNExp);
     // kernel depth
     init3 = new binopNode((expNode *)idD, "=", (expNode *)constZero);
     cond3 = new binopNode((expNode *)idD, "<", (expNode *)kernelDepth);
@@ -863,7 +863,7 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *block2  = new blockNode(stmtList2);
     forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextN, block2);
     Node *block1 = new blockNode(new list<Node *>({forNode2}));
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextN, block1);
+    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextM, block1);
     Node *numInit = new binopNode((expNode *)idPushIndex, "=", (expNode *)constZero);
     stmtList -> push_back(forNode1);
     work = new blockNode(stmtList);
@@ -1226,8 +1226,8 @@ Node* UnfoldComposite::makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,
 
     Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)inputX);
     forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextF, assign);
-    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextJ, forNode1);
-    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextI, forNode2);
+    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextI, forNode1);
+    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextJ, forNode2);
 
     stmtList -> push_back(forNode3);
     work = new blockNode(stmtList);
@@ -1444,8 +1444,8 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     // output dim1
     init2 = new binopNode((expNode *)idN, "=", (expNode *)constZero);
     cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1Val);
-    Node *nextKExp = new binopNode((expNode *)idN, "+", (expNode *)constOne);
-    nextN = new binopNode((expNode *)idN, "=", (expNode *)nextKExp);
+    Node *nextNExp = new binopNode((expNode *)idN, "+", (expNode *)constOne);
+    nextN = new binopNode((expNode *)idN, "=", (expNode *)nextNExp);
     // kernel depth
     init3 = new binopNode((expNode *)idD, "=", (expNode *)constZero);
     cond3 = new binopNode((expNode *)idD, "<", (expNode *)kernelDepth);
@@ -1522,7 +1522,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *block2  = new blockNode(stmtList2);
     forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextN, block2);
     Node *block1 = new blockNode(new list<Node *>({forNode2}));
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextN, block1);
+    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextM, block1);
     stmtList -> push_back(forNode1);
     // ??? 继续
     // 计算损失函数关于权值的偏导数
