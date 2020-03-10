@@ -1,4 +1,3 @@
-  
 //2016-6-24 wl
 //本程序实现DCT变换
 //编译命令 COStreamC -x86 -nCpucore 8 dct.cos -o ./dct/
@@ -25,7 +24,7 @@ composite IntSource(output stream<double x> Out)
 		}
 		work
 		{
-			while(i<64){
+			/*while(i<64){
 				float x = pow(3, i++);
 				int   y = (int) x;
 				Out[0].x = y%75;
@@ -37,8 +36,8 @@ composite IntSource(output stream<double x> Out)
 				int   y = (int) x;
 				Out[0].x = y%75;
 				i++;
-			}while(i<=64);
-			//Out[0].x = From[i++];
+			}while(i<=64);*/
+			Out[0].x = From[i++];
 			
 		}
 		window{
@@ -58,8 +57,8 @@ composite DCT_Result(output stream<double x> Out,input stream<double x> In)
 		work
 		{
 			int t;
-			t = (int)floor(In[0].x+0.499999);
-			Out[0].x = t;
+			t = (int)round(10*In[0].x);
+			Out[0].x = t/10;
 			//println(Out[0].x);
 		}
 		window{
@@ -77,11 +76,10 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 	Out = DCT_1D(In)
 	{
 		double coeff[8][8];
-		int xi,u;
 		double Cu;
 		init
 		{
-		
+			int xi,u;
 			for (xi = 0; xi < 8; xi++) 
 			{
 				Cu = 0.5;
@@ -124,12 +122,12 @@ composite DCT_2D_X(output stream<double x>Out,input stream<double x>In)
 	Out=splitjoin(In)
 	{
 		int i;
-		split roundrobin(8);
+		split roundrobin(8,8,8,8,8,8,8,8);
 		for (i = 0; i < 8; i++)
 		{
 			add DCT_1D(8); 
 		}
-		join roundrobin(8);
+		join roundrobin();
 	};
 }
 
@@ -140,12 +138,12 @@ composite DCT_2D_Y(output stream<double x>Out,input stream<double x>In)
 	Out = splitjoin(In)
 	{	
 		int i;
-		split roundrobin(1);
+		split roundrobin();
 		for (i = 0; i < 8; i++)
 		{
 			add DCT_1D(8); 
 		}
-		join roundrobin(1);
+		join roundrobin();
 	};
 }
 
