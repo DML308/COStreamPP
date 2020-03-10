@@ -1,4 +1,6 @@
 #include "node.h"
+extern SymbolTable* running_top;
+
 string listToString(list<Node *> list)
 {
     int k = 0;
@@ -123,6 +125,7 @@ string operatorNode::toString()
         s += ", outputs:[" + listToString(*outputs) + "]";
     return s + " }";
 }
+
 string idNode::toString()
 {
     string str = name;

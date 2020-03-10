@@ -2259,6 +2259,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             for(auto it = param_list.begin();it != param_list.end();it++){
                 Variable *variable = top->LookupIdentifySymbol(((idNode *)(*it))->name);
                  variable->value = (*paramValue);
+                 top->InsertParamSymbol(variable);
                 /*if(variable->type.compare((*paramValue)->type) == 0){ //todo 参数类型匹配
                     variable->value = (*paramValue);
                 }else{

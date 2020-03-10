@@ -378,6 +378,20 @@ void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
     static_cast<operatorNode *>(opt)->version = current_version[Level];
 }
 
+void SymbolTable::InsertParamSymbol(Variable *variable){
+    paramTable.push_back(variable);
+}
+
+string SymbolTable::toParamString(){
+    string params_str = "";
+    for(auto it:paramTable){
+        Variable *variable = (Variable *)it;
+        string param_str ="\t" + variable->type + " " + variable->name + " = " + variable->value->printStr(false) + ";" +"\n";
+        params_str += param_str;
+    }
+    return params_str;
+}
+
 void SymbolTable::printSymbolTables(){
     cout<<"---------- Identify Table: ----------\n";
     for(auto it = variableTable.begin();it!=variableTable.end();it++){

@@ -59,6 +59,35 @@ class Constant{
       }
   }
 
+  string printStr(bool isArray){
+      string str = "";
+      if(type.compare("int") == 0){
+            str = to_string(ival);
+        }
+      if(type.compare("long") == 0){
+          str = to_string(lval);
+      }
+      if(type.compare("long long") == 0){
+          str = to_string(llval);
+      }
+      if(type.compare("double") == 0){
+          str = to_string(dval);
+      }
+      if(type.compare("float") == 0){
+          str = to_string(fval);
+      }
+      if(type.compare("string") == 0){
+          str = sval;
+      }
+      if(type.compare("bool") == 0){
+          str = to_string(bval);
+      }
+      if(!isArray){
+        
+      }
+      return str;
+  }
+
 };
 
 class ArrayConstant {
@@ -178,6 +207,10 @@ class SymbolTable
 
     void InsertOperatorSymbol(string name, operatorNode *opt);
 
+    void InsertParamSymbol(Variable *variable);//√
+    
+    string toParamString();
+
     void printSymbolTables();
     
     unordered_map<string, inOutdeclNode *,str_hash> getStreamTable(){
@@ -195,9 +228,10 @@ class SymbolTable
 
     unordered_map<string, inOutdeclNode *,str_hash> streamTable; //stream √
 
-    map<string, Node *> identifyTable; //变量
-    //map<string, Variable *> variableTable; //变量 √
-    unordered_map<string,Variable *,str_hash>variableTable;
+    //map<string, Node *> identifyTable; 
+    //map<string, Variable *> variableTable; 
+    unordered_map<string,Variable *,str_hash>variableTable;//变量 √
+    list<Variable *> paramTable;//参数变量 用于代码生成时在operator中添加该参数变量 √
     unordered_map<string, CompositeSymbol *,str_hash> compTable; // composite √
     map<string, operatorNode *> optTable; //operator
 

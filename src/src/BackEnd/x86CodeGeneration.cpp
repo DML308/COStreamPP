@@ -277,6 +277,10 @@ void X86CodeGeneration::CGactors()
             buf << "\tConsumer<streamData> " << in << ";\n";
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
+        //写入composite传入的参数
+        SymbolTable *running_top = flatNodes_[i]->compositecall_runnningtop;
+        string param = running_top->toParamString();
+        //buf << param;
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
         CGactorsStmts(buf, &stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
