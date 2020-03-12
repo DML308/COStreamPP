@@ -597,31 +597,49 @@ string funcBodyNode::toString()
     }
     return str;
 }
+
+vector<long long>* layerNode::getInputSize(sequentialNode *sequential) {
+    layerNode *prevLayer = this -> prevLayer;
+    if (prevLayer != NULL) {
+        switch (prevLayer -> layerType)
+        {
+            case Dense:
+                return new vector<long long>({1, ((denseLayerNode *)prevLayer)->cols, 1});
+            case Conv2D: {
+                return ((conv2DLayerNode *)prevLayer) -> outputFeatureMapSize;
+                }
+            case MaxPooling2D: {
+                return ((maxPooling2DLayerNode *)prevLayer) -> outputPooledSize;
+                }
+            default:
+                return NULL;
+        }
+    } else {
+        Node *firstArg = sequential -> arg_list -> front();
+        switch ( firstArg -> type) {
+            case Tuple: {
+                vector<long long> *res = new vector<long long>();
+                 for (auto dim : *(((tupleNode *)firstArg) -> tupleList)) {
+                     res -> push_back(((constantNode *)dim)->llval);
+                 }
+                 return res;
+            }
+            default:
+                return new vector<long long>({1, ((constantNode *)firstArg)->llval, 1});
+        }
+    }
+}
 // 根据上一层初始化本层输出特征图的尺寸和输入空间的维度
 void conv2DLayerNode::init (sequentialNode* sequential) {
     this -> outputFeatureMapSize = new vector<long long>();
     // 本层反向传播过程中 传入误差的尺寸`
     this -> inputErrorSize = new vector<long long>();
-    this -> inputSize = new vector<long long>();
-    vector<long long>* prevSize = new vector<long long>();
-    if (!this -> prevLayer && this->level == 1) {
-        // arg_list爲傳入整個sequential結構的參數列表((depth, rows, cols), ...)
-        for(auto iter: *(sequential->arg_list)) {
-            prevSize->push_back(((constantNode *)iter)->llval);
-        }
-        this->depth = prevSize -> at(0);
-        for(int i = 0; i < this->dimension; i++) {
-            this->inputSize->push_back(prevSize->at(i + 1));
-            this->outputFeatureMapSize->push_back((prevSize->at(i + 1) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
-        }
-    } else {
-        prevSize = ((conv2DLayerNode *)(this->prevLayer))->outputFeatureMapSize;  
-        this->depth = ((conv2DLayerNode *)(this -> prevLayer ))-> filters;
-        for(int i = 0; i < this->dimension; i++) {
-            this->inputSize->push_back(prevSize->at(i));
-            this->outputFeatureMapSize->push_back((prevSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
-        }
+   // 按照arg_list爲傳入整個sequential結構的參數列表((depth, rows, cols), ...)
+    this->inputSize = this -> getInputSize(sequential);
+    for(int i = 0; i < this->dimension; i++) {
+        this->outputFeatureMapSize->push_back((this->inputSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
     }
+    this->outputFeatureMapSize->push_back(this->filters);
     for(int i = 0; i < this->dimension; i++) {
         // 2 * (kernel_size - 1) + (outputFeaureMapSize - 1)* stride + 1
         this -> inputErrorSize -> push_back(2 * (this -> kernel_size -> at(i) - 1) + (this -> outputFeatureMapSize -> at(i) - 1) * this -> strides -> at(i) + 1);
@@ -629,31 +647,19 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
 }
 
 void denseLayerNode::init (sequentialNode * sequential) {
-    if (!this -> prevLayer) {
-        Node *arg = sequential -> arg_list -> front();
-        switch (arg -> type)
-        {
-            case Tuple: {
-                long long temp = 1;
-                for (auto iter : *(((tupleNode *)arg) -> tupleList)) {
-                    temp *= ((constantNode *)iter) -> llval;
-                }
-                this -> rows = temp;
-                break;
-            }
-            
-            default: {
-                this -> rows = ((constantNode *)arg) -> llval;
-                break;
-            }
-        }
-    } else {
-        if (this -> prevLayer -> layerName == "dense") {
-            this -> rows = ((constantNode *)(this -> arg_list -> front())) -> llval;
-        } else if (this -> prevLayer -> layerName == "conv2D") {
-            conv2DLayerNode *prevLayer = (conv2DLayerNode *) this -> prevLayer;
-            this -> rows = prevLayer -> filters * prevLayer -> outputFeatureMapSize -> at(0) * prevLayer -> outputFeatureMapSize -> at(1);
-        }
+    long long temp = 1;
+    for(auto dim: *(this->getInputSize(sequential))) {
+        temp*=dim;
     }
+    this->rows = temp;
 }
 
+void maxPooling2DLayerNode::init(sequentialNode *sequential) {
+    auto inputSize = this -> getInputSize(sequential);
+    this->outputPooledSize = new vector<long long>();
+    for(int i = 0; i < 2; i++) {
+        // 是否加1????
+        this->outputPooledSize->push_back(inputSize->at(i) / this->pool_size);
+    }
+    this->outputPooledSize->push_back(inputSize->back());
+}

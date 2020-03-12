@@ -60,5 +60,16 @@ class UnfoldComposite
     operatorNode* makeConv2DJoinOperator(Node *output, list<Node *> *inputs, layerNode *layer);
     operatorNode* makeConv2DDilateAndExtendOperator(layerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
     Node* makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
+
+    compositeNode* makeMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeDMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeDMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeDMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif
