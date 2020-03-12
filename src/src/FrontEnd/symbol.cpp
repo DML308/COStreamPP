@@ -379,14 +379,53 @@ void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
 }
 
 void SymbolTable::InsertParamSymbol(Variable *variable){
-    paramTable.push_back(variable);
+    paramTable.insert(make_pair(variable->name,variable));
 }
+
+constantNode* SymbolTable::fromVariableToConstant(Variable *value){
+      string type = value->value->type;
+      string name = value->name;
+      if(type.compare("int") == 0){
+        return new constantNode(type,value->value->ival);
+      }
+      if(type.compare("long") == 0){
+        return new constantNode(type,value->value->lval);
+      }
+      if(type.compare("long long") == 0){
+        return new constantNode(type,value->value->llval);
+      }
+      if(type.compare("double") == 0){
+        return new constantNode(type,value->value->dval);
+      }
+      if(type.compare("float") == 0){
+        return new constantNode(type,value->value->fval);
+      }
+      if(type.compare("bool") == 0){
+        return new constantNode(type,value->value->bval);
+      }
+      if(type.compare("string") == 0){
+        return new constantNode(type,value->value->sval);
+      }
+      return NULL;
+    }
 
 string SymbolTable::toParamString(){
     string params_str = "";
-    for(auto it:paramTable){
-        Variable *variable = (Variable *)it;
-        string param_str ="\t" + variable->type + " " + variable->name + " = " + variable->value->printStr(false) + ";" +"\n";
+    map<string,Variable*>::iterator it;
+    for(it=paramTable.begin();it!=paramTable.end();it++){
+        Variable *variable = (Variable *)(it->second);
+        string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
+        params_str += param_str;
+    }
+    return params_str;
+}
+
+string SymbolTable::toParamValueString(){
+    string params_str = "";
+    map<string,Variable*>::iterator it;
+    for(it=paramTable.begin();it!=paramTable.end();it++){
+        Variable *variable = (Variable *)(it->second);
+        string param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
         params_str += param_str;
     }
     return params_str;

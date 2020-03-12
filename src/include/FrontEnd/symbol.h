@@ -211,11 +211,15 @@ class SymbolTable
     
     string toParamString();
 
+    string toParamValueString();
+
     void printSymbolTables();
     
     unordered_map<string, inOutdeclNode *,str_hash> getStreamTable(){
       return this->streamTable;
     }
+
+    constantNode *fromVariableToConstant(Variable *value);
 
   private:
     
@@ -231,7 +235,7 @@ class SymbolTable
     //map<string, Node *> identifyTable; 
     //map<string, Variable *> variableTable; 
     unordered_map<string,Variable *,str_hash>variableTable;//变量 √
-    list<Variable *> paramTable;//参数变量 用于代码生成时在operator中添加该参数变量 √
+    map<string,Variable *> paramTable;//参数变量 用于代码生成时在operator中添加该参数变量 √
     unordered_map<string, CompositeSymbol *,str_hash> compTable; // composite √
     map<string, operatorNode *> optTable; //operator
 

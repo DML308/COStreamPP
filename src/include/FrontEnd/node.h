@@ -178,6 +178,14 @@ class declareNode : public Node
         if (id)
             this->id_list.push_back(id);
     }
+    declareNode(primNode *prim, list<idNode *> id, YYLTYPE loc = YYLTYPE())
+    {
+        this->setLoc(loc);
+        this->type = Decl;
+        this->prim = prim;
+        if (id.size())
+            this->id_list = id;
+    }
     ~declareNode() {}
     void print() {}
     string toString();

@@ -24,21 +24,10 @@ composite IntSource(output stream<double x> Out)
 		}
 		work
 		{
-			/*while(i<64){
-				float x = pow(3, i++);
-				int   y = (int) x;
-				Out[0].x = y%75;
-				i++;
-			}
-			if(i==64) i=0;
-			do{
-				float x = pow(3, i++);
-				int   y = (int) x;
-				Out[0].x = y%75;
-				i++;
-			}while(i<=64);*/
-			Out[0].x = From[i++];
-			
+			Out[0].x = (double)From[i++];
+			/*float x = pow(3, i++);
+			int   y = (int) x;
+			Out[0].x = y%75;*/
 		}
 		window{
 			Out tumbling(1);
@@ -57,8 +46,8 @@ composite DCT_Result(output stream<double x> Out,input stream<double x> In)
 		work
 		{
 			int t;
-			t = (int)floor(10*In[0].x);
-			Out[0].x = t/10;
+			t = (int)floor(In[0].x+0.499999);
+			Out[0].x = t;
 			//println(Out[0].x);
 		}
 		window{
@@ -75,16 +64,16 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 		int size;
 	Out = DCT_1D(In)
 	{
-		double coeff[8][8];
+		double coeff[size][size];
+		int xi,u;
 		double Cu;
 		init
 		{
-			int xi,u;
-			for (xi = 0; xi < 8; xi++) 
+			for (xi = 0; xi < size; xi++) 
 			{
 				Cu = 0.5;
 				if (xi == 0)Cu = sqrt(0.125);
-				for (u = 0; u < 8; u++) 
+				for (u = 0; u < size; u++) 
 				{
 					coeff[xi][u]= Cu * cos((pi/8.0)*xi*(u+0.5));
 				}
@@ -94,10 +83,10 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 		{
 			int xi, u;
 			double tmp;
-			for (xi = 0; xi < 8; xi++) 
+			for (xi = 0; xi < size; xi++) 
 			{
 				tmp = 0.0;
-				for (u = 0; u < 8; u++) 
+				for (u = 0; u < size; u++) 
 				{
 					tmp += (coeff[xi][u] * In[u].x);
 				}
@@ -108,8 +97,8 @@ composite DCT_1D(output stream<double x>Out,input stream<double x>In)
 		}
 
 		window{
-			Out tumbling(8);
-			In  sliding(8,8);
+			Out tumbling(size);
+			In  sliding(size,size);
 		}
 	};
 }
@@ -122,12 +111,12 @@ composite DCT_2D_X(output stream<double x>Out,input stream<double x>In)
 	Out=splitjoin(In)
 	{
 		int i;
-		split roundrobin(8,8,8,8,8,8,8,8);
-		for (i = 0; i < 8; i++)
+		split roundrobin(size);
+		for (i = 0; i < size; i++)
 		{
-			add DCT_1D(8); 
+			add DCT_1D(size); 
 		}
-		join roundrobin();
+		join roundrobin(size);
 	};
 }
 
@@ -138,12 +127,12 @@ composite DCT_2D_Y(output stream<double x>Out,input stream<double x>In)
 	Out = splitjoin(In)
 	{	
 		int i;
-		split roundrobin();
-		for (i = 0; i < 8; i++)
+		split roundrobin(1);
+		for (i = 0; i < size; i++)
 		{
-			add DCT_1D(8); 
+			add DCT_1D(size); 
 		}
-		join roundrobin();
+		join roundrobin(1);
 	};
 }
 
@@ -159,10 +148,10 @@ composite Sink(input stream<double x> In)
 		{
 			int i;
 			for(i = 0;i<8;i++){
-				print(In[i].x);
-				print(" ");
+				cout<<In[i].x;
+				cout<<" ";
 			}
-			println("");
+			cout<<"\n";
 			
 		}
 		window{
@@ -179,12 +168,8 @@ composite Main ()
 	
 	Source = IntSource()();
 	
-	S1 = DCT_2D_Y(Source)(8);
 	
-	S2 = DCT_2D_X(S1)(8);
 	
-	S3 = DCT_Result(S2)();
-	
-	Sink(S3)();
+	Sink(Source)();
 	
 }

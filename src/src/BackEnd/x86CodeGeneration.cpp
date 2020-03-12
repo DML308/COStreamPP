@@ -1,4 +1,5 @@
 #include "x86CodeGenaration.h"
+SymbolTable *running_top;
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -269,6 +270,8 @@ void X86CodeGeneration::CGactors()
         CGactorsConstructor(flatNodes_[i], buf, className, inEdgeName, outEdgeName);
         CGactorsRunInitScheduleWork(buf, inEdgeName, outEdgeName);
         CGactorsRunSteadyScheduleWork(buf, inEdgeName, outEdgeName);
+        
+
         /*写入类成员变量*/
         buf << "private:\n";
         for (auto out : outEdgeName)
@@ -277,10 +280,11 @@ void X86CodeGeneration::CGactors()
             buf << "\tConsumer<streamData> " << in << ";\n";
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
-        //写入composite传入的参数
-        SymbolTable *running_top = flatNodes_[i]->compositecall_runnningtop;
+
+        //写入composite传入的参数 此处为声明，在init中赋值
+        running_top = flatNodes_[i]->compositecall_runnningtop;
         string param = running_top->toParamString();
-        //buf << param;
+        buf << param;
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
         CGactorsStmts(buf, &stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
@@ -359,7 +363,49 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
     {
         for (auto it : *stmts)
         {
-            string str = it->toString()+";";
+            string str;
+            bool isArray = false;
+            //确定数组各维大小 例:int a[size][size] => int a[8][8]
+            if(it->type == Decl){  
+                declareNode* decl_node = ((declareNode *)it);
+                list<idNode *> id_list = ((declareNode *)it)->id_list;
+               list<idNode *> copy_id_list;// = list<idNode *>();
+               if(id_list.size()){
+                   for(auto id_node :id_list){
+                       if(id_node->isArray){
+                            isArray = true;
+                            list<Node *>copy_args = list<Node *>();
+                            list<Node *>args = id_node->arg_list;
+                            for(auto arg :args){
+                                if(arg->type == Id){
+                                    Variable* value = running_top->LookupIdentifySymbol(((idNode *)arg)->name);
+                                    constantNode* constant_value = running_top->fromVariableToConstant(value);
+                                    copy_args.push_back(constant_value);
+                                }else{
+                                    copy_args.push_back(arg);
+                                }
+                            }
+                            idNode* array_id = new idNode(id_node->name);
+                            array_id->arg_list = copy_args;
+                            array_id->isArray = true;
+                            array_id->init = NULL;
+                            copy_id_list.push_back(array_id);
+                       }else{
+                           copy_id_list.push_back(id_node);
+                       }
+
+                   }
+               }
+               if(isArray){
+                   declareNode* copy_decl_node = new declareNode(decl_node->prim,copy_id_list);
+                   str = copy_decl_node->toString() + ";";
+               } 
+            }
+            
+            if(!isArray){
+                str = it->toString()+";";
+            }
+            
             /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
             string temp = "";
             bool flag = 1;
@@ -451,6 +497,9 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
 void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)
 {
     buf << "\tvoid init(){ \n";
+    //进行param的初始化
+    string param = running_top->toParamValueString();
+    buf<<param;
     if (init != NULL)
         buf << init->toString();
     buf << "\t}\n";
