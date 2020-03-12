@@ -51,7 +51,7 @@ void SymbolTable::InsertSymbol(idNode *node)
         {
             if ((*it)->level == Level && (*it)->version == current_version[Level])
             {
-                cout << "idNode had been declared!";
+                cout << (*it)->loc->first_line<<": idNode had been declared! ";
                 exit(-1);
             }
         }
@@ -181,7 +181,7 @@ void SymbolTable::InsertIdentifySymbol(Node *node){
     }
     else
     {
-        cout << name<<" had been declared!";
+        cout <<node->loc->first_line<<": "<<name<<" had been declared!";
         exit(-1);
     }
 }
@@ -200,7 +200,7 @@ void SymbolTable::InsertIdentifySymbol(Variable *variable){
     else
     {
         cout << name<<" had been declared!";
-        exit(-1);
+        exit(-1);cout << name<<" had been declared!";
     }
 }
 
@@ -210,7 +210,7 @@ void SymbolTable::InsertStreamSymbol(inOutdeclNode* inOutNode){
     if(iter == streamTable.end()){
         streamTable.insert(make_pair(name,inOutNode));
     }else{
-        cout << "stream " << name <<" had been declared!";
+        cout << inOutNode->loc->first_line << ": " << "stream " << name <<" had been declared!";
         exit(-1);
     }
 }
@@ -265,7 +265,7 @@ void SymbolTable::InsertIdentifySymbol(Node *node,Constant *constant){
     }
     else
     {
-        cout << name<<" had been declared!";
+        cout <<node->loc->first_line << ": " << name<<" had been declared!";
         exit(-1);
     }
 }
@@ -324,7 +324,7 @@ void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
     }
     else
     {
-        cout << func->name<<" had been declared!";
+        cout << func->loc->first_line << ": " << func->name<<" had been declared!";
         exit(-1);
     }
 }
