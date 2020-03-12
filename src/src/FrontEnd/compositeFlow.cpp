@@ -582,7 +582,7 @@ void compositeCallFlow(list<Node *> *stmts)
             }
             compositeCallFlow(ifelse_list);
         }else{
-            genrateStmt(nd);
+            //genrateStmt(nd);todo 是否需要解析，再次解析会重复进行常量传播以及符号表生成
         }
     }
 }

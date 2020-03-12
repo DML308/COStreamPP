@@ -2194,7 +2194,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         }
         top->count = call->count;
     }else{
-        top = new SymbolTable(S);
+        top = new SymbolTable(&S,NULL);
         top->count = 0;
     }
     
