@@ -456,6 +456,9 @@ void X86CodeGeneration::CGactorsPushToken(stringstream &buf, FlatNode *actor, ve
 void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts)
 {
     buf << "\tvoid initVarAndState() {\n";
+    //进行param的初始化
+    string param = running_top->toParamValueString();
+    buf<<param;
     if (stmts != NULL)
     {
         for (auto it : *stmts)
@@ -497,9 +500,6 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
 void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)
 {
     buf << "\tvoid init(){ \n";
-    //进行param的初始化
-    string param = running_top->toParamValueString();
-    buf<<param;
     if (init != NULL)
         buf << init->toString();
     buf << "\t}\n";
