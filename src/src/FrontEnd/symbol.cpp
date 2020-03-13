@@ -411,8 +411,8 @@ constantNode* SymbolTable::fromVariableToConstant(Variable *value){
 
 string SymbolTable::toParamString(){
     string params_str = "";
-    map<string,Variable*>::iterator it;
-    for(it=paramTable.begin();it!=paramTable.end();it++){
+    unordered_map<string,Variable*>::iterator it;
+    for(it=variableTable.begin();it!=variableTable.end();it++){
         Variable *variable = (Variable *)(it->second);
         string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
         params_str += param_str;
@@ -422,8 +422,8 @@ string SymbolTable::toParamString(){
 
 string SymbolTable::toParamValueString(){
     string params_str = "";
-    map<string,Variable*>::iterator it;
-    for(it=paramTable.begin();it!=paramTable.end();it++){
+    unordered_map<string,Variable*>::iterator it;
+    for(it=variableTable.begin();it!=variableTable.end();it++){
         Variable *variable = (Variable *)(it->second);
         string param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
         params_str += param_str;

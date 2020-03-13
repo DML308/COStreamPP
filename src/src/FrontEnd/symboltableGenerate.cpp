@@ -526,7 +526,7 @@ if(op.compare("+") == 0){
     }
     
     //逻辑运算
-    if(op.compare("<")){
+    if(op.compare("<") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival < right->ival){
                 return new Constant("bool",true);
@@ -617,7 +617,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("<=")){
+    if(op.compare("<=") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival <= right->ival){
                 return new Constant("bool",true);
@@ -708,7 +708,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare(">")){
+    if(op.compare(">") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival > right->ival){
                 return new Constant("bool",true);
@@ -799,7 +799,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare(">=")){
+    if(op.compare(">=") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival >= right->ival){
                 return new Constant("bool",true);
@@ -890,7 +890,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("==")){
+    if(op.compare("==") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival == right->ival){
                 return new Constant("bool",true);
@@ -981,7 +981,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("!=")){
+    if(op.compare("!=") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival != right->ival){
                 return new Constant("bool",true);
@@ -1072,7 +1072,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("&&")){
+    if(op.compare("&&") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival && right->ival){
                 return new Constant("bool",true);
@@ -1259,7 +1259,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("||")){
+    if(op.compare("||") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival || right->ival){
                 return new Constant("bool",true);
@@ -1509,7 +1509,7 @@ if(op.compare("+") == 0){
                 }  
             }
         }
-        if(op.compare("!")){
+        if(op.compare("!") == 0){
             if(right){
                 if(right->type.compare("int") == 0){
                     return new Constant("bool",!right->ival);
