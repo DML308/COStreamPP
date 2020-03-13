@@ -58,17 +58,19 @@ class UnfoldComposite
     operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex);
     operatorNode* makeConv2DDilateAndExtendOperator(layerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
     Node* makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
-
-    operatorNode* makeSpecialSplitOperator(Node* input, long long duplicateCount);
+    // style 默认为0, 表示duplicate, style = 1 时,表示roundrobin
+    operatorNode* makeSpecialSplitOperator(Node* input, long long splitCount, layerNode* layer,int style = 0);
     operatorNode* makeSpecialJoinOperator(Node *output, list<Node *> *inputs);
     compositeNode* makeMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
-    compositeNode* makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs, int depthIndex);
+    Node* makeMaxPooling2DKernelBody(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
-    compositeNode* makeDMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeDMaxPooling2DLayer(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeDMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDMaxPooling2DKernelBody(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };

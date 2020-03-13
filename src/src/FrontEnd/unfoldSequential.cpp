@@ -33,45 +33,62 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         ((layerNode *)*iter)->level = ++currentLevel;
         ((layerNode *)*iter)->nextLayer  = ((layerNode *)*(iter+1));
         ((layerNode *)*(iter+1))->prevLayer  = ((layerNode *)*iter);
-        if (((layerNode *)*iter)->layerName == "conv2D") {
-            // 计算卷积层输出的尺寸
-            ((conv2DLayerNode *)*iter)->init(globalSequential);
-        } else if(((layerNode *)*iter)->layerName == "dense") {
-            ((denseLayerNode *)*iter)->init(globalSequential);
-        }
-    }
-    if (((layerNode *)(compositeCall_list.back()))->layerName == "conv2D") {
-        ((conv2DLayerNode *)(compositeCall_list.back()))->init(globalSequential);
-    } else if(((layerNode *)(compositeCall_list.back()))->layerName == "dense") {
-        ((denseLayerNode *)(compositeCall_list.back()))->init(globalSequential);
     }
     ((layerNode *)compositeCall_list.back())->level = ++currentLevel;
+
+    for(auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
+        switch (((layerNode *)*iter) ->layerType)
+        {
+            case Dense: {
+                ((denseLayerNode *)*iter)->init(globalSequential);
+                break;
+            }
+            case Conv2D: {
+                ((conv2DLayerNode *)*iter)->init(globalSequential);
+                break;
+            }
+            case MaxPooling2D: {
+                ((maxPooling2DLayerNode *)*iter)->init(globalSequential);
+            }
+            default:
+                break;
+            }
+    }
+
     Node *weightType = new primNode("double");
     // 以全局变量声明参数
     for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
         string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
         Node *weight =  new idNode(weightName);
         ((idNode *)weight)->isArray = 1;
-        if (((layerNode *)*iter) -> layerName == "dense") {
-            // 声明_weight_[prevDim][dim]
-            Node *rows = new constantNode("integer", ((denseLayerNode *)(*iter))->rows);
-            Node *cols = new constantNode("integer", ((denseLayerNode *)(*iter))->cols);
-            Node* arrDecl = new arrayNode((expNode *)rows);
-            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)cols);
-            (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
-            Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
-            Program->push_front(weightDecl);
-        } else if (((layerNode *)*iter) -> layerName == "conv2D") {
-            // 声明_weight_[depth][kernelSizeDim0][kernelSizeDim1]
-            Node *filters = new constantNode("integer", ((conv2DLayerNode *)*iter) -> filters);
-            Node *depth = new constantNode("integer", ((conv2DLayerNode *)*iter) -> inputSize -> back());
-            Node* arrDecl = new arrayNode((expNode *)filters);
-            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(depth));
-            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("integer", ((conv2DLayerNode *)*iter) -> kernel_size -> at(0))));
-            (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("integer", ((conv2DLayerNode *)*iter) -> kernel_size -> at(1))));
-            (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
-            Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
-            Program->push_front(weightDecl);
+        switch (((layerNode*)*iter)->layerType)
+        {
+            case Dense: {
+                // 声明_weight_[prevDim][dim]
+                Node *rows = new constantNode("integer", ((denseLayerNode *)(*iter))->rows);
+                Node *cols = new constantNode("integer", ((denseLayerNode *)(*iter))->cols);
+                Node* arrDecl = new arrayNode((expNode *)rows);
+                (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)cols);
+                (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+                Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
+                Program->push_front(weightDecl);
+                break;
+            }
+            case Conv2D: {
+                // 声明_weight_[filters][depth][kernelSizeDim0][kernelSizeDim1]
+                Node *filters = new constantNode("integer", ((conv2DLayerNode *)*iter) -> filters);
+                Node *depth = new constantNode("integer", ((conv2DLayerNode *)*iter) -> inputSize -> back());
+                Node* arrDecl = new arrayNode((expNode *)filters);
+                (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(depth));
+                (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("integer", ((conv2DLayerNode *)*iter) -> kernel_size -> at(0))));
+                (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("integer", ((conv2DLayerNode *)*iter) -> kernel_size -> at(1))));
+                (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+                Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
+                Program->push_front(weightDecl);
+                break;
+            }
+            default:
+                break;
         }
     }
     // 取得输入到sequential的训练集
@@ -198,16 +215,30 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node
     compBodyNode *compBody = NULL;
     list<Node *> *comp_stmt_list = new list<Node *>();
     // 声明数据流, 修改makeDenseOperator的传入参数
-    if (layer->layerName == "dense") {
-        Node *layerOper = makeDenseOperator(layer, inputs, outputs);
-        Node* layerExp = new binopNode((expNode*)outputs,"=",(expNode*)layerOper);
-        comp_stmt_list->push_back(layerExp);
-    } else if (layer->layerName == "conv2D") {
-        compositeNode *layerComp = makeConv2DLayer(layer, inputs, outputs);
-        // compositeNode *actualLayerComp = compositeCallStreamReplace(layerComp, inputs, outputs);
-        Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, layerComp);
-        Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
-        comp_stmt_list->push_back(layerExp);
+    switch (layer -> layerType)
+    {
+        case Dense: {
+            Node *layerOper = makeDenseOperator(layer, inputs, outputs);
+            Node* layerExp = new binopNode((expNode*)outputs,"=",(expNode*)layerOper);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        case Conv2D: {
+            compositeNode *layerComp = makeConv2DLayer(layer, inputs, outputs);
+            Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, layerComp);
+            Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        case MaxPooling2D: {
+            compositeNode *layerComp = makeMaxPooling2DLayer(layer, inputs, outputs);
+            Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, layerComp);
+            Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        default:
+            break;
     }
     compBody = new compBodyNode(NULL, comp_stmt_list);
     compositeNode *comp = new compositeNode(compHead, compBody);
@@ -219,15 +250,30 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer, list<Node *>
     compHeadNode *compHead = new compHeadNode(compName, inout);
     compBodyNode *compBody = NULL;
     list<Node *> *comp_stmt_list = new list<Node *>();
-    if (layer->layerName == "dense") {
-        Node *layerOper = makeDDenseOperator(layer, inputs, outputs);
-        Node* layerExp = new binopNode((expNode*)outputs,"=",(expNode*)layerOper);
-        comp_stmt_list->push_back(layerExp);
-    } else if (layer->layerName == "conv2D") {
-        compositeNode *layerComp = makeDConv2DLayer(layer, inputs, outputs);
-        Node *call = new compositeCallNode(outputs, "dConv2D", NULL, inputs, layerComp);
-        Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
-        comp_stmt_list->push_back(layerExp);
+    switch (layer->layerType)
+    {
+        case Dense: {
+            Node *layerOper = makeDDenseOperator(layer, inputs, outputs);
+            Node* layerExp = new binopNode((expNode*)outputs,"=",(expNode*)layerOper);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        case Conv2D: {
+            compositeNode *layerComp = makeDConv2DLayer(layer, inputs, outputs);
+            Node *call = new compositeCallNode(outputs, "dConv2D", NULL, inputs, layerComp);
+            Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        case MaxPooling2D: {
+            compositeNode *layerComp = makeDMaxPooling2DLayer((maxPooling2DLayerNode *)layer, inputs, outputs);
+            Node *call = new compositeCallNode(outputs, "dConv2D", NULL, inputs, layerComp);
+            Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        default:
+            break;
     }
     compBody = new compBodyNode(NULL, comp_stmt_list);
     compositeNode *comp = new compositeNode(compHead, compBody);
@@ -681,8 +727,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     long long popVal = 1;
     vector<long long> *inputSize = ((conv2DLayerNode *)layer)->inputSize;
     // depth * width * height
-    popVal = inputSize -> at(0)* inputSize -> at(1) * ((conv2DLayerNode *)layer)-> inputSize -> back();
-    cout << "倦極核輸入尺寸" << popVal << endl;
+    popVal = inputSize -> at(0)* inputSize -> at(1) * inputSize -> at(2);
     Node *pop = new constantNode("integer", popVal);
     slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
     winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
@@ -691,7 +736,6 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     // 输出窗口
     auto outputIter = outputs->begin();
     long long pushVal = ((conv2DLayerNode *)layer)->outputFeatureMapSize->at(0) * ((conv2DLayerNode *)layer)->outputFeatureMapSize->at(1);
-    cout << "倦極核輸出尺寸" << pushVal << endl;
     Node *push = new constantNode("integer", pushVal);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
     winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
@@ -1063,10 +1107,8 @@ compositeNode* UnfoldComposite::makeDConv2DLayer(layerNode *layer, list<Node *> 
 // 先將輸入的誤差擴展和膨脹
 // 將倆個輸入流分別復制分發給
 Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
-    compositeNode *res = NULL;
-    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    Node *compBody = NULL;
     string streamName = "DConv2dStream_" + to_string(layer -> level);
-    string compName = "DConv2D_" + to_string(layer -> level);
     list<Node *> *errorList = NULL, *fpInputList = NULL;
     // splitOperator1 将误差duplicate成filters份, splitOperator2 将传入正向传播的输入再次传入到反向传播中,并duplicate成多份
     operatorNode *splitOperator1 = NULL, *splitOperator2 = NULL, *joinOperator = NULL;
@@ -1088,8 +1130,8 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     cout << "after dilate and extend" << endl;
     auto inputIter = inputs -> begin();
     long long dupCount = layer -> inputSize -> back();
-    splitOperator1 = makeSpecialSplitOperator(dilateAndExtendStream, dupCount);
-    splitOperator2 = makeSpecialSplitOperator(*(++inputIter), dupCount);
+    splitOperator1 = makeSpecialSplitOperator(dilateAndExtendStream, dupCount, (layerNode *)layer);
+    splitOperator2 = makeSpecialSplitOperator(*(++inputIter), dupCount, (layerNode *)layer);
     errorList = splitOperator1 -> outputs;
     fpInputList = splitOperator2 -> outputs;
     auto errorIter = errorList -> begin();
@@ -1101,7 +1143,7 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
     for(auto fpInput : *fpInputList) {
         ((strdclNode*)streamDecl)->id_list.push_back((idNode *)fpInput);
     }
-    for (int i = 0; i < ((conv2DLayerNode *)layer) -> inputSize -> back(); i++) {
+    for (int i = 0; i < dupCount; i++) {
         string tempName = streamName + "_" + to_string(i);
         idNode *kernelOutput = new idNode(tempName);
         ((strdclNode*)streamDecl)->id_list.push_back(kernelOutput);
@@ -1545,76 +1587,346 @@ compositeNode* UnfoldComposite::makeMaxPooling2DLayer(layerNode *layer, list<Nod
 }
 
 Node* UnfoldComposite::makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs){
-    Node *body =NULL;
-    list<Node *> *stmtList = new list<Node *>(), *splitjoinStmtList = new list<Node *>(), *splitjoinBodyStmts = new list<Node *>();
+    Node *compBody =NULL;
+    list<Node *> *compStmtList = new list<Node *>();
     idNode *streamDeclId = new idNode("x");
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
     Node *streamDecl = new strdclNode(streamDeclId);
-    string resName = "maxPooling2D_result_" + to_string(layer -> level);
+    string resStreamName = "maxPooling2D_res_" + to_string(layer -> level);
+    string resIndexStreamName = "maxPooling2D_res_index_" + to_string(layer -> level);
     long long depth = layer->inputSize->back();
     Node *input = inputs -> front();
-    operatorNode *splitOperator = makeSpecialSplitOperator(input, depth);
-    for (int i = 0; i < depth; i++) {
-        
+    operatorNode *splitOperator = makeSpecialSplitOperator(input, depth, (layerNode *)layer, 1);
+    // split operator的输出流
+    list<Node *> *inputList = splitOperator -> outputs;
+    auto inputIter = inputList -> begin();
+    // join operator的输入流
+    list<Node *> *res_join = new list<Node *>(), *resIndex_join = new list<Node *>();
+    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
+
+    for(auto input : *inputList) {
+        ((strdclNode *)streamDecl)->id_list.push_back((idNode *)input);
     }
+    string compName = "maxPooling2d_" + to_string(layer->level);
+    for (int i = 0; i < depth; i++) {
+        string tempCompName =  compName + "_" + to_string(i);
+        string tempResName = resStreamName + "_" + to_string(i);
+        string tempResIndexName = resIndexStreamName + "_" + to_string(i);
+        idNode *resId = new idNode(tempResName);
+        idNode *resIndexId = new idNode(tempResIndexName);
+        res_join->push_back(resId);
+        resIndex_join->push_back(resIndexId);
+        list<Node *> *call_outputs = new list<Node *>({resId, resIndexId});
+        list<Node *> *call_inputs = new list<Node *>({*inputIter});
+        compositeNode *kernelComp = makeMaxPooling2DKernel(layer, call_inputs, call_outputs, i);
+        compositeCallNode *call = new compositeCallNode(call_outputs, tempCompName, NULL, call_inputs, kernelComp);
+        comCallList->push_back(call);
+        inputIter++;
+    }
+    operatorNode *joinOperator0 = makeSpecialJoinOperator(outputs->front(), res_join);
+    operatorNode *joinOperator1 = makeSpecialJoinOperator(outputs->back(), resIndex_join);
+    compStmtList->push_back(streamDecl);
+    compStmtList->push_back(splitOperator);
+    for (auto it : *comCallList)
+    {
+        compStmtList->push_back(it);
+    }
+    compStmtList->push_back(joinOperator0);
+    compStmtList->push_back(joinOperator1);
+    compBody = new compBodyNode(NULL, compStmtList);
+    return compBody;
+}
+
+compositeNode* UnfoldComposite::makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs, int depthIndex){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    //  + "_" + to_string(depthIndex) ???继续
+    string compName = "maxPooling2DKernel_" + to_string(layer->level);
+    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
+    compBody = makeMaxPooling2DKernelBody((maxPooling2DLayerNode *)layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+
+Node* UnfoldComposite::makeMaxPooling2DKernelBody(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* body = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    Node *oper  = makeMaxPooling2DKernelOper(layer, inputs, outputs);
+    stmtList -> push_back(oper);
+    body = new compBodyNode(NULL, stmtList);
+    return body;
+};
+
+operatorNode* UnfoldComposite::makeMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    string operName = "maxPooling2D_" + to_string(layer -> level);
+    operBodyNode *body = NULL;
+    Node *work = NULL;
+    windowNode *window = NULL;
+    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    // 输入窗口
+    auto inputIter = inputs->begin();
+    long long popVal = 1;
+    vector<long long> *inputSize = ((conv2DLayerNode *)layer)->inputSize;
+    // width * height
+    popVal = inputSize -> at(0)* inputSize -> at(1);
+    Node *pop = new constantNode("integer", popVal);
+    slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
+    winStmt->push_back(win1);
+
+    // 输出窗口
+    auto outputIter = outputs->begin();
+    long long pushVal = ((maxPooling2DLayerNode *)layer)->outputPooledSize->at(0) * ((maxPooling2DLayerNode *)layer)->outputPooledSize->at(1);
+    Node *push = new constantNode("integer", pushVal);
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
+    winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
+    winStmtNode *win3 = new winStmtNode(((idNode *)(*(++outputIter)))->name, tumb);
+    winStmt->push_back(win2);
+    winStmt->push_back(win3);
+    window = new windowNode(winStmt);
+    work = makeMaxPooling2DKernelOperWork(layer, inputs, outputs);
+    body = new operBodyNode(bodyStmtList, NULL, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+
+Node* UnfoldComposite::makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    Node* work = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    // 继续
+    work = new blockNode(stmtList);
+    return work;
+}
+compositeNode* UnfoldComposite::makeDMaxPooling2DLayer(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    compHead = new compHeadNode("dMaxPooling2DLayer_" + layer->level, (ComInOutNode *)compInOut);
+    compBody = makeDMaxPooling2DLayerBody(layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+Node* UnfoldComposite::makeDMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node *compBody = NULL;
+    string streamName = "DMaxPooling2DStream_" + to_string(layer -> level);
+    list<Node *> *errorList = NULL, *fpInputList = NULL;
+    // splitOperator1 将误差roundrobin成depth份, splitOperator2 将传入正向传播的输入再次传入到反向传播中,同样roundrobin成depth份
+    operatorNode *splitOperator1 = NULL, *splitOperator2 = NULL, *joinOperator = NULL;
+    // join operator的输入流
+    list<Node *> *inputs_join = new list<Node *>();
+    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
+    list<Node *> *compStmtList = new list<Node *>();
+
+    idNode *streamDeclId = new idNode("x");
+    primNode *streamType = new primNode("double");
+    streamDeclId->valType = streamType->name;
+    Node *streamDecl = new strdclNode(streamDeclId);
+
+    auto inputIter = inputs -> begin();
+    long long roundCount = layer -> inputSize -> back();
+    splitOperator1 = makeSpecialSplitOperator(*inputIter, roundCount, (layerNode *)layer, 1);
+    splitOperator2 = makeSpecialSplitOperator(*(++inputIter), roundCount, (layerNode *)layer, 1);
+    errorList = splitOperator1 -> outputs;
+    fpInputList = splitOperator2 -> outputs;
+    auto errorIter = errorList -> begin();
+    auto fpInputIter = fpInputList -> begin();
+    
+    for(auto error : *errorList) {
+        ((strdclNode*)streamDecl)->id_list.push_back((idNode *)error);
+    }
+    for(auto fpInput : *fpInputList) {
+        ((strdclNode*)streamDecl)->id_list.push_back((idNode *)fpInput);
+    }
+    for (int i = 0; i < roundCount; i++) {
+        string tempName = streamName + "_" + to_string(i);
+        idNode *kernelOutput = new idNode(tempName);
+        ((strdclNode*)streamDecl)->id_list.push_back(kernelOutput);
+        //compositeCall的输出流是join节点的输入流
+        inputs_join->push_back(kernelOutput);
+        // kernel的输出流
+        list<Node *> *call_outputs = new list<Node *>({kernelOutput});
+        Node *arg = new constantNode("integer", (long long)i);
+        Node *index = arg;
+        list<Node *> *argList = new list<Node *>({arg});
+        //compositeCall的输入流
+        list<Node *> *call_inputs = new list<Node *>({*errorIter, *fpInputIter});
+        compositeNode *dKernelComp = makeDMaxPooling2DKernel(layer, call_inputs, call_outputs);
+        compositeCallNode *call = new compositeCallNode(call_outputs, tempName, argList, call_inputs, dKernelComp);
+        comCallList->push_back(call);
+        errorIter++;
+        fpInputIter++;
+    }
+    joinOperator = makeSpecialJoinOperator(outputs->front(), inputs_join);
+    compStmtList->push_back(streamDecl);
+    compStmtList->push_back(splitOperator1);
+    compStmtList->push_back(splitOperator2);
+    for (auto it : *comCallList)
+    {
+        compStmtList->push_back(it);
+    }
+    compStmtList->push_back(joinOperator);
+    compBody = new compBodyNode(NULL, compStmtList);
+    return compBody;
+}
+
+compositeNode* UnfoldComposite::makeDMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    string compName = "dMaxPooling2DKernel_" + layer->level;
+    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
+    compBody = makeDMaxPooling2DKernelBody(layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+
+Node* UnfoldComposite::makeDMaxPooling2DKernelBody(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* body = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    operatorNode *oper  = makeDMaxPooling2DKernelOper(layer, inputs, outputs);
+    stmtList -> push_back(oper);
+    body = new compBodyNode(NULL, stmtList);
     return body;
 }
 
-compositeNode* UnfoldComposite::makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){}
-Node* UnfoldComposite::makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){};
-operatorNode* UnfoldComposite::makeMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){}
-compositeNode* UnfoldComposite::makeDMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs){}
-Node* UnfoldComposite::makeDMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs){}
-compositeNode* UnfoldComposite::makeDMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){}
-Node* UnfoldComposite::UnfoldComposite::makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){}
-operatorNode* makeDMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){}
+Node* UnfoldComposite::makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* work = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    // 继续
+    work = new blockNode(stmtList);
+    return work;
+}
+operatorNode* UnfoldComposite::makeDMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    string operName = "dMaxPooling2D";
+    operBodyNode *body = NULL;
+    Node *init = NULL, *work = NULL;
+    windowNode *window = NULL;
+    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    auto outputSize = layer -> inputSize;
+    auto inputSize = layer -> outputPooledSize;
+    // *****输入窗口*****
+    //[dim0][dim1]
+    long long inputDim0 = ((conv2DLayerNode *)layer) -> inputSize -> at(0);
+    long long inputDim1 = ((conv2DLayerNode *)layer) -> inputSize -> at(1);
+    long long popVal = inputDim0 * inputDim1;
+    // 经反向传播计算逐层传递的误差
+    auto inputIter = inputs->begin();
+    Node *pop = new constantNode("integer", popVal);
+    slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
+    winStmt->push_back(win1);
+    // 经正向传播传入该层的输入
+    inputIter++;
+    winStmtNode *win2 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
+    winStmt->push_back(win2);
 
-operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long duplicateCount) {
+    // *****输出窗口*****
+    auto outputIter = outputs->begin();
+    long long pushVal = outputSize->at(0) * outputSize->at(1);
+    Node *push = new constantNode("integer", pushVal);
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
+    winStmtNode *win3 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
+    winStmt->push_back(win3);
+    window = new windowNode(winStmt);
+
+    
+    init = NULL;
+    work = makeDMaxPooling2DKernelOperWork(layer, inputs, outputs);
+    body = new operBodyNode(bodyStmtList, init, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+
+operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long splitCount, layerNode* layer, int style) {
     operatorNode *res = NULL;
     Node *work = NULL;
     windowNode *window = NULL;
     operBodyNode *body = NULL;
-    string operName = "special_duplicate";
-    string streamName = "specialDup";
-    list<Node *> *outputs = new list<Node *>();
-    list<Node *> *inputs = new list<Node *>({input});
-    list<Node *> *winStmt = new list<Node *>();
-    static int index = 0;
-    index++;
-    string inputName = ((idNode *)input) -> name;
-    Node *constOne = new constantNode("integer", (long long)1);
-    Node *constZero = new constantNode("integer", (long long)0);
-    // 输出窗口
-    for(int i = 0; i < duplicateCount; i++) {
-        string tempName = streamName + "_" + to_string(index) + "_" + to_string(i);
-        idNode *id = new idNode(tempName);
-        outputs -> push_back(id);
-        tumblingNode *tum = new tumblingNode(new list<Node *>({constOne}));
-        winStmtNode *win = new winStmtNode(tempName, tum);
+    static int index= 0;
+    if (!style) {
+        string operName = "special_duplicate";
+        string streamName = "specialDup";
+        list<Node *> *outputs = new list<Node *>();
+        list<Node *> *inputs = new list<Node *>({input});
+        list<Node *> *winStmt = new list<Node *>();
+        string inputName = ((idNode *)input) -> name;
+        Node *constOne = new constantNode("integer", (long long)1);
+        Node *constZero = new constantNode("integer", (long long)0);
+        // 输出窗口
+        for(int i = 0; i < splitCount; i++) {
+            string tempName = streamName + "_" + to_string(layer->level)+ "_" + to_string(index) + "_" + to_string(i);
+            idNode *id = new idNode(tempName);
+            outputs -> push_back(id);
+            tumblingNode *tum = new tumblingNode(new list<Node *>({constOne}));
+            winStmtNode *win = new winStmtNode(tempName, tum);
+            winStmt->push_back(win);
+        }   
+        // 输入窗口
+        slidingNode *slid = new slidingNode(new list<Node *>({constOne, constOne}));
+        winStmtNode *win = new winStmtNode(inputName, slid);
+        // work
+        list<Node *> *stmts = new list<Node *>();
+        // 遍历outputs, 并赋值
+        for(auto output : *outputs) {
+            idNode *left = new idNode(((idNode *)output)->name);
+            left->isArray = 1;
+            left->arg_list.push_back(constZero);
+            idNode *right = new idNode(static_cast<idNode *>(input)->name);
+            right->isArray = 1;
+            right->arg_list.push_back(constZero);
+            Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
+            stmts -> push_back(stmt);
+        }
+        work = new blockNode(stmts);
         winStmt->push_back(win);
+        window = new windowNode(winStmt);
+        body = new operBodyNode(NULL, NULL, work, window);
+        res = new operatorNode(outputs, operName, inputs, body);    
+    } else {
+        string operName = "special_roundrobin";
+        string streamName = "specialDup";
+        list<Node *> *outputs = new list<Node *>();
+        list<Node *> *inputs = new list<Node *>({input});
+        list<Node *> *winStmt = new list<Node *>();
+        string inputName = ((idNode *)input) -> name;
+        Node *constOne = new constantNode("integer", (long long)1);
+        Node *constZero = new constantNode("integer", (long long)0);
+        // 输出窗口
+        for(int i = 0; i < splitCount; i++) {
+            string tempName = streamName + "_" + to_string(layer->level) + "_" + to_string(index) + "_" + to_string(i);
+            idNode *id = new idNode(tempName);
+            outputs -> push_back(id);
+            tumblingNode *tum = new tumblingNode(new list<Node *>({constOne}));
+            winStmtNode *win = new winStmtNode(tempName, tum);
+            winStmt->push_back(win);
+        }   
+        // 输入窗口
+        Node* count = new constantNode("integer", splitCount);
+        slidingNode *slid = new slidingNode(new list<Node *>({count, count}));
+        winStmtNode *win = new winStmtNode(inputName, slid);
+        // work
+        list<Node *> *stmts = new list<Node *>();
+        int index = 0;
+        // 遍历outputs, 并赋值
+        for(auto output : *outputs) {
+            idNode *left = new idNode(((idNode *)output)->name);
+            left->isArray = 1;
+            left->arg_list.push_back(constZero);
+            idNode *right = new idNode(static_cast<idNode *>(input)->name);
+            Node *rightIndex = new constantNode("integer", (long long)index);
+            right->isArray = 1;
+            right->arg_list.push_back(rightIndex);
+            Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
+            stmts -> push_back(stmt);
+            index++;
+        }
+        work = new blockNode(stmts);
+        winStmt->push_back(win);
+        window = new windowNode(winStmt);
+        body = new operBodyNode(NULL, NULL, work, window);
+        res = new operatorNode(outputs, operName, inputs, body);
     }
-    // 输入窗口
-    slidingNode *slid = new slidingNode(new list<Node *>({constOne, constOne}));
-    winStmtNode *win = new winStmtNode(inputName, slid);
-    // work
-    list<Node *> *stmts = new list<Node *>();
-    // 遍历outputs, 并赋值
-    for(auto output : *outputs) {
-        idNode *left = new idNode(((idNode *)output)->name);
-        left->isArray = 1;
-        left->arg_list.push_back(constZero);
-        idNode *right = new idNode(static_cast<idNode *>(input)->name);
-        right->isArray = 1;
-        right->arg_list.push_back(constZero);
-        Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
-        stmts -> push_back(stmt);
-    }
-    work = new blockNode(stmts);
-    winStmt->push_back(win);
-    window = new windowNode(winStmt);
-    body = new operBodyNode(NULL, NULL, work, window);
-    res = new operatorNode(outputs, operName, inputs, body);
+    index++;
     return res;
 }
 

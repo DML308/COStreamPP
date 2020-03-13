@@ -656,7 +656,7 @@ void denseLayerNode::init (sequentialNode * sequential) {
 }
 
 void maxPooling2DLayerNode::init(sequentialNode *sequential) {
-    auto inputSize = this -> getInputSize(sequential);
+    this -> inputSize = this -> getInputSize(sequential);
     this->outputPooledSize = new vector<long long>();
     for(int i = 0; i < 2; i++) {
         // 是否加1????
