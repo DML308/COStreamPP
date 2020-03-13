@@ -981,23 +981,21 @@ class layerNode : public Node
 {
   public:
     LayerType layerType;
-    compositeCallNode *bp_composite;
-    compositeCallNode *fp_composite;
     list<Node *> *arg_list;
     string layerName;
     layerNode *prevLayer;
     layerNode *nextLayer;
+    vector<long long> *inputSize; // 正向傳播過程中輸入到該層的尺寸
     int level;
     layerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
       this->type = Layer;
       this->layerName = layerName;
-      this->bp_composite = NULL;
-      this->fp_composite = NULL;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
       this->nextLayer = NULL;
+      this->inputSize = NULL;
       this->level = 0;
     }
     layerNode () {}
@@ -1012,17 +1010,15 @@ class maxPooling2DLayerNode : public layerNode
     long long pool_size; // 整数，平均池化的窗口大小。
     long long depth; // 输入空间的维度
     vector<long long> *outputPooledSize; // 经过池化后输出的尺寸
-    vector<long long> *inputSize;
     maxPooling2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
       this->setLoc(loc);
       this->type = Layer;
       this->layerType = MaxPooling2D;
       this->layerName = layerName;
-      this->bp_composite = NULL;
-      this->fp_composite = NULL;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
       this->nextLayer = NULL;
+      this->inputSize = NULL;
       this->level = 0;
       this -> pool_size = ((constantNode *)(arg_list -> front())) -> llval;
     }
@@ -1039,15 +1035,12 @@ class conv2DLayerNode : public layerNode
     vector<long long> *paddings; // 扩展
     vector<long long> *outputFeatureMapSize; // 正向傳播過程输出的特征图的尺寸(2維)
     vector<long long> *inputErrorSize; // 反向傳播過程输入的误差经扩展膨胀后的尺寸(2維)
-    vector<long long> *inputSize; // 正向傳播過程中輸入到該層的尺寸
     conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
       this->type = Layer;
       this->layerType = Conv2D;
       this->layerName = layerName;
-      this->bp_composite = NULL;
-      this->fp_composite = NULL;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
       this->nextLayer = NULL;
@@ -1092,6 +1085,7 @@ class conv2DLayerNode : public layerNode
           this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
+      this -> inputSize = NULL;
       this -> outputFeatureMapSize = NULL;
       this -> inputErrorSize = NULL;
     }
@@ -1111,11 +1105,10 @@ class denseLayerNode : public layerNode
       this->type = Layer;
       this->layerType = Dense;
       this->layerName = layerName;
-      this->bp_composite = NULL;
-      this->fp_composite = NULL;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
       this->nextLayer = NULL;
+      this->inputSize = NULL;
       this->level = 0;
       this -> cols = ((constantNode *)(arg_list -> front())) -> llval;
     }

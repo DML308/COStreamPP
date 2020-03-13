@@ -647,8 +647,9 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
 }
 
 void denseLayerNode::init (sequentialNode * sequential) {
+    this -> inputSize = this->getInputSize(sequential);
     long long temp = 1;
-    for(auto dim: *(this->getInputSize(sequential))) {
+    for(auto dim: *(this->inputSize)) {
         temp*=dim;
     }
     this->rows = temp;

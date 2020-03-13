@@ -56,11 +56,11 @@ class UnfoldComposite
     Node* makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex);
     Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex);
     operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs, Node *kernelIndex);
-    operatorNode* makeConv2DSplitOperator(Node *input, layerNode *layer);
-    operatorNode* makeConv2DJoinOperator(Node *output, list<Node *> *inputs, layerNode *layer);
     operatorNode* makeConv2DDilateAndExtendOperator(layerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
     Node* makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,list<Node *> *inputs, list<Node *> *outputs);
 
+    operatorNode* makeSpecialSplitOperator(Node* input, long long duplicateCount);
+    operatorNode* makeSpecialJoinOperator(Node *output, list<Node *> *inputs);
     compositeNode* makeMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
     compositeNode* makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
