@@ -28,7 +28,7 @@ class FlatNode
 	int thread_id, post_thread_id;
 	int serial_id;
 
-	SymbolTable *compositecall_runnningtop;
+	SymbolTable *compositecall_runnningtop;//当前 operator的执行上下文
 	vector<FlatNode *> outFlatNodes; // 输 出 边各operator
 	vector<FlatNode *> inFlatNodes;  // 输 入 边各operator
 

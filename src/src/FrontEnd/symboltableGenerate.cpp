@@ -526,7 +526,7 @@ if(op.compare("+") == 0){
     }
     
     //逻辑运算
-    if(op.compare("<")){
+    if(op.compare("<") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival < right->ival){
                 return new Constant("bool",true);
@@ -617,7 +617,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("<=")){
+    if(op.compare("<=") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival <= right->ival){
                 return new Constant("bool",true);
@@ -708,7 +708,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare(">")){
+    if(op.compare(">") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival > right->ival){
                 return new Constant("bool",true);
@@ -799,7 +799,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare(">=")){
+    if(op.compare(">=") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival >= right->ival){
                 return new Constant("bool",true);
@@ -890,7 +890,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("==")){
+    if(op.compare("==") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival == right->ival){
                 return new Constant("bool",true);
@@ -981,7 +981,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("!=")){
+    if(op.compare("!=") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival != right->ival){
                 return new Constant("bool",true);
@@ -1072,7 +1072,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("&&")){
+    if(op.compare("&&") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival && right->ival){
                 return new Constant("bool",true);
@@ -1259,7 +1259,7 @@ if(op.compare("+") == 0){
             exit(-1);
         }
     }
-    if(op.compare("||")){
+    if(op.compare("||") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("int") == 0 ){
             if(left->ival || right->ival){
                 return new Constant("bool",true);
@@ -1509,7 +1509,7 @@ if(op.compare("+") == 0){
                 }  
             }
         }
-        if(op.compare("!")){
+        if(op.compare("!") == 0){
             if(right){
                 if(right->type.compare("int") == 0){
                     return new Constant("bool",!right->ival);
@@ -2188,13 +2188,13 @@ void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]){
 SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNode *composite,list<Constant *> paramList,list<Node *> *inputs,list<Node *> *outputs){
     if(call){
         if(call->scope){
-            top = new SymbolTable(call->scope,NULL);
+            top = new SymbolTable(call->scope,NULL); //call->scope 上一层执行上下文
         }else{
-            top = new SymbolTable(S);
+            top = new SymbolTable(&S,NULL);
         }
         top->count = call->count;
     }else{
-        top = new SymbolTable(S);
+        top = new SymbolTable(&S,NULL);
         top->count = 0;
     }
     
@@ -2207,8 +2207,10 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
     if(composite->head->inout){
         list<Node *> *comp_inputs = composite->head->inout->input_List;
         list<Node *> *comp_outputs = composite->head->inout->output_List;
-        auto comp_it = comp_inputs->begin();
+        
         //生成 stream 符号表
+        if(comp_inputs){
+        auto comp_it = comp_inputs->begin();
         for(auto it : *inputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name; //composite中的参数名
             string real_name;
@@ -2221,8 +2223,9 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
         }
-
-        comp_it = comp_outputs->begin();
+        }
+        if(comp_outputs){
+        auto comp_it = comp_outputs->begin();
         for(auto it : *outputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
             string real_name;
@@ -2234,6 +2237,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             }
             (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
+        }
         }
     }
    
@@ -2255,6 +2259,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             for(auto it = param_list.begin();it != param_list.end();it++){
                 Variable *variable = top->LookupIdentifySymbol(((idNode *)(*it))->name);
                  variable->value = (*paramValue);
+                 top->InsertParamSymbol(variable);
                 /*if(variable->type.compare((*paramValue)->type) == 0){ //todo 参数类型匹配
                     variable->value = (*paramValue);
                 }else{

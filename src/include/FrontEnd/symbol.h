@@ -6,11 +6,11 @@
 #include "defines.h"
 #include "node.h"
 #include <map>
+#include <unordered_map>
 #include <list>
 
 void EnterScope(void);
 void ExitScope(void);
-
 
 
 class Constant{
@@ -57,6 +57,35 @@ class Constant{
       if(!isArray){
         cout<<endl;
       }
+  }
+
+  string printStr(bool isArray){
+      string str = "";
+      if(type.compare("int") == 0){
+            str = to_string(ival);
+        }
+      if(type.compare("long") == 0){
+          str = to_string(lval);
+      }
+      if(type.compare("long long") == 0){
+          str = to_string(llval);
+      }
+      if(type.compare("double") == 0){
+          str = to_string(dval);
+      }
+      if(type.compare("float") == 0){
+          str = to_string(fval);
+      }
+      if(type.compare("string") == 0){
+          str = sval;
+      }
+      if(type.compare("bool") == 0){
+          str = to_string(bval);
+      }
+      if(!isArray){
+        
+      }
+      return str;
   }
 
 };
@@ -119,6 +148,18 @@ class CompositeSymbol
       }   
 };
 
+//哈希函数
+struct str_hash{
+        size_t operator()(const string& str) const
+        {
+                unsigned long __h = 0;
+                for (size_t i = 0 ; i < str.size() ; i ++)
+                  __h = 131*__h + str[i];
+                return size_t(__h);
+        }
+};
+
+
 class SymbolTable
 {
   public:
@@ -145,11 +186,11 @@ class SymbolTable
     void InsertCompositeSymbol(string name, compositeNode *);
     CompositeSymbol *LookupCompositeSymbol(string name);
 
-    void InsertIdentifySymbol(Node *node,Constant *constant);
+    void InsertIdentifySymbol(Node *node,Constant *constant);//√
     
     void InsertIdentifySymbol(Node *node);
 
-    void InsertIdentifySymbol(Variable *variable);
+    void InsertIdentifySymbol(Variable *variable);//√
 
     void InsertStreamSymbol(inOutdeclNode* inOutNode);
 
@@ -166,11 +207,19 @@ class SymbolTable
 
     void InsertOperatorSymbol(string name, operatorNode *opt);
 
+    void InsertParamSymbol(Variable *variable);//√
+    
+    string toParamString();
+
+    string toParamValueString();
+
     void printSymbolTables();
     
-    map<string, inOutdeclNode *> getStreamTable(){
+    unordered_map<string, inOutdeclNode *,str_hash> getStreamTable(){
       return this->streamTable;
     }
+
+    constantNode *fromVariableToConstant(Variable *value);
 
   private:
     
@@ -179,13 +228,15 @@ class SymbolTable
     map<string, idNode *> table;
     map<string, list<idNode *>> idTable;
 
-    map<string, funcDclNode *> funcTable;
+    map<string, funcDclNode *> funcTable; 
 
-    map<string, inOutdeclNode *> streamTable; //stream
+    unordered_map<string, inOutdeclNode *,str_hash> streamTable; //stream √
 
-    map<string, Node *> identifyTable; //变量
-    map<string, Variable *> variableTable; //变量
-    map<string, CompositeSymbol *> compTable; // composite
+    //map<string, Node *> identifyTable; 
+    //map<string, Variable *> variableTable; 
+    unordered_map<string,Variable *,str_hash>variableTable;//变量 √
+    map<string,Variable *> paramTable;//参数变量 用于代码生成时在operator中添加该参数变量 √
+    unordered_map<string, CompositeSymbol *,str_hash> compTable; // composite √
     map<string, operatorNode *> optTable; //operator
 
     

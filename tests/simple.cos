@@ -1,0 +1,61 @@
+int data[8] = {1,2,3,4,5,6,7,8};
+
+composite IntSource(output stream<int x> Out)
+{
+	Out = IntSource()
+	{
+		int i;
+		init{
+			i = 0;
+		}
+		work
+		{
+			Out[0].x = dara[i++];
+			
+		}
+		window{
+			Out tumbling(1);
+		}
+	};
+}
+
+composite plus(input stream<int x> in,output stream<int x> out){
+    plus(in){
+        work{
+            out[0].x = in[0].x * 2;
+        }
+        window{
+            in sliding(1,1);
+            out tumbling(1);
+        }
+
+    };
+
+}
+
+composite Sink(input stream<int x> In)
+{
+	Sink(In)
+	{
+		work
+		{
+			int i;
+			for(i = 0;i<8;i++){
+				print(In[i].x);
+				print(" ");
+			}
+			println("");
+			
+		}
+		window{
+			In sliding(8,8);
+		}
+	};
+}
+
+composite Main (){
+    stream<int x> Source,S1,S2;
+    S1 = IntSource()();
+    S2 = plus(S1)();
+    Sink(S2)();
+}

@@ -11,6 +11,7 @@ extern SymbolTable *runningTop;
 extern SymbolTable S;
 
 void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
+    bool isResize = false;
     list<Node *> *stmts = splitjoinComposite->body->stmt_List;
     compositeCallNode *father_split_node = (compositeCallNode *)stmts->front();
     compositeCallNode *father_join_node = (compositeCallNode *)stmts->back();
@@ -30,6 +31,7 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
     auto split_p = father_split_window->begin();//标记是splitjoin下的第几个节点
     auto join_p = father_join_window->begin();
     int count = 0;
+
     for(auto it : *stmts){
         if(it == stmts->back()){
             continue;
@@ -43,6 +45,7 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
             list<Node *> *actual_stmts = actual_composite->body->stmt_List;
             for(auto actual_it : *actual_stmts){
                 if(actual_it->type == SplitJoin){
+                    isResize = true;
                     compositeNode *sp_composite_node = ((splitjoinNode *)actual_it)->replace_composite;
                     list<Node *> *sp_stmts = sp_composite_node->body->stmt_List;
                     compositeCallNode *split_node = (compositeCallNode *)sp_stmts->front();
@@ -111,6 +114,11 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
                             sliding_window->arg_list->push_back(join_window_size);
                         }
                     }
+        
+                    split_arguments->push_back(split_window_size);
+
+        
+                    join_arguments->push_back(join_window_size);    
                 }
             }
         }
@@ -118,36 +126,13 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
         split_p++;
         join_p++;
 
-        Node *father_type = ((winStmtNode *)(*split_p))->winType;
-        constantNode* split_value;
-        constantNode* join_value;
-        if(father_type->type == Tumbling){
-            tumblingNode *tumbling_window = (tumblingNode *)father_type;
-            split_value = (constantNode*)tumbling_window->arg_list->front();
-            //todo 是否需要复制consantNode
-        }
-        if(father_type->type == Sliding){
-            slidingNode *sliding_window = (slidingNode *)father_type;
-            split_value = (constantNode*)sliding_window->arg_list->front();
-        }
-        split_arguments->push_back(split_value);
-
-        father_type = ((winStmtNode *)(*join_p))->winType;
-        if(father_type->type == Tumbling){
-            tumblingNode *tumbling_window = (tumblingNode *)father_type;
-            join_value = (constantNode*)tumbling_window->arg_list->front();
-            //todo 是否需要复制consantNode
-        }
-        if(father_type->type == Sliding){
-            slidingNode *sliding_window = (slidingNode *)father_type;
-            join_value = (constantNode*)sliding_window->arg_list->front();
-        }
-        join_arguments->push_back(join_value);    
+       
     }
     //由于窗口大小的改变 需要重写split join 节点的 work
-    father_split_operator->operBody->work = unfold->MakeRoundrobinWork(father_split_operator->inputs,split_arguments,father_split_operator->outputs,father_split_composite->splitType);
-    father_join_operator->operBody->work = unfold->MakeRoundrobinWork(father_join_operator->inputs,join_arguments,father_join_operator->outputs,father_join_composite->splitType);
-    
+    if(isResize){
+        father_split_operator->operBody->work = unfold->MakeRoundrobinWork(father_split_operator->inputs,split_arguments,father_split_operator->outputs,father_split_composite->splitType);
+        father_join_operator->operBody->work = unfold->MakeJoinWork(father_join_operator->inputs,join_arguments,father_join_operator->outputs);
+    }
 }
 /*
 * 功能：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射

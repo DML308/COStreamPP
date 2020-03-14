@@ -51,7 +51,7 @@ void SymbolTable::InsertSymbol(idNode *node)
         {
             if ((*it)->level == Level && (*it)->version == current_version[Level])
             {
-                cout << "idNode had been declared!";
+                cout << (*it)->loc->first_line<<": idNode had been declared! ";
                 exit(-1);
             }
         }
@@ -181,7 +181,7 @@ void SymbolTable::InsertIdentifySymbol(Node *node){
     }
     else
     {
-        cout << name<<" had been declared!";
+        cout <<node->loc->first_line<<": "<<name<<" had been declared!";
         exit(-1);
     }
 }
@@ -200,7 +200,7 @@ void SymbolTable::InsertIdentifySymbol(Variable *variable){
     else
     {
         cout << name<<" had been declared!";
-        exit(-1);
+        exit(-1);cout << name<<" had been declared!";
     }
 }
 
@@ -210,7 +210,7 @@ void SymbolTable::InsertStreamSymbol(inOutdeclNode* inOutNode){
     if(iter == streamTable.end()){
         streamTable.insert(make_pair(name,inOutNode));
     }else{
-        cout << "stream " << name <<" had been declared!";
+        cout << inOutNode->loc->first_line << ": " << "stream " << name <<" had been declared!";
         exit(-1);
     }
 }
@@ -265,7 +265,7 @@ void SymbolTable::InsertIdentifySymbol(Node *node,Constant *constant){
     }
     else
     {
-        cout << name<<" had been declared!";
+        cout <<node->loc->first_line << ": " << name<<" had been declared!";
         exit(-1);
     }
 }
@@ -324,7 +324,7 @@ void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
     }
     else
     {
-        cout << func->name<<" had been declared!";
+        cout << func->loc->first_line << ": " << func->name<<" had been declared!";
         exit(-1);
     }
 }
@@ -376,6 +376,59 @@ void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
     optTable.insert(make_pair(name, opt));
     static_cast<operatorNode *>(opt)->level = Level;
     static_cast<operatorNode *>(opt)->version = current_version[Level];
+}
+
+void SymbolTable::InsertParamSymbol(Variable *variable){
+    paramTable.insert(make_pair(variable->name,variable));
+}
+
+constantNode* SymbolTable::fromVariableToConstant(Variable *value){
+      string type = value->value->type;
+      string name = value->name;
+      if(type.compare("int") == 0){
+        return new constantNode(type,value->value->ival);
+      }
+      if(type.compare("long") == 0){
+        return new constantNode(type,value->value->lval);
+      }
+      if(type.compare("long long") == 0){
+        return new constantNode(type,value->value->llval);
+      }
+      if(type.compare("double") == 0){
+        return new constantNode(type,value->value->dval);
+      }
+      if(type.compare("float") == 0){
+        return new constantNode(type,value->value->fval);
+      }
+      if(type.compare("bool") == 0){
+        return new constantNode(type,value->value->bval);
+      }
+      if(type.compare("string") == 0){
+        return new constantNode(type,value->value->sval);
+      }
+      return NULL;
+    }
+
+string SymbolTable::toParamString(){
+    string params_str = "";
+    unordered_map<string,Variable*>::iterator it;
+    for(it=variableTable.begin();it!=variableTable.end();it++){
+        Variable *variable = (Variable *)(it->second);
+        string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
+        params_str += param_str;
+    }
+    return params_str;
+}
+
+string SymbolTable::toParamValueString(){
+    string params_str = "";
+    unordered_map<string,Variable*>::iterator it;
+    for(it=variableTable.begin();it!=variableTable.end();it++){
+        Variable *variable = (Variable *)(it->second);
+        string param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
+        params_str += param_str;
+    }
+    return params_str;
 }
 
 void SymbolTable::printSymbolTables(){

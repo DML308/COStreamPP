@@ -581,8 +581,11 @@ void compositeCallFlow(list<Node *> *stmts)
                 ifelse_list->push_back(if_node->stmt);
             }
             compositeCallFlow(ifelse_list);
+        }else if(nd->type == Block){
+            compositeCallFlow(&((blockNode *)nd)->stmt_list);
+            
         }else{
-            genrateStmt(nd);
+            //genrateStmt(nd);todo 是否需要解析，再次解析会重复进行常量传播以及符号表生成
         }
     }
 }
