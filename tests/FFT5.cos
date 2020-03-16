@@ -50,7 +50,7 @@ composite Combine(output stream<double x>Out, input stream<double x>In)
 			}
 		}
 		window{
-			In  sliding(2 * TN, TN);
+			In  sliding(2 * TN,2 * TN);
 			Out tumbling(2 * TN);
 		} 
 	};
@@ -115,7 +115,7 @@ composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 			    Out[final[i]].x = In[i].x;
 		}
 		window {
-		    In sliding(2*n,n);
+		    In sliding(2*n,2*n);
 			Out tumbling(2*n);
 		}
 	};
@@ -129,14 +129,14 @@ composite CombineDFT(output stream<double x>Out, input stream<double x>In)
 	{
 		int j;
 		for(j=2; j<=n; j*=2)
-			add Combine(n); //todo n -> j
+			add Combine(j);
 	};
 }
 
 composite Main()
 {
     //int P[2*N];
-	int N = 8;
+	int N = 256;
 	stream<double x> Source,CDFT;
 	
 	Source = FloatSource()
@@ -155,11 +155,8 @@ composite Main()
 		}
 	};
 	CDFT = pipeline(Source){
-		if(N>16){
-			add SecondSource(N);
-		}else{
-			add FFTReorder(N);
-		}
+	    add SecondSource(N);
+		add FFTReorder(N);
 		add CombineDFT(N);
 	};
 	FloatSink(CDFT)
