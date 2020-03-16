@@ -113,6 +113,7 @@ composite FFTReorder(output stream<double x>Out, input stream<double x>In)
 				print(" ");
 				print(Out[final[i]*2+1].x);
 				print(" ");
+				print("\n");
 			}
 		}
 		window {
