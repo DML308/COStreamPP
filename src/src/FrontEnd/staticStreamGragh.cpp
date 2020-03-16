@@ -1,6 +1,7 @@
 #include "staticStreamGragh.h"
 
 extern SymbolTable *runningTop;
+extern SymbolTable *top;
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
     //cout<<"-----------------"<<u->operName<<"--------------------"<<endl;
@@ -126,6 +127,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
                 auto pos = mapEdge2UpFlatNode.find(edgeName);
                 assert(pos != mapEdge2UpFlatNode.end());
                 src = pos->second; // 每条边有且只有一个上端节点
+                top =flatNode->compositecall_runnningtop;
                 // 说明该window指示的是peek和pop值
                 if (src != flatNode)
                 {
@@ -144,11 +146,45 @@ void StaticStreamGraph::SetFlatNodesWeights()
                         if(args->size() == 2){
                             Node *first = args->front();
                             Node *second = args->back();
-                            first_val = ((constantNode *)first)->llval; //peek
-                            second_val = ((constantNode *)second)->llval; //pop
+                            constantNode *constant_node;
+
+                            Constant *value = getOperationResult(first);
+                            if(value->type.compare("int") == 0){ //todo
+                                // constant_node = new constantNode(value->type,value->ival);
+                            }
+                            if(value->type.compare("long") == 0){
+                                first_val = value->lval;
+                            }
+                            if(value->type.compare("long long") == 0){
+                                first_val = value->llval;
+                            }
+                            
+                            value = getOperationResult(second);
+                            if(value->type.compare("int") == 0){ //todo
+                                // constant_node = new constantNode(value->type,value->ival);
+                            }
+                            if(value->type.compare("long") == 0){
+                                second_val = value->lval;
+                            }
+                            if(value->type.compare("long long") == 0){
+                                second_val = value->llval;
+                            }
+
+                            //first_val = ((constantNode *)first)->llval; //peek
+                            //second_val = ((constantNode *)second)->llval; //pop
                         }else{
                             Node *first = args->front();
-                            first_val = ((constantNode *)first)->llval; //peek
+                            Constant *value = getOperationResult(first);
+                            if(value->type.compare("int") == 0){ //todo
+                                // constant_node = new constantNode(value->type,value->ival);
+                            }
+                            if(value->type.compare("long") == 0){
+                                first_val = value->lval; //peek
+                            }
+                            if(value->type.compare("long long") == 0){
+                                first_val = value->llval; //peek
+                            }
+                            //first_val = ((constantNode *)first)->llval; //peek
                             second_val = first_val; //pop
                         }
                         
@@ -163,9 +199,21 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     else if (type == Tumbling)
                     {
                         Node *winType = ((winStmtNode *)it)->winType;
-                        Node *val = ((tumblingNode *)winType)->arg_list->front();//常量
-                        assert(val->type == constant);
-                        flatNode->inPeekWeights[j] = ((constantNode *)val)->llval;
+                        Constant *value = getOperationResult(((tumblingNode *)winType)->arg_list->front());
+                        long long first_val;
+                        if(value->type.compare("int") == 0){ //todo
+                            // constant_node = new constantNode(value->type,value->ival);
+                        }
+                        if(value->type.compare("long") == 0){
+                            first_val = value->lval;
+                        }
+                        if(value->type.compare("long long") == 0){
+                            first_val = value->llval;
+                        }
+
+                        //Node *val = //常量
+                        //assert(val->type == constant);
+                        flatNode->inPeekWeights[j] = first_val;
                         flatNode->inPopWeights[j] = flatNode->inPeekWeights[j];
                     }
                 }
@@ -183,14 +231,36 @@ void StaticStreamGraph::SetFlatNodesWeights()
                     {
                         Node *winType = ((winStmtNode *)it)->winType;
                         Node *val = ((tumblingNode *)winType)->arg_list->front();
-                        flatNode->outPushWeights[j] = ((constantNode *)val)->llval;
+                        Constant *value = getOperationResult(val);
+                        long long first_val;
+                        if(value->type.compare("int") == 0){ //todo
+                            // constant_node = new constantNode(value->type,value->ival);
+                        }
+                        if(value->type.compare("long") == 0){
+                            first_val = value->lval;
+                        }
+                        if(value->type.compare("long long") == 0){
+                            first_val = value->llval;
+                        }
+                        flatNode->outPushWeights[j] = first_val;
                     }
                     else if (type == Sliding)
                     {
                         //todo 
                         Node *winType = ((winStmtNode *)it)->winType;
                         Node *val = ((slidingNode *)winType)->arg_list->back();
-                        flatNode->outPushWeights[j] = ((constantNode *)val)->llval;
+                        Constant *value = getOperationResult(val);
+                        long long first_val;
+                        if(value->type.compare("int") == 0){ //todo
+                            // constant_node = new constantNode(value->type,value->ival);
+                        }
+                        if(value->type.compare("long") == 0){
+                            first_val = value->lval;
+                        }
+                        if(value->type.compare("long long") == 0){
+                            first_val = value->llval;
+                        }
+                        flatNode->outPushWeights[j] = first_val;
                     }
                 }
             }
