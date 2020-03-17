@@ -41,9 +41,11 @@ typedef enum {
   Join,
   RoundRobin,
   Duplicate,
-
+  Sequential,
+  Layer,
+  
   /********1********新文法**********/
-  Add
+  Add, Tuple
   /*
   删除掉的节点： Var,Graph,StreamFor,StreamIf,StreamIfElse,Eviction,Trigger,logic
   修改过的节点： comBodyNode,PipelineNode,SplitJoinNode,slidingNode,tumblingNode

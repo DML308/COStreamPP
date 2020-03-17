@@ -65,6 +65,7 @@ void X86CodeGeneration::CGGlobalvar()
 {
     stringstream buf;
     buf << "#include \"GlobalVar.h\"\n";
+    cout << "Program  size=" << Program->size() << endl;
     for (auto iter : *Program)
     {
         if (iter->type == Decl)
@@ -151,6 +152,10 @@ void X86CodeGeneration::CGGlobalHeader()
                 }
             }
         }
+    }
+    // 为sequential添加数据流数据类型
+    if (globalSequential != NULL)  {
+        typeSet.insert(make_pair("double", "x"));
     }
     //写入数据流数据类型结构体
     buf << "struct streamData{\n";

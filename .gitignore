@@ -23,4 +23,4 @@ src/a
 /*.h
 /*.cpp
 /Makefile
-
+*.o

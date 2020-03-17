@@ -34,8 +34,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token MATRIX
-
+%token SEQUENTIAL DENSE CONV2D
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -83,9 +82,11 @@ extern void yyerror (const char *msg);
 %type<num> integerConstant
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
-
-
-
+/* 语法分析器自己的结构 6. 深度学习扩展文法*/
+%type<str> DENSE CONV2D
+%type<node> operator.layer operator.sequential.add
+%type<list> sequential.statement.list
+%type<node> tuple
 /* C. 优先级标记,从上至下优先级从低到高排列 */
 %right '='
 %left OROR
@@ -275,6 +276,15 @@ initializer.list:
                         }
         ;
 /*************************************************************************/
+/*                      1.1.5 tuple ( (1, 2) )                          */
+/*************************************************************************/
+tuple:
+          '(' argument.expression.list ')' {
+                            $$ = new tupleNode($2, @1);
+                            line("Line:%-4d",@1.first_line);
+                            debug("tuple");
+                        }
+/*************************************************************************/
 /*              1.2 function.definition 函数声明                          */
 /*                      1.2.1 parameter.list                             */
 /*                      1.2.1 function.body {函数体}                      */
@@ -411,6 +421,7 @@ costream.composite.statement:
 /*             2.1   ADD operator.pipeline                                   */
 /*             2.2   ADD operator.splitjoin                                  */
 /*             2.3   ADD operator.default.call                               */
+/*             2.4   ADD operator.layer                                      */
 /*****************************************************************************/
 composite.body.operator:
           operator.file.writer      {
@@ -449,6 +460,29 @@ operator.add:
         ;
 operator.pipeline:
           PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
+        ;
+operator.sequential.add:
+          ADD operator.layer              {
+                                                line("Line:%-4d",@1.first_line);
+                                                debug("operator.sequential.add ::= ADD operator.layer \n");
+                                                $$ = new addNode((layerNode*)$2, @1);
+                                          }
+        ;
+operator.layer:
+          DENSE '(' argument.expression.list ')' ';'      {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=DENSE ( argument.expression.list );\n");
+                                                                $$ = new layerNode("dense", $3, @1);
+                                                                debug("Create dense layer!\n");
+                                                          }
+          | CONV2D '(' argument.expression.list ')' ';'      {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=CONV2 ( argument.expression.list );\n");
+                                                                layerNode* layer = new conv2DLayerNode("conv2D", $3, @1);
+                                                                $$ = layer;
+                                                                debug("Create conv2d layer!\n");  
+                                                          }
+        /* other layer, for example conv2d */
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
@@ -496,8 +530,10 @@ join.statement:
           JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,@1) ;}
         ;
 argument.expression.list:
-          exp                                               {  $$ = new list<Node*>({$1}); }
-        | argument.expression.list ',' exp                  {  $$ ->push_back($3);         }
+          exp                                               { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
+        | tuple                                            { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
+        | argument.expression.list ',' exp                  { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push param\n");}
+        | argument.expression.list ',' tuple               { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push tuple param\n"); }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
@@ -509,7 +545,23 @@ operator.default.call:
                   $$ = new compositeCallNode(NULL,*($1),$3,NULL,NULL,@1);
             }
         ;
-
+sequential.statement.list:
+          statement                                          {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("sequential.statement.list ::= statement \n");
+                                                                $$ = new list<Node *>({$1});
+                                                             }
+        | operator.sequential.add                             {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("sequential.statement.list ::= operator.sequential.add\n");
+                                                                $$ = new list<Node *>({$1});
+                                                             }
+        | sequential.statement.list operator.sequential.add    {
+                                                                line("Line:%-4d", @1.first_line);
+                                                                debug("sequential.statement.list ::= sequential.statement.list operator.sequential.add\n");
+                                                                $$ ->push_back($2);
+                                                             }
+        ;
 /*************************************************************************/
 /*        3. statement 花括号内以';'结尾的结构是statement                  */
 /*************************************************************************/
@@ -599,6 +651,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                             //$1=top->get(static_cast<idNode*>$1->name);
                             $$ = $1 ;  }
         | constant        { $$ = $1 ; }
+        /* | tuple          { $$ = $1 ; } */
         | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
         | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
         | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
@@ -635,6 +688,7 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                               $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
                               //当类型为splitjoin，pipeline，operator，compositecall时设置输出流
                               if($3->type==SplitJoin){
+
                                     list<Node*> *outputs=new list<Node*>({$1});
                                     ((splitjoinNode*)$3)->outputs=outputs;
                               }
@@ -647,8 +701,20 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                               }
                               else if($3->type==Operator_){
                                      ((operatorNode*)$3)->outputs=new list<Node*>({$1});
+                              } else if($3->type==Sequential){
+                                    ((sequentialNode *)$3)->outputs=new list<Node*>({$1});
                               }
                         }
+        | tuple assignment.operator exp {
+                                    line("Line:%-4d",@1.first_line);
+                                    debug("multiple outputs\n");
+                                    $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
+                                    if ($3->type  == Operator_) {
+                                          ((operatorNode*)$3)->outputs= ((tupleNode *)$1)->tupleList;
+                                    } else if ($3->type  == CompositeCall) {
+                                          ((compositeCallNode*)$3)->outputs= ((tupleNode *)$1)->tupleList;
+                                    }
+                              }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
         | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@1) ; }
         | FILEREADER '(' ')' '(' stringConstant ')'   { 
@@ -704,6 +770,13 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                   2.查找符号表 identifier是否出现过 */
                   $$ = new pipelineNode(NULL,$6,$3,@1) ; 
             }
+        |   SEQUENTIAL '(' argument.expression.list ')'  '(' argument.expression.list ')' lblock sequential.statement.list rblock {
+                  /*     1.argument.expression.list是一个identifier
+                  2. argument.expression.list*/
+                  line("Line%-4d", @1.first_line);
+                  debug("exp ::= SEQUENTIAL\n");
+                  $$ = new sequentialNode(NULL,$3,$6,$9,@1); 
+        }
         ;
 
 operator.selfdefine.body:

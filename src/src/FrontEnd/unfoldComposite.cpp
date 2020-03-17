@@ -1,9 +1,12 @@
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
 #include "symboltableGenerate.h"
+#include <string.h>
 
 extern SymbolTable S;
 extern SymbolTable *runningTop;
+
+extern list<Node*> *Program;
 vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
 
 Node *UnfoldComposite::MakeRoundrobinWork(list<Node *> *inputs, list<constantNode *> *arguments, list<Node *> *outputs,int style)
@@ -1150,7 +1153,7 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
             //cout<<"exp->type ="<<exp->type<<endl;
             if (exp->type == Operator_)
             {
-                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
+                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，在函数的结尾将流进行替换*/
                 operBodyNode *operBody = ((operatorNode *)exp)->operBody;
                 list<Node *> *preInputs = ((operatorNode *)exp)->inputs;
                 list<Node *> *preOutputs = ((operatorNode *)exp)->outputs;
@@ -1180,7 +1183,6 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 modifyStreamName(oper, outputs, false);
                 stmt_list->push_back(oper);
 
-
                 // param
                 paramNode *param = NULL;
                 if(comp->body->param){
@@ -1193,13 +1195,14 @@ compositeNode *UnfoldComposite::compositeCallStreamReplace(compositeNode *comp, 
                 compBodyNode *com_body = new compBodyNode(param, stmt_list);
                 copy = new compositeNode(head, com_body,*comp->loc);
             }
-            //若为pipeline或者splitjoin直接返回composite
-            else if (exp->type == Pipeline || exp->type == SplitJoin)
-                copy = comp;
+        }
+        else {
+            stmt_list -> push_back(it);
         }
     }
-    streamReplace(copy, inputs, outputs, 0);
-    return copy;
+    compBodyNode *com_body = new compBodyNode(NULL, stmt_list);
+    copy = new compositeNode(head, com_body);
+    return streamReplace(copy, inputs, outputs, 0);
 }
 
 /* 对于composite节点内的operatorNode进行流替换 可修改一个compositeNode包含多个operator */
@@ -1208,7 +1211,10 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
     //cout<<"compName = "<<comp->compName<<endl;
     list<Node *> *stmt_list = NULL;
     assert(comp->body != NULL);
-    stmt_list = comp->body->stmt_List;
+    // 深度复制composite
+    compositeNode  *newComp = new compositeNode(comp);
+    stmt_list = newComp->body->stmt_List;
+    // stmt_list = comp->body->stmt_List;
     assert(stmt_list != NULL);
     //cout<<"stmts.size()= "<<stmt_list->size();
     Node *top = NULL;
@@ -1264,7 +1270,7 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         }
         break;
     }
-
+    // 修改composite输出对应的operator
     switch (back->type)
     {
     case Operator_:
@@ -1291,7 +1297,8 @@ compositeNode *UnfoldComposite::streamReplace(compositeNode *comp, list<Node *> 
         }
     }
     }
-    return comp;
+    return newComp;
+    // return comp;
 }
 
 /* style标识输入流还是输出流 */

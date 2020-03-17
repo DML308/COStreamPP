@@ -25,6 +25,7 @@ class Node
     void setLoc(YYLTYPE loc);
     virtual void print() = 0;
     virtual string toString() = 0;
+    static Node* copyNode(Node *);
 };
 
 string listToString(list<Node *> list);
@@ -495,9 +496,7 @@ class pipelineNode : public Node
     }
     ~pipelineNode() {}
     void print() {}
-    string toString() {
-        return "pipelineNode";
-    }
+    string toString() {}
 };
 
 class roundrobinNode : public Node
@@ -593,6 +592,7 @@ class splitjoinNode : public Node
     string toString() { return "splitjoinNode"; }
 };
 
+
 class addNode : public Node
 {
   public:
@@ -649,7 +649,7 @@ class strdclNode : public Node
         this->setLoc(loc);
         this->type = StrDcl;
         if (id)
-            id_list.push_back(id);
+          id_list.push_back(id);
     }
     ~strdclNode() {}
     void print() {}
@@ -711,6 +711,36 @@ class operBodyNode : public Node
 };
 
 class funcDclNode;
+class operatorNode : public Node
+{
+  public:
+    string operName;
+    list<Node *> *inputs;
+    list<Node *> *outputs;
+    operBodyNode *operBody;
+    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
+    {
+        this->type = Operator_;
+        this->outputs = outputs;
+        this->operName = operName;
+        this->inputs = inputs;
+        this->operBody = operBody;
+    }
+    ~operatorNode() {}
+    void print() {}
+    string toString();
+};
+class tupleNode : public Node
+{
+  public:
+    list<Node *> *tupleList;
+    tupleNode(list<Node *> *list, YYLTYPE loc = YYLTYPE()): tupleList(list) {
+      this->type = Tuple;
+    }
+    ~tupleNode() {}
+    void print() {}
+    string toString() {}
+};
 class callNode : public Node
 {
   public:
@@ -769,6 +799,20 @@ class ComInOutNode : public Node
         this->input_List = input_list;
         this->output_List = output_list;
     }
+    ComInOutNode(ComInOutNode *inout)
+    {
+        this->setLoc(YYLTYPE());
+        this->type = ComInOut;
+        list<Node *> *input_list = new list<Node *>(), *output_list = new list<Node *>();
+        for (auto input: *(inout -> input_List)) {
+          input_list -> push_back(copyNode(input));
+        }
+        for (auto output: *(inout -> output_List)) {
+          output_list -> push_back(copyNode(output));
+        }
+        this->input_List = input_list;
+        this->output_List = output_list;
+    }
     ~ComInOutNode() {}
     void print() {}
     string toString() {}
@@ -803,18 +847,26 @@ class paramNode : public Node
     void print() {}
     string toString() {}
 };
-
-class funcBodyNode : public Node
+class compositeCallNode : public Node
 {
   public:
-    list<Node *> *stmt_list;
-    funcBodyNode(list<Node *> *stmt_list)
+    string compName;
+    list<Node *> *stream_List;
+    list<Node *> *inputs;
+    list<Node *> *outputs;
+    compositeNode *actual_composite; //保存composite展开节点
+    compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
     {
-        this->stmt_list = stmt_list;
+        this->setLoc(loc);
+        this->type = CompositeCall;
+        this->compName = compName;
+        this->inputs = inputs;
+        this->actual_composite = actual_composite;
+        this->stream_List = stream_List;
     }
-    ~funcBodyNode() {}
+    ~compositeCallNode() {}
     void print() {}
-    string toString() ;
+    string toString();
 };
 
 class compBodyNode : public Node
@@ -835,11 +887,33 @@ class compBodyNode : public Node
         this->stmt_List = new list<Node *>();
         *(this->stmt_List) = *(body.stmt_List);
     }
+    compBodyNode(compBodyNode *body)
+    {
+      this->type = CompBody;
+      this->param = body->param;
+      list<Node *> *stmt_List = new list<Node *>();
+      for (auto it : *body->stmt_List) {
+        Node *temp = copyNode(it);
+        stmt_List->push_back(temp);
+      }
+      this->stmt_List = stmt_List;
+    }
     ~compBodyNode() {}
     void print() {}
     string toString() {}
 };
-
+class funcBodyNode : public Node
+{
+  public:
+    list<Node *> *stmt_list;
+    funcBodyNode(list<Node *> *stmt_list)
+    {
+        this->stmt_list = stmt_list;
+    }
+    ~funcBodyNode() {}
+    void print() {}
+    string toString() ;
+};
 class funcDclNode : public Node
 {
   public:
@@ -913,6 +987,12 @@ class compHeadNode : public Node
         this->inout = inout;
         this->originalInOut = NULL;
     }
+    compHeadNode(compHeadNode* head)
+    {
+        this->type = CompHead;
+        this->compName = head->compName;
+        this->inout = new ComInOutNode(head->inout);
+    }
     ~compHeadNode() {}
     void print() {}
     string toString() {}
@@ -936,33 +1016,140 @@ class compositeNode : public Node
         this->body = body;
         this->compName = head->compName;
     }
+    compositeNode(compositeNode *comp)
+    {
+      compHeadNode* head = new compHeadNode(comp->head);
+      compBodyNode* body = new compBodyNode(comp->body);
+      this->type = Composite;
+      this->head = head;
+      this->body = body;
+      this->compName = head->compName;
+    }
     ~compositeNode() {}
     void print() {}
     string toString() {}
 };
 
-class operatorNode : public Node
+class sequentialNode : public Node
 {
   public:
-    string operName;
-    list<Node *> *inputs;
     list<Node *> *outputs;
-    operBodyNode *operBody;
-    int level;
-    int version;
-    bool hasState;
-    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody,YYLTYPE loc = YYLTYPE())
+    list<Node *> *inputs;
+    list<Node *> *body_stmts;
+    list<Node *> *arg_list;
+    compositeNode *replace_composite;
+    sequentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
     {
-        this->setLoc(loc);
-        this->type = Operator_;
-        this->outputs = outputs;
-        this->operName = operName;
-        this->inputs = inputs;
-        this->operBody = operBody;
-        this->hasState = false;
+      this->setLoc(loc);
+      this->type = Sequential;
+      this->outputs = outputs;
+      this->inputs = inputs;
+      this->arg_list = param;
+      this->body_stmts = body_stmts;
+      this->replace_composite = NULL;
+      for(auto iter = body_stmts->begin(); iter != body_stmts->end(); iter++) {
+        cout<< (*iter)->type  << endl;
+      }
     }
-    ~operatorNode() {}
+    ~sequentialNode() {};
+    void print() {};
+    string toString() {};
+};
+class layerNode : public Node
+{
+  public:
+    compositeCallNode *bp_composite;
+    compositeCallNode *fp_composite;
+    list<Node *> *arg_list;
+    string layerName;
+    layerNode *prevLayer;
+    layerNode *nextLayer;
+    int level;
+    layerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
+    {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerName = layerName;
+      this->bp_composite = NULL;
+      this->fp_composite = NULL;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->level = 0;
+    }
+    layerNode () {}
+    ~layerNode() {}
     void print() {}
-    string toString();
+    string toString() {}
+};
+class conv2DLayerNode : public layerNode
+{
+  public:
+    long long filters; // 输出空间的维度 （即卷积中滤波器的输出数量）
+    long long domension; // 对于conv2D, 为2
+    long long depth; // 输入空间的维度
+    vector<long long> *kernel_size; // 2D 卷积窗口的宽度和高度
+    vector<long long> *strides; // 卷积沿宽度和高度方向的步长
+    vector<long long> *paddings; // 扩展
+    vector<long long> *size; // 输出特征图的尺寸
+    vector<long long> *errorSize; // 误差经扩展膨胀后的尺寸
+    conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
+    {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerName = layerName;
+      this->bp_composite = NULL;
+      this->fp_composite = NULL;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->level = 0;
+      this->domension = 2;
+      auto iter = arg_list->begin();
+      // filters
+      this->filters = ((constantNode *)(*iter))->llval;
+      // kernel_size
+      iter++;
+      this->kernel_size = new vector<long long>();
+      if ((*iter) -> type == Tuple) {
+        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
+          this->kernel_size->push_back(((constantNode *)(size))->llval);
+        }
+      } else {
+        for (int i = 0; i < this->domension; i++) {
+          this->kernel_size->push_back(((constantNode *)(*iter))->llval);
+        }
+      }
+      // strides
+      iter++;
+      this->strides = new vector<long long>();
+      if ((*iter) -> type == Tuple) {
+        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
+          this->strides->push_back(((constantNode *)(size))->llval);
+        }
+      } else {
+        for (int i = 0; i < this->domension; i++) {
+          this->strides->push_back(((constantNode *)(*iter))->llval);
+        }
+      }
+      //paddings
+      iter++;
+      this->paddings = new vector<long long>();
+      if ((*iter) -> type == Tuple) {
+        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
+          this->paddings->push_back(((constantNode *)(size))->llval);
+        }
+      } else {
+        for (int i = 0; i < this->domension; i++) {
+          this->paddings->push_back(((constantNode *)(*iter))->llval);
+        }
+      }
+      this -> size = NULL;
+      this -> errorSize = NULL;
+    }
+    ~conv2DLayerNode() {}
+    void print() {}
+    string toString() {}
+    void init(sequentialNode* sequential);
 };
 #endif

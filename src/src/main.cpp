@@ -25,6 +25,7 @@ list<SymbolTable *> runningStack;                //用于展开splitjoin，pipel
 SymbolTable *runningTop;                         //执行上下文顶端 top
 list<Node *> *Program = NULL;                    //用于存储语法树节点
 compositeNode *gMainComposite = NULL;            //compositeMain
+sequentialNode *globalSequential = NULL;           // 用于存储sequential节点, 也为了确保仅有一个sequential节点
 StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 //SymbolTable S;
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
 {
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
-    int CpuCoreNum = 4; /*默认初始化为1一台机器中核的数目*/
+    int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
     //===----------------------------------------------------------------------===//

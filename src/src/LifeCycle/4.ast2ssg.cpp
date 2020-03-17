@@ -209,6 +209,11 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
                 //todo 是否需要反向传递窗口大小
             }
+            else if (exp->type == Sequential)
+            {   
+                ((sequentialNode *)exp)->replace_composite = unfold->UnfoldSequential(((sequentialNode *)exp));
+                GraphToOperators(((sequentialNode *)(exp))->replace_composite, ((sequentialNode *)(exp))->replace_composite);
+            }
             break;
         }
         case Operator_:
