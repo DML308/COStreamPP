@@ -113,8 +113,19 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     list<Node *> *temp_call_inputs, *temp_call_outputs;
     temp_call_inputs = new list<Node *>({temp_stream->front()});
     temp_call_outputs = new list<Node *>({inputCopy1, inputCopy2});
+
+    
     compositeNode *tempActualComposite = makeInputComposite((layerNode *)(*compositeCall_list.begin()), temp_call_inputs, temp_call_outputs);
-    compositeCallNode *tempCall = new compositeCallNode(temp_call_outputs, "copySequentialInput", NULL, temp_call_inputs, tempActualComposite);
+    
+    list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+    for(auto it : *temp_call_outputs){
+       outputs_id->push_back(((inOutdeclNode *)it)->id);        
+    }        
+    for(auto it : *temp_call_inputs){
+        inputs_id->push_back(((inOutdeclNode *)it)->id);
+    }
+
+    compositeCallNode *tempCall = new compositeCallNode(outputs_id, "copySequentialInput", NULL, inputs_id, tempActualComposite);
     comCallList.push_back(tempCall);
     // 用于存储前向传播给反向传播的数据流
     // 输入sequential的训练集在反向传播中仍然需要
@@ -162,7 +173,16 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         }
         // 构造实际的正向传播composite
         compositeNode* actual_composite = makeForwardComposite((layerNode *) *iter, call_inputs, call_outputs);
-        compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
+        
+        list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+        for(auto it : *call_outputs){
+            outputs_id->push_back(((inOutdeclNode *)it)->id);        
+        }        
+        for(auto it : *call_inputs){
+            inputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+
+        compositeCallNode *call = new compositeCallNode(outputs_id, name, NULL, inputs_id, actual_composite);
         ((layerNode *)*iter)->fp_composite = call; 
         comCallList.push_back(call);
     }
@@ -176,7 +196,15 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     list<Node *> *call_outputs = new list<Node *>({lossStream});
     compositeNode* actual_composite = makeLossComposite((layerNode *)(compositeCall_list.back()), call_inputs, call_outputs);
     string name = "sequential_loss";
-    comCallList.push_back(new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite));
+
+    list<Node *> *inputs_id_1 = new list<Node *>(),*outputs_id_1 = new list<Node *>();
+    for(auto it : *call_outputs){
+        outputs_id_1->push_back(((inOutdeclNode *)it)->id);        
+    }        
+    for(auto it : *call_inputs){
+        inputs_id_1->push_back(((inOutdeclNode *)it)->id);
+    }
+    comCallList.push_back(new compositeCallNode(outputs_id_1, name, NULL, inputs_id_1, actual_composite));
     cout<<"Unfold forward propagation"<<endl;
     temp_stream->clear();
     temp_stream->push_back(call_outputs->front());
@@ -198,7 +226,15 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         temp_stream->push_back(call_outputs->front());
         temp_stream_list->pop_back();
         compositeNode* actual_composite = makeBackComposite((layerNode *) *iter,call_inputs, call_outputs);
-        compositeCallNode *call = new compositeCallNode(call_outputs, name, NULL, call_inputs, actual_composite);
+        
+        list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+        for(auto it : *call_outputs){
+            outputs_id->push_back(((inOutdeclNode *)it)->id);        
+        }        
+        for(auto it : *call_inputs){
+            inputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+        compositeCallNode *call = new compositeCallNode(outputs_id, name, NULL,inputs_id , actual_composite);
         ((layerNode *) *iter)-> bp_composite = call; 
         comCallList.push_back(call);
     }
@@ -230,7 +266,14 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node
     } else if (layer->layerName == "conv2D") {
         compositeNode *layerComp = makeConv2DLayer(layer, inputs, outputs);
         // compositeNode *actualLayerComp = compositeCallStreamReplace(layerComp, inputs, outputs);
-        Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, layerComp);
+        list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+        for(auto it : *outputs){
+            outputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+        for(auto it : *inputs){
+            inputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+        Node *call = new compositeCallNode(outputs_id, "conv2D", NULL, inputs_id, layerComp);
         Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
         comp_stmt_list->push_back(layerExp);
     }
@@ -250,7 +293,14 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer, list<Node *>
         comp_stmt_list->push_back(layerExp);
     } else if (layer->layerName == "conv2D") {
         compositeNode *layerComp = makeDConv2DLayer(layer, inputs, outputs);
-        Node *call = new compositeCallNode(outputs, "dConv2D", NULL, inputs, layerComp);
+        list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+        for(auto it : *outputs){
+            outputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+        for(auto it : *inputs){
+            inputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+        Node *call = new compositeCallNode(outputs_id, "dConv2D", NULL, inputs_id, layerComp);
         Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
         comp_stmt_list->push_back(layerExp);
     }
@@ -1017,11 +1067,21 @@ Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *input
     Node *splitjoinFor = new forNode(init, (expNode *)cond, (expNode *)next, block);
     splitjoinBodyStmts -> push_back(splitjoinFor);
     joinNode *join = new joinNode(roundrobin);
-    splitjoinNode *splitjoin = new splitjoinNode(inputs, tempStream, (splitNode *)split, splitjoinStmtList, splitjoinBodyStmts,(joinNode *)join);
+
+    list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+    for(auto it : *outputs){
+        outputs_id->push_back(((inOutdeclNode *)it)->id);
+    }
+    for(auto it : *tempStream){
+        inputs_id->push_back(((inOutdeclNode *)it)->id);
+    }
+
+    splitjoinNode *splitjoin = new splitjoinNode(inputs_id, outputs_id, (splitNode *)split, splitjoinStmtList, splitjoinBodyStmts,(joinNode *)join);
     Node* conv = new binopNode((expNode *)((idNode *)res), "=", (expNode *)splitjoin);
     stmtList->push_back(conv);
     compositeNode *copyComp = makeCopyComp(tempStream, outputs);
-    compositeCallNode *callCopy = new compositeCallNode(outputs, "copy", NULL, tempStream, copyComp);
+    
+    compositeCallNode *callCopy = new compositeCallNode(outputs_id, "copy", NULL, inputs_id, copyComp);
     Node* copy = new binopNode((expNode *)((inOutdeclNode *)output) -> id, "=", (expNode *)callCopy);
     stmtList->push_back(copy);
     body = new compBodyNode(NULL, stmtList);
@@ -1134,8 +1194,18 @@ Node* UnfoldComposite::makeDConv2DLayerBody(layerNode *layer, list<Node *> *inpu
         list<Node *> *argList = new list<Node *>({arg});
         //compositeCall的输入流
         list<Node *> *call_inputs = new list<Node *>({*errorIter, *fpInputIter});
+        //todo 不需要替换
         compositeNode *actual_composite = compositeCallStreamReplace(dKernelComp, call_inputs, call_outputs);
-        compositeCallNode *call = new compositeCallNode(call_outputs, tempName, argList, call_inputs, actual_composite);
+        
+        list<Node *> *inputs_id=new list<Node *>(),*outputs_id=new list<Node *>();
+        for(auto it : *call_outputs){
+            outputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+        for(auto it : *call_inputs){
+            inputs_id->push_back(((inOutdeclNode *)it)->id);
+        }
+
+        compositeCallNode *call = new compositeCallNode(outputs_id, tempName, argList, inputs_id, actual_composite);
         comCallList->push_back(call);
         errorIter++;
         fpInputIter++;
