@@ -1598,6 +1598,7 @@ Constant* getOperationResult(Node* exp){
             rightV = getOperationResult(static_cast<binopNode *>(exp)->right);
         }
         string op = static_cast<binopNode *>(exp)->op;
+        if(op.compare(".") == 0) break;
         if(leftV && rightV){
             return getResult(op,leftV,rightV);
         }else{
@@ -1779,7 +1780,7 @@ Constant* generateInitNode(Node* init_value){
             case Initializer:{
                 list<Node *> init_values = static_cast<initNode *>(init_value)->value;
                 for(auto it = init_values.begin();it!=init_values.end();it++){
-                    generateInitNode(*it);
+                    return generateInitNode(*it);
                 }
                 break;
             }
