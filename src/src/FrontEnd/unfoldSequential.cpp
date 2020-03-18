@@ -139,7 +139,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             ((strdclNode*)streamDecl)->id_list.push_back(id1);
             ((strdclNode*)streamDecl)->id_list.push_back(id2);
             call_inputs = new list<Node *>({temp_stream->front()});
-            call_outputs = new list<Node *>({id1, id2});
+            call_outputs = new list<Node *>({new inOutdeclNode(type,id1),new inOutdeclNode(type,id2)});
             // 将暂时只有一个输入流的输入流列表(缺乏传递误差的数据流)加入到临时列表中
             inOutdeclNode *decl_id2 = new inOutdeclNode(type,id2);
             temp_stream_list->push_back(new list<Node *>({decl_id2}));
@@ -192,7 +192,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             inOutdeclNode *decl_id = new inOutdeclNode(type,id);
             call_outputs = new list<Node *>({decl_id}); 
         } else {
-            call_outputs = new list<Node *>({outputs->front()});
+            call_outputs = new list<Node *>({decl_outputs->front()});
         }
         temp_stream->clear();
         temp_stream->push_back(call_outputs->front());
@@ -385,7 +385,7 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     (static_cast<idNode*>(weightId))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
     // 取得In1[i].x
     idNode* x = new idNode("x");
-    idNode* input1 = new idNode(static_cast<idNode *>(inputs->front())->name);
+    idNode* input1 = new idNode(static_cast<inOutdeclNode *>(inputs->front())->id->name);
     input1->isArray = 1;
     input1->arg_list.push_back(id_i);
     Node* In1 = new binopNode((expNode *)input1, ".", (expNode *)x);
@@ -398,13 +398,13 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     stmts1->push_back(forNode2);
 
     // 取得Out1[j].x, Out2[j].x
-    idNode* output1 = new idNode(static_cast<idNode *>(outputs->front())->name);
+    idNode* output1 = new idNode(static_cast<inOutdeclNode *>(outputs->front())->id->name);
     output1->isArray = 1;
     output1->arg_list.push_back(id_j);
     Node* out1X = new binopNode((expNode *)output1, ".", (expNode *)x);
     Node* res1 = new binopNode((expNode *)out1X, "=", (expNode *)id_temp);
     stmts1->push_back(res1);
-    idNode* output2 = new idNode(static_cast<idNode *>(outputs->back())->name);
+    idNode* output2 = new idNode(static_cast<inOutdeclNode *>(outputs->back())->id->name);
     output2->isArray = 1;
     output2->arg_list.push_back(id_j);
     Node* out2X = new binopNode((expNode *)output2, ".", (expNode *)x);
@@ -443,12 +443,12 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     list<Node *> *winStmt = new list<Node *>();
     Node* num = layer->arg_list->front();
     slidingNode *slid = new slidingNode(new list<Node *>({num, num}));
-    winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
-    winStmtNode *win2 = new winStmtNode(((idNode *)(inputs->back()))->name, slid);
+    winStmtNode *win1 = new winStmtNode(((inOutdeclNode *)(inputs->front()))->id->name, slid);
+    winStmtNode *win2 = new winStmtNode(((inOutdeclNode *)(inputs->back()))->id->name, slid);
     winStmt->push_back(win1);
     winStmt->push_back(win2);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({num}));
-    winStmtNode *win3 = new winStmtNode(((idNode *)(outputs->front()))->name, tumb);
+    winStmtNode *win3 = new winStmtNode(((inOutdeclNode *)(outputs->front()))->id->name, tumb);
     winStmt->push_back(win3);
     window = new windowNode(winStmt);
 
