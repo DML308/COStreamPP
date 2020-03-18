@@ -711,6 +711,7 @@ class operBodyNode : public Node
 };
 
 class funcDclNode;
+
 class operatorNode : public Node
 {
   public:
@@ -718,13 +719,18 @@ class operatorNode : public Node
     list<Node *> *inputs;
     list<Node *> *outputs;
     operBodyNode *operBody;
-    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody)
+    int level;
+    int version;
+    bool hasState;
+    operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody,YYLTYPE loc = YYLTYPE())
     {
+        this->setLoc(loc);
         this->type = Operator_;
         this->outputs = outputs;
         this->operName = operName;
         this->inputs = inputs;
         this->operBody = operBody;
+        this->hasState = false;
     }
     ~operatorNode() {}
     void print() {}
@@ -846,27 +852,6 @@ class paramNode : public Node
     ~paramNode() {}
     void print() {}
     string toString() {}
-};
-class compositeCallNode : public Node
-{
-  public:
-    string compName;
-    list<Node *> *stream_List;
-    list<Node *> *inputs;
-    list<Node *> *outputs;
-    compositeNode *actual_composite; //保存composite展开节点
-    compositeCallNode(list<Node *> *outputs, string compName, list<Node *> *stream_List, list<Node *> *inputs, compositeNode *actual_composite, YYLTYPE loc = YYLTYPE())
-    {
-        this->setLoc(loc);
-        this->type = CompositeCall;
-        this->compName = compName;
-        this->inputs = inputs;
-        this->actual_composite = actual_composite;
-        this->stream_List = stream_List;
-    }
-    ~compositeCallNode() {}
-    void print() {}
-    string toString();
 };
 
 class compBodyNode : public Node
