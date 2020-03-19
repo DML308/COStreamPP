@@ -50,6 +50,9 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             case MaxPooling2D: {
                 ((maxPooling2DLayerNode *)*iter)->init(globalSequential);
             }
+            case AveragePooling2D: {
+                ((averagePooling2DLayerNode *)*iter)->init(globalSequential);
+            }
             default:
                 break;
             }
@@ -236,7 +239,14 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer, list<Node
         }
         case MaxPooling2D: {
             compositeNode *layerComp = makeMaxPooling2DLayer(layer, inputs, outputs);
-            Node *call = new compositeCallNode(outputs, "conv2D", NULL, inputs, layerComp);
+            Node *call = new compositeCallNode(outputs, "maxPooling2D", NULL, inputs, layerComp);
+            Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        case AveragePooling2D: {
+            compositeNode *layerComp = makeAveragePooling2DLayer(layer, inputs, outputs);
+            Node *call = new compositeCallNode(outputs, "averagePooling2D", NULL, inputs, layerComp);
             Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
             comp_stmt_list->push_back(layerExp);
             break;
@@ -271,7 +281,14 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer, list<Node *>
         }
         case MaxPooling2D: {
             compositeNode *layerComp = makeDMaxPooling2DLayer((maxPooling2DLayerNode *)layer, inputs, outputs);
-            Node *call = new compositeCallNode(outputs, "dConv2D", NULL, inputs, layerComp);
+            Node *call = new compositeCallNode(outputs, "dMaxPooling2D", NULL, inputs, layerComp);
+            Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
+            comp_stmt_list->push_back(layerExp);
+            break;
+        }
+        case AveragePooling2D: {
+            compositeNode *layerComp = makeDAveragePooling2DLayer((averagePooling2DLayerNode *)layer, inputs, outputs);
+            Node *call = new compositeCallNode(outputs, "dAveragePooling2D", NULL, inputs, layerComp);
             Node *layerExp = new binopNode((expNode*)outputs,"=",(expNode*)call);
             comp_stmt_list->push_back(layerExp);
             break;
@@ -1626,7 +1643,7 @@ Node* UnfoldComposite::makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, l
         res_join->push_back(resId);
         list<Node *> *call_outputs = new list<Node *>({resId});
         list<Node *> *call_inputs = new list<Node *>({*inputIter});
-        compositeNode *kernelComp = makeMaxPooling2DKernel(layer, call_inputs, call_outputs, i);
+        compositeNode *kernelComp = makeMaxPooling2DKernel(layer, call_inputs, call_outputs);
         compositeCallNode *call = new compositeCallNode(call_outputs, tempCompName, NULL, call_inputs, kernelComp);
         comCallList->push_back(call);
         inputIter++;
@@ -1649,7 +1666,7 @@ Node* UnfoldComposite::makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, l
     return compBody;
 }
 
-compositeNode* UnfoldComposite::makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs, int depthIndex){
+compositeNode* UnfoldComposite::makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     compInOut = new ComInOutNode(inputs, outputs);
@@ -1677,10 +1694,9 @@ operatorNode* UnfoldComposite::makeMaxPooling2DKernelOper(maxPooling2DLayerNode 
     list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
     // 输入窗口
     auto inputIter = inputs->begin();
-    long long popVal = 1;
-    vector<long long> *inputSize = ((conv2DLayerNode *)layer)->inputSize;
+    vector<long long> *inputSize = layer->inputSize;
     // width * height
-    popVal = inputSize -> at(0)* inputSize -> at(1);
+    long long popVal = inputSize -> at(0)* inputSize -> at(1);
     Node *pop = new constantNode("integer", popVal);
     slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
     winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
@@ -1688,7 +1704,7 @@ operatorNode* UnfoldComposite::makeMaxPooling2DKernelOper(maxPooling2DLayerNode 
 
     // 输出窗口
     auto outputIter = outputs->begin();
-    long long pushVal = ((maxPooling2DLayerNode *)layer)->outputPooledSize->at(0) * ((maxPooling2DLayerNode *)layer)->outputPooledSize->at(1);
+    long long pushVal = layer->outputPooledSize->at(0) * layer->outputPooledSize->at(1);
     Node *push = new constantNode("integer", pushVal);
     tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
     winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
@@ -1963,7 +1979,7 @@ Node* UnfoldComposite::makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *la
             }
         } 
     */
-     Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+    Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
          *errorInput = new idNode(static_cast<idNode *>(inputs -> front()) -> name),
          *fpInput = new idNode(static_cast<idNode *>(inputs -> back()) -> name);
     ((idNode *)output) -> isArray = 1;
@@ -2191,4 +2207,416 @@ operatorNode *UnfoldComposite::makeSpecialJoinOperator(Node *output, list<Node *
     res = new operatorNode(outputs, operName, inputs, body);
     //cout << "-----------------join end---------------------" << endl;
     return res;
+}
+
+compositeNode* UnfoldComposite::makeAveragePooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    compHead = new compHeadNode("averagePooling2DLayer_" + to_string(layer->level), (ComInOutNode *)compInOut);
+    compBody = makeAveragePooling2DLayerBody((averagePooling2DLayerNode *)layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+
+Node* UnfoldComposite::makeAveragePooling2DLayerBody(averagePooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node *compBody =NULL;
+    list<Node *> *compStmtList = new list<Node *>();
+    idNode *streamDeclId = new idNode("x");
+    primNode *streamType = new primNode("double");
+    streamDeclId->valType = streamType->name;
+    Node *streamDecl = new strdclNode(streamDeclId);
+    string resStreamName = "averagePooling2D_res_" + to_string(layer -> level);
+    long long depth = layer->inputSize->back();
+    Node *input = inputs -> front();
+    operatorNode *splitOperator = makeSpecialSplitOperator(input, depth, (layerNode *)layer, 1);
+    // split operator的输出流
+    list<Node *> *inputList = splitOperator -> outputs;
+    auto inputIter = inputList -> begin();
+    // join operator的输入流
+    list<Node *> *res_join = new list<Node *>();
+    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
+
+    for(auto input : *inputList) {
+        ((strdclNode *)streamDecl)->id_list.push_back((idNode *)input);
+    }
+    string compName = "averagePooling2D_" + to_string(layer->level);
+    for (int i = 0; i < depth; i++) {
+        string tempCompName =  compName + "_" + to_string(i);
+        string tempResName = resStreamName + "_" + to_string(i);
+        idNode *resId = new idNode(tempResName);
+        res_join->push_back(resId);
+        list<Node *> *call_outputs = new list<Node *>({resId});
+        list<Node *> *call_inputs = new list<Node *>({*inputIter});
+        compositeNode *kernelComp = makeAveragePooling2DKernel(layer, call_inputs, call_outputs);
+        compositeCallNode *call = new compositeCallNode(call_outputs, tempCompName, NULL, call_inputs, kernelComp);
+        comCallList->push_back(call);
+        inputIter++;
+    }
+    Node *averagePoolRes = new idNode("averagePoolRes");
+    ((strdclNode *)streamDecl)->id_list.push_back((idNode *)averagePoolRes);
+    operatorNode *joinOperator0 = makeSpecialJoinOperator(averagePoolRes, res_join);
+    compStmtList->push_back(streamDecl);
+    compStmtList->push_back(splitOperator);
+    for (auto it : *comCallList)
+    {
+        compStmtList->push_back(it);
+    }
+    compStmtList->push_back(joinOperator0);
+    list<Node *> *tempStream = new list<Node *>({averagePoolRes});
+    compositeNode *copyComp = makeCopyComp(tempStream, outputs);
+    Node *callCopy = new compositeCallNode(outputs, "copy", NULL, tempStream, copyComp);
+    compStmtList->push_back(callCopy);
+    compBody = new compBodyNode(NULL, compStmtList);
+    return compBody;
+}
+compositeNode* UnfoldComposite::UnfoldComposite::makeAveragePooling2DKernel(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    string compName = "averagePooling2DKernel_" + to_string(layer->level);
+    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
+    compBody = makeAveragePooling2DKernelBody((averagePooling2DLayerNode *)layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+Node* UnfoldComposite::makeAveragePooling2DKernelBody(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* body = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    Node *oper  = makeAveragePooling2DKernelOper(layer, inputs, outputs);
+    stmtList -> push_back(oper);
+    body = new compBodyNode(NULL, stmtList);
+    return body;
+}
+
+operatorNode* UnfoldComposite::makeAveragePooling2DKernelOper(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    string operName = "averagePooling2D_" + to_string(layer -> level);
+    operBodyNode *body = NULL;
+    Node *work = NULL;
+    windowNode *window = NULL;
+    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    // 输入窗口
+    auto inputIter = inputs->begin();
+    vector<long long> *inputSize = layer->inputSize;
+    // width * height
+    long long popVal = inputSize -> at(0)* inputSize -> at(1);
+    Node *pop = new constantNode("integer", popVal);
+    slidingNode *slid = new slidingNode(new list<Node *>({pop, pop}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid);
+    winStmt->push_back(win1);
+
+    // 输出窗口
+    auto outputIter = outputs->begin();
+    long long pushVal = layer->outputPooledSize->at(0) * layer->outputPooledSize->at(1);
+    Node *push = new constantNode("integer", pushVal);
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
+    winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
+    winStmt->push_back(win2);
+    window = new windowNode(winStmt);
+    work = makeAveragePooling2DKernelOperWork(layer, inputs, outputs);
+    body = new operBodyNode(bodyStmtList, NULL, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+
+Node* UnfoldComposite::makeAveragePooling2DKernelOperWork(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* work = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    primNode *primInt = new primNode("int"),
+             *primDouble = new primNode("double");
+    idNode *idI = new idNode("i"),
+           *idJ = new idNode("j"),
+           *idN = new idNode("n"),
+           *idM = new idNode("m"),
+           *idX = new idNode("x"),
+           *idTotal = new idNode("total");
+    Node *declInt = new declareNode(primInt, idI),
+         *declDouble = new declareNode(primDouble, idTotal);
+    ((declareNode *)declInt )-> id_list.push_back(idJ);
+    ((declareNode *)declInt )-> id_list.push_back(idN);
+    ((declareNode *)declInt )-> id_list.push_back(idM);
+    stmtList -> push_back(declInt);
+    stmtList -> push_back(declDouble);
+
+    Node *outputDim0 = new constantNode("integer", layer->outputPooledSize->at(0));
+    Node *outputDim1 = new constantNode("integer", layer->outputPooledSize->at(1));
+    Node *inputDim0 = new constantNode("integer", layer->inputSize->at(0));
+    Node *inputDim1 = new constantNode("integer", layer->inputSize->at(1));
+    Node *poolSize = new constantNode("integer", layer->pool_size);
+    Node * base = new constantNode("interge", layer->pool_size * layer->pool_size);
+    Node *constZero = new constantNode("integer", (long long)0);
+    Node *init1 = NULL, *cond1 = NULL, *nextM = NULL, *stmt1 = NULL, *forNode1 = NULL;
+    Node *init2 = NULL, *cond2 = NULL, *nextN = NULL, *stmt2 = NULL, *forNode2 = NULL;
+    Node *init3 = NULL, *cond3 = NULL, *nextI = NULL, *stmt3 = NULL, *forNode3 = NULL;
+    Node *init4 = NULL, *cond4 = NULL, *nextJ = NULL, *stmt4 = NULL, *forNode4 = NULL;
+    /* 
+        base = size * size;
+        for (m = 0; m < output0; m++) {
+            for (n = 0; n < output1; n++) {
+                total = 0;
+                for (i = 0; i < poolSize; i++) {
+                    for (j = 0; j < poolSize; j++) {
+                        total+=input[m * size + i][n * size + j]
+                    }
+                }
+                out[m][n] = total / size;
+            }
+        }
+    */
+   init1 = new binopNode((expNode *)idM, "=", (expNode *)constZero);
+    init2 = new binopNode((expNode *)idN, "=", (expNode *)constZero);
+    init3 = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    init4 = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+
+    cond1 = new binopNode((expNode *)idM, "<", (expNode *)outputDim0);
+    cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1);
+    cond3 = new binopNode((expNode *)idI, "<", (expNode *)poolSize);
+    cond4 = new binopNode((expNode *)idJ, "<", (expNode *)poolSize);
+
+    nextM = new unaryNode("POSTINC", (expNode *)idM);
+    nextN = new unaryNode("POSTINC", (expNode *)idN);
+    nextI = new unaryNode("POSTINC", (expNode *)idI);
+    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+
+    Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+         *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
+    ((idNode *)output) -> isArray = 1;
+    ((idNode *)input) -> isArray = 1;
+
+    // input[m * size + i][n * size + j]
+    Node *inputIndex0 = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)poolSize)), "+", (expNode *)idI)));
+    Node *inputOffset0 = new binopNode((expNode *)inputIndex0, "*", (expNode *)inputDim1);
+    Node *inputIndex1 = new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)poolSize)), "+", (expNode *)idJ);
+    Node *inputIndex = new binopNode((expNode *)inputOffset0, "+", (expNode *)inputIndex1);
+
+    // output[m][n];
+    Node *outputIndex = new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)outputDim1)), "+", (expNode *)idN);
+
+    ((idNode *)input) -> arg_list.push_back(inputIndex);
+    Node *inputX = new binopNode((expNode *)input, ".", (expNode *)idX);
+    ((idNode *)output) -> arg_list.push_back(outputIndex);
+    Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
+
+    Node *addExp = new binopNode((expNode *)idTotal, "+=", (expNode *)inputX);
+    list<Node *> *stmtList4 = new list<Node *>({addExp});
+    stmt4 = new blockNode(stmtList4);
+    forNode4 = new forNode(init4, (expNode *)cond4, (expNode *)nextJ, stmt4);
+
+    list<Node *> *stmtList3 = new list<Node *>({forNode4});
+    stmt3 = new blockNode(stmtList3);
+    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextI, stmt3);
+
+    Node *totalInit = new binopNode((expNode *)idTotal, "=", (expNode *)constZero);
+    Node *res = new binopNode((expNode *)outputX, "=", (expNode *)(new binopNode ((expNode *)idTotal, "/", (expNode *)base)));
+    list<Node *> *stmtList2 = new list<Node *>({totalInit, forNode3, res});
+    stmt2 = new blockNode(stmtList2);
+    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextN, stmt2);
+
+    list<Node *> *stmtList1 = new list<Node *>({forNode2});
+    stmt1 = new blockNode(stmtList1);
+    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextM, stmt1);
+
+    stmtList->push_back(forNode1);
+    work = new blockNode(stmtList);
+    return work;
+}
+
+compositeNode* UnfoldComposite::makeDAveragePooling2DLayer(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    compHead = new compHeadNode("dAveragePooling2DLayer_" + layer->level, (ComInOutNode *)compInOut);
+    compBody = makeDAveragePooling2DLayerBody(layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+Node* UnfoldComposite::makeDAveragePooling2DLayerBody(averagePooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node *compBody = NULL;
+    string streamName = "DAveragePooling2DStream_" + to_string(layer -> level);
+    list<Node *> *errorList = NULL;
+    operatorNode *splitOperator = NULL, *joinOperator = NULL;
+    // join operator的输入流
+    list<Node *> *inputs_join = new list<Node *>();
+    list<compositeCallNode *> *comCallList = new list<compositeCallNode *>();
+    list<Node *> *compStmtList = new list<Node *>();
+
+    idNode *streamDeclId = new idNode("x");
+    primNode *streamType = new primNode("double");
+    streamDeclId->valType = streamType->name;
+    Node *streamDecl = new strdclNode(streamDeclId);
+
+    long long roundCount = layer -> inputSize -> back();
+    splitOperator = makeSpecialSplitOperator(inputs->front(), roundCount, (layerNode *)layer, 1);
+    errorList = splitOperator -> outputs;
+    auto errorIter = errorList -> begin();
+
+    for (int i = 0; i < roundCount; i++) {
+        string tempName = streamName + "_" + to_string(i);
+        idNode *kernelOutput = new idNode(tempName);
+        ((strdclNode*)streamDecl)->id_list.push_back(kernelOutput);
+        //compositeCall的输出流是join节点的输入流
+        inputs_join->push_back(kernelOutput);
+        // kernel的输出流
+        list<Node *> *call_outputs = new list<Node *>({kernelOutput});
+        Node *arg = new constantNode("integer", (long long)i);
+        Node *index = arg;
+        list<Node *> *argList = new list<Node *>({arg});
+        //compositeCall的输入流
+        list<Node *> *call_inputs = new list<Node *>({*errorIter});
+        compositeNode *dKernelComp = makeDAveragePooling2DKernel(layer, call_inputs, call_outputs);
+        compositeCallNode *call = new compositeCallNode(call_outputs, tempName, argList, call_inputs, dKernelComp);
+        comCallList->push_back(call);
+        errorIter++;
+    }
+    joinOperator = makeSpecialJoinOperator(outputs->front(), inputs_join);
+    compStmtList->push_back(streamDecl);
+    compStmtList->push_back(splitOperator);
+    for (auto it : *comCallList)
+    {
+        compStmtList->push_back(it);
+    }
+    compStmtList->push_back(joinOperator);
+    compBody = new compBodyNode(NULL, compStmtList);
+    return compBody;
+}
+compositeNode* UnfoldComposite::makeDAveragePooling2DKernel(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    compositeNode *comp = NULL;
+    Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
+    compInOut = new ComInOutNode(inputs, outputs);
+    string compName = "dAveragePooling2DKernel_" + layer->level;
+    compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
+    compBody = makeDAveragePooling2DKernelBody(layer, inputs, outputs);
+    comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
+    return comp;
+}
+Node* UnfoldComposite::makeDAveragePooling2DKernelBody(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* body = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    operatorNode *oper  = makeDAveragePooling2DKernelOper(layer, inputs, outputs);
+    stmtList -> push_back(oper);
+    body = new compBodyNode(NULL, stmtList);
+    return body;
+}
+Node* UnfoldComposite::makeDAveragePooling2DKernelOperWork(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    Node* work = NULL;
+    list<Node *> *stmtList = new list<Node *>();
+    primNode *primInt = new primNode("int"),
+             *primDouble = new primNode("double");
+    idNode *idI = new idNode("i"),
+           *idJ = new idNode("j"),
+           *idN = new idNode("n"),
+           *idM = new idNode("m"),
+           *idX = new idNode("x"),
+           *idRes = new idNode("res");
+    Node *declInt = new declareNode(primInt, idI),
+         *declDouble = new declareNode(primDouble, idRes);
+    ((declareNode *)declInt )-> id_list.push_back(idJ);
+    ((declareNode *)declInt )-> id_list.push_back(idN);
+    ((declareNode *)declInt )-> id_list.push_back(idM);
+    stmtList -> push_back(declInt);
+    stmtList -> push_back(declDouble);
+
+    Node *errorInputDim0 = new constantNode("integer", layer->outputPooledSize->at(0));
+    Node *errorInputDim1 = new constantNode("integer", layer->outputPooledSize->at(1));
+    Node *outputDim0 = new constantNode("integer", layer->inputSize->at(0));
+    Node *outputDim1 = new constantNode("integer", layer->inputSize->at(1));
+    Node *poolSize = new constantNode("integer", layer->pool_size);
+    Node *base = new constantNode("integer", layer->pool_size * layer->pool_size);
+    Node *constZero = new constantNode("integer", (long long)0);
+
+    Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
+    Node *initN = new binopNode((expNode *)idN, "=", (expNode *)constZero);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+
+    Node *condM = new binopNode((expNode *)idM, "<", (expNode *)errorInputDim0);
+    Node *condN = new binopNode((expNode *)idN, "<", (expNode *)errorInputDim1);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)poolSize);
+    Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)poolSize);
+
+    Node *nextM = new unaryNode("POSTINC", (expNode *)idM);
+    Node *nextN = new unaryNode("POSTINC", (expNode *)idN);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
+    Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+    /*
+        for (m = 0; m < output0; m++) {
+            for (n = 0; n < output1; n++) {
+                res = error[m][n] / base;
+                for (i = 0; i < poolSize; i++) {
+                    for (j = 0; j < poolSize; j++) {
+                        out[m * size + i][n * size + j] = res;
+                    }
+                }
+            }
+        }
+    */
+    Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+         *errorInput = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
+    ((idNode *)output) -> isArray = 1;
+    ((idNode *)errorInput) -> isArray = 1;
+
+    //  out[m * size + i][n * size + j]
+    Node *outIndex0 = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)poolSize)), "+", (expNode *)idI)));
+    Node *outOffset0 = new binopNode((expNode *)outIndex0, "*", (expNode *)outputDim1);
+    Node *outIndex1 = new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)poolSize)), "+", (expNode *)idJ);
+    Node *outIndex = new binopNode((expNode *)outOffset0, "+", (expNode *)outIndex1);
+
+    // error[m][n];
+    Node *errorIndex = new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)errorInputDim1)), "+", (expNode *)idN);
+
+    ((idNode *)output)->arg_list.push_back(outIndex);
+    Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
+    ((idNode *)errorInput)->arg_list.push_back(errorIndex);
+    Node *errorInputX = new binopNode((expNode *)errorInput, ".", (expNode *)idX);
+
+    Node *res = new binopNode((expNode *)outputX, "=", (expNode *)idRes);
+    list<Node *> *stmtList1 = new list<Node *>({res});
+    Node *stmt1 = new blockNode(stmtList1);
+    forNode *forNode1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt1);
+
+    list<Node *> *stmtList2 = new list<Node *>({forNode1});
+    Node *stmt2 = new blockNode(stmtList2);
+    forNode *forNode2 = new forNode(initI, (expNode *)condI, (expNode *)nextI, stmt2);
+
+    Node *caculRes = new binopNode ((expNode *)idRes, "=", (expNode *)(new binopNode((expNode *)errorInputX, "/", (expNode *)base)));
+    list<Node *> *stmtList3 = new list<Node *>({caculRes, forNode2});
+    Node *stmt3 = new blockNode(stmtList3);
+    forNode *forNode3 = new forNode(initN, (expNode *)condN, (expNode *)nextN, stmt3);
+
+    list<Node *> *stmtList4 = new list<Node *>({forNode3});
+    Node *stmt4 = new blockNode(stmtList4);
+    forNode *forNode4 = new forNode(initM, (expNode *)condM, (expNode *)nextM, stmt4);
+
+    stmtList->push_back(forNode4);
+    work = new blockNode(stmtList);
+    return work;
+}
+operatorNode* UnfoldComposite::makeDAveragePooling2DKernelOper(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
+    string operName = "dAverageaxPooling2D";
+    operBodyNode *body = NULL;
+    Node *init = NULL, *work = NULL;
+    windowNode *window = NULL;
+    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    auto outputSize = layer -> inputSize;
+    auto errorInputSize = layer -> outputPooledSize;
+    // *****输入窗口*****
+    // 经反向传播计算逐层传递的误差
+    auto inputIter = inputs->begin();
+    Node *pop1 = new constantNode("integer", errorInputSize -> at(0) * errorInputSize -> at(1));
+    slidingNode *slid1 = new slidingNode(new list<Node *>({pop1, pop1}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(* inputIter))->name, slid1);
+    winStmt->push_back(win1);
+
+    // *****输出窗口*****
+    auto outputIter = outputs->begin();
+    Node *push = new constantNode("integer", outputSize->at(0) * outputSize->at(1));
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({push}));
+    winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
+    winStmt->push_back(win2);
+    window = new windowNode(winStmt);
+
+    
+    init = NULL;
+    work = makeDAveragePooling2DKernelOperWork(layer, inputs, outputs);
+    body = new operBodyNode(bodyStmtList, init, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
 }

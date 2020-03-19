@@ -489,13 +489,13 @@ operator.layer:
                                                                 $$ = layer;
                                                                 debug("Create maxPooling2D layer!\n");
                                                             }
-          /*| AVERAGEPOOLING2D '(' argument.expression.list ')' ';' {
+          | AVERAGEPOOLING2D '(' argument.expression.list ')' ';' {
                                                                 line("Line%-4d", @1.first_line);
                                                                 debug("operator.layer ::=AVERAGEPOOLING2D ( argument.expression.list );\n");
                                                                 layerNode* layer = new averagePooling2DLayerNode("averagePooling2D", $3, @1);
                                                                 $$ = layer;
                                                                 debug("Create averagePooling2D layer!\n");
-                                                            }*/
+                                                            }
         /* other layer, for example conv2d */
         ;
 splitjoinPipeline.statement.list:

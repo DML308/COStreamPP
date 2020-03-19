@@ -1024,6 +1024,26 @@ class maxPooling2DLayerNode : public layerNode
     }
     void init(sequentialNode *sequential);
 };
+class averagePooling2DLayerNode : public layerNode
+{
+  public:
+    long long pool_size; // 整数，平均池化的窗口大小。
+    long long depth; // 输入空间的维度
+    vector<long long> *outputPooledSize; // 经过池化后输出的尺寸
+    averagePooling2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = AveragePooling2D;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->level = 0;
+      this -> pool_size = ((constantNode *)(arg_list -> front())) -> llval;
+    }
+    void init(sequentialNode *sequential);
+};
 class conv2DLayerNode : public layerNode
 {
   public:

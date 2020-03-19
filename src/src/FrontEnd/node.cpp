@@ -611,6 +611,9 @@ vector<long long>* layerNode::getInputSize(sequentialNode *sequential) {
             case MaxPooling2D: {
                 return ((maxPooling2DLayerNode *)prevLayer) -> outputPooledSize;
                 }
+            case AveragePooling2D: {
+                return ((averagePooling2DLayerNode *)prevLayer) -> outputPooledSize;
+            }
             default:
                 return NULL;
         }
@@ -656,6 +659,16 @@ void denseLayerNode::init (sequentialNode * sequential) {
 }
 
 void maxPooling2DLayerNode::init(sequentialNode *sequential) {
+    this -> inputSize = this -> getInputSize(sequential);
+    this->outputPooledSize = new vector<long long>();
+    for(int i = 0; i < 2; i++) {
+        // 是否加1????
+        this->outputPooledSize->push_back(inputSize->at(i) / this->pool_size);
+    }
+    this->outputPooledSize->push_back(inputSize->back());
+}
+
+void averagePooling2DLayerNode::init(sequentialNode *sequential) {
     this -> inputSize = this -> getInputSize(sequential);
     this->outputPooledSize = new vector<long long>();
     for(int i = 0; i < 2; i++) {

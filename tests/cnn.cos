@@ -20,6 +20,7 @@ composite Main() {
         add Conv2d(3, (2, 2), (1, 1), (0, 0), 'relu', false);
         add MaxPooling2D(1);
         add Conv2d(5, (2, 2), (1, 1), (0, 0), 'relu', false);
+        add AveragePooling2D(1);
         add Dense(10);
     };
     sink(Out) {

@@ -63,7 +63,7 @@ class UnfoldComposite
     operatorNode* makeSpecialJoinOperator(Node *output, list<Node *> *inputs);
     compositeNode* makeMaxPooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
-    compositeNode* makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs, int depthIndex);
+    compositeNode* makeMaxPooling2DKernel(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeMaxPooling2DKernelBody(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
@@ -73,5 +73,17 @@ class UnfoldComposite
     Node* makeDMaxPooling2DKernelBody(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDMaxPooling2DKernelOper(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeAveragePooling2DLayer(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeAveragePooling2DLayerBody(averagePooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeAveragePooling2DKernel(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeAveragePooling2DKernelBody(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeAveragePooling2DKernelOperWork(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeAveragePooling2DKernelOper(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeDAveragePooling2DLayer(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDAveragePooling2DLayerBody(averagePooling2DLayerNode* layer, list<Node *> *inputs, list<Node *> *outputs);
+    compositeNode* makeDAveragePooling2DKernel(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDAveragePooling2DKernelBody(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDAveragePooling2DKernelOperWork(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeDAveragePooling2DKernelOper(averagePooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
 };
 #endif
