@@ -1577,12 +1577,16 @@ Constant* getOperationResult(Node* exp){
     {
     case Id:
         {
-            string name = static_cast<idNode *>(exp)->name;
+            idNode *id = static_cast<idNode *>(exp);
+            if(id->isArray){
+                return NULL;
+            }
+            string name = id->name;
             Variable *val = top->LookupIdentifySymbol(name);
             if(val){
                 return val->value;
             }else{
-
+                return NULL;
             }
             
             break;
@@ -1598,7 +1602,7 @@ Constant* getOperationResult(Node* exp){
             rightV = getOperationResult(static_cast<binopNode *>(exp)->right);
         }
         string op = static_cast<binopNode *>(exp)->op;
-        if(op.compare(".") == 0) break;
+        if(op.compare(".") == 0) return NULL;
         if(leftV && rightV){
             return getResult(op,leftV,rightV);
         }else{

@@ -1,7 +1,8 @@
 #include "unfoldComposite.h"
 #include "compositeFlow.h"
+#include "symboltableGenerate.h"
 #include <string.h>
-extern SymbolTable *runningTop,S;
+extern SymbolTable *runningTop,S,*top;
 extern list<Node*> *Program;
 extern sequentialNode *globalSequential;
 extern vector<Node *> compositeCall_list;
@@ -24,7 +25,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     ComInOutNode *inout = new ComInOutNode(inputs, outputs);
     compHeadNode *head = new compHeadNode(comName, inout);
     compBodyNode *body = NULL;
-    SymbolTable *top = new SymbolTable(runningTop,NULL);//todo
+    top = new SymbolTable(runningTop,NULL);//todo
 
     // sequential有两个输入流, 分别是是训练集和标签
     assert(inputs != NULL && outputs != NULL);
@@ -75,6 +76,10 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
             Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
             Program->push_front(weightDecl);
+            SymbolTable *pre = top;
+            top = &S;
+            generateDeclareNode((declareNode *)weightDecl);
+            top = pre;
             prevDim = dim;
         } else if (((layerNode *)*iter) -> layerName == "conv2D") {
             // 声明_weight_[depth][kernelSizeDim0][kernelSizeDim1]
@@ -85,6 +90,10 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
             Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
             Program->push_front(weightDecl);
+            SymbolTable *pre = top;
+            top = &S;
+            generateDeclareNode((declareNode *)weightDecl);
+            top = pre;
             // 若卷积层后跟全连接层, 需要计算输出的尺寸 filters * size[0] * size[1]
             prevDim = new constantNode("long long", ((conv2DLayerNode *)*iter) -> filters * ((conv2DLayerNode *)*iter) -> size -> at(0) * ((conv2DLayerNode *)*iter) -> size -> at(1));
         }
