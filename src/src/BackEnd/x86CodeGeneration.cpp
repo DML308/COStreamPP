@@ -83,7 +83,7 @@ void X86CodeGeneration::CGGlobalvarHeader()
     for (auto iter : *Program)
     {
         if (iter->type == Decl)
-            buf << "extern " + iter->toString() << "\n";
+            buf << "extern " + iter->toString() + ";" << "\n";
     }
     buf << "#endif";
     string line;
