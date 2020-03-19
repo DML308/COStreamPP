@@ -1901,7 +1901,129 @@ Node* UnfoldComposite::makeDMaxPooling2DKernelBody(maxPooling2DLayerNode *layer,
 Node* UnfoldComposite::makeDMaxPooling2DKernelOperWork(maxPooling2DLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs){
     Node* work = NULL;
     list<Node *> *stmtList = new list<Node *>();
-    // 继续
+    primNode *primInt = new primNode("int"),
+             *primDouble = new primNode("double");
+    idNode *idI = new idNode("i"),
+           *idJ = new idNode("j"),
+           *idN = new idNode("n"),
+           *idM = new idNode("m"),
+           *idX = new idNode("x"),
+           *idMax = new idNode("max");
+    Node *declInt = new declareNode(primInt, idI),
+         *declDouble = new declareNode(primDouble, idMax);
+    ((declareNode *)declInt )-> id_list.push_back(idJ);
+    ((declareNode *)declInt )-> id_list.push_back(idN);
+    ((declareNode *)declInt )-> id_list.push_back(idM);
+    stmtList -> push_back(declInt);
+    stmtList -> push_back(declDouble);
+
+    Node *errorInputDim0 = new constantNode("integer", layer->outputPooledSize->at(0));
+    Node *errorInputDim1 = new constantNode("integer", layer->outputPooledSize->at(1));
+    Node *fpInputAndOutputDim0 = new constantNode("integer", layer->inputSize->at(0));
+    Node *fpInputAndOutputDim1 = new constantNode("integer", layer->inputSize->at(1));
+    Node *poolSize = new constantNode("integer", layer->pool_size);
+    Node *constZero = new constantNode("integer", (long long)0);
+
+    Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
+    Node *initN = new binopNode((expNode *)idN, "=", (expNode *)constZero);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+
+    Node *condM = new binopNode((expNode *)idM, "<", (expNode *)errorInputDim0);
+    Node *condN = new binopNode((expNode *)idN, "<", (expNode *)errorInputDim1);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)poolSize);
+    Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)poolSize);
+
+    Node *nextM = new unaryNode("POSTINC", (expNode *)idM);
+    Node *nextN = new unaryNode("POSTINC", (expNode *)idN);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
+    Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+    
+    /*
+        for(m = 0; m < error0; m++) {
+            for(n = 0; n < error1; n++) {
+                i = 0;
+                j = 0;
+                max = fpIn[m * size + i][n * size + j];
+                for(i = 0; i < poolSize; i++) {
+                    for(j = 0; j < poolSize; j++) {
+                        // 需要获得索引
+                        if (max < fpIn[m * size + i][n * size + j]) {
+                            max = fpIn[m * size + i][n * size + j];
+                        }
+                    }
+                }
+                for(i = 0; i < poolSize; i++) {
+                    for(j = 0; j < poolSize; j++) {
+                        if (max == fpIn[m * size + i][n * size + j]) {
+                            out[m * size + i][n * size + j] = error[m][n];
+                        }
+                    }
+                }
+            }
+        } 
+    */
+     Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+         *errorInput = new idNode(static_cast<idNode *>(inputs -> front()) -> name),
+         *fpInput = new idNode(static_cast<idNode *>(inputs -> back()) -> name);
+    ((idNode *)output) -> isArray = 1;
+    ((idNode *)errorInput) -> isArray = 1;
+    ((idNode *)fpInput) -> isArray = 1;
+
+    // fpInput[m * size + i][n * size + j] & out[m * size + i][n * size + j]
+    Node *fpInAndOutIndex0 = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)poolSize)), "+", (expNode *)idI)));
+    Node *fpInAndOutOffset0 = new binopNode((expNode *)fpInAndOutIndex0, "*", (expNode *)fpInputAndOutputDim1);
+    Node *fpInAndOutIndex1 = new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)poolSize)), "+", (expNode *)idJ);
+    Node *fpInAndOutIndex = new binopNode((expNode *)fpInAndOutOffset0, "+", (expNode *)fpInAndOutIndex1);
+
+    // error[m][n];
+    Node *errorIndex = new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)errorInputDim1)), "+", (expNode *)idN);
+
+    ((idNode *)output)->arg_list.push_back(fpInAndOutIndex);
+    Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
+    ((idNode *)errorInput)->arg_list.push_back(errorIndex);
+    Node *errorInputX = new binopNode((expNode *)errorInput, ".", (expNode *)idX);
+    ((idNode *)fpInput)->arg_list.push_back(fpInAndOutIndex);
+    Node *fpInputX = new binopNode((expNode *)fpInput, ".", (expNode *)idX);
+
+    list<Node *> *stmtList1 = new list<Node *>();
+    Node *compareExp = new binopNode((expNode *)idMax, "<", (expNode *)fpInputX);
+    Node *assign = new binopNode((expNode *)idMax, "=", (expNode *)fpInputX);
+    list<Node *> *ifBlockStmts1 = new list<Node *>({assign});
+    Node *ifBlock1 = new blockNode(ifBlockStmts1);
+    Node *compare = new ifNode((expNode *)compareExp, ifBlock1);
+    stmtList1->push_back(compare);
+    Node *stmt1 = new blockNode(stmtList1);
+    forNode *forNode1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt1);
+
+    list<Node *> *stmtList2 = new list<Node *>({forNode1});
+    Node *stmt2 = new blockNode(stmtList2);
+    forNode *forNode2 = new forNode(initI, (expNode *)condI, (expNode *)nextI, stmt2);
+
+    list<Node *> *stmtList3 = new list<Node *>();
+    Node *equalExp = new binopNode((expNode *)idMax, "==", (expNode *)fpInputX);
+    Node *res = new binopNode((expNode *)outputX, "=", (expNode *)errorInputX);
+    list<Node *> *ifBlockStmts2 = new list<Node *>({res});
+    Node *ifBlock2 = new blockNode(ifBlockStmts2);
+    Node *equal = new ifNode((expNode *)equalExp, ifBlock2);
+    stmtList3->push_back(equal);
+    Node *stmt3 = new blockNode(stmtList3);
+    forNode *forNode3 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt3);
+
+    list<Node *> *stmtList4 = new list<Node *>({forNode3});
+    Node *stmt4 = new blockNode(stmtList4);
+    forNode *forNode4 = new forNode(initI, (expNode *)condI, (expNode *)nextI, stmt4);
+
+    list<Node *> *stmtList5 = new list<Node *>({initI, initJ, assign, forNode2, forNode4});
+    Node *stmt5 = new blockNode(stmtList5);
+    forNode *forNode5 = new forNode(initN, (expNode *)condN, (expNode *)nextN, stmt5);
+
+    list<Node *> *stmtList6 = new list<Node *>({forNode5});
+    Node *stmt6 = new blockNode(stmtList6);
+    forNode *forNode6 = new forNode(initM, (expNode *)condM, (expNode *)nextM, stmt6);
+
+    stmtList->push_back(forNode6);
+
     work = new blockNode(stmtList);
     return work;
 }
