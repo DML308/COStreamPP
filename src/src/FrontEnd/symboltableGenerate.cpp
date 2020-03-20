@@ -1,6 +1,7 @@
 #include "symboltableGenerate.h"
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 extern SymbolTable *runningTop;
+extern bool ifConstantFlow;
 SymbolTable S ;//全局
 SymbolTable *top; //当前作用域
 list<SymbolTable *>saved; //作用域栈
@@ -76,12 +77,7 @@ void generateNodeList(list<Node *> id_list){
     }
 }
 
-// 常量传播
-void constantPropagation(Node *left,Node *right){
-    string vName = static_cast<idNode *>(left)->name;
-    Variable *realVariable = top->LookupIdentifySymbol(vName);
-    //static_cast<idNode *>(realVariable)->init = right;
-}
+
 
 Constant* getResult(string op,Constant *left,Constant *right){
     if(left && right){
@@ -1673,8 +1669,11 @@ void genrateStmt(Node *stmt){
                     if(static_cast<binopNode *>(right)->op.compare(".") == 0){
                         return;
                     }
-                    variable = top->LookupIdentifySymbol(static_cast<idNode*>(left)->name);
-                    variable->value  = getOperationResult(right);
+                    if(ifConstantFlow){
+                        variable = top->LookupIdentifySymbol(static_cast<idNode*>(left)->name);
+                        variable->value  = getOperationResult(right);
+                    }
+                    
                 }
                 
                
@@ -2269,7 +2268,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
             }
         }
         //解析window 不能放这里
-        for (auto it : *body->stmt_List)
+        /*for (auto it : *body->stmt_List)
         {
             operatorNode *exp = NULL;
             if(it->type == Binop){
@@ -2287,12 +2286,12 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
                 // 解析window
                 
                 /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
-                operBodyNode *operBody = exp->operBody;
+                /*operBodyNode *operBody = exp->operBody;
                 //paramNode *param = operBody->param;
                 list<Node *> stmts = operBody->stmt_list;
                 list<Node *> *win_list = new list<Node *>();
                 /*动态分配生成新的windowNode*/ // 求出具体window大小
-                for (auto it : *operBody->win->win_list)
+                /*for (auto it : *operBody->win->win_list)
                 {
                     Node *winType = ((winStmtNode *)it)->winType;
                     string winName = ((winStmtNode *)it)->winName;
@@ -2343,9 +2342,9 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
                 }
                 operBody->win->win_list = win_list;
                 //windowNode *win = new windowNode(win_list);  
-            }   
+            }  
             
-        }
+        }*/
     }
     top->printSymbolTables();
     return top;

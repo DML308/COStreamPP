@@ -28,6 +28,7 @@ compositeNode *gMainComposite = NULL;            //compositeMain
 StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 //SymbolTable S;
+bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常量传播 在静态数据流图生成过程中借助执行上下文进行常量传播
 
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
 
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
 
     // (3) 语义检查
     PhaseName = "SemCheck";
-    // 生成符号表 语义检查 常量传播
+    // 生成符号表 语义检查
     generateSymbolTable(Program,symboltables);
     printSymbolTable(symboltables);
     
@@ -77,7 +78,8 @@ int main(int argc, char *argv[])
     // (4) 打印抽象语法树
     PhaseName = "PrintAstTree";
 
-    // (5)语法树到平面图 SSG 是 StaticStreamGraph 对象
+    // (5)语法树到平面图 SSG 是 StaticStreamGraph 对象 常量传播
+    ifConstantFlow = true;
     PhaseName = "AST2FlatSSG";
     SSG = AST2FlatStaticStreamGraph(gMainComposite);
     // (6) 对静态数据流图各节点进行工作量估计

@@ -169,7 +169,12 @@ composite Main ()
 	Source = IntSource()();
 	
 	
+	S1 = DCT_2D_Y(Source)(size);
 	
-	Sink(Source)();
+	S2 = DCT_2D_X(S1)(size);
+	
+	S3 = DCT_Result(S2)();
+
+	Sink(S3)();
 	
 }

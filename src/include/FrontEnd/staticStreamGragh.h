@@ -3,6 +3,7 @@
 
 #include "flatNode.h"
 #include "symbol.h"
+#include "symboltableGenerate.h"
 /* 保存所有的展开 operator */
 class StaticStreamGraph
 {
