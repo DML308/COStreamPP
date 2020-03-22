@@ -2,6 +2,7 @@
 #define _NODE_H_
 #include "global.h"
 #include "nodetype.h"
+#include "layertype.h"
 #include "defines.h"
 #include <list>
 #include <vector>
@@ -1032,9 +1033,6 @@ class sequentialNode : public Node
       this->arg_list = param;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
-      for(auto iter = body_stmts->begin(); iter != body_stmts->end(); iter++) {
-        cout<< (*iter)->type  << endl;
-      }
     }
     ~sequentialNode() {};
     void print() {};
@@ -1043,53 +1041,92 @@ class sequentialNode : public Node
 class layerNode : public Node
 {
   public:
-    compositeCallNode *bp_composite;
-    compositeCallNode *fp_composite;
+    LayerType layerType;
     list<Node *> *arg_list;
     string layerName;
     layerNode *prevLayer;
     layerNode *nextLayer;
+    vector<long long> *inputSize; // 正向傳播過程中輸入到該層的尺寸
     int level;
     layerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
       this->type = Layer;
       this->layerName = layerName;
-      this->bp_composite = NULL;
-      this->fp_composite = NULL;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
       this->nextLayer = NULL;
+      this->inputSize = NULL;
       this->level = 0;
     }
     layerNode () {}
     ~layerNode() {}
     void print() {}
+    vector<long long>* getInputSize(sequentialNode* sequential);
     string toString() {}
+};
+class maxPooling2DLayerNode : public layerNode
+{
+  public:
+    long long pool_size; // 整数，平均池化的窗口大小。
+    long long depth; // 输入空间的维度
+    vector<long long> *outputPooledSize; // 经过池化后输出的尺寸
+    maxPooling2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = MaxPooling2D;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->level = 0;
+      this -> pool_size = ((constantNode *)(arg_list -> front())) -> llval;
+    }
+    void init(sequentialNode *sequential);
+};
+class averagePooling2DLayerNode : public layerNode
+{
+  public:
+    long long pool_size; // 整数，平均池化的窗口大小。
+    long long depth; // 输入空间的维度
+    vector<long long> *outputPooledSize; // 经过池化后输出的尺寸
+    averagePooling2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = AveragePooling2D;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->level = 0;
+      this -> pool_size = ((constantNode *)(arg_list -> front())) -> llval;
+    }
+    void init(sequentialNode *sequential);
 };
 class conv2DLayerNode : public layerNode
 {
   public:
     long long filters; // 输出空间的维度 （即卷积中滤波器的输出数量）
-    long long domension; // 对于conv2D, 为2
-    long long depth; // 输入空间的维度
+    long long dimension; // 对于conv2D, 为2
+    // long long depth; // 输入空间的维度
     vector<long long> *kernel_size; // 2D 卷积窗口的宽度和高度
     vector<long long> *strides; // 卷积沿宽度和高度方向的步长
     vector<long long> *paddings; // 扩展
-    vector<long long> *size; // 输出特征图的尺寸
-    vector<long long> *errorSize; // 误差经扩展膨胀后的尺寸
+    vector<long long> *outputFeatureMapSize; // 正向傳播過程输出的特征图的尺寸(2維)
+    vector<long long> *inputErrorSize; // 反向傳播過程输入的误差经扩展膨胀后的尺寸(2維)
     conv2DLayerNode (string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
       this->type = Layer;
+      this->layerType = Conv2D;
       this->layerName = layerName;
-      this->bp_composite = NULL;
-      this->fp_composite = NULL;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
       this->nextLayer = NULL;
       this->level = 0;
-      this->domension = 2;
+      this->dimension = 2;
       auto iter = arg_list->begin();
       // filters
       this->filters = ((constantNode *)(*iter))->llval;
@@ -1101,7 +1138,7 @@ class conv2DLayerNode : public layerNode
           this->kernel_size->push_back(((constantNode *)(size))->llval);
         }
       } else {
-        for (int i = 0; i < this->domension; i++) {
+        for (int i = 0; i < this->dimension; i++) {
           this->kernel_size->push_back(((constantNode *)(*iter))->llval);
         }
       }
@@ -1113,7 +1150,7 @@ class conv2DLayerNode : public layerNode
           this->strides->push_back(((constantNode *)(size))->llval);
         }
       } else {
-        for (int i = 0; i < this->domension; i++) {
+        for (int i = 0; i < this->dimension; i++) {
           this->strides->push_back(((constantNode *)(*iter))->llval);
         }
       }
@@ -1121,20 +1158,41 @@ class conv2DLayerNode : public layerNode
       iter++;
       this->paddings = new vector<long long>();
       if ((*iter) -> type == Tuple) {
-        for (auto size : *(((tupleNode *)(*iter))->tupleList)) {
-          this->paddings->push_back(((constantNode *)(size))->llval);
+        for (auto padding : *(((tupleNode *)(*iter))->tupleList)) {
+          this->paddings->push_back(((constantNode *)(padding))->llval);
         }
       } else {
-        for (int i = 0; i < this->domension; i++) {
+        for (int i = 0; i < this->dimension; i++) {
           this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
-      this -> size = NULL;
-      this -> errorSize = NULL;
+      this -> inputSize = NULL;
+      this -> outputFeatureMapSize = NULL;
+      this -> inputErrorSize = NULL;
     }
     ~conv2DLayerNode() {}
     void print() {}
     string toString() {}
-    void init(sequentialNode* sequential);
+    void init(sequentialNode* sequential); // 初始化outputFeatureMapSize, inputErrorSize, inputSize
+};
+
+class denseLayerNode : public layerNode
+{
+  public:
+    long long rows; // 輸入
+    long long cols; // 輸出
+    denseLayerNode(string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = Dense;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->level = 0;
+      this -> cols = ((constantNode *)(arg_list -> front())) -> llval;
+    }
+    void init(sequentialNode* sequential); // 初始化rows
 };
 #endif

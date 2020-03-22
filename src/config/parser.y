@@ -4,6 +4,7 @@
 #include "node.h"
 #include "symbol.h"
 #include "nodetype.h"
+#include "layertype.h"
 #include "unfoldComposite.h"
 //SymbolTable *top=new SymbolTable(NULL);
 //SymbolTable *saved=top;
@@ -34,7 +35,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token SEQUENTIAL DENSE CONV2D
+%token SEQUENTIAL DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -83,7 +84,7 @@ extern void yyerror (const char *msg);
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
 /* 语法分析器自己的结构 6. 深度学习扩展文法*/
-%type<str> DENSE CONV2D
+%type<str> DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D
 %type<node> operator.layer operator.sequential.add
 %type<list> sequential.statement.list
 %type<node> tuple
@@ -472,7 +473,7 @@ operator.layer:
           DENSE '(' argument.expression.list ')' ';'      {
                                                                 line("Line%-4d", @1.first_line);
                                                                 debug("operator.layer ::=DENSE ( argument.expression.list );\n");
-                                                                $$ = new layerNode("dense", $3, @1);
+                                                                $$ = new denseLayerNode("dense", $3, @1);
                                                                 debug("Create dense layer!\n");
                                                           }
           | CONV2D '(' argument.expression.list ')' ';'      {
@@ -482,6 +483,20 @@ operator.layer:
                                                                 $$ = layer;
                                                                 debug("Create conv2d layer!\n");  
                                                           }
+          | MAXPOOLING2D '(' argument.expression.list ')' ';' {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=MAXPOOLING2D ( argument.expression.list );\n");
+                                                                layerNode* layer = new maxPooling2DLayerNode("maxPooling2D", $3, @1);
+                                                                $$ = layer;
+                                                                debug("Create maxPooling2D layer!\n");
+                                                            }
+          | AVERAGEPOOLING2D '(' argument.expression.list ')' ';' {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=AVERAGEPOOLING2D ( argument.expression.list );\n");
+                                                                layerNode* layer = new averagePooling2DLayerNode("averagePooling2D", $3, @1);
+                                                                $$ = layer;
+                                                                debug("Create averagePooling2D layer!\n");
+                                                            }
         /* other layer, for example conv2d */
         ;
 splitjoinPipeline.statement.list:
