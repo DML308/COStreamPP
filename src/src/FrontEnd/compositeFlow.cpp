@@ -494,65 +494,6 @@ void compositeCallFlow(list<Node *> *stmts)
                 stmt.push_back(for_nd->stmt);
                 addComposite(stmt);
             }
-            /* for循环中只有一条语句 */
-            /*if (for_nd->stmt->type != Block)
-            {
-                Node *for_stmts = for_nd->stmt;
-                if (for_stmts->type == IfElse)
-                {
-                        // todo
-                }
-                else if (for_stmts->type == Add)
-                {
-                    //cout << "type==" << ((addNode *)for_stmts)->content->type << endl;
-                    for (long long i = initial; i < condition; ++i)
-                    {
-                        if (((addNode *)for_stmts)->content->type == CompositeCall)
-                        {
-                            compositeCall_list.push_back(((addNode *)for_stmts)->content);
-                        }
-                        //add splitjoin{} 
-                        else if (((addNode *)for_stmts)->content->type == SplitJoin)
-                        {
-                            Node *nd = unfold->workNodeCopy(((addNode *)for_stmts)->content);
-                            compositeCall_list.push_back(nd);
-                        }
-                        // add pipeline{}的情况 
-                        else if (((addNode *)for_stmts)->content->type == Pipeline)
-                        {
-                            Node *nd = unfold->workNodeCopy(((addNode *)for_stmts)->content);
-                            compositeCall_list.push_back(nd);
-                        }
-                    }
-                }
-            }
-            else // for语句中多句
-            {
-                stmts = &((blockNode *)(for_nd->stmt))->stmt_list;
-                auto ptr = stmts->front();
-                assert(ptr->type == Add);
-                // cout << "init = "<<initial << endl;
-                // cout << "cond = "<<condition << endl;
-                for (long long i = initial; i < condition; ++i)
-                {
-                    if (((addNode *)ptr)->content->type == CompositeCall)
-                    {
-                        compositeCall_list.push_back(((addNode *)ptr)->content);
-                    }
-                    //add splitjoin{} 
-                    else if (((addNode *)ptr)->content->type == SplitJoin)
-                    {
-                        Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
-                        compositeCall_list.push_back(nd);
-                    }
-                    //add pipeline{}的情况 
-                    else if (((addNode *)ptr)->content->type == Pipeline)
-                    {
-                        Node *nd = unfold->workNodeCopy(((addNode *)ptr)->content);
-                        compositeCall_list.push_back(nd);
-                    }
-                }
-            }*/
         }
         else if (nd->type == IfElse)
         {
@@ -586,43 +527,6 @@ void compositeCallFlow(list<Node *> *stmts)
             
         }else{
             //genrateStmt(nd);todo 是否需要解析，再次解析会重复进行常量传播以及符号表生成
-        }
-    }
-}
-
-
-
-/*
-*   功能：对所有Main composite的composite调用进行实际流边量名的替换
-*   输入参数：gMaincomposite
-*/
-void streamFlow(compositeNode *main)
-{
-    list<Node *> body_stmt = *(main->body->stmt_List);
-    for (auto it : body_stmt)
-    {
-        switch (it->type)
-        {
-        case Binop:
-        {
-            expNode *right = static_cast<binopNode *>(it)->right;
-            if (right->type == CompositeCall)
-            {
-                compositeNode *comp = ((compositeCallNode *)right)->actual_composite;
-                ((compositeCallNode *)right)->actual_composite = unfold->streamReplace(comp,
-                                                                                       ((compositeCallNode *)right)->inputs, ((compositeCallNode *)right)->outputs, 1);
-            }
-            break;
-        }
-        case CompositeCall:
-        {
-            compositeNode *comp = ((compositeCallNode *)it)->actual_composite;
-            ((compositeCallNode *)it)->actual_composite = unfold->streamReplace(comp,
-                                                                                ((compositeCallNode *)it)->inputs, ((compositeCallNode *)it)->outputs, 1);
-            break;
-        }
-        default:
-            break;
         }
     }
 }

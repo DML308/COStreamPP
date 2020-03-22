@@ -277,7 +277,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
 /*
  *  功能：将抽象语法树转为平面图 
  *  输入参数：gMaincomposite
- *  streamFlow：对所有Main composite的composite调用进行实际流边量名的替换
  *  GraphToOperators：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
  *  SetTopNode：设置顶层节点
  *  ResetFlatNodeNames：给所有的图节点重命名
@@ -287,7 +286,6 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
 StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
 {
     ssg = new StaticStreamGraph();
-    //streamFlow(mainComposite);
     debug("--------- 执行GraphToOperators, 逐步构建FlatNode ---------------\n");
 
     //list<Constant*> paramList;
