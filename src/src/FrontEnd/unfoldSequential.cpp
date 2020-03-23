@@ -2301,7 +2301,6 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
         list<Node *> *outputs = new list<Node *>();
         list<Node *> *inputs = new list<Node *>({input});
         list<Node *> *winStmt = new list<Node *>();
-        string inputName = ((idNode *)input) -> name;
         Node *constOne = new constantNode("long long", (long long)1);
         Node *constZero = new constantNode("long long", (long long)0);
         // 输出窗口
@@ -2315,7 +2314,7 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
         }   
         // 输入窗口
         slidingNode *slid = new slidingNode(new list<Node *>({constOne, constOne}));
-        winStmtNode *win = new winStmtNode(inputName, slid);
+        winStmtNode *win = new winStmtNode(((idNode *)input) -> name, slid);
         // work
         list<Node *> *stmts = new list<Node *>();
         // 遍历outputs, 并赋值
@@ -2336,11 +2335,10 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
         res = new operatorNode(outputs, operName, inputs, body);    
     } else {
         string operName = "special_roundrobin";
-        string streamName = "specialDup";
+        string streamName = "specialRound";
         list<Node *> *outputs = new list<Node *>();
         list<Node *> *inputs = new list<Node *>({input});
         list<Node *> *winStmt = new list<Node *>();
-        string inputName = ((idNode *)input) -> name;
         Node *constOne = new constantNode("long long", (long long)1);
         Node *constZero = new constantNode("long long", (long long)0);
         // 输出窗口
@@ -2355,7 +2353,7 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
         // 输入窗口
         Node* count = new constantNode("long long", splitCount);
         slidingNode *slid = new slidingNode(new list<Node *>({count, count}));
-        winStmtNode *win = new winStmtNode(inputName, slid);
+        winStmtNode *win = new winStmtNode(((idNode *)input) -> name, slid);
         // work
         list<Node *> *stmts = new list<Node *>();
         int index = 0;
@@ -2370,7 +2368,6 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
             right->arg_list.push_back(rightIndex);
             Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
             stmts -> push_back(stmt);
-            index++;
         }
         work = new blockNode(stmts);
         winStmt->push_back(win);
