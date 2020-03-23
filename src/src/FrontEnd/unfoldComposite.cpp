@@ -121,7 +121,7 @@ compositeCallNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> 
     assert(input->type == Id);
 
     string param_name = ((idNode *)input)->name;
-    string input_name = runningTop->LookUpStreamSymbol(param_name)->id->name; //查表找到真实的输入流
+    string input_name = param_name; //runningTop->LookUpStreamSymbol(param_name)->id->name; //查表找到真实的输入流
     idNode * real_input = new idNode(input_name);
 
     int len = compositeCall_list.size();
@@ -277,7 +277,7 @@ compositeCallNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> 
 
     assert(output->type == Id);
     string param_name = ((idNode *)output)->name;
-    string output_name = runningTop->LookUpStreamSymbol(param_name)->id->name; //查表找到真实的输入流
+    string output_name = param_name;//runningTop->LookUpStreamSymbol(param_name)->id->name; //查表找到真实的输入流
     idNode *real_output = new idNode(output_name);
 
     int len = compositeCall_list.size();
