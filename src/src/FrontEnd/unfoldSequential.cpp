@@ -756,10 +756,10 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     block2 = new blockNode(stmts2);
     forNode2 = new forNode(forInitJ, (expNode *)forCondJ, (expNode *)forNextJ, block2);
     stmts1->push_back(forNode2);
-    // 取得Out1[j].x
+    // 取得Out1[i].x
     idNode* dOut = new idNode(static_cast<idNode *>(outputs->front())->name);
     dOut->isArray = 1;
-    dOut->arg_list.push_back(id_j);
+    dOut->arg_list.push_back(id_i);
     Node* Out1 = new binopNode((expNode *)dOut, ".", (expNode *)x);
     Node* res = new binopNode((expNode *)Out1, "=", (expNode *)id_temp);
     stmts1->push_back(res);
