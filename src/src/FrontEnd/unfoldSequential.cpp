@@ -977,12 +977,15 @@ Node* UnfoldComposite::makeConv2DKernelBody(layerNode *layer, list<Node *> *inpu
         body = new compBodyNode(param, stmtList);
         return body; 
     */
-
     Node* body = NULL;
-    list<Node *> *stmtList = new list<Node *>();
+    list<Node *> *stmtList = new list<Node *>(), *paramList = new list<Node *>();
+    Node *kernelIndex = new idNode("kernelIndex");
+    ((idNode *)kernelIndex) -> valType = "int";
+    paramList -> push_back(kernelIndex);
+    paramNode *param = new paramNode(paramList);
     operatorNode *oper  = makeConv2DKernelOper(layer, inputs_id, outputs_id/*, kernelIndex*/);
     stmtList -> push_back(oper);
-    body = new compBodyNode(NULL, stmtList);
+    body = new compBodyNode(param, stmtList);
     return body;
 }
 // 生成名为"conv2DKernel_" + level 的卷积层计算节点 单输入单输出

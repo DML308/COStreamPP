@@ -122,7 +122,12 @@ void StaticStreamGraph::SetFlatNodesWeights()
                 assert(it->type == WindowStmt);
                 string param_eageName = ((winStmtNode *)it)->winName;
                 inOutdeclNode *real_stream = compositecall_runningTop->LookUpStreamSymbol(param_eageName);
-                string edgeName = real_stream->id->name;
+                string edgeName;
+                if(real_stream){
+                    edgeName = real_stream->id->name;
+                }else{
+                    edgeName = param_eageName;
+                }
                 
                 auto pos = mapEdge2UpFlatNode.find(edgeName);
                 assert(pos != mapEdge2UpFlatNode.end());
