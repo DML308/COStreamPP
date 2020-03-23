@@ -323,7 +323,7 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
  }
 compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer) {
     string compName = MakeCompositeName("B" + layer->layerName + to_string(layer-> level));
-    Node *inputDecl = makeStream("in", "double");
+    Node *inputDecl = makeStream("in0", "double");
     Node *outputDecl = makeStream("out", "double");
     list<Node *> *inputs_decl = new list<Node *>({inputDecl});
     list<Node *> *outputs_decl = new list<Node *>({outputDecl});
@@ -2946,10 +2946,70 @@ operatorNode* UnfoldComposite::makeActivationOperator(activationLayerNode *layer
 Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     list<Node *> *stmts = new list<Node *>();
     Node *work =  NULL;
-
+    list<Node *> *stmtList = new list<Node *>();
     Node *size = new constantNode("long long", layer->count);
+    constantNode *const_zero = new constantNode("long long", (long long)0);
+    constantNode *const_one = new constantNode("long long", (long long)1);
+
+    primNode *primInt = new primNode("int"),
+             *primDouble = new primNode("double");
+    Node *idI = new idNode("i"),
+         *idX = new idNode("x");
+    Node *declInt = new declareNode(primInt, (idNode *)idI);
+    
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)const_zero);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)size);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     string type = ((constantNode *)(layer->arg_list->front())) -> sval;
-    cout << "activation type = " << type << endl; 
+
+    Node *output0 = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+         *output1 = new idNode(static_cast<idNode *>(outputs -> back()) -> name),
+         *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
+    ((idNode *)output0) -> isArray = 1;
+    ((idNode *)output1) -> isArray = 1;
+    ((idNode *)input) -> isArray = 1;
+    ((idNode *)output0) -> arg_list.push_back(idI);
+    ((idNode *)output1) -> arg_list.push_back(idI);
+    ((idNode *)input) -> arg_list.push_back(idI);
+    Node *inputX = new binopNode((expNode *)input, ".", (expNode *)idX);
+    Node *output0X = new binopNode((expNode *)output0, ".", (expNode *)idX);
+    Node *output1X = new binopNode((expNode *)output1, ".", (expNode *)idX);
+
+    if (type.compare("relu") == 0) {
+        /*  relu: max(x, 0)
+            for (i = 0; i < size; i++) {
+                if (in[i].x > 0) {
+                    out0[i].x = in[i].x;
+                    out1[i].x = 1;
+                } else {
+                    out0[i].x = 0;
+                    out1[i].x = 0;
+                }
+            }
+        */
+        Node *ifExp = new binopNode((expNode *)inputX, ">", (expNode *)const_zero);
+        Node *assign0 = new binopNode((expNode *)output0X, "=", (expNode *)inputX);
+        Node *assign1 = new binopNode((expNode *)output1X, "=", (expNode *)const_one);
+        Node *assign2 = new binopNode((expNode *)output0X, "=", (expNode *)const_zero);
+        Node *assign3 = new binopNode((expNode *)output1X, "=", (expNode *)const_zero);
+
+        list<Node *> *ifStmts = new list<Node *>({assign0}),
+                     *elseStmts = new list<Node *>({assign2});
+
+        if (layer -> nextLayer != NULL) {
+            ifStmts->push_back(assign1);
+            elseStmts->push_back(assign3);
+        }
+        Node *ifBlock = new blockNode(ifStmts),
+             *elseBlock = new blockNode(elseStmts);
+        Node *ifElse = new ifElseNode((expNode *)ifExp, ifBlock, elseBlock);
+        list<Node *> *forStmts = new list<Node *>({ifElse});
+        Node *forBlock = new blockNode(forStmts);
+        forNode *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forBlock);
+        stmtList->push_back(forNode0);
+    }
+    stmtList->push_front(declInt);
+    work = new blockNode(stmtList);
     return work;
 }
 
@@ -2982,8 +3042,46 @@ operatorNode* UnfoldComposite::makeDActivationOperator(activationLayerNode *laye
 Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
     list<Node *> *stmts = new list<Node *>();
     Node *work =  NULL;
+    list<Node *> *stmtList = new list<Node *>();
     Node *size = new constantNode("long long", layer->count);
+    constantNode *const_zero = new constantNode("long long", (long long)0);
+    constantNode *const_one = new constantNode("long long", (long long)1);
+
+    primNode *primInt = new primNode("int"),
+             *primDouble = new primNode("double");
+    Node *idI = new idNode("i"),
+         *idX = new idNode("x");
+    Node *declInt = new declareNode(primInt, (idNode *)idI);
+    
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)const_zero);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)size);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     string type = ((constantNode *)(layer->arg_list->front())) -> sval;
-    cout << "activation type = " << type << endl; 
+
+    Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
+         *input0 = new idNode(static_cast<idNode *>(inputs -> front()) -> name),
+         *input1 = new idNode(static_cast<idNode *>(inputs -> back()) -> name);
+    ((idNode *)output) -> isArray = 1;
+    ((idNode *)input0) -> isArray = 1;
+    ((idNode *)input1) -> isArray = 1;
+    ((idNode *)output) -> arg_list.push_back(idI);
+    ((idNode *)input0) -> arg_list.push_back(idI);
+    ((idNode *)input1) -> arg_list.push_back(idI);
+    Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
+    Node *input0X = new binopNode((expNode *)input0, ".", (expNode *)idX);
+    Node *input1X = new binopNode((expNode *)input1, ".", (expNode *)idX);
+
+    if (type.compare("relu") == 0) {
+        /*  dRelu: max(x, 0)
+            for (i = 0; i < size; i++) {
+                out[i].x = in0[i].x * in1[i].x;
+            }
+        */
+        Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)(new binopNode((expNode *)input0X, "*", (expNode *)input1X)));
+        forNode *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, assign);
+        stmtList->push_back(forNode0);
+    }
+    stmtList->push_front(declInt);
+    work = new blockNode(stmtList);
     return work;
 }
