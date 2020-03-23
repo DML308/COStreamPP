@@ -425,7 +425,10 @@ string SymbolTable::toParamValueString(){
     unordered_map<string,Variable*>::iterator it;
     for(it=variableTable.begin();it!=variableTable.end();it++){
         Variable *variable = (Variable *)(it->second);
-        string param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
+        string param_str;
+        if(variable->value){
+            param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
+        }
         params_str += param_str;
     }
     return params_str;

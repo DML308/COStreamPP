@@ -348,15 +348,15 @@ if(op.compare("+") == 0){
             return new Constant("long",left->lval%right->ival);
         }
 
-        if(left->type.compare("double") == 0 || right->type.compare("double")){
+        if(left->type.compare("double") == 0 || right->type.compare("double") == 0){
              cout << "浮点数无法取余";
              exit(-1);
         }
-        if(left->type.compare("float") == 0 || right->type.compare("float")){
+        if(left->type.compare("float") == 0 || right->type.compare("float") == 0){
             cout << "浮点数无法取余";
             exit(-1);
         }
-        if(left->type.compare("string") == 0 || right->type.compare("string")){
+        if(left->type.compare("string") == 0 || right->type.compare("string") == 0){
             cout << "字符串无法取余";
             exit(-1);
         }
