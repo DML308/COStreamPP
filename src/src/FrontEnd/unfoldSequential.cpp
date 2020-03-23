@@ -1261,7 +1261,7 @@ compositeNode* UnfoldComposite::makeDConv2DLayer(layerNode *layer) {
     for(auto it : *outputs_decl){
         outputs_id->push_back(((inOutdeclNode *)it)->id);
     }
-    for(auto it : *outputs_decl){
+    for(auto it : *inputs_decl){
         inputs_id->push_back(((inOutdeclNode *)it)->id);
     }
 
