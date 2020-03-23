@@ -2218,12 +2218,14 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         for(auto it : *inputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name; //composite中的参数名
             string real_name;
-            if(call->isOriginal){
-                inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name); //compositecall传入的参数名
+            
+            inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name); //compositecall传入的参数名
+            if(real_stream){
                 real_name = real_stream->id->name;
             }else{
                 real_name = ((idNode *)it)->name;
             }
+                
             (top->LookUpStreamSymbol(comp_name))->id->name = real_name;
             comp_it++;
         }
@@ -2233,8 +2235,8 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         for(auto it : *outputs){
             string comp_name = (((inOutdeclNode *)(*comp_it))->id)->name;
             string real_name;
-            if(call->isOriginal){
-                inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name); //compositecall传入的参数名
+            inOutdeclNode *real_stream = runningTop->LookUpStreamSymbol(((idNode *)it)->name); //compositecall传入的参数名
+            if(real_stream){
                 real_name = real_stream->id->name;
             }else{
                 real_name = ((idNode *)it)->name;
