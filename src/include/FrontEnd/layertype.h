@@ -4,6 +4,7 @@ typedef enum {
     Dense,
     Conv2D,
     MaxPooling2D,
-    AveragePooling2D
+    AveragePooling2D,
+    Activation
 } LayerType;
 #endif

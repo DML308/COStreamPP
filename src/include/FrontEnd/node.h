@@ -1195,4 +1195,23 @@ class denseLayerNode : public layerNode
     }
     void init(sequentialNode* sequential); // 初始化rows
 };
+
+class activationLayerNode : public layerNode
+{
+  public:
+    long long count; // 輸入输出
+    activationLayerNode(string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = Activation;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->count = 1;
+      this->level = 0;
+    }
+    void init(sequentialNode* sequential); // 初始化inputSize
+};
 #endif

@@ -86,9 +86,10 @@ FileReader  { return FILEREADER; }
 FileWriter  { return FILEWRITER; }
 add         { return ADD; }
 Dense       { return DENSE; }
-Conv2d      { return CONV2D; }
+Conv2D      { return CONV2D; }
 MaxPooling2D { return MAXPOOLING2D; }
 AveragePooling2D { return AVERAGEPOOLING2D; }
+Activation  { return ACTIVATION; }
 
 param        { return PARAM; }
 init         { return INIT; }

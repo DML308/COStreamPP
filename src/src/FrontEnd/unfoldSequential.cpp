@@ -68,6 +68,9 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             case AveragePooling2D: {
                 ((averagePooling2DLayerNode *)*iter)->init(globalSequential);
             }
+            case Activation: {
+                ((activationLayerNode *)*iter)->init(globalSequential);
+            }
             default:
                 break;
             }
@@ -304,6 +307,11 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
             comp_stmt_list->push_back(call);
             break;
         }
+        case Activation: {
+            Node *layerOper = makeActivationOperator((activationLayerNode *)layer, inputs_id, outputs_id);
+            comp_stmt_list->push_back(layerOper);
+            break;
+        }
         default:
             break;
     }
@@ -362,6 +370,11 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer) {
             comp_stmt_list->push_back(call);
             break;
         }
+        case Activation: {
+            Node *layerOper = makeDActivationOperator((activationLayerNode *)layer, inputs_id, outputs_id);
+            comp_stmt_list->push_back(layerOper);
+            break;
+        }
         default:
             break;
     }
@@ -381,9 +394,8 @@ operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> 
     list<Node *> *win_stmt = new list<Node *>();
     
     // 添加输入窗口
-    auto iter = inputs->front();
     slidingNode *slid = new slidingNode(new list<Node *>({rows, rows}));
-    winStmtNode *win1 = new winStmtNode(((idNode *)iter)->name, slid);
+    winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
     win_stmt->push_back(win1);
     // 添加输出窗口
     tumblingNode *tumb = new tumblingNode(new list<Node *>({cols}));
@@ -394,16 +406,11 @@ operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> 
     window = new windowNode(win_stmt);
     init = makeDenseInit(layer);
     work = makeDenseWork(layer, inputs, outputs);
-    // statement.list, operator.selfdefine.body.init, operator.selfdefine.body.work, operator.selfdefine.body.window.list
     body = new operBodyNode(NULL, init, work, window);
 
     return new operatorNode(outputs, operName, inputs, body);
 }
-operatorNode* UnfoldComposite::makeActivationOperator(layerNode* layer, list<Node *> *inputs, list<Node *> *outputs) {
-    string operName;
-    operBodyNode *operBody;
-    return new operatorNode(outputs, operName, inputs, operBody);
-}
+
 // 全局变量初始化Weight
 Node* UnfoldComposite::makeDenseInit(layerNode *layer) {
     list<Node *> *stmts = new list<Node *>();
@@ -564,12 +571,40 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     // window
     list<Node *> *winStmt = new list<Node *>();
     Node* num = NULL;
-    if (layer -> layerName == "dense") {
-        num = layer->arg_list->front();
-    } else if (layer -> layerName == "conv2D") {
-        auto outputSize = ((conv2DLayerNode *)layer) -> outputFeatureMapSize;
-        long long numVal = ((conv2DLayerNode *)layer) -> filters * outputSize -> at(0) * outputSize -> at(1);
-        num = new constantNode("long long", numVal);
+    switch (layer -> layerType)
+    {   
+        case Dense: {
+            num = layer->arg_list->front();
+            break;
+        }
+        case Conv2D: {
+            auto outputSize = ((conv2DLayerNode *)layer) -> outputFeatureMapSize;
+            long long numVal = ((conv2DLayerNode *)layer) -> filters * outputSize -> at(0) * outputSize -> at(1);
+            num = new constantNode("long long", numVal);
+            break;
+        }
+        case Activation: {
+            num = new constantNode("long long", ((activationLayerNode *)layer)->count);
+            break;
+        }
+        case MaxPooling2D: {
+            long long temp = 1;
+            for (auto iter : *(((maxPooling2DLayerNode *)layer)->outputPooledSize)) {
+                temp*=iter;
+            }
+            num = new constantNode("long long", temp);
+            break;
+        }
+        case AveragePooling2D: {
+            long long temp = 1;
+            for (auto iter : *(((averagePooling2DLayerNode *)layer)->outputPooledSize)) {
+                temp*=iter;
+            }
+            num = new constantNode("long long", temp);
+            break;
+        }
+        default:
+            break;
     }
     
     slidingNode *slid = new slidingNode(new list<Node *>({num, num}));
@@ -2881,4 +2916,74 @@ operatorNode* UnfoldComposite::makeDAveragePooling2DKernelOper(averagePooling2DL
     work = makeDAveragePooling2DKernelOperWork(layer, inputs_id, outputs_id);
     body = new operBodyNode(bodyStmtList, init, work, window);
     return new operatorNode(outputs_id, operName, inputs_id, body);
+}
+
+operatorNode* UnfoldComposite::makeActivationOperator(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    string operName = "activation";
+    operBodyNode *body = NULL;
+    Node *init = NULL, *work = NULL;
+    windowNode *window = NULL;
+
+    Node *sizeNode = new constantNode("long long", layer->count);
+
+    list<Node *> *win_stmt = new list<Node *>();
+    // 添加输入窗口
+    slidingNode *slid = new slidingNode(new list<Node *>({sizeNode, sizeNode}));
+    winStmtNode *win1 = new winStmtNode(((idNode *)(inputs->front()))->name, slid);
+    win_stmt->push_back(win1);
+    // 添加输出窗口
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({sizeNode}));
+    for(auto output:*outputs) {
+        winStmtNode *win = new winStmtNode(((idNode *)output)->name, tumb);
+        win_stmt->push_back(win);
+    }
+    window = new windowNode(win_stmt);
+    work = makeActivationOperWork(layer, inputs, outputs);
+    body = new operBodyNode(NULL, NULL, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+
+Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    list<Node *> *stmts = new list<Node *>();
+    Node *work =  NULL;
+
+    Node *size = new constantNode("long long", layer->count);
+    string type = ((constantNode *)(layer->arg_list->front())) -> sval;
+    cout << "activation type = " << type << endl; 
+    return work;
+}
+
+operatorNode* UnfoldComposite::makeDActivationOperator(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    string operName = "dActivation";
+    operBodyNode *body = NULL;
+    Node *init = NULL, *work = NULL;
+    windowNode *window = NULL;
+    Node *size = new constantNode("long long", layer->count);
+
+    list<Node *> *win_stmt = new list<Node *>();
+    // 添加输入窗口
+    slidingNode *slid = new slidingNode(new list<Node *>({size, size}));
+    for(auto input:*inputs) {
+        winStmtNode *win = new winStmtNode(((idNode *)input)->name, slid);
+        win_stmt->push_back(win);
+    }
+    // 添加输出窗口
+    tumblingNode *tumb = new tumblingNode(new list<Node *>({size}));
+    for(auto output:*outputs) {
+        winStmtNode *win = new winStmtNode(((idNode *)output)->name, tumb);
+        win_stmt->push_back(win);
+    }
+    window = new windowNode(win_stmt);
+    work = makeDActivationOperWork(layer, inputs, outputs);
+    body = new operBodyNode(NULL, NULL, work, window);
+    return new operatorNode(outputs, operName, inputs, body);
+}
+
+Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs) {
+    list<Node *> *stmts = new list<Node *>();
+    Node *work =  NULL;
+    Node *size = new constantNode("long long", layer->count);
+    string type = ((constantNode *)(layer->arg_list->front())) -> sval;
+    cout << "activation type = " << type << endl; 
+    return work;
 }

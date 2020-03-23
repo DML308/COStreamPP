@@ -35,7 +35,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token SEQUENTIAL DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D
+%token SEQUENTIAL DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D ACTIVATION
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -84,7 +84,7 @@ extern void yyerror (const char *msg);
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
 /* 语法分析器自己的结构 6. 深度学习扩展文法*/
-%type<str> DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D
+%type<str> DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D ACTIVATION
 %type<node> operator.layer operator.sequential.add
 %type<list> sequential.statement.list
 %type<node> tuple
@@ -481,7 +481,7 @@ operator.layer:
                                                                 debug("operator.layer ::=CONV2 ( argument.expression.list );\n");
                                                                 layerNode* layer = new conv2DLayerNode("conv2D", $3, @1);
                                                                 $$ = layer;
-                                                                debug("Create conv2d layer!\n");  
+                                                                debug("Create conv2D layer!\n");
                                                           }
           | MAXPOOLING2D '(' argument.expression.list ')' ';' {
                                                                 line("Line%-4d", @1.first_line);
@@ -496,6 +496,13 @@ operator.layer:
                                                                 layerNode* layer = new averagePooling2DLayerNode("averagePooling2D", $3, @1);
                                                                 $$ = layer;
                                                                 debug("Create averagePooling2D layer!\n");
+                                                            }
+          | ACTIVATION '(' argument.expression.list ')' ';' {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=ACTIVATION ( argument.expression.list );\n");
+                                                                layerNode* layer = new activationLayerNode("activation", $3, @1);
+                                                                $$ = layer;
+                                                                debug("Create activation layer!\n");
                                                             }
         /* other layer, for example conv2d */
         ;
