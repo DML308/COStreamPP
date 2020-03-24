@@ -133,7 +133,6 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     list<Node *> *y_stream = new list<Node *>({((inOutdeclNode *)(decl_inputs->back()))->id});
     // 声明stream stream<double x>...
     idNode *streamDeclId = new idNode("x");
-    // top->put("x", streamDeclId); //???
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
     Node *streamDecl = new strdclNode(streamDeclId);
