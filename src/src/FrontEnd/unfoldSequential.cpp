@@ -561,21 +561,12 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     stmts1->push_back(forNode2);
 
     // 取得Out1[j].x, Out2[j].x
-    idNode* output1 = new idNode(static_cast<idNode *>(outputs->front())->name);
-    output1->isArray = 1;
-    output1->arg_list.push_back(id_j);
-    Node* out1X = new binopNode((expNode *)output1, ".", (expNode *)x);
-    Node* res1 = new binopNode((expNode *)out1X, "=", (expNode *)id_temp);
-    stmts1->push_back(res1);
-    idNode* output2 = new idNode(static_cast<idNode *>(outputs->back())->name);
-    output2->isArray = 1;
-    output2->arg_list.push_back(id_j);
-    Node* out2X = new binopNode((expNode *)output2, ".", (expNode *)x);
-    Node* res2 = new binopNode((expNode *)out2X, "=", (expNode *)id_temp);
-    cout << "dense层的outputs" << outputs->size() << endl;
-    if (layer -> nextLayer != NULL) {
-        stmts1->push_back(res2);
-    }
+    idNode* output = new idNode(static_cast<idNode *>(outputs->front())->name);
+    output->isArray = 1;
+    output->arg_list.push_back(id_j);
+    Node* outX = new binopNode((expNode *)output, ".", (expNode *)x);
+    Node* res = new binopNode((expNode *)outX, "=", (expNode *)id_temp);
+    stmts1->push_back(res);
     Node* block1 = new blockNode(stmts1);
     forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)next_j, block1);
     stmts->push_back(forNode1);
@@ -829,8 +820,8 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     primNode *prim = new primNode("double");
     declareNode *declLr = new declareNode(primDouble, idLr);
     stmts->push_back(declLr);
-    // weight_level[i][j] = weight_level[i][j] + lr * dIn[j].x * in[i].x;
-    Node * change = new binopNode((expNode *)weightId, "=", (expNode *)(new binopNode((expNode *) weightId, "+", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)(new binopNode((expNode *) inX, "*", (expNode *) idLr)))))));
+    Node *dError = new binopNode((expNode *)idLr, "*", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)inX)));
+    Node *change = new binopNode((expNode *)weightId, "-=", (expNode *)dError);
     stmts4->push_back(change);
     block4 = new blockNode(stmts4);
     forNode4 = new forNode(forInitJ, (expNode *)forCondJ, (expNode *)forNextJ, block4);
