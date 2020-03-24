@@ -12,7 +12,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     compositeCallFlow(node->body_stmts); // 将通过add加入的层,依次push到compositeCall_list中
     vector<compositeCallNode *> comCallList; // 用于存储展开后的compositeCallNode
     compositeNode *sequential = NULL;
-    string streamName = "Sstream";
+    // string streamName = "Sstream";
     string comName = MakeCompositeName("sequential");
     list<Node *> *inputs = node->inputs;
     list<Node *> *outputs = node->outputs;
@@ -139,8 +139,8 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     Node *streamDecl = new strdclNode(streamDeclId);
    
     idNode *inputCopy1_id,*inputCopy2_id;
-    inputCopy1_id = new idNode("sequential_input_copy_1");
-    inputCopy2_id = new idNode("sequential_input_copy_2");
+    inputCopy1_id = new idNode("input_copy_1");
+    inputCopy2_id = new idNode("input_copy_2");
     ((strdclNode*)streamDecl)->id_list.push_back(inputCopy1_id);
     ((strdclNode*)streamDecl)->id_list.push_back(inputCopy2_id);
     list<Node *> *temp_call_inputs, *temp_call_outputs;
@@ -162,9 +162,9 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         list<Node *> *call_inputs, *call_outputs;
         // string name = ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
         if (*iter != compositeCall_list.back()) {
-            string namePrefix = streamName + "_F" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
+            string namePrefix = "F" + to_string(((layerNode *)*iter)->level) + "_";
             // 正向传递给下一层的stream名称
-            string tempName1 = namePrefix + "F" + ((layerNode *)*iter)->nextLayer->layerName + to_string(((layerNode *)*iter)->nextLayer->level);
+            string tempName1 = namePrefix + "F" + to_string(((layerNode *)*iter)->nextLayer->level);
             idNode *id1 = new idNode(tempName1);
             // 将数据流声明加入
             ((strdclNode*)streamDecl)->id_list.push_back(id1);     
@@ -173,7 +173,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 call_outputs = new list<Node *>({id1});
             } else {
                 // 传递给反向传播中本层的stream名称
-                string tempName2 = namePrefix + "B" + ((layerNode *)*iter)->nextLayer->layerName + to_string(((layerNode *)*iter)->nextLayer->level);
+                string tempName2 = namePrefix + "B" + to_string(((layerNode *)*iter)->nextLayer->level);
                 idNode *id2 = new idNode(tempName2);
                 ((strdclNode*)streamDecl)->id_list.push_back(id2);
                 call_outputs = new list<Node *>({id1, id2});
@@ -188,7 +188,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 * 测试过程
                 只有正向传播的时候, output为输出：call_outputs = new list<Node *>({outputs->front()});
             */
-            string tempName =  streamName  + "_F" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_Loss";
+            string tempName = "F" + to_string(((layerNode *)*iter)->level) + "_Loss";
             idNode *id = new idNode(tempName);
             call_inputs = new list<Node *>({temp_stream->front()});
             call_outputs = new list<Node *>({id});
@@ -204,7 +204,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     // dl/dy的输入为y, y`
     // 展开反向传播composite, 最后一层的composite的输入为实际预测和期望预测的输入流 也即temp_stream和 与y_stream
     list<Node *> *call_inputs= new list<Node *>({temp_stream->front(), y_stream->front()});
-    string lossStreamName = streamName + "_Loss";
+    string lossStreamName = "_Loss";
     idNode *lossStreamId = new idNode(lossStreamName);
     ((strdclNode*)streamDecl)->id_list.push_back(lossStreamId);
     list<Node *> *call_outputs = new list<Node *>({lossStreamId});
@@ -225,9 +225,8 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             temp_stream_list->pop_back();
         }
         if (*iter != compositeCall_list.front()) {
-            string name = "B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
-            string namePrefix = "B" + streamName + "_" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
-            string tempName =  namePrefix + ((layerNode *)*iter)->prevLayer->layerName + to_string(((layerNode *)*iter)->prevLayer->level);
+            string namePrefix = "B" + ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level) + "_";
+            string tempName =  namePrefix + "B" + to_string(((layerNode *)*iter)->prevLayer->level);
             idNode *id = new idNode(tempName);
             call_outputs = new list<Node *>({id}); 
         } else {
