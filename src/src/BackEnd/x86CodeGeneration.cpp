@@ -288,7 +288,9 @@ void X86CodeGeneration::CGactors()
 
         //写入composite传入的参数 此处为声明，在init中赋值
         running_top = flatNodes_[i]->compositecall_runnningtop;
-        string param = running_top->toParamString();
+        SymbolTable *top = FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
+        //for(auto it : running_top->)
+        string param = running_top->toParamString(top);
         buf << param;
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
         CGactorsStmts(buf, &stmts);
@@ -462,7 +464,7 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
 {
     buf << "\tvoid initVarAndState() {\n";
     //进行param的初始化
-    string param = running_top->toParamValueString();
+    string param = running_top->toParamValueString(FindRightSymbolTable(stmts->front()->loc->first_line));
     buf<<param;
     if (stmts != NULL)
     {

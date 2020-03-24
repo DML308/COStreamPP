@@ -409,27 +409,32 @@ constantNode* SymbolTable::fromVariableToConstant(Variable *value){
       return NULL;
     }
 
-string SymbolTable::toParamString(){
+string SymbolTable::toParamString(SymbolTable *table){
     string params_str = "";
     unordered_map<string,Variable*>::iterator it;
     for(it=variableTable.begin();it!=variableTable.end();it++){
-        Variable *variable = (Variable *)(it->second);
-        string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
-        params_str += param_str;
+        if(!table->LookupIdentifySymbol(it->first)){
+            Variable *variable = (Variable *)(it->second);
+            string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
+            params_str += param_str;
+        }
+        
     }
     return params_str;
 }
 
-string SymbolTable::toParamValueString(){
+string SymbolTable::toParamValueString(SymbolTable *table){
     string params_str = "";
     unordered_map<string,Variable*>::iterator it;
     for(it=variableTable.begin();it!=variableTable.end();it++){
+        if(!table->LookupIdentifySymbol(it->first)){
         Variable *variable = (Variable *)(it->second);
         string param_str;
         if(variable->value){
             param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
         }
         params_str += param_str;
+        }
     }
     return params_str;
 }
