@@ -1,5 +1,7 @@
 #include "x86CodeGenaration.h"
 SymbolTable *running_top;
+extern SymbolTable* top;
+extern SymbolTable S;
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -288,9 +290,11 @@ void X86CodeGeneration::CGactors()
 
         //写入composite传入的参数 此处为声明，在init中赋值
         running_top = flatNodes_[i]->compositecall_runnningtop;
-        SymbolTable *top = FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
+        SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
+        top = opt_top;
+        generatorOperatorNode(flatNodes_[i]->contents);
         //for(auto it : running_top->)
-        string param = running_top->toParamString(top);
+        string param = running_top->toParamString(opt_top);
         buf << param;
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
         CGactorsStmts(buf, &stmts);
@@ -464,7 +468,13 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
 {
     buf << "\tvoid initVarAndState() {\n";
     //进行param的初始化
-    string param = running_top->toParamValueString(FindRightSymbolTable(stmts->front()->loc->first_line));
+          
+    SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
+    top = opt_top;
+    for(auto it = stmts->begin();it != stmts->end();it++){
+        genrateStmt(*it);
+    }
+    string param = running_top->toParamValueString(opt_top);
     buf<<param;
     if (stmts != NULL)
     {

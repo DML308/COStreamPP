@@ -32,7 +32,7 @@ SchedulerSSG *SSSG = NULL;
 bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常量传播 在静态数据流图生成过程中借助执行上下文进行常量传播
 
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
-
+list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
 //===----------------------------------------------------------------------===//
 // Main
 //===----------------------------------------------------------------------===//

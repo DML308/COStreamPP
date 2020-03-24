@@ -1,10 +1,10 @@
 #include "symbol.h"
 int Level=0;
 int current_version[MAX_SCOPE_DEPTH]={0};
-list<SymbolTable *> symbol_tables;
+//list<SymbolTable *> symbol_tables;
 bool isSorted = false;
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
-
+extern list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
 SymbolTable::SymbolTable(SymbolTable *p,YYLTYPE *loc){
     this->loc = loc;
     prev = p;
@@ -506,7 +506,7 @@ int getLastSmaller(int target,list<SymbolTable *> symbol_tables) {
    return right;
 }
 
-list<SymbolTable *> first_symbol_tables(symbol_tables.size()),last_symbol_tables(symbol_tables.size());
+//list<SymbolTable *> first_symbol_tables(symbol_tables.size()),last_symbol_tables(symbol_tables.size());
 
 bool compareFirst(SymbolTable *a,SymbolTable *b){
     return a->loc->first_line - b->loc->first_line;
@@ -517,6 +517,8 @@ bool compareLast(SymbolTable *a,SymbolTable *b){
 
 SymbolTable* FindRightSymbolTable(int target) {
     if(!isSorted){
+        first_symbol_tables.resize(symbol_tables.size());
+        last_symbol_tables.resize(symbol_tables.size());
         copy(symbol_tables.begin(),symbol_tables.end(),last_symbol_tables.begin()); 
         copy(symbol_tables.begin(),symbol_tables.end(),first_symbol_tables.begin()); 
         first_symbol_tables.sort(compareFirst);

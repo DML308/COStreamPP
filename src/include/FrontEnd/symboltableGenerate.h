@@ -14,3 +14,5 @@ list<Constant *> generateStreamList(list<Node *> *stream_List,int target);
 list<Constant *> generateStreamList(list<Node *> *stream_List,SymbolTable *s);
 
 void printSymbolTable(SymbolTable *symbol_tables[][MAX_SCOPE_DEPTH]);
+void generatorOperatorNode(operatorNode * optNode);
+void genrateStmt(Node *stmt);
