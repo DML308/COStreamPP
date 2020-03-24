@@ -653,9 +653,11 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
     compositeCallNode *splitOperator = NULL, *joinOperator = NULL;
     /* arg_list表示split roundrobin(size);的size参数列表 */
     expNode *exp = ((duplicateNode *)(node->split->dup_round))->exp;
-    list<Node *> *arg_list = new list<Node*>();
-    arg_list->push_back(exp);
     
+    list<Node *> *arg_list = new list<Node*>();
+    if(exp){
+        arg_list->push_back(exp);
+    }
     list<Node *> *inputs_split = node->inputs;
     list<Node *> *outputs = node->outputs;
     list<Node *> *inputs_join = new list<Node *>();
