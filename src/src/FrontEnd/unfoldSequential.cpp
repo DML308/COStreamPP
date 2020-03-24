@@ -950,7 +950,7 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
          *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
     ((idNode *)output) -> isArray = 1;
     ((idNode *)input) -> isArray = 1;
-    // 繼續 檢查???
+    // 计算索引in[m*strides0+i][n*strides1+j][d]
     Node *stepY = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)strideDim0)), "+", (expNode *)idI)));
     Node *offsetY =  new binopNode((expNode *)stepY, "*", (expNode *)(new binopNode((expNode *)inputDim1, "*", (expNode *)kernelDepth)));
     Node *stepX = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)strideDim1)), "+", (expNode *)idJ)));
