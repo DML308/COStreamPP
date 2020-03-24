@@ -1644,6 +1644,7 @@ Constant* getOperationResult(Node* exp){
         break;
     }
     default:
+        return NULL;
         break;
     }
 }

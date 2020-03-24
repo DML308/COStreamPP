@@ -17,15 +17,17 @@ composite Main() {
     };
     Out = sequential (In, Y) (784) {
         add Dense(200);
+        add Activation("relu");
         add Dense(100);
         add Dense(10);
+        add Activation("relu");
     };
     sink(Out) {
         work {
             print(Out[0].x);
         }
         window{
-            Out sliding(10, 10);
+            Out sliding(784, 784);
         }
     };
 }

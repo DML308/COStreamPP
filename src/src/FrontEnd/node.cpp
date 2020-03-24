@@ -618,6 +618,9 @@ vector<long long>* layerNode::getInputSize(sequentialNode *sequential) {
             case AveragePooling2D: {
                 return ((averagePooling2DLayerNode *)prevLayer) -> outputPooledSize;
             }
+            case Activation: {
+                return ((activationLayerNode *)prevLayer) -> inputSize;
+            }
             default:
                 return NULL;
         }
@@ -680,4 +683,11 @@ void averagePooling2DLayerNode::init(sequentialNode *sequential) {
         this->outputPooledSize->push_back(inputSize->at(i) / this->pool_size);
     }
     this->outputPooledSize->push_back(inputSize->back());
+}
+
+void activationLayerNode::init(sequentialNode *sequential) {
+    this -> inputSize = this -> getInputSize(sequential);
+    for (auto iter : *(this -> inputSize)) {
+        this->count *= iter;
+    }
 }
