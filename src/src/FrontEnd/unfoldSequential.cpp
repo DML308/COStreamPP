@@ -3007,6 +3007,35 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         Node *forBlock = new blockNode(forStmts);
         forNode *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forBlock);
         stmtList->push_back(forNode0);
+    } else if (type.compare("sigmoid") == 0){
+        /*  sigmoid: res = 1 / (1 + exp(-x))
+            sigmoid' : res * (1 - res)
+            for (i = 0; i < size; i++) {
+                res = 1 / ( 1 + exp(-in[i].x));
+                out0[i].x = res;
+                out1[i].x = res * (1 - res);
+            }
+        */
+        Node *idRes = new idNode("res");
+        Node *declDouble = new declareNode(primDouble, (idNode *)idRes);
+        stmtList->push_back(declDouble);
+        Node *minusInputX = new unaryNode("-", (expNode *)inputX);
+        Node *expCall = new callNode("exp", new list<Node *>{minusInputX});
+        Node *middleRes = new parenNode((expNode *)(new binopNode((expNode *)const_one, "+", (expNode *)expCall)));
+        Node *resExp = new binopNode((expNode *)const_one, "/", (expNode *)(middleRes));
+        // Node *resExp = const_zero;
+        Node *assignRes = new binopNode((expNode *)idRes, "=", (expNode *)resExp);
+        Node *assignOut0 = new binopNode((expNode *)output0X, "=", (expNode *)idRes);
+        Node *errorExp = new binopNode((expNode *)idRes, "*", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)const_one, "-", (expNode *)idRes)))));
+        Node *assignOut1 = new binopNode((expNode *)output1X, "=", (expNode *)errorExp);
+
+        list<Node *> *forStmts = new list<Node *>({assignRes, assignOut0});
+        if (layer -> nextLayer != NULL) {
+            forStmts -> push_back(assignOut1);
+        }
+        Node *forBlock = new blockNode(forStmts);
+        Node *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forBlock);
+        stmtList->push_back(forNode0);
     }
     stmtList->push_front(declInt);
     work = new blockNode(stmtList);
@@ -3071,7 +3100,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
     Node *input0X = new binopNode((expNode *)input0, ".", (expNode *)idX);
     Node *input1X = new binopNode((expNode *)input1, ".", (expNode *)idX);
 
-    if (type.compare("relu") == 0) {
+    if (type.compare("relu") == 0 || type.compare("sigmoid") == 0) {
         /*  dRelu: max(x, 0)
             for (i = 0; i < size; i++) {
                 out[i].x = in0[i].x * in1[i].x;

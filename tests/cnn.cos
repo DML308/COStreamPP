@@ -21,7 +21,7 @@ composite Main() {
         add Activation("relu");
         add Conv2D(5, (2, 2), (1, 1), (0, 0), 'relu', false);
         add Dense(10);
-        add Activation("relu");
+        add Activation("sigmoid");
     };
     sink(Out) {
         work {
