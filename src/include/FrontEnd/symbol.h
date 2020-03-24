@@ -209,9 +209,9 @@ class SymbolTable
 
     void InsertParamSymbol(Variable *variable);//√
     
-    string toParamString();
+    string toParamString(SymbolTable *opt_table);
 
-    string toParamValueString();
+    string toParamValueString(SymbolTable *opt_table);
 
     void printSymbolTables();
     
