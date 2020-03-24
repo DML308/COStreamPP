@@ -133,7 +133,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     list<Node *> *y_stream = new list<Node *>({((inOutdeclNode *)(decl_inputs->back()))->id});
     // 声明stream stream<double x>...
     idNode *streamDeclId = new idNode("x");
-    top->put("x", streamDeclId);
+    // top->put("x", streamDeclId); //???
     primNode *streamType = new primNode("double");
     streamDeclId->valType = streamType->name;
     Node *streamDecl = new strdclNode(streamDeclId);
@@ -277,43 +277,94 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
     for(auto it : *inputs_decl){
         inputs_id->push_back(((inOutdeclNode *)it)->id);
     }
-    
-    switch (layer -> layerType)
-    {
-        case Dense: {
-            Node *layerOper = makeDenseOperator(layer, inputs_id, outputs_id);
-            comp_stmt_list->push_back(layerOper);
-            break;
+    if ((layer -> nextLayer && layer -> nextLayer -> layerType != AveragePooling2D) || layer->nextLayer != NULL) {
+        idNode *streamDeclId = new idNode("x");
+        primNode *streamType = new primNode("double");
+        streamDeclId->valType = streamType->name;
+        Node *streamDecl = new strdclNode(streamDeclId);
+        idNode *result = new idNode("layer_result" + to_string(layer->level));
+        ((strdclNode*)streamDecl)->id_list.push_back(result);
+        comp_stmt_list->push_back(streamDecl);
+
+        list<Node *> *toBeCopyed = new list<Node *>({result});
+        switch (layer -> layerType)
+        {
+            case Dense: {
+                Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
+                comp_stmt_list->push_back(layerOper);
+                break;
+            }
+            case Conv2D: {
+                compositeNode *layerComp = makeConv2DLayer(layer);
+                Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                break;
+            }
+            case MaxPooling2D: {
+                compositeNode *layerComp = makeMaxPooling2DLayer(layer);
+                Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                break;
+            }
+            case AveragePooling2D: {
+                compositeNode *layerComp = makeAveragePooling2DLayer(layer);
+                Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                break;
+            }
+            case Activation: {
+                Node *layerOper = makeActivationOperator((activationLayerNode *)layer, inputs_id, toBeCopyed);
+                comp_stmt_list->push_back(layerOper);
+                break;
+            }
+            default:
+                break;
         }
-        case Conv2D: {
-            compositeNode *layerComp = makeConv2DLayer(layer);
-            Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
-            ((compositeCallNode *)call)->isOriginal = false;
-            comp_stmt_list->push_back(call);
-            break;
+        compositeNode *copy = makeCopyComp();
+        compositeCallNode *copyCall = new compositeCallNode(outputs_id, copy->compName, NULL, toBeCopyed, copy);
+        comp_stmt_list->push_back(copyCall);
+    } else {
+        switch (layer -> layerType)
+        {
+            case Dense: {
+                Node *layerOper = makeDenseOperator(layer, inputs_id, outputs_id);
+                comp_stmt_list->push_back(layerOper);
+                break;
+            }
+            case Conv2D: {
+                compositeNode *layerComp = makeConv2DLayer(layer);
+                Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                break;
+            }
+            case MaxPooling2D: {
+                compositeNode *layerComp = makeMaxPooling2DLayer(layer);
+                Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                break;
+            }
+            case AveragePooling2D: {
+                compositeNode *layerComp = makeAveragePooling2DLayer(layer);
+                Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                break;
+            }
+            case Activation: {
+                Node *layerOper = makeActivationOperator((activationLayerNode *)layer, inputs_id, outputs_id);
+                comp_stmt_list->push_back(layerOper);
+                break;
+            }
+            default:
+                break;
         }
-        case MaxPooling2D: {
-            compositeNode *layerComp = makeMaxPooling2DLayer(layer);
-            Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
-            ((compositeCallNode *)call)->isOriginal = false;
-            comp_stmt_list->push_back(call);
-            break;
-        }
-        case AveragePooling2D: {
-            compositeNode *layerComp = makeAveragePooling2DLayer(layer);
-            Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
-            ((compositeCallNode *)call)->isOriginal = false;
-            comp_stmt_list->push_back(call);
-            break;
-        }
-        case Activation: {
-            Node *layerOper = makeActivationOperator((activationLayerNode *)layer, inputs_id, outputs_id);
-            comp_stmt_list->push_back(layerOper);
-            break;
-        }
-        default:
-            break;
     }
+    
     compBody = new compBodyNode(NULL, comp_stmt_list);
     compositeNode *comp = new compositeNode(compHead, compBody);
     cout << "makeForwardComposite"<<endl;
@@ -996,21 +1047,6 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
 }
 
 Node* UnfoldComposite::makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id) {
-    /*
-        Node* body = NULL;
-        list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
-        Node *kernelIndex = new idNode("kernelIndex");
-        // top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));???
-        ((idNode *)kernelIndex) -> valType = "integer";
-        paramList -> push_back(kernelIndex);
-        operatorNode *oper  = makeConv2DKernelOper(layer, inputs, outputs, kernelIndex);
-        // 调用kernel operator
-        Node *binop = new binopNode((expNode *)(outputs -> front()), "=", (expNode *)oper) ;
-        stmtList -> push_back(binop);
-        paramNode *param = new paramNode(paramList);
-        body = new compBodyNode(param, stmtList);
-        return body; 
-    */
     Node* body = NULL;
     list<Node *> *stmtList = new list<Node *>(), *paramList = new list<Node *>();
     Node *kernelIndex = new idNode("kernelIndex");
@@ -1041,14 +1077,11 @@ compositeNode* UnfoldComposite::makeConv2DKernel(layerNode *layer/*, Node *kerne
     for(auto it : *inputs){
         inputs_id->push_back(((inOutdeclNode *)it)->id);
     } 
-    // long long kernelIndexVal = ((constantNode *)kernelIndex) -> llval;
-    // string compName = "conv2DKernel_" + to_string(layer->level) + "_" + to_string(kernelIndexVal);
     string compName = "conv2DKernel_" + to_string(layer->level);
     compHead = new compHeadNode(compName, (ComInOutNode *)compInOut);
-    // compBody = makeConv2DKernelBody((conv2DLayerNode *)layer, inputs_id, outputs_id, Node* kernelIndex);
     compBody = makeConv2DKernelBody((conv2DLayerNode *)layer, inputs_id, outputs_id);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
-    S.InsertCompositeSymbol(compName, comp); // ?????要加入符号表吗
+    S.InsertCompositeSymbol(compName, comp);
     return comp;
 }
 // 生成名为"conv2DLayer_" + level 的卷积层计算节点
@@ -1056,13 +1089,9 @@ compositeNode* UnfoldComposite::makeConv2DLayer(layerNode *layer) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     Node *inputDecl = makeStream("in", "double");
-    Node *outputDecl0 = makeStream("out0", "double");
+    Node *outputDecl = makeStream("out", "double");
     list<Node *> *inputs_decl = new list<Node *>({inputDecl});
-    list<Node *> *outputs_decl = new list<Node *>({outputDecl0});
-    if (layer -> nextLayer && layer -> nextLayer -> layerType != AveragePooling2D) {
-        Node *outputDecl1 = makeStream("out1", "double");
-        outputs_decl -> push_back(outputDecl1);
-    }
+    list<Node *> *outputs_decl = new list<Node *>({outputDecl});
     ComInOutNode *inout = new ComInOutNode(inputs_decl, outputs_decl);
     compInOut = new ComInOutNode(inputs_decl, outputs_decl);
     compHead = new compHeadNode("conv2DLayer_" + to_string(layer->level), (ComInOutNode *)compInOut);
@@ -1081,71 +1110,6 @@ compositeNode* UnfoldComposite::makeConv2DLayer(layerNode *layer) {
 
 Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id) {
     Node *body = NULL;
-
-    // list<Node *> *stmtList = new list<Node *>(), *splitjoinStmtList = new list<Node *>(), *splitjoinBodyStmts = new list<Node *>();
-    
-    // constantNode *constZero = new constantNode("long long", (long long)0);
-    // Node *constOne = new constantNode("long long", (long long)1);
-    // Node *constFilters = new constantNode("long long", ((conv2DLayerNode *)layer)->filters);
-    // Node *duplicate = new duplicateNode((expNode *)constFilters);
-    // Node *split = new splitNode(duplicate);                                                                         
-    // roundrobinNode *roundrobin = new roundrobinNode(NULL);
-
-    // // ??? 加入什么表???
-    // idNode *idI = new idNode("i");
-    // primNode *prim = new primNode("long long");
-    // declareNode *declI = new declareNode(prim, idI);
-    // splitjoinStmtList->push_back(declI);
-    
-    // list<Node *> *blockStmtList = new list<Node *>();
-
-    // Node *init = new binopNode((expNode *)idI, "=", (expNode *)constZero);
-    // Node *cond = new binopNode((expNode *)idI, "<", (expNode *)(constFilters));
-    // Node *next = new unaryNode("POSTINC", (expNode *)idI);
-    // list<Node *> *argList = new list<Node *>({idI});
-    // // 根据layer生成相应的composite
-    // compositeNode *actual_comp = makeConv2DKernel(layer);
-    // Node *kernel = new compositeCallNode(NULL, actual_comp->compName, argList, NULL, actual_comp);
-    // ((compositeCallNode *)kernel)->isOriginal = false;
-    // Node *add = new addNode(kernel);
-    // blockStmtList -> push_back(add);
-    // Node *block = new blockNode(blockStmtList);
-    // Node *splitjoinFor = new forNode(init, (expNode *)cond, (expNode *)next, block);
-    // splitjoinBodyStmts -> push_back(splitjoinFor);
-    
-    // // for (int i = 0; i < ((conv2DLayerNode *)layer)->filters; i++) {
-    // //     Node *kernelIndex = new constantNode("long long", (long long)i);
-    // //     compositeNode *actual_comp = makeConv2DKernel(layer, kernelIndex);
-    // //     // 确保生成的每个comp的名称不可相同否则,在展开的过程中该层所有的kernel composite相同
-    // //     string actualCompName = compName + to_string(i);
-    // //     S.InsertCompositeSymbol(actualCompName, actual_comp);
-    // //     Node *kernel = new compositeCallNode(NULL, actualCompName, NULL, NULL, actual_comp);
-    // //     Node *add = new addNode(kernel);
-    // //     splitjoinBodyStmts -> push_back(add);
-    // // }
-
-    // joinNode *join = new joinNode(roundrobin);
-    // Node *splitjoin;
-    // if (layer -> nextLayer && layer -> nextLayer -> layerType == AveragePooling2D) {
-    //     splitjoin = new splitjoinNode(inputs_id, outputs_id, (splitNode *)split, splitjoinStmtList, splitjoinBodyStmts,(joinNode *)join);
-    //     stmtList->push_back(splitjoin);
-    // } else {
-    //     idNode *streamDeclId = new idNode("x");
-    //     primNode *streamType = new primNode("double");
-    //     streamDeclId->valType = streamType->name;
-    //     Node *streamDecl = new strdclNode(streamDeclId);
-    //     string resName = "conv2D_result_" + to_string(layer -> level);
-    //     Node *res = new idNode(resName);
-    //     ((strdclNode *)streamDecl)->id_list.push_back((idNode *)res);
-    //     list<Node *> *tempStream = new list<Node *>({res});
-    //     splitjoin = new splitjoinNode(inputs_id, tempStream, (splitNode *)split, splitjoinStmtList, splitjoinBodyStmts,(joinNode *)join);
-    //     stmtList->push_back(splitjoin);
-    //     compositeNode *copyComp = makeCopyComp();
-    //     Node *callCopy = new compositeCallNode(outputs_id, copyComp->compName, NULL, tempStream, copyComp);
-    //     ((compositeCallNode *)callCopy)->isOriginal = false;
-    //     stmtList->push_back(callCopy);
-    // }
-
     string streamName = "conv2dStream_" + to_string(layer -> level);
     list<Node *> *inputList = NULL;
     operatorNode *splitOperator = NULL, *joinOperator = NULL;
@@ -1185,31 +1149,14 @@ Node* UnfoldComposite::makeConv2DLayerBody(layerNode *layer, list<Node *> *input
         comCallList->push_back(call);
         inputIter++;
     }
-    if (layer -> nextLayer && layer -> nextLayer -> layerType == AveragePooling2D) {
-        joinOperator = makeSpecialJoinOperator(outputs_id->front(), inputs_join);
-        compStmtList->push_back(streamDecl);
-        compStmtList->push_back(splitOperator);
-        for (auto it : *comCallList)
-        {
-            compStmtList->push_back(it);
-        }
-        compStmtList->push_back(joinOperator);
-    } else {
-        Node *res = new idNode(streamName + "_res");
-        ((strdclNode*)streamDecl)->id_list.push_back((idNode *)res);
-        joinOperator = makeSpecialJoinOperator(res, inputs_join);
-        compositeNode *copy = makeCopyComp();
-        compositeCallNode *copyCall = new compositeCallNode(outputs_id, copy->compName, NULL,new list<Node *>({res}), copy);
-        copyCall->isOriginal = false;
-        compStmtList->push_back(streamDecl);
-        compStmtList->push_back(splitOperator);
-        for (auto it : *comCallList)
-        {
-            compStmtList->push_back(it);
-        }
-        compStmtList->push_back(joinOperator);
-        compStmtList->push_back(copyCall);
+    joinOperator = makeSpecialJoinOperator(outputs_id->front(), inputs_join);
+    compStmtList->push_back(streamDecl);
+    compStmtList->push_back(splitOperator);
+    for (auto it : *comCallList)
+    {
+        compStmtList->push_back(it);
     }
+    compStmtList->push_back(joinOperator);
     body = new compBodyNode(NULL, compStmtList);
     return body;
 }
@@ -1798,10 +1745,9 @@ compositeNode* UnfoldComposite::makeMaxPooling2DLayer(layerNode *layer) {
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     Node *inputDecl = makeStream("in", "double");
-    Node *outputDecl0 = makeStream("out0", "double");
-    Node *outputDecl1 = makeStream("out1", "double");
+    Node *outputDecl = makeStream("out", "double");
     list<Node *> *inputs_decl = new list<Node *>({inputDecl});
-    list<Node *> *outputs_decl = new list<Node *>({outputDecl0, outputDecl1});
+    list<Node *> *outputs_decl = new list<Node *>({outputDecl});
     list<Node *> *inputs_id = new list<Node *>(), *outputs_id = new list<Node *>();
     for (auto iter: *inputs_decl) {
         inputs_id->push_back(((inOutdeclNode *)iter)->id);
@@ -1853,9 +1799,7 @@ Node* UnfoldComposite::makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, l
         comCallList->push_back(call);
         inputIter++;
     }
-    Node *maxPoolRes = new idNode("maxPoolRes");
-    ((strdclNode *)streamDecl)->id_list.push_back((idNode *)maxPoolRes);
-    operatorNode *joinOperator0 = makeSpecialJoinOperator(maxPoolRes, res_join);
+    operatorNode *joinOperator0 = makeSpecialJoinOperator(outputs_id->front(), res_join);
     compStmtList->push_back(streamDecl);
     compStmtList->push_back(splitOperator);
     for (auto it : *comCallList)
@@ -1863,11 +1807,6 @@ Node* UnfoldComposite::makeMaxPooling2DLayerBody(maxPooling2DLayerNode* layer, l
         compStmtList->push_back(it);
     }
     compStmtList->push_back(joinOperator0);
-    list<Node *> *tempStream = new list<Node *>({maxPoolRes});
-    compositeNode *copyComp = makeCopyComp();
-    Node *callCopy = new compositeCallNode(outputs_id, copyComp->compName, NULL, tempStream, copyComp);
-    ((compositeCallNode *)callCopy)->isOriginal = false;
-    compStmtList->push_back(callCopy);
     compBody = new compBodyNode(NULL, compStmtList);
     return compBody;
 }
@@ -2456,10 +2395,9 @@ compositeNode* UnfoldComposite::makeAveragePooling2DLayer(layerNode *layer){
     compositeNode *comp = NULL;
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     Node *inputDecl = makeStream("in", "double");
-    Node *outputDecl0 = makeStream("out0", "double");
-    Node *outputDecl1 = makeStream("out1", "double");
+    Node *outputDecl = makeStream("out", "double");
     list<Node *> *inputs_decl = new list<Node *>({inputDecl});
-    list<Node *> *outputs_decl = new list<Node *>({outputDecl0, outputDecl1});
+    list<Node *> *outputs_decl = new list<Node *>({outputDecl});
     list<Node *> *inputs_id = new list<Node *>(), *outputs_id = new list<Node *>();
     for (auto iter: *inputs_decl) {
         inputs_id->push_back(((inOutdeclNode *)iter)->id);
@@ -2505,15 +2443,12 @@ Node* UnfoldComposite::makeAveragePooling2DLayerBody(averagePooling2DLayerNode* 
         res_join->push_back(resId);
         list<Node *> *call_outputs = new list<Node *>({resId});
         list<Node *> *call_inputs = new list<Node *>({*inputIter});
-        // compositeCallNode *call = new compositeCallNode(call_outputs, tempCompName, NULL, call_inputs, kernelComp);
         compositeCallNode *call = new compositeCallNode(call_outputs, kernelComp->compName, NULL, call_inputs, kernelComp);
         call->isOriginal = false;
         comCallList->push_back(call);
         inputIter++;
     }
-    Node *averagePoolRes = new idNode("averagePoolRes");
-    ((strdclNode *)streamDecl)->id_list.push_back((idNode *)averagePoolRes);
-    operatorNode *joinOperator0 = makeSpecialJoinOperator(averagePoolRes, res_join);
+    operatorNode *joinOperator0 = makeSpecialJoinOperator(outputs_id->front(), res_join);
     compStmtList->push_back(streamDecl);
     compStmtList->push_back(splitOperator);
     for (auto it : *comCallList)
@@ -2521,11 +2456,6 @@ Node* UnfoldComposite::makeAveragePooling2DLayerBody(averagePooling2DLayerNode* 
         compStmtList->push_back(it);
     }
     compStmtList->push_back(joinOperator0);
-    list<Node *> *tempStream = new list<Node *>({averagePoolRes});
-    compositeNode *copyComp = makeCopyComp();
-    Node *callCopy = new compositeCallNode(outputs_id, copyComp->compName, NULL, tempStream, copyComp);
-    ((compositeCallNode *)callCopy)->isOriginal = false;
-    compStmtList->push_back(callCopy);
     compBody = new compBodyNode(NULL, compStmtList);
     return compBody;
 }
