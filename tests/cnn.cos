@@ -16,10 +16,10 @@ composite Main() {
         }
     };
     Out = sequential (In, Y) ((3, 4, 1), 0.0001, "gauss_random") {
-        // filters, kernel_size, strides, padding, activation, use_bias  
-        add Conv2D(3, (2, 2), (1, 1), (0, 0), 'relu', false);
+        // filters, kernel_size, strides, padding, use_bias  
+        add Conv2D(3, (2, 2), (1, 1), (0, 0), false);
         add Activation("relu");
-        add Conv2D(5, (2, 2), (1, 1), (0, 0), 'relu', false);
+        add Conv2D(5, (2, 2), (1, 1), (0, 0), false);
         add Dense(10);
         add Activation("sigmoid");
     };

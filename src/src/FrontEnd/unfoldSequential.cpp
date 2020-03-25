@@ -729,7 +729,6 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     return new operatorNode(outputs, operName, inputs, body);
 }
 // MakeDDenseInit 初始化误差矩阵
-// 初始化学习率为0.1
 Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
     list<Node *> *stmts = new list<Node *>();
     Node *work =  NULL;
@@ -757,6 +756,15 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     id_temp->init = new initNode(const_zero);
     declareNode *declTemp = new declareNode(primDouble, id_temp);
     stmts->push_back(declTemp);
+    // 学习率
+    Node *constLr = globalSequential->lr;
+    initNode *initLr = new initNode(constLr);
+    idNode *idLr = new idNode("lr");
+    idLr->init = initLr;
+    idLr->valType = "double";
+    primNode *prim = new primNode("double");
+    declareNode *declLr = new declareNode(primDouble, idLr);
+    stmts->push_back(declLr);
 
     // 计算传播误差
     Node *forInitI = NULL, *forCondI = NULL, *forNextI = NULL, *forInitJ = NULL, *forCondJ = NULL, *forNextJ = NULL;
@@ -811,15 +819,6 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     list<Node *> *stmts3 = new list<Node *>();
     Node *forNode4 = NULL, *stmt4 = NULL, *block4 = NULL;
     list<Node *> *stmts4 = new list<Node *>();
-    // 暂时 学习率
-    constantNode *constLr = new constantNode("double", (double)0.1);
-    initNode *initLr = new initNode(constLr);
-    idNode *idLr = new idNode("lr");
-    idLr->init = initLr;
-    idLr->valType = "double";
-    primNode *prim = new primNode("double");
-    declareNode *declLr = new declareNode(primDouble, idLr);
-    stmts->push_back(declLr);
     Node *dError = new binopNode((expNode *)idLr, "*", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)inX)));
     Node *change = new binopNode((expNode *)weightId, "-=", (expNode *)dError);
     stmts4->push_back(change);
@@ -1531,6 +1530,15 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     ((declareNode *)declInt )-> id_list.push_back(idF);
     stmtList -> push_back(declInt);
     stmtList -> push_back(declDouble);
+    // 学习率
+    Node *constLr = globalSequential->lr;
+    initNode *initLr = new initNode(constLr);
+    idNode *idLr = new idNode("lr");
+    idLr->init = initLr;
+    idLr->valType = "double";
+    primNode *prim = new primNode("double");
+    declareNode *declLr = new declareNode(primDouble, idLr);
+    stmtList->push_back(declLr);
 
     Node *constZero = new constantNode("long long", (long long)0);
     Node *constOne = new constantNode("long long", (long long)1);
@@ -1717,7 +1725,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     stmt9 = new blockNode(new list<Node *>({forNode10}));
     forNode9 = new forNode(initM, (expNode *)cond9, (expNode *)nextM2, stmt9);
 
-    Node *learnWeight = new binopNode((expNode *)weightId, "-=", (expNode *)idTemp);
+    Node *learnWeight = new binopNode((expNode *)weightId, "-=", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)idTemp, "*", (expNode *)idLr)))));
     list<Node *> *stmtList8 = new list<Node *>({tempInit, forNode9, learnWeight});
     stmt8 = new blockNode(stmtList8);
     forNode8 = new forNode(initJ, (expNode*)cond8, (expNode *)nextJ, stmt8);

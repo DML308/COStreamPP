@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 // 期望为E，方差为V
-inline double gaussrand(double E = 0, double V = 1)
+inline double gauss_random(double E = 0, double V = 1)
 {
     static double V1, V2, S;
     static int phase = 0;
@@ -25,5 +25,11 @@ inline double gaussrand(double E = 0, double V = 1)
     phase = 1 - phase;
  
     return X * V + E;
+}
+inline double uniform_rand(double a = -1, double b = 1) {
+	if (a < b)
+		return a + ((double)rand() / RAND_MAX) * (b - a);
+	else
+		return b + ((double)rand() / RAND_MAX) * (a - b);
 }
 #endif
