@@ -2,6 +2,7 @@
 SymbolTable *running_top;
 extern SymbolTable* top;
 extern SymbolTable S;
+extern sequentialNode* globalSequential;
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -115,6 +116,9 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#define _GLOBAL_H\n";
     buf << "#include \"Buffer.h\"\n";
     buf << "#include <math.h>\n";
+    if(globalSequential->ifNeedMathExtension) {
+        buf<<"#include \"MathExtension.h\"\n";
+    }
     buf << "#include <string>\n";
     buf << "using namespace std;\n";
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
@@ -659,6 +663,9 @@ void X86CodeGeneration::CGMain()
     buf << "#include \"setCpu.h\"\n";
     buf << "#include \"lock_free_barrier.h\"	//包含barrier函数\n";
     buf << "#include \"Global.h\"\n";
+    if (globalSequential->ifNeedMathExtension) {
+        buf << "#include <time.h>\n";
+    }
     buf << "using namespace std;\n";
     buf << "int MAX_ITER=1;//默认的执行次数是1\n";
     for (int i = 0; i < nCpucore_; i++)
@@ -676,6 +683,9 @@ void X86CodeGeneration::CGMain()
             << "}\n";
     }
     buf << "int main(int argc,char **argv)\n{\n";
+    if (globalSequential->ifNeedMathExtension) {
+        buf << "srand(time(NULL));\n";
+    }
     buf << "\tvoid setRunIterCount(int,char**);\n";
     buf << "\tsetRunIterCount(argc,argv);\n";
     buf << "\tset_cpu(0);\n";

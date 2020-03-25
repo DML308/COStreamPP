@@ -15,7 +15,7 @@ composite Main() {
             Y tumbling(10);
         }
     };
-    Out = sequential (In, Y) ((3, 4, 1), 0.0001, "gaussrand") {
+    Out = sequential (In, Y) ((3, 4, 1), 0.0001, "gauss_random") {
         // filters, kernel_size, strides, padding, activation, use_bias  
         add Conv2D(3, (2, 2), (1, 1), (0, 0), 'relu', false);
         add Activation("relu");
