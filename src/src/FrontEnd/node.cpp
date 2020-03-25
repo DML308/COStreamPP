@@ -625,7 +625,7 @@ vector<long long>* layerNode::getInputSize(sequentialNode *sequential) {
                 return NULL;
         }
     } else {
-        Node *firstArg = sequential -> arg_list -> front();
+        Node *firstArg = sequential -> inputSize;
         switch ( firstArg -> type) {
             case Tuple: {
                 vector<long long> *res = new vector<long long>();
@@ -691,3 +691,34 @@ void activationLayerNode::init(sequentialNode *sequential) {
         this->count *= iter;
     }
 }
+
+Node* sequentialNode::getInitializer() {
+    Node *ret = NULL;
+    switch (this->initializer->type)
+    {
+    case constant: {
+        string style = ((constantNode *)(this->initializer))->style;
+        if (style == "double" || style == "int" || style == "long" || style == "long long") {
+            return this->initializer;
+        } else if(style == "string"){
+            string initializerName = ((constantNode *)(this->initializer))->sval;
+            this->ifNeedMathExtension = true;
+            return new callNode(initializerName, NULL);
+        }
+    }
+    case Tumbling: {
+        auto iter = ((tumblingNode *)(this->initializer))->arg_list->begin();
+        assert(((*iter)->type == constant) && ((constantNode *)(*iter))->style == "string");
+        string initializerName = ((constantNode *)(*iter))->sval;
+        list<Node *> *arg_list = new list<Node *>();
+        for(;iter != ((tumblingNode *)(this->initializer))->arg_list->end(); iter++) {
+            arg_list->push_back(*iter);
+        }
+        this->ifNeedMathExtension = true;
+        return new callNode(initializerName, arg_list);
+    }
+    default:
+        return new constantNode("double", 0);
+        break;
+    }
+}  

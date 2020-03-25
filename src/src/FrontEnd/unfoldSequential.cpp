@@ -492,7 +492,7 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer) {
     Node *weightArrDec = new arrayNode((expNode *)id_i);
     (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_j);
     (static_cast<idNode*>(weightId))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
-    stmt2 = new binopNode((expNode *)weightId, "=", (expNode *)const_zero);
+    stmt2 = new binopNode((expNode *)weightId, "=", (expNode *)globalSequential->getInitializer());
     forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)next_j, stmt2);
     stmt1 = forNode2;
     forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)next_i, stmt1);
@@ -908,7 +908,7 @@ Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
     (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_m);
     ((idNode *)weightId) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
     // 为 weight[kernelIndex][j][n][m]赋值
-    stmt3 = new binopNode((expNode *)weightId, "=", (expNode *)const_zero);
+    stmt3 = new binopNode((expNode *)weightId, "=", (expNode *)globalSequential->getInitializer());
     forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)next_m, stmt3);
     stmt2 = forNode3;
     forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)next_n, stmt2);

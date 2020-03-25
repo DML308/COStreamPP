@@ -1024,19 +1024,37 @@ class sequentialNode : public Node
     list<Node *> *body_stmts;
     list<Node *> *arg_list;
     compositeNode *replace_composite;
+    bool ifNeedMathExtension;
+    Node *inputSize;
+    Node *lr; // 学习率
+    Node *initializer;
     sequentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
       this->type = Sequential;
       this->outputs = outputs;
       this->inputs = inputs;
-      this->arg_list = param;
+      // this->arg_list = param;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
+      this->ifNeedMathExtension = false;
+      auto argIter = param->begin();
+      assert(*argIter != NULL);
+      this->inputSize = *argIter;
+      argIter++;
+      assert(*argIter != NULL && (*argIter)->type == constant);
+      lr = *argIter;
+      argIter++;
+      if (argIter == param->end()) {
+        this->initializer = new constantNode("double", 0);
+      } else {
+        this->initializer = *argIter;
+      }
     }
     ~sequentialNode() {};
     void print() {};
     string toString() {};
+    Node *getInitializer();
 };
 class layerNode : public Node
 {
