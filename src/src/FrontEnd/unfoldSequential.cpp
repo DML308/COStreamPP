@@ -156,10 +156,11 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     list<list<Node *>*> *temp_stream_list = new list<list<Node *>*>({new list<Node *>({inputCopy2_id})});
     temp_stream->pop_back();
     temp_stream->push_back(inputCopy1_id);
+
+    list<Node *> *specialStream = new list<Node *>();
     // 展开前向传播composite
     for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
         list<Node *> *call_inputs, *call_outputs;
-        // string name = ((layerNode *)*iter)->layerName + to_string(((layerNode *)*iter)->level);
         if (*iter != compositeCall_list.back()) {
             string namePrefix = "F" + to_string(((layerNode *)*iter)->level) + "_";
             // 正向传递给下一层的stream名称
@@ -168,7 +169,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             // 将数据流声明加入
             ((strdclNode*)streamDecl)->id_list.push_back(id1);     
             call_inputs = new list<Node *>({temp_stream->front()});
-            if (((layerNode *)* iter)->nextLayer->layerType == AveragePooling2D) {
+            if (((layerNode *)* iter)->nextLayer->layerType == AveragePooling2D || ((layerNode *)* iter)->nextLayer->layerType == Activation) {
                 call_outputs = new list<Node *>({id1});
             } else {
                 // 传递给反向传播中本层的stream名称
@@ -176,7 +177,14 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 idNode *id2 = new idNode(tempName2);
                 ((strdclNode*)streamDecl)->id_list.push_back(id2);
                 call_outputs = new list<Node *>({id1, id2});
-                temp_stream_list->push_back(new list<Node *>({id2}));          
+                temp_stream_list->push_back(new list<Node *>({id2}));  
+            }
+            if (((layerNode *)*iter)->layerType == Activation) {
+                string tempName3 = namePrefix + "B" + to_string(((layerNode *)*iter)->level);
+                idNode *id3 = new idNode(tempName3);
+                ((strdclNode*)streamDecl)->id_list.push_back(id3);
+                call_outputs ->push_back(id3);
+                specialStream->push_back(id3);
             }
             temp_stream->pop_back();
             temp_stream->push_back(call_outputs->front());
@@ -191,6 +199,13 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             idNode *id = new idNode(tempName);
             call_inputs = new list<Node *>({temp_stream->front()});
             call_outputs = new list<Node *>({id});
+            if (((layerNode *)*iter)->layerType == Activation) {
+                string tempName = "F" + to_string(((layerNode *)*iter)->level) + "B" + to_string(((layerNode *)*iter)->level);
+                idNode *id2 = new idNode(tempName);
+                ((strdclNode*)streamDecl)->id_list.push_back(id2);
+                call_outputs ->push_back(id2);
+                specialStream->push_back(id2);
+            }
             temp_stream->pop_back();
             temp_stream->push_back(call_outputs->front());
         }
@@ -218,6 +233,9 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         list<Node *> *call_inputs, *call_outputs;
         if (((layerNode *)*iter)->layerType == AveragePooling2D) {
             call_inputs = new list<Node *>({temp_stream->front()});
+        } else if (((layerNode *)*iter)->layerType == Activation) {
+            call_inputs = new list<Node *>({temp_stream->front(), specialStream->back()});
+            specialStream->pop_back();
         } else {
             temp_stream_list->back()->push_front(temp_stream->front());
             call_inputs = temp_stream_list->back();
@@ -260,9 +278,13 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
     Node *outputDecl0 = makeStream("out0", "double");
     list<Node *> *inputs_decl = new list<Node *>({inputDecl});
     list<Node *> *outputs_decl = new list<Node *>({outputDecl0});
-    if ((layer -> nextLayer && layer -> nextLayer -> layerType != AveragePooling2D) || layer->nextLayer != NULL) {
+    if ((layer -> nextLayer && (layer -> nextLayer -> layerType != AveragePooling2D && layer -> nextLayer -> layerType != Activation))) {
         Node *outputDecl1 = makeStream("out1", "double");
         outputs_decl -> push_back(outputDecl1);
+    }
+    if (layer -> layerType == Activation) {
+        Node *outputDecl2 = makeStream("out2", "double");
+        outputs_decl -> push_back(outputDecl2);
     }
     ComInOutNode *inout = new ComInOutNode(inputs_decl, outputs_decl);
     compHeadNode *compHead = new compHeadNode(comName, inout);
@@ -276,7 +298,7 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
     for(auto it : *inputs_decl){
         inputs_id->push_back(((inOutdeclNode *)it)->id);
     }
-    if ((layer -> nextLayer && layer -> nextLayer -> layerType != AveragePooling2D) || layer->nextLayer != NULL) {
+    if ((layer -> nextLayer && (layer -> nextLayer -> layerType != AveragePooling2D && layer -> nextLayer -> layerType != Activation))) {
         idNode *streamDeclId = new idNode("x");
         primNode *streamType = new primNode("double");
         streamDeclId->valType = streamType->name;
@@ -315,8 +337,20 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
                 break;
             }
             case Activation: {
-                Node *layerOper = makeActivationOperator((activationLayerNode *)layer, inputs_id, toBeCopyed);
+                list<Node *> *activationOutputs = new list<Node *> ({result, outputs_id->back()});
+                Node *layerOper = makeActivationOperator((activationLayerNode *)layer, inputs_id, activationOutputs);
                 comp_stmt_list->push_back(layerOper);
+                compositeNode *copy = makeCopyComp();
+                auto iter = outputs_id -> begin();
+                Node *copy0 = *iter;
+                Node *copy1 = *(++iter);
+                compositeCallNode *copyCall = new compositeCallNode(new list<Node *>({copy0, copy1}), copy->compName, NULL, toBeCopyed, copy);
+                comp_stmt_list->push_back(copyCall);
+                compBody = new compBodyNode(NULL, comp_stmt_list);
+                compositeNode *comp = new compositeNode(compHead, compBody);
+                cout << "makeForwardComposite"<<endl;
+                S.InsertCompositeSymbol(comp->compName, comp);
+                return comp;
                 break;
             }
             default:
@@ -2890,18 +2924,22 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
     Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     string type = ((constantNode *)(layer->arg_list->front())) -> sval;
 
-    Node *output0 = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
-         *output1 = new idNode(static_cast<idNode *>(outputs -> back()) -> name),
-         *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
-    ((idNode *)input) -> isArray = 1;
-    ((idNode *)output0) -> isArray = 1;
-    ((idNode *)output1) -> isArray = 1;
+    Node *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
     ((idNode *)input) -> isArray = 1;
     ((idNode *)input) -> arg_list.push_back(idI);
-    ((idNode *)output0) -> arg_list.push_back(idI);
-    ((idNode *)output1) -> arg_list.push_back(idI);
     Node *inputX = new binopNode((expNode *)input, ".", (expNode *)idX);
+
+    auto outputIter = outputs->begin();
+
+    Node *output0 = new idNode(static_cast<idNode *>(*outputIter) -> name);
+    ((idNode *)output0) -> isArray = 1;
+    ((idNode *)output0) -> arg_list.push_back(idI);
     Node *output0X = new binopNode((expNode *)output0, ".", (expNode *)idX);
+
+    outputIter++;
+    Node *output1 = new idNode(static_cast<idNode *>(*outputIter) -> name);
+    ((idNode *)output1) -> isArray = 1;
+    ((idNode *)output1) -> arg_list.push_back(idI);
     Node *output1X = new binopNode((expNode *)output1, ".", (expNode *)idX);
 
     if (type.compare("relu") == 0) {
@@ -2922,13 +2960,9 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         Node *assign2 = new binopNode((expNode *)output0X, "=", (expNode *)const_zero);
         Node *assign3 = new binopNode((expNode *)output1X, "=", (expNode *)const_zero);
 
-        list<Node *> *ifStmts = new list<Node *>({assign0}),
-                     *elseStmts = new list<Node *>({assign2});
+        list<Node *> *ifStmts = new list<Node *>({assign0, assign1}),
+                     *elseStmts = new list<Node *>({assign2, assign3});
 
-        if (layer -> nextLayer != NULL) {
-            ifStmts->push_back(assign1);
-            elseStmts->push_back(assign3);
-        }
         Node *ifBlock = new blockNode(ifStmts),
              *elseBlock = new blockNode(elseStmts);
         Node *ifElse = new ifElseNode((expNode *)ifExp, ifBlock, elseBlock);
@@ -2957,11 +2991,8 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         Node *assignOut0 = new binopNode((expNode *)output0X, "=", (expNode *)idRes);
         Node *errorExp = new binopNode((expNode *)idRes, "*", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)const_one, "-", (expNode *)idRes)))));
         Node *assignOut1 = new binopNode((expNode *)output1X, "=", (expNode *)errorExp);
-
-        list<Node *> *forStmts = new list<Node *>({assignRes, assignOut0});
-        if (layer -> nextLayer != NULL) {
-            forStmts -> push_back(assignOut1);
-        }
+        list<Node *> *forStmts = new list<Node *>({assignRes, assignOut0, assignOut1});
+        
         Node *forBlock = new blockNode(forStmts);
         Node *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forBlock);
         stmtList->push_back(forNode0);
@@ -2972,8 +3003,10 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
                 total += exp(in[i].x);
             }
             for (int i = 0; i < size; i++) {
-                out0[i].x = exp(in[i].x) / total;
-                out1[i].x = exp(in[i].x) / total; 
+                res = exp(in[i].x) / total
+                out0[i].x = res;
+                out1[i].x = res;
+                out2[i].x = res;
             }
         */
         Node *idTotal = new idNode("total"), *idRes = new idNode("res");
@@ -2985,17 +3018,17 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         
         Node *expCall = new callNode("exp", new list<Node *>({inputX}));
         Node *accumulation = new binopNode((expNode *)idTotal, "+=", (expNode *)(expCall));
-        forNode *forNode1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, new blockNode(new list<Node *>({accumulation})));
+        forNode *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, new blockNode(new list<Node *>({accumulation})));
 
         Node *assignRes = new binopNode((expNode *)expCall, "/", (expNode *)idTotal);
         Node *assignOut0 = new binopNode((expNode *)output0X, "=", (expNode *)idRes);
         Node *assignOut1 = new binopNode((expNode *)output1X, "=", (expNode *)idRes);
-        list<Node *> *forStmts = new list<Node *>({assignRes, assignOut0});
-        if (layer -> nextLayer != NULL) {
-            forStmts -> push_back(assignOut1);
-        }
-
+        
+        list<Node *> *forStmts = new list<Node *>({assignRes, assignOut0, assignOut1});
+        forNode *forNode1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, new blockNode(forStmts));
         stmtList->push_back(declDouble);
+        stmtList->push_back(forNode0);
+        stmtList->push_back(forNode1);
     }
     stmtList->push_front(declInt);
     work = new blockNode(stmtList);
