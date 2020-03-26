@@ -15,7 +15,8 @@ composite Main() {
             Y tumbling(10);
         }
     };
-    Out = sequential (In, Y) (784, 0.001, 1) {
+    // inputs_size, lr, lossFunc, initializer
+    Out = sequential (In, Y) (784, 0.001, "cross_entropy", 1) {
         add Dense(200);
         add Activation("relu");
         add Dense(100);

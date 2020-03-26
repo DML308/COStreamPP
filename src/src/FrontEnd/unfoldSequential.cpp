@@ -721,7 +721,16 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     dl_dy->isArray = 1;
     dl_dy->arg_list.push_back(id_i);
     Node* Out = new binopNode((expNode *)dl_dy, ".", (expNode *)x);
-    Node* res = new binopNode((expNode *)Out, "=", (expNode *)(new binopNode((expNode *)Y, "-", (expNode *)Y_)));
+    Node* res;
+    string lossFunc = ((constantNode *)(globalSequential->lossFunc))->sval;
+    if (lossFunc == "variance") {
+        res = new binopNode((expNode *)Out, "=", (expNode *)(new binopNode((expNode *)Y, "-", (expNode *)Y_)));
+    } else if (lossFunc == "cross_entropy") {
+        // cross_entroy = accumulate(y_*ln(1 / y)) = -accumulate(y_*ln(y));
+        // cross_entroy' = y_ * 1/(1/y) * (-y^(-2)) = -y_ * y * y^(-2) = -y_/y
+        // out = -(Y_/Y);
+        res = new binopNode((expNode *)Out, "=", (expNode *)(new unaryNode("-", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)Y_, "/", (expNode *)Y)))))));
+    }
     forStmts->push_back(res);
     Node* forBlock = new blockNode(forStmts);
     forNode1 = new forNode(forInitI, (expNode *)forCondI, (expNode *)forNextI, forBlock);

@@ -1028,6 +1028,7 @@ class sequentialNode : public Node
     Node *inputSize;
     Node *lr; // 学习率
     Node *initializer;
+    Node *lossFunc;
     sequentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
@@ -1038,6 +1039,7 @@ class sequentialNode : public Node
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
       this->ifNeedMathExtension = false;
+      // inputSize, lr, lossFunc = variance(默认值)/cross_entropy, initializer
       auto argIter = param->begin();
       assert(*argIter != NULL);
       this->inputSize = *argIter;
@@ -1046,9 +1048,16 @@ class sequentialNode : public Node
       lr = *argIter;
       argIter++;
       if (argIter == param->end()) {
+        this->lossFunc = new constantNode("string", "variance");
         this->initializer = new constantNode("double", 0);
       } else {
-        this->initializer = *argIter;
+        this->lossFunc = *argIter;
+        argIter++;
+        if (argIter == param->end()) {
+          this->initializer = new constantNode("double", 0);
+        } else {
+          this->initializer = *argIter;
+        }
       }
     }
     ~sequentialNode() {};
