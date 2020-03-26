@@ -690,16 +690,20 @@ void averagePooling2DLayerNode::init(sequentialNode *sequential) {
 
 void activationLayerNode::init(sequentialNode *sequential) {
     this -> inputSize = this -> getInputSize(sequential);
+    int temp = 1;
     for (auto iter : *(this -> inputSize)) {
-        this->count *= iter;
+        temp *= iter;
     }
+    this->count = temp;
 }
 
 void dropoutLayerNode::init(sequentialNode *sequential) {
     this -> inputSize = this -> getInputSize(sequential);
+    int temp = 1;
     for (auto iter : *(this -> inputSize)) {
-        this->count *= iter;
+        temp *= iter;
     }
+    this->count = temp;
     if (this -> arg_list != NULL) {
         this -> rate = this->arg_list->front();
     } else {
