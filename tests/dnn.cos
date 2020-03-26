@@ -20,7 +20,7 @@ composite Main() {
         add Activation("relu");
         add Dense(100);
         add Dense(10);
-        add Activation("relu");
+        add Activation("softmax");
     };
     sink(Out) {
         work {

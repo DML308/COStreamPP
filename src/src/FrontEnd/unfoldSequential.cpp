@@ -2998,7 +2998,7 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         stmtList->push_back(forNode0);
     } else if (type.compare("softmax") == 0) {
         /*
-            double total = 0;
+            double total = 0, res;
             for (int i = 0; i < size; i++) {
                 total += exp(in[i].x);
             }
@@ -3006,7 +3006,6 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
                 res = exp(in[i].x) / total
                 out0[i].x = res;
                 out1[i].x = res;
-                out2[i].x = res;
             }
         */
         Node *idTotal = new idNode("total"), *idRes = new idNode("res");
@@ -3014,13 +3013,12 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         ((idNode *)idTotal) -> init = initTotal;
         Node *declDouble = new declareNode(primDouble, (idNode *)idTotal);
         ((declareNode *)declDouble) -> id_list.push_back((idNode *)idRes);
-        stmtList->push_back(declDouble);
         
         Node *expCall = new callNode("exp", new list<Node *>({inputX}));
         Node *accumulation = new binopNode((expNode *)idTotal, "+=", (expNode *)(expCall));
         forNode *forNode0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, new blockNode(new list<Node *>({accumulation})));
 
-        Node *assignRes = new binopNode((expNode *)expCall, "/", (expNode *)idTotal);
+        Node *assignRes = new binopNode((expNode *)idRes, "=", (expNode *)(new binopNode((expNode *)expCall, "/", (expNode *)idTotal)));
         Node *assignOut0 = new binopNode((expNode *)output0X, "=", (expNode *)idRes);
         Node *assignOut1 = new binopNode((expNode *)output1X, "=", (expNode *)idRes);
         
@@ -3113,8 +3111,48 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
                         temp += in0[j],x * in1[i].x * in1[j].x;
                     }
                 }
+                out[i].x = temp;
             }
        */
+        Node *idJ = new idNode("j");
+        ((declareNode *)declInt)->id_list.push_back((idNode *)idJ);
+        Node *idTemp = new idNode("temp");
+        Node *declDouble = new declareNode(primInt, (idNode *)idTemp);
+        stmtList->push_back(declDouble);
+
+        idNode *input0J = new idNode(((idNode *)(inputs->front()))->name);
+        input0J -> isArray = 1;
+        input0J -> arg_list.push_back(idJ);
+        Node *input0J_x = new binopNode((expNode *)input0J, ".", (expNode *)idX);
+
+        idNode *input1J = new idNode(((idNode *)(inputs->back()))->name);
+        input1J -> isArray = 1;
+        input1J -> arg_list.push_back(idJ);
+        Node *input1J_x = new binopNode((expNode *)input1J, ".", (expNode *)idX);
+
+        Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)const_zero);
+        Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)size);
+        Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+
+        Node *ifCond = new binopNode((expNode *)idI, "==", (expNode *)idJ);
+        // i == j
+        Node *res0 = new binopNode((expNode *)input0J_x, "*", (expNode *)(new binopNode((expNode *)input1X, "*", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)const_one, "-", (expNode *)input1X)))))));
+        Node *assign0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new parenNode((expNode *)res0)));
+        Node *ifBlock = new blockNode(new list<Node *>({assign0}));
+
+        Node *res1 = new binopNode((expNode *)input0J_x, "*", (expNode *)(new binopNode((expNode *)input1X, "*", (expNode *)input1J_x)));
+        Node *assign1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new parenNode((expNode *)res1)));
+        Node *elseBlock = new blockNode(new list<Node *>{assign1});
+
+        Node *ifElse = new ifElseNode((expNode *)ifCond, ifBlock, elseBlock);
+
+        Node *forNode0 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, new blockNode(new list<Node *>({ifElse})));
+
+        Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *)const_zero);
+        Node *res = new binopNode((expNode *)outputX, "=", (expNode *)idTemp);
+        list<Node *> *forStmts1 = new list<Node *>({tempInit, forNode0, res});
+        Node *forNode1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, new blockNode(forStmts1));
+        stmtList->push_back(forNode1);
     }
     stmtList->push_front(declInt);
     work = new blockNode(stmtList);
