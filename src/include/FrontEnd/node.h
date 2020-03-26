@@ -1241,4 +1241,23 @@ class activationLayerNode : public layerNode
     }
     void init(sequentialNode* sequential); // 初始化inputSize
 };
+class dropoutLayerNode : public layerNode
+{
+  public:
+    long long count; // 輸入输出
+    Node *rate; // 在 0 和 1 之间浮动。需要丢弃的输入比例
+    dropoutLayerNode(string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = Dropout;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->count = 1;
+      this->level = 0;
+    }
+    void init(sequentialNode* sequential); // 初始化inputSize
+};
 #endif

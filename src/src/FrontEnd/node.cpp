@@ -621,6 +621,9 @@ vector<long long>* layerNode::getInputSize(sequentialNode *sequential) {
             case Activation: {
                 return ((activationLayerNode *)prevLayer) -> inputSize;
             }
+            case Dropout: {
+                return ((dropoutLayerNode *)prevLayer) -> inputSize;
+            }
             default:
                 return NULL;
         }
@@ -689,6 +692,18 @@ void activationLayerNode::init(sequentialNode *sequential) {
     this -> inputSize = this -> getInputSize(sequential);
     for (auto iter : *(this -> inputSize)) {
         this->count *= iter;
+    }
+}
+
+void dropoutLayerNode::init(sequentialNode *sequential) {
+    this -> inputSize = this -> getInputSize(sequential);
+    for (auto iter : *(this -> inputSize)) {
+        this->count *= iter;
+    }
+    if (this -> arg_list != NULL) {
+        this -> rate = this->arg_list->front();
+    } else {
+        this -> rate = new constantNode("double", 0);
     }
 }
 

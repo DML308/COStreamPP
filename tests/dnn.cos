@@ -16,11 +16,12 @@ composite Main() {
         }
     };
     // inputs_size, lr, lossFunc, initializer
-    Out = sequential (In, Y) (784, 0.001, "cross_entropy", 1) {
+    Out = sequential (In, Y) (784, 0.001, "crossEntropy", 'gaussRandom') {
         add Dense(200);
         add Activation("relu");
         add Dense(100);
         add Dense(10);
+        add Dropout(0.25);
         add Activation("softmax");
     };
     sink(Out) {
