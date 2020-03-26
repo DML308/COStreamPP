@@ -64,15 +64,19 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             }
             case MaxPooling2D: {
                 ((maxPooling2DLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             case AveragePooling2D: {
                 ((averagePooling2DLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             case Activation: {
                 ((activationLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             case Dropout: {
                 ((dropoutLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             default:
                 break;
@@ -583,14 +587,15 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     idNode *id_i = new idNode("i"), *id_j = new idNode("j");
     id_i->init = init_i;
     id_j->init = init_j;
-    primNode *prim = new primNode("int");
-    declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    primNode *primInt = new primNode("int");
+    declareNode *declI = new declareNode(primInt, id_i);
+    declI->id_list.push_back(id_j);
     stmts->push_back(declI);
-    stmts->push_back(declJ);
 
     idNode *id_temp = new idNode("temp");
     id_temp->init = new initNode(const_zero);
-    declareNode *declTemp = new declareNode(prim, id_temp);
+    primNode *primDouble = new primNode("double");
+    declareNode *declTemp = new declareNode(primDouble, id_temp);
     stmts->push_back(declTemp);
 
     Node *forNode1 = NULL, *init1 = NULL, *cond1 = NULL, *next_j = NULL, *stmt1 = NULL;
@@ -1835,6 +1840,7 @@ compositeNode* UnfoldComposite::makeMaxPooling2DLayer(layerNode *layer) {
     }
     compInOut = new ComInOutNode(inputs_decl, outputs_decl);
     compHead = new compHeadNode("maxPooling2DLayer_" + to_string(layer->level), (ComInOutNode *)compInOut);
+    assert(layer->layerType == MaxPooling2D);
     compBody = makeMaxPooling2DLayerBody((maxPooling2DLayerNode *)layer, inputs_id, outputs_id);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     S.InsertCompositeSymbol(comp->compName, comp);
@@ -2045,7 +2051,8 @@ Node* UnfoldComposite::makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *lay
     stmt3 = new blockNode(stmtList3);
     forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextI, stmt3);
 
-    list<Node *> *stmtList2 = new list<Node *>({init3, init4, assign, forNode3});
+    Node *res = new binopNode((expNode *)outputX, "=", (expNode *)idMax);
+    list<Node *> *stmtList2 = new list<Node *>({init3, init4, assign, forNode3, res});
     stmt2 = new blockNode(stmtList2);
     forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextN, stmt2);
 
@@ -2422,6 +2429,7 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
             right->arg_list.push_back(rightIndex);
             Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
             stmts -> push_back(stmt);
+            index++;
         }
         work = new blockNode(stmts);
         winStmt->push_back(win);
