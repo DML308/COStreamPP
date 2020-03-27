@@ -3161,7 +3161,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
                     if (i == j) {
                         temp += in0[j].x * in1[i].x(1 - in1[i].x);
                     } else {
-                        temp += in0[j],x * in1[i].x * in1[j].x;
+                        temp -= in0[j],x * in1[i].x * in1[j].x;
                     }
                 }
                 out[i].x = temp;
@@ -3172,7 +3172,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
         Node *idTemp = new idNode("temp");
         Node *declDouble = new declareNode(primDouble, (idNode *)idTemp);
         stmtList->push_back(declDouble);
-
+        
         idNode *input0J = new idNode(((idNode *)(inputs->front()))->name);
         input0J -> isArray = 1;
         input0J -> arg_list.push_back(idJ);
@@ -3192,9 +3192,9 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
         Node *res0 = new binopNode((expNode *)input0J_x, "*", (expNode *)(new binopNode((expNode *)input1X, "*", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)const_one, "-", (expNode *)input1X)))))));
         Node *assign0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new parenNode((expNode *)res0)));
         Node *ifBlock = new blockNode(new list<Node *>({assign0}));
-
+        // i != j
         Node *res1 = new binopNode((expNode *)input0J_x, "*", (expNode *)(new binopNode((expNode *)input1X, "*", (expNode *)input1J_x)));
-        Node *assign1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new parenNode((expNode *)res1)));
+        Node *assign1 = new binopNode((expNode *)idTemp, "-=", (expNode *)(new parenNode((expNode *)res1)));
         Node *elseBlock = new blockNode(new list<Node *>{assign1});
 
         Node *ifElse = new ifElseNode((expNode *)ifCond, ifBlock, elseBlock);
