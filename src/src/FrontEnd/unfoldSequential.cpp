@@ -3170,7 +3170,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
         Node *idJ = new idNode("j");
         ((declareNode *)declInt)->id_list.push_back((idNode *)idJ);
         Node *idTemp = new idNode("temp");
-        Node *declDouble = new declareNode(primInt, (idNode *)idTemp);
+        Node *declDouble = new declareNode(primDouble, (idNode *)idTemp);
         stmtList->push_back(declDouble);
 
         idNode *input0J = new idNode(((idNode *)(inputs->front()))->name);
