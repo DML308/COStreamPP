@@ -2073,9 +2073,9 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
             }
             case Composite:{ 
                 top->InsertCompositeSymbol(static_cast<compositeNode *>(it)->compName,static_cast<compositeNode *>(it));
-                EnterScopeFn(it);/* 进入 composite 块级作用域 */ 
-                generateComposite(static_cast<compositeNode *>(it));
-                ExitScopeFn(); /* 退出 composite 块级作用域 */ 
+                //EnterScopeFn(it);/* 进入 composite 块级作用域 */ 
+                //generateComposite(static_cast<compositeNode *>(it));
+                //ExitScopeFn(); /* 退出 composite 块级作用域 */ 
                 break;
             }
             case FuncDcl:{ // 仅支持全局作用域下的函数声明

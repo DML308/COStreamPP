@@ -16,6 +16,7 @@
 #include "HeuristicGreedyPartition.h"
 #include "CodeGeneration.h"
 #include "symboltableGenerate.h"
+#include "time.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -38,6 +39,8 @@ list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
 //===----------------------------------------------------------------------===//
 int main(int argc, char *argv[])
 {
+    clock_t start,end;
+    start = clock();
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
     int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
@@ -153,5 +156,7 @@ int main(int argc, char *argv[])
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
     removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
+    end = clock();
+    cout<<(double)(end-start)/CLOCKS_PER_SEC<<"\n";
     return 0;
 }

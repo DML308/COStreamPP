@@ -1,71 +1,81 @@
 int bounds = 32;
 double pi = 3.141592654;
 
-composite LowPassFilter(output stream<double x> Out,input stream<double x> In){
-    param
-        double g,double cutoffFreq,int N;
-    
-    Out = LowPassFilterX(In){
-        double h[N];    
-        init {
-            int OFFSET = N/2;
-            int i,idx;
-            for(i=0;i<N;i++){
-                idx = i + 1;
-                if(idx == OFFSET){
-                    h[i] = g * cutoffFreq / pi;
-                }else{
-                h[i] = g * sin*(cutoffFreq * (idx - OFFSET)) / (pi * (id-OFFSET));
-                }
-            }
-        }
-        work{
-            double sum = 0;
-            int i;
-            for(i=0;i<N;i++){
-                sum += h[i]*In[i].x;
-            }
-            Out[0].x = sum;
-        }
-        window{
-            In sliding(N,1);
-        }
-    };
+composite LowPassFilter(output stream<double x>Out, input stream<double x>In)
+{
+	param 
+		double g, double cutoffFreq, int N;
+		  
+	Out = LowPassFilterX(In)
+	{
+		double h[N];	
+		init
+		{
+			int OFFSET = N/2;
+			int i, idx;
+			for( i=0; i<N; i++)
+			{
+				idx = i + 1;
+				if (idx == OFFSET) 
+					h[i] = g * cutoffFreq / pi; 
+				else 
+					h[i] = g * sin(cutoffFreq * (idx-OFFSET)) / (pi*(idx-OFFSET));
+			}
+		}
+		work
+		{
+			double sum = 0;
+			int i;
+			for ( i=0; i<N; i++) 
+			{ 
+				sum += h[i]*In[i].x;
+			}
+			Out[0].x = sum;
+		}
+		window {
+			In sliding(N,1);
+		}
+	};
 }
 
-composite HighPassFilter(output stream<double x> Out,input stream<double x> In){
-    param
-    double g,double ws,int N;
+    composite HighPassFilter(output stream<double x>Out, input stream<double x>In)
+{
+	param 
+		double g, double ws, int N;		  
 
-    Out = HighPassFilterX(In){
-        double h[N];
-        double cutoffFreg;  
-        init {
-            int OFFSET = N/2;
-            int i,idx,sign;
-            cutoffFreg = pi - ws;
-            for(i=0;i<N;i++){
-                idx = i + 1;
-                sign = ((i%2)==0?1:-1);
-                if(idx == OFFSET){
-                    h[i] = g * cutoffFreq / pi;
-                }else{
-                    h[i] = g * sin*(cutoffFreq * (idx - OFFSET)) / (pi * (id-OFFSET));
-                }
-            }
-        }
-        work{
-            double sum = 0;
-            int i;
-            for(i=0;i<N;i++){
-                sum += h[i]*In[i].x;
-            }
-            Out[0].x = sum;
-        }
-        window{
-            In sliding(N,1);
-        }     
-    };
+	Out = HighPassFilterX(In)
+	{		
+		double h[N];
+		double cutoffFreq;
+		init
+		{
+			int OFFSET = N/2;
+			int i, idx, sign;
+			cutoffFreq = pi - ws;
+			for( i=0; i<N; i++)
+			{
+				idx = i + 1;
+				sign = ((i%2) == 0) ? 1 : -1;
+				if (idx == OFFSET) 
+					h[i] = sign * g * cutoffFreq / pi; 
+				else 
+					h[i] = sign * g * sin(cutoffFreq * (idx-OFFSET)) / (pi*(idx-OFFSET));
+			}
+		}
+		work
+		{
+			double sum = 0;
+			int i;
+			for ( i=0; i<N; i++) 
+			{ 
+				sum += h[i]*In[i].x;
+			}
+			Out[0].x = sum;
+		}
+		window {
+			In sliding(N,1);
+		}
+	};
 }
 
 composite Adder(output stream<double x> Out,input stream<double x> In){
@@ -76,7 +86,7 @@ composite Adder(output stream<double x> Out,input stream<double x> In){
         work{
             double sum = 0;
             int i;
-            for(i=0;i<N;i++){
+            for(i=0;i<M;i++){
                 sum += In[i].x;
             }
             Out[0].x = sum;
@@ -146,7 +156,7 @@ composite Expander(output stream<double x> Out,input stream<double x> In){
 composite Processingpipeline(output stream<double x> Out,input stream<double x> In){
     param 
         int M,int i;
-        stream<double x> BC,BF;
+        stream<double x> BC,PF;
         BC = pipeline(In){
             add BandPassFilter(1,(i*pi/M),((i+1)*pi/M),128);
             add Compressor(M);
@@ -196,14 +206,20 @@ composite Main(){
         double w2 = pi/20.0;
         double w3 = pi/30.0;
         work{
-            Source[0].x = (cos(w1*n)+cos(w2*n)+cos(sw*n));
+            Source[0].x = (cos(w1*n)+cos(w2*n)+cos(w3*n));
             n++;
+        }
+        window{
+            Source tumbling(1);
         }
     };
     FBP = FilterBankpipeline(Source)(bounds);
     FloatSink(FBP){
         work{
             println(FBP[0].x);
+        }
+        window{
+            FBP sliding(1,1);
         }
     };
 }

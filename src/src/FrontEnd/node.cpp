@@ -532,6 +532,7 @@ string ifElseNode::toString()
     str += exp->toString();
     str += ")";
     str += "\t" + stmt1->toString();
+    if(str[str.size()-1] != '}')   str+=";";  
     str += "else";
     str += "\t" + stmt2->toString();
     return str;
