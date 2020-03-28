@@ -486,6 +486,7 @@ class pipelineNode : public Node
     list<Node *> *inputs;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
+    int inNum,outNum; //用于保存真是情况下 splitjoin 输入输出数据的量
     pipelineNode(list<Node *> *outputs,list<Node *> *body_stmts, list<Node *> *inputs,YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -494,6 +495,8 @@ class pipelineNode : public Node
         this->inputs=inputs;
         this->body_stmts = body_stmts;
         this->replace_composite = NULL;
+        this->inNum = 0;
+        this->outNum = 0;
     }
     ~pipelineNode() {}
     void print() {}
@@ -569,6 +572,7 @@ class splitjoinNode : public Node
     joinNode *join;
     list<Node *> *stmt_list;
     list<Node *> *body_stmts;
+    int inNum,outNum; //用于保存真是情况下 splitjoin 输入输出数据的量
     compositeNode *replace_composite;
     splitjoinNode(list<Node *> *inputs,
                   list<Node *> *outputs,
@@ -587,6 +591,8 @@ class splitjoinNode : public Node
         this->stmt_list = stmt_list;
         this->body_stmts = body_stmts;
         this->replace_composite = NULL;
+        this->inNum = 0;
+        this->outNum = 0;
     }
     ~splitjoinNode() {}
     void print() {}

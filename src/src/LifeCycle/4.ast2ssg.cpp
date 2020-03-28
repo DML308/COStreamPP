@@ -10,6 +10,13 @@ extern list<SymbolTable *> runningStack;
 extern SymbolTable *runningTop;
 extern SymbolTable S;
 
+extern StaticStreamGraph *ssgs[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
+
+
+int count = 0;
+int a_level = -1;
+int a_version[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
 void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
     bool isResize = false;
     list<Node *> *stmts = splitjoinComposite->body->stmt_List;
@@ -134,6 +141,117 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
         father_join_operator->operBody->work = unfold->MakeJoinWork(father_join_operator->inputs,join_arguments,father_join_operator->outputs);
     }
 }
+
+//求a,b的最大公约数
+int gcd(int a, int b)
+{
+    int r = 0;
+    if (a < b)
+    {
+        r = a;
+        a = b;
+        b = r;
+    }
+    assert(b);
+    while (a % b)
+    {
+        assert(b);
+        r = a % b;
+        a = b;
+        b = r;
+    }
+
+    return b;
+}
+
+//求a,b的最小公倍数
+int lcm(int a, int b)
+{
+    int product = a * b;
+
+    return product / gcd(a, b);
+}
+
+bool SteadyScheduling(StaticStreamGraph *ssg)
+{
+    list<FlatNode *> flatNodeList;
+    map<FlatNode *, int>::iterator pos;
+    // 默认第一个节点是源，也就是说peek和pop均为0,在图的表示上暂不允许有多个源，但可以有多个peek = pop = 0节点
+    FlatNode *up = ssg->topNode, *down = NULL;
+    int nPush = 0, nPop = 0, nLcm = 0;
+    int x, y, i, j;
+
+    map<FlatNode *, int> mapFlatNode2SteadyCount; // SDF图所有节点稳定状态调度序列<节点，执行次数>
+
+    // 现在考虑的是只有一个输入口的情况
+    while (1)
+    {
+        // 稳态调度系列初始系数为1
+        mapFlatNode2SteadyCount.insert(make_pair(up, 1));
+        // 遍历该节点的所有输出节点（广度优先遍历）
+        for (i = 0; i < up->nOut; ++i)
+        {
+            nPush = up->outPushWeights[i]; // 上端节点的push值
+            down = up->outFlatNodes[i];    // 找到下端节点
+            for (j = 0; down->inFlatNodes[j] != up; j++)
+                ;                         // 下端节点找到与上端节点对应的标号
+            nPop = down->inPopWeights[j]; // 下端节点取出对应的pop值
+            // 检查该节点是否已进行稳态调度，每条只进行一次稳态调度
+            //Map的find函数寻找元素elem出现的位置，返回对应位置的迭代器，若没有出现则返回尾元素的下一个位置
+            pos = mapFlatNode2SteadyCount.find(down);
+            // down 节点未进行稳态调度
+            if (pos == mapFlatNode2SteadyCount.end())
+            {
+                debug("对 down 节点 %s 进行稳态调度\n",down->name.c_str());
+                // 得到上端节点的稳态调度系数（这个稳态调度系数就是一个迭代器，它指向Map中的指定节点《first，second》 《结点，执行次数》）
+                pos = mapFlatNode2SteadyCount.find(up);
+                x = pos->second;
+                nPush *= x; // 为什么是x*nPush呢？理解稳态调度的概念--节点在流水线稳定运行中执行的最少次数 = 每次push * 稳态执行次数
+                line("nPush %d nPop %d\n",nPush, nPop);
+                if (nPush != 0)
+                {
+                    // nPush, nPop的最小公倍数;
+                    nLcm = lcm(nPush, nPop);
+                    int temp = nLcm / nPush; //上下节点达到平衡时，需要的执行次数
+                    if (temp != 1)           // 加一个判断，提高效率，乘1是不必要的
+                    {
+                        // 根据计算规则得来的
+                        for (pos = mapFlatNode2SteadyCount.begin(); pos != mapFlatNode2SteadyCount.end(); ++pos)
+                            pos->second *= temp;
+                    }
+                    mapFlatNode2SteadyCount.insert(make_pair(down, nLcm / nPop));
+                }
+                else // 对push(0)作处理
+                {
+                    // 取 1 值
+                    mapFlatNode2SteadyCount.insert(make_pair(down, 1));
+                }
+                // 将down加入listNode是为了对down的输出节点进行调度,相当于遍历
+                flatNodeList.push_back(down);
+            }
+            else //该节点已进行稳态调度，检查SDF图是否存在稳态调度系列，一般不存在的话表明程序有误
+            {
+                y = pos->second; //下方节点的执行次数
+                pos = mapFlatNode2SteadyCount.find(up);
+                x = pos->second; //上端节点的执行次数
+                //nPop == 0 说明在进行join 0 操作
+                if ((nPop != 0) && (nPush * x) != (nPop * y))
+                {
+                    cout << "不存在稳态调度..." << endl;
+                    system("pause");
+                    exit(1); // 表示不存在稳态调度
+                }            //if
+            }                //else
+        }                    //for
+        if (flatNodeList.size() == 0)
+            break; // 链表为空，说明所有节点已调度完毕
+        up = flatNodeList.front();
+        flatNodeList.pop_front(); //对已经调度完的节点移除list
+    }                             //while
+    return true;
+}
+
+
 /*
 * 功能：递归的调用，完成splitjoin和pipeline节点的展开，以及完成opearatorNode到flatnode节点的映射
 * 输入参数：composite
@@ -141,6 +259,7 @@ void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
 */
 void GraphToOperators(compositeNode *composite, Node *oldComposite)
 {
+    int version = 0;
     /* 获取compositebody内的statementNode */
     assert(composite != NULL && oldComposite != NULL);
     assert(composite->body->stmt_List != NULL);
@@ -157,6 +276,9 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             {
                 debug("operator_ %s\n",exp->toString().c_str());
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
+                if(ssgs[count][a_level][a_version[a_level]]){
+                    ssgs[count][a_level][a_version[a_level]]->flatNodes.push_back(ssg->flatNodes.back());
+                }
             }
             else if (exp->type == CompositeCall)
             {
@@ -198,9 +320,38 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             else if (exp->type == SplitJoin)
             {
                 debug("splitjoin %s\n",exp->toString().c_str());
+
+                StaticStreamGraph *local_ssg = new StaticStreamGraph();
+                a_level++;
+                a_version[a_level]++;
+                ssgs[count][a_level][a_version[a_level]] = local_ssg;
+
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
-                resizeSplitjoinWindow(((splitjoinNode *)(exp))->replace_composite);
+                
+
+                a_level--;
+                
+                local_ssg->SetTopNode();
+                for(int i=0;i<local_ssg->flatNodes.size();i++){
+                    local_ssg->partFlatNodes.insert(make_pair(local_ssg->flatNodes[i],0));
+                }
+                local_ssg->mapEdge2UpFlatNode = ssg->mapEdge2UpFlatNode;
+                local_ssg->mapEdge2DownFlatNode = ssg->mapEdge2DownFlatNode;
+                //local_ssg->SetFlatNodesWeights();
+                //SteadyScheduling(local_ssg);
+
+                //resizeWindow(local_ssg);
+                if(a_level == -1){
+                    count ++;
+                    a_level = -1;
+                    for(int i=0;i<10;i++){
+                        a_version[i] = -1;
+                    }
+                    
+                }
+
+                //resizeSplitjoinWindow(((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
@@ -220,6 +371,9 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         {
             debug("operator_ %s\n",it->toString().c_str());
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
+            if(ssgs[count][a_level][a_version[a_level]]){
+                    ssgs[count][a_level][a_version[a_level]]->flatNodes.push_back(ssg->flatNodes.back());
+            }
             break;
         }
         case CompositeCall:
@@ -259,9 +413,35 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
         case SplitJoin:
         {
             debug("splitjoin %s\n", it->toString().c_str());
-            ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
+            
+            
+            StaticStreamGraph *local_ssg = new StaticStreamGraph();
+                a_level++;
+                a_version[a_level]++;
+                ssgs[count][a_level][a_version[a_level]] = local_ssg;
+
+               ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
-            resizeSplitjoinWindow(((splitjoinNode *)(it))->replace_composite);
+                
+
+                a_level--;
+                
+                if(a_level == -1){
+                    count ++;
+                    a_level = -1;
+                    for(int i=0;i<10;i++){
+                        a_version[i] = -1;
+                    }
+                    
+                }
+                local_ssg->SetTopNode();
+                for(int i=0;i<local_ssg->flatNodes.size();i++){
+                    local_ssg->partFlatNodes.insert(make_pair(local_ssg->flatNodes[i],0));
+                }
+                //local_ssg->SetFlatNodesWeights();
+                //SteadyScheduling(local_ssg);
+
+            //resizeSplitjoinWindow(((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:

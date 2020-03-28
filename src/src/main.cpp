@@ -34,6 +34,8 @@ bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常�
 
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
 list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
+
+StaticStreamGraph *ssgs[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 //===----------------------------------------------------------------------===//
 // Main
 //===----------------------------------------------------------------------===//
@@ -86,6 +88,8 @@ int main(int argc, char *argv[])
     ifConstantFlow = true;
     PhaseName = "AST2FlatSSG";
     SSG = AST2FlatStaticStreamGraph(gMainComposite);
+    // 对默认窗口大小进行重新调整，使得能得到文涛调度
+
     // (6) 对静态数据流图各节点进行工作量估计
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);
