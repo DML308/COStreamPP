@@ -2523,7 +2523,6 @@ Node* UnfoldComposite::makeAveragePooling2DLayerBody(averagePooling2DLayerNode* 
     string compName = "averagePooling2D_" + to_string(layer->level);
     compositeNode *kernelComp = makeAveragePooling2DKernel(layer);
     for (int i = 0; i < depth; i++) {
-        string tempCompName =  compName + "_" + to_string(i);
         string tempResName = resStreamName + "_" + to_string(i);
         idNode *resId = new idNode(tempResName);
         res_join->push_back(resId);
@@ -2629,7 +2628,7 @@ Node* UnfoldComposite::makeAveragePooling2DKernelOperWork(averagePooling2DLayerN
     Node *inputDim0 = new constantNode("long long", layer->inputSize->at(0));
     Node *inputDim1 = new constantNode("long long", layer->inputSize->at(1));
     Node *poolSize = new constantNode("long long", layer->pool_size);
-    Node * base = new constantNode("interge", layer->pool_size * layer->pool_size);
+    Node * base = new constantNode("int", layer->pool_size * layer->pool_size);
     Node *constZero = new constantNode("long long", (long long)0);
     Node *init1 = NULL, *cond1 = NULL, *nextM = NULL, *stmt1 = NULL, *forNode1 = NULL;
     Node *init2 = NULL, *cond2 = NULL, *nextN = NULL, *stmt2 = NULL, *forNode2 = NULL;
@@ -2712,7 +2711,7 @@ compositeNode* UnfoldComposite::makeDAveragePooling2DLayer(averagePooling2DLayer
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     Node *inputDecl = makeStream("in", "double");
     Node *outputDecl = makeStream("out", "double");
-    list<Node *> *inputs_decl = new list<Node *>({inputDecl, inputDecl});
+    list<Node *> *inputs_decl = new list<Node *>({inputDecl});
     list<Node *> *outputs_decl = new list<Node *>({outputDecl});
     list<Node *> *inputs_id = new list<Node *>(), *outputs_id = new list<Node *>();
     for (auto iter: *inputs_decl) {
@@ -2722,7 +2721,7 @@ compositeNode* UnfoldComposite::makeDAveragePooling2DLayer(averagePooling2DLayer
         outputs_id->push_back(((inOutdeclNode *)iter)->id);
     }
     compInOut = new ComInOutNode(inputs_decl, outputs_decl);
-    compHead = new compHeadNode("dAveragePooling2DLayer_" + layer->level, (ComInOutNode *)compInOut);
+    compHead = new compHeadNode("dAveragePooling2DLayer_" + to_string(layer->level), (ComInOutNode *)compInOut);
     compBody = makeDAveragePooling2DLayerBody(layer, inputs_id, outputs_id);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     S.InsertCompositeSymbol(comp->compName, comp);
@@ -2832,7 +2831,7 @@ Node* UnfoldComposite::makeDAveragePooling2DKernelOperWork(averagePooling2DLayer
     Node *outputDim0 = new constantNode("long long", layer->inputSize->at(0));
     Node *outputDim1 = new constantNode("long long", layer->inputSize->at(1));
     Node *poolSize = new constantNode("long long", layer->pool_size);
-    Node *base = new constantNode("long long", layer->pool_size * layer->pool_size);
+    Node *base = new constantNode("int", layer->pool_size * layer->pool_size);
     Node *constZero = new constantNode("long long", (long long)0);
 
     Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
