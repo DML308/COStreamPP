@@ -1705,7 +1705,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
                 for (f = 0; f < filters; f++) {
                     for (i = 0; i < kernelDim0; i++) {
                         for (j = 0; j < kernelDim1; j++) {
-                            temp += (input[inputIndex] * weight[f][depthIndex][kernelDim0 - i][kernelDim1 -j])
+                            temp += (input[inputIndex] * weight[f][depthIndex][kernelDim0 - 1 - i][kernelDim1 - 1 -j])
                         }
                     }
                 }
@@ -1782,7 +1782,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     // (j + n * stride1) * depth
     Node *inputFpIndex1 = new parenNode((expNode *)new binopNode((expNode *)idJ, "+", (expNode *)(new binopNode((expNode *)idN, "*", (expNode *)strideDim1))));
     Node *inputFpOffset1 = new binopNode((expNode *)inputFpIndex1, "*", (expNode *)depth);
-    Node *inputFpIndex = new binopNode((expNode *)inputFpIndex0, "+", (expNode *)(new binopNode((expNode *)inputFpIndex1, "+", (expNode *)depthIndex)));
+    Node *inputFpIndex = new binopNode((expNode *)inputFpOffset0, "+", (expNode *)(new binopNode((expNode *)inputFpOffset1, "+", (expNode *)depthIndex)));
     ((idNode *)inputFp) -> arg_list.push_back(inputFpIndex);
     Node *inputFpX = new binopNode((expNode *)inputFp, ".", (expNode *)idX);
     
