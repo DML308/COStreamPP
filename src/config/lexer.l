@@ -90,7 +90,7 @@ Conv2D      { return CONV2D; }
 MaxPooling2D { return MAXPOOLING2D; }
 AveragePooling2D { return AVERAGEPOOLING2D; }
 Activation  { return ACTIVATION; }
-
+Dropout     { return DROPOUT; }
 param        { return PARAM; }
 init         { return INIT; }
 work         { return WORK; }
