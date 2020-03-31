@@ -729,6 +729,7 @@ class operatorNode : public Node
     int level;
     int version;
     bool hasState;
+    bool isDefaultWindowSize;
     operatorNode(list<Node *> *outputs, string operName, list<Node *> *inputs, operBodyNode *operBody,YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -738,6 +739,7 @@ class operatorNode : public Node
         this->inputs = inputs;
         this->operBody = operBody;
         this->hasState = false;
+        this->isDefaultWindowSize = false;
     }
     ~operatorNode() {}
     void print() {}

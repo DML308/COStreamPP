@@ -52,6 +52,7 @@ class FlatNode
   public:
 	FlatNode(operatorNode *node, Node *oldCom, compositeNode *newCom);
 	FlatNode(){}
+	FlatNode *real_faltnode,*copy_flatnode;
 	string toString();
 	void AddOutEdges(FlatNode *dest);
 	void AddInEdges(FlatNode *src);

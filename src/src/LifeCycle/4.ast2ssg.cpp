@@ -277,7 +277,11 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 debug("operator_ %s\n",exp->toString().c_str());
                 ssg->GenerateFlatNodes((operatorNode *)exp, oldComposite, composite);
                 if(ssgs[count][a_level][a_version[a_level]]){
-                    ssgs[count][a_level][a_version[a_level]]->flatNodes.push_back(ssg->flatNodes.back());
+                    FlatNode *right_flatnode = new FlatNode((operatorNode *)exp, oldComposite, composite);
+                    ssgs[count][a_level][a_version[a_level]]->flatNodes.push_back(right_flatnode);
+                    ssgs[count][a_level][a_version[a_level]]->partFlatNodes.insert(make_pair(ssg->flatNodes.back(),1));
+                    ssgs[count][a_level][a_version[a_level]]->flatNodes.back()->real_faltnode = ssg->flatNodes.back();
+                    (ssg->flatNodes.back())->copy_flatnode = right_flatnode;
                 }
             }
             else if (exp->type == CompositeCall)
@@ -333,15 +337,8 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 a_level--;
                 
                 local_ssg->SetTopNode();
-                for(int i=0;i<local_ssg->flatNodes.size();i++){
-                    local_ssg->partFlatNodes.insert(make_pair(local_ssg->flatNodes[i],0));
-                }
-                local_ssg->mapEdge2UpFlatNode = ssg->mapEdge2UpFlatNode;
-                local_ssg->mapEdge2DownFlatNode = ssg->mapEdge2DownFlatNode;
-                //local_ssg->SetFlatNodesWeights();
-                //SteadyScheduling(local_ssg);
-
-                //resizeWindow(local_ssg);
+                local_ssg->setEndNode();
+               
                 if(a_level == -1){
                     count ++;
                     a_level = -1;
@@ -356,8 +353,29 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             else if (exp->type == Pipeline)
             {
                 debug("pipeline %s\n",exp->toString().c_str());
+                
+                StaticStreamGraph *local_ssg = new StaticStreamGraph();
+                a_level++;
+                a_version[a_level]++;
+                ssgs[count][a_level][a_version[a_level]] = local_ssg;
+
                 ((pipelineNode *)exp)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)exp));
                 GraphToOperators(((pipelineNode *)(exp))->replace_composite, ((pipelineNode *)(exp))->replace_composite);
+                
+
+                a_level--;
+                
+                local_ssg->SetTopNode();
+                local_ssg->setEndNode();
+
+                if(a_level == -1){
+                    count ++;
+                    a_level = -1;
+                    for(int i=0;i<10;i++){
+                        a_version[i] = -1;
+                    }
+                    
+                }
                 //todo 是否需要反向传递窗口大小
             }
             else if (exp->type == Sequential)
@@ -372,8 +390,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             debug("operator_ %s\n",it->toString().c_str());
             ssg->GenerateFlatNodes((operatorNode *)it, oldComposite, composite);
             if(ssgs[count][a_level][a_version[a_level]]){
-                    ssgs[count][a_level][a_version[a_level]]->flatNodes.push_back(ssg->flatNodes.back());
-            }
+                    FlatNode *right_flatnode = new FlatNode((operatorNode *)it, oldComposite, composite);
+                    ssgs[count][a_level][a_version[a_level]]->flatNodes.push_back(right_flatnode);
+                    ssgs[count][a_level][a_version[a_level]]->partFlatNodes.insert(make_pair(ssg->flatNodes.back(),1));
+                    ssgs[count][a_level][a_version[a_level]]->flatNodes.back()->real_faltnode = ssg->flatNodes.back();
+                    (ssg->flatNodes.back())->copy_flatnode = right_flatnode;
+                }
             break;
         }
         case CompositeCall:
@@ -416,39 +438,58 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             
             
             StaticStreamGraph *local_ssg = new StaticStreamGraph();
-                a_level++;
-                a_version[a_level]++;
-                ssgs[count][a_level][a_version[a_level]] = local_ssg;
+            a_level++;
+            a_version[a_level]++;
+            ssgs[count][a_level][a_version[a_level]] = local_ssg;
 
-               ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
+           ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
                 
 
-                a_level--;
+            a_level--;
+            
+            if(a_level == -1){
+                count ++;
+                a_level = -1;
+                for(int i=0;i<10;i++){
+                    a_version[i] = -1;
+                }
                 
-                if(a_level == -1){
-                    count ++;
-                    a_level = -1;
-                    for(int i=0;i<10;i++){
-                        a_version[i] = -1;
-                    }
-                    
-                }
-                local_ssg->SetTopNode();
-                for(int i=0;i<local_ssg->flatNodes.size();i++){
-                    local_ssg->partFlatNodes.insert(make_pair(local_ssg->flatNodes[i],0));
-                }
-                //local_ssg->SetFlatNodesWeights();
-                //SteadyScheduling(local_ssg);
-
+            }
+            local_ssg->SetTopNode();
+            local_ssg->setEndNode();
+                
+            //local_ssg->SetFlatNodesWeights();
+            //SteadyScheduling(local_ssg);
             //resizeSplitjoinWindow(((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:
         {
             debug("pipeline %s\n", it->toString().c_str());
-            ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
+            
+            
+            StaticStreamGraph *local_ssg = new StaticStreamGraph();
+            a_level++;
+            a_version[a_level]++;
+            ssgs[count][a_level][a_version[a_level]] = local_ssg;
+
+           ((pipelineNode *)it)->replace_composite = unfold->UnfoldPipeline(((pipelineNode *)it));
             GraphToOperators(((pipelineNode *)(it))->replace_composite, ((pipelineNode *)(it))->replace_composite);
+                
+
+            a_level--;
+            
+            if(a_level == -1){
+                count ++;
+                a_level = -1;
+                for(int i=0;i<10;i++){
+                    a_version[i] = -1;
+                }
+                
+            }
+            local_ssg->SetTopNode();
+            local_ssg->setEndNode();
             //todo 是否需要反向传递窗口大小
             break;
         }

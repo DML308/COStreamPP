@@ -165,12 +165,14 @@ compositeCallNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> 
     }
 
     /*若split roundroubin()参数为空 默认赋值一个数据大小 1*/
+    bool isDefalutWindowSize = false;
     if (arguments_value->size() == 0)
     {
         //constantNode *nd = new constantNode("long long", (long long)1);
         constantNode *constant = new constantNode("long long",(long long)1);
         //arguments->push_back(nd);
         arguments_value->push_back(constant);
+        isDefalutWindowSize = true;
     }
     constantNode *arg = arguments_value->front();
 
@@ -229,6 +231,7 @@ compositeCallNode *UnfoldComposite::MakeSplitOperator(Node *input, list<Node *> 
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName[style], inputs, body);
+    res->isDefaultWindowSize = isDefalutWindowSize;
     number++;
     //cout << "-----------------split end---------------------" << endl;
 
@@ -321,7 +324,7 @@ compositeCallNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> 
     }
 
     //Constant *constantIntOne = new Constant("long long", (long long)1);
-
+    bool isDefaultWindowSizw = false;
     /*若split roundroubin()参数为空 默认赋值一个数据大小*/
     if (arguments_value->size() == 0)
     {
@@ -329,6 +332,7 @@ compositeCallNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> 
         constantNode *constant = new constantNode("long long",(long long)1);
         //arguments->push_back(nd);
         arguments_value->push_back(constant);
+        isDefaultWindowSizw = true;
     }
     constantNode *arg = arguments_value->front();
 
@@ -363,7 +367,7 @@ compositeCallNode *UnfoldComposite::MakeJoinOperator(Node *output, list<Node *> 
     window = new windowNode(win_stmt);
     body = new operBodyNode(NULL, NULL, work, window);
     res = new operatorNode(outputs, operName, inputs, body);
-
+    res->isDefaultWindowSize = isDefaultWindowSizw;
     string compName = res->operName;
     list<Node *> *input_list = new list<Node *>();
     list<Node *> *output_list = new list<Node *>();

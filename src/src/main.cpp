@@ -88,8 +88,7 @@ int main(int argc, char *argv[])
     ifConstantFlow = true;
     PhaseName = "AST2FlatSSG";
     SSG = AST2FlatStaticStreamGraph(gMainComposite);
-    // 对默认窗口大小进行重新调整，使得能得到文涛调度
-
+    
     // (6) 对静态数据流图各节点进行工作量估计
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);

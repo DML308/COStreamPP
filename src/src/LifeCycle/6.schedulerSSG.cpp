@@ -1,6 +1,7 @@
 //#define DEBUG
 #include "6.schedulerSSG.h"
 extern StaticStreamGraph *ssgs[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
+extern UnfoldComposite *unfold;
 
 FlatNode* SchedulerSSG::findEndFlatNode(){
     //vector<FlatNode *> flatNodes = sssg->flatNodes;
@@ -14,7 +15,33 @@ FlatNode* SchedulerSSG::findEndFlatNode(){
     }
 }
 
-void ResizeDefalutWindow(StaticStreamGraph *ssg){
+void getInOutputWeight(StaticStreamGraph *ssg)
+{
+    vector<FlatNode *> flat_nodes = ssg->flatNodes;
+    for(int i=0;i<flat_nodes.size();i++){
+        FlatNode *right_flatnode = flat_nodes[i];
+        if(right_flatnode->real_faltnode){
+            FlatNode *real_flatnode = right_flatnode->real_faltnode;
+            right_flatnode->inPeekWeights = real_flatnode->inPeekWeights;
+            right_flatnode->inPopWeights = real_flatnode->inPopWeights;
+            right_flatnode->outPushWeights = real_flatnode->outPushWeights;
+
+            vector<FlatNode *> copy_inflatnodes (real_flatnode->inFlatNodes.size());
+            vector<FlatNode *> copy_outflatnodes (real_flatnode->outFlatNodes.size());
+            copy(real_flatnode->inFlatNodes.begin(),real_flatnode->inFlatNodes.end(),copy_inflatnodes.begin());
+            copy(real_flatnode->outFlatNodes.begin(),real_flatnode->outFlatNodes.end(),copy_outflatnodes.begin());
+            right_flatnode->inFlatNodes = copy_inflatnodes;
+            right_flatnode->outFlatNodes = copy_outflatnodes;
+
+            right_flatnode->nIn = real_flatnode->nIn;
+            right_flatnode->nOut = real_flatnode->nOut;
+
+        }
+    }
+    
+}
+
+void ResizeDefalutWindow(){
     int max_level;
     int max_version;
 
@@ -29,6 +56,15 @@ void ResizeDefalutWindow(StaticStreamGraph *ssg){
         if(max_level == 0){
             continue;
         }
+        for(int m=0;m<=max_level;m++){
+            for(int n=0;n<10;n++){
+                if(ssgs[i][m][n]){
+                     getInOutputWeight(ssgs[i][m][n]);
+                }else{
+                    break;
+                }
+            }
+        }
         for(max_level;max_level>=0;max_level--){
             int version = 0;
             while(ssgs[i][max_level][version]!=NULL){
@@ -36,11 +72,115 @@ void ResizeDefalutWindow(StaticStreamGraph *ssg){
             }
             max_version = version;
             for(int j=0;j<max_version;j++){
-                StaticStreamGraph *right_ssg = ssgs[i][max_version][j];
+                StaticStreamGraph *right_ssg = ssgs[i][max_level][j];
+
+                string opt_name = right_ssg->topNode->contents->operName;
+                
+
                 SchedulerSSG *right_sssg = new SchedulerSSG(right_ssg);
+                //getInOutputWeight(right_ssg);
+                if(opt_name.compare("Duplicate") == 0 || opt_name.compare("Roundrobin") == 0){
+                    
+                    FlatNode *split_node = right_ssg->topNode;
+                    FlatNode *join_node = right_ssg->endNode;
+                    FlatNode *real_split_node = split_node->real_faltnode;
+                    FlatNode *real_join_node = join_node->real_faltnode;
+
+                    if(split_node->contents->isDefaultWindowSize || join_node->contents->isDefaultWindowSize){
+                    vector<FlatNode *> split_out_flatnodes = split_node->outFlatNodes;
+                    vector<FlatNode *> join_in_flatnodes = join_node->inFlatNodes;
+                    vector<int> split_out_sum,join_in_sum;
+
+                    for(int i=0;i<split_out_flatnodes.size();i++){
+                        split_out_sum.push_back(split_out_flatnodes[i]->inPeekWeights[0]);
+                    }
+                    for(int i=0;i<join_in_flatnodes.size();i++){
+                        join_in_sum.push_back(join_in_flatnodes[i]->outPushWeights[0]);
+                    }
+                    int split_lcm = right_sssg->multyLcm(split_out_sum);
+                    int join_lcm = right_sssg->multyLcm(join_in_sum);
+                    
+                    int split_sum = 0,join_sum = 0;
+
+                    bool if_need_resize = false;
+                    //if(split_lcm != 1){
+                        list<constantNode *> *arguments_value = new list<constantNode *>();
+                        for(int i=0;i<split_out_flatnodes.size();i++){
+                            split_out_sum[i]/=split_lcm;
+                            if(split_out_sum[i] != split_node->outPushWeights[i]){
+                                if_need_resize = true;
+                            }
+                            split_sum+=split_out_sum[i];
+                            arguments_value->push_back(new constantNode("long long",(long long)split_out_sum[i]));
+                        }
+                        
+                        if(if_need_resize){
+                            split_node->outPushWeights = split_out_sum;
+                            split_node->inPopWeights[0] = split_sum;
+                            split_node->inPeekWeights[0] = split_sum;
+
+                            //修改后的flatnode要放回去
+                            real_split_node->outPushWeights = split_out_sum;
+                            real_split_node->inPopWeights[0] = split_sum;
+                            real_split_node->inPeekWeights[0] = split_sum;
+
+                            int style;
+                            if(opt_name.compare("Duplicate") == 0){
+                            style = 0;
+                            }
+                            if(opt_name.compare("Roundrobin") == 0 ){
+                                style = 1;
+                            }
+                            split_node->contents->operBody->work = unfold->MakeRoundrobinWork(split_node->contents->inputs,arguments_value,split_node->contents->outputs,style);
+                        }
+                        
+
+                    //}
+                    
+                    //if(join_lcm != 1){
+                        if_need_resize = false;
+                        //list<constantNode *> *arguments_value = new list<constantNode *>();
+                        arguments_value->clear();
+                        for(int i=0;i<join_in_flatnodes.size();i++){
+                            join_in_sum[i]/=split_lcm;
+                            if(join_in_sum[i] != join_node->inPeekWeights[i]){
+                                if_need_resize = true;
+                            }
+                            join_sum+=join_in_sum[i];
+                            arguments_value->push_back(new constantNode("long long",(long long)join_in_sum[i]));
+                        }
+                        
+                        if(if_need_resize){
+                            join_node->inPeekWeights = join_in_sum;
+                            join_node->inPopWeights = join_in_sum;
+                            join_node->outPushWeights[0] = join_sum;
+                            //修改window 重新生成？
+                            real_join_node->inPeekWeights = join_in_sum;
+                            real_join_node->inPopWeights = join_in_sum;
+                            real_join_node->outPushWeights[0] = join_sum;
+
+                            join_node->contents->operBody->work = unfold->MakeJoinWork(join_node->contents->inputs,arguments_value,join_node->contents->outputs);
+                        }
+                    }
+
+                    //}
+                    
+
+                }
                 right_sssg->PartSteadyScheduling();
-                right_sssg->findEndFlatNode();
+                //right_sssg->findEndFlatNode();
                 FlatNode* innerFlatNode = new FlatNode();
+                //FlatNode *find_top_node,*find_end_node;
+                /*if(right_sssg->topNode->real_faltnode){
+                    find_top_node = right_sssg->topNode->real_faltnode;
+                }else{
+                    find_top_node = right_sssg->topNode;
+                }
+                if(right_sssg->endNode->real_faltnode){
+                    find_end_node = right_sssg->endNode->real_faltnode;
+                }else{
+                    find_end_node = right_sssg->endNode;
+                }*/
                 int real_input_sum = right_sssg->mapFlatNode2SteadyCount.find(right_sssg->topNode)->second * right_sssg->topNode->inPeekWeights.front();
                 int real_output_sum = right_sssg->mapFlatNode2SteadyCount.find(right_sssg->endNode)->second * right_sssg->endNode->outPushWeights.front();
                 
@@ -55,7 +195,7 @@ void ResizeDefalutWindow(StaticStreamGraph *ssg){
                 innerFlatNode->inFlatNodes = right_sssg->topNode->inFlatNodes;
                 innerFlatNode->outFlatNodes = right_sssg->endNode->outFlatNodes;
                 
-                FlatNode* upperFlatNode = right_sssg->topNode->inFlatNodes[0];
+                FlatNode* upperFlatNode = right_sssg->topNode->inFlatNodes[0]; //real flatnode
                 for(int x = 0;x<10;x++){
                     StaticStreamGraph *upper_ssg = ssgs[i][max_level-1][x];
                     if(!upper_ssg){
@@ -63,9 +203,39 @@ void ResizeDefalutWindow(StaticStreamGraph *ssg){
                     }
                     if(upper_ssg->partFlatNodes.find(upperFlatNode) != upper_ssg->partFlatNodes.end())
                     {
+                        
                         upper_ssg->flatNodes.push_back(innerFlatNode);
                         upper_ssg->partFlatNodes.insert(make_pair(innerFlatNode,0));
-
+                        
+                        int index = 0;
+                        for(index;index<upper_ssg->topNode->outFlatNodes.size();index++){
+                            FlatNode* real_flatnode;
+                            if(right_sssg->topNode->real_faltnode){
+                                real_flatnode = right_sssg->topNode->real_faltnode;
+                            }else{
+                                real_flatnode = right_sssg->topNode;
+                            }
+                            if(upper_ssg->topNode->outFlatNodes[index] == real_flatnode){
+                                break;
+                            }
+                            index++;
+                        }
+                        upper_ssg->topNode->outFlatNodes[index] = innerFlatNode;
+                        
+                        for(index=0;index<upper_ssg->endNode->inFlatNodes.size();index++){
+                            FlatNode* real_flatnode;
+                            if(right_sssg->endNode->real_faltnode){
+                                real_flatnode = right_sssg->endNode->real_faltnode;
+                            }else{
+                                real_flatnode = right_sssg->endNode;
+                            }
+                            if(upper_ssg->endNode->inFlatNodes[index] == real_flatnode){
+                                break;
+                            }
+                            index++;
+                        }
+                        upper_ssg->endNode->inFlatNodes[index] = innerFlatNode;
+                        break;
                     }
                 }
             }
@@ -73,29 +243,13 @@ void ResizeDefalutWindow(StaticStreamGraph *ssg){
         
 
     }
-    SchedulerSSG *sssg = new SchedulerSSG(ssg);
-    FlatNode *topNode = sssg->topNode;
-    vector<int> stack;
-    list<FlatNode *> queue;
-    queue.push_back(topNode);
-    while(queue.size()){
-        string operName = topNode->contents->operName;
-        if(operName.compare("Roundrobin")==0 || operName.compare("Duplicate")==0){
-            stack.push_back(0);
-        }
-        if(operName.compare("join")==0){
-
-        }
-        queue.insert(queue.end(),topNode->outFlatNodes.begin(),topNode->outFlatNodes.end());
-        topNode = queue.front();
-        queue.pop_front();
-        
-    }
 }
 
 SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
 {
     SchedulerSSG *sssg = new SchedulerSSG(ssg);
+    // 对默认窗口大小进行重新调整，使得能得到文涛调度
+    ResizeDefalutWindow();
     if (sssg->SteadyScheduling())
     {
         sssg->InitScheduling();
@@ -120,6 +274,8 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
 
 SchedulerSSG::SchedulerSSG(StaticStreamGraph *ssg)
 {
+    partFlatNodes = ssg->partFlatNodes;
+    endNode = ssg->endNode;
     flatNodes = ssg->flatNodes;
     topNode = ssg->topNode;
     mapEdge2UpFlatNode = ssg->mapEdge2UpFlatNode;
@@ -128,6 +284,8 @@ SchedulerSSG::SchedulerSSG(StaticStreamGraph *ssg)
     mapInitWork2FlatNode = ssg->mapInitWork2FlatNode;
     
 }
+
+
 
 bool SchedulerSSG::PartSteadyScheduling()
 {
@@ -141,17 +299,45 @@ bool SchedulerSSG::PartSteadyScheduling()
     while (1)
     {
         // 稳态调度系列初始系数为1
+        if(up->real_faltnode){
+            //up = up->real_faltnode;
+            if(partFlatNodes.find(up->real_faltnode) == partFlatNodes.end() ){
+            if (flatNodeList.size() == 0)
+                break; // 链表为空，说明所有节点已调度完毕            up = flatNodeList.front();
+            flatNodeList.pop_front();
+            continue;
+            }
+        }else if(up->copy_flatnode){
+            //up = up->real_faltnode;
+            if(partFlatNodes.find(up) == partFlatNodes.end() ){
+            if (flatNodeList.size() == 0)
+                break; // 链表为空，说明所有节点已调度完毕            up = flatNodeList.front();
+            flatNodeList.pop_front();
+            continue;
+            }
+            up = up->copy_flatnode;
+        }
+        
+        
+
         mapFlatNode2SteadyCount.insert(make_pair(up, 1));
         // 遍历该节点的所有输出节点（广度优先遍历）
         for (i = 0; i < up->nOut; ++i)
         {
+            
             nPush = up->outPushWeights[i]; // 上端节点的push值
             down = up->outFlatNodes[i];    // 找到下端节点
-            if(partFlatNodes.find(down) == partFlatNodes.end()){
-                continue;
+            
+            if(down->copy_flatnode){
+                down = down->copy_flatnode;
             }
-            for (j = 0; down->inFlatNodes[j] != up; j++)
-                ;                         // 下端节点找到与上端节点对应的标号
+
+            for (j = 0; j < down->inFlatNodes.size(); j++){
+                if(down->inFlatNodes[j] == up || down->inFlatNodes[j] == up->real_faltnode){
+                    break;
+                }
+            }
+                                 // 下端节点找到与上端节点对应的标号
             nPop = down->inPopWeights[j]; // 下端节点取出对应的pop值
             // 检查该节点是否已进行稳态调度，每条只进行一次稳态调度
             //Map的find函数寻找元素elem出现的位置，返回对应位置的迭代器，若没有出现则返回尾元素的下一个位置
@@ -394,6 +580,14 @@ int SchedulerSSG::lcm(int a, int b)
     int product = a * b;
 
     return product / gcd(a, b);
+}
+
+int SchedulerSSG::multyLcm(vector<int>nums){
+    int right_lcm = 1;
+    for(int i=0;i<nums.size();i++){
+        right_lcm = lcm(right_lcm,nums[i]);
+    }
+    return right_lcm;
 }
 
 int SchedulerSSG::GetInitCount(FlatNode *node)

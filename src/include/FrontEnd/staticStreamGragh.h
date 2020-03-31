@@ -9,6 +9,7 @@ class StaticStreamGraph
 {
 public:
   FlatNode *topNode; // SDF图的起始节点，假设只有一个输入为0的节点
+  FlatNode *endNode;
   StaticStreamGraph() {}
   vector<FlatNode *> flatNodes; // 静态数据流图所有节点集合
   //map<operatorNode *, FlatNode *> mapOper2FlatNode;
@@ -27,6 +28,10 @@ public:
   inline void SetTopNode()
   {
     topNode = flatNodes[0];
+  }
+   inline void setEndNode()
+  {
+    endNode = flatNodes.back();
   }
   inline vector<FlatNode *> GetFlatNodes()
   {
