@@ -29,7 +29,6 @@ class UnfoldComposite
     compositeNode *streamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs,int flag);
     compositeNode *compositeCallStreamReplace(compositeNode *composite, list<Node *> *inputs, list<Node *> *outputs);
     void modifyStreamName(operatorNode *oper,list<Node*> *stream ,bool style );
-    void modifyWorkName(Node *u,string replaceName,string name);
     Node* workNodeCopy(Node *u);
 
     compositeNode* makeForwardComposite(layerNode *layer);

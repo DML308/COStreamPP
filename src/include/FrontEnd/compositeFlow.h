@@ -3,6 +3,5 @@
 #include "defines.h"
 #include "node.h"
 void compositeCallFlow(list<Node *> *stmts);
-void streamFlow(compositeNode *composite); 
 
 #endif
