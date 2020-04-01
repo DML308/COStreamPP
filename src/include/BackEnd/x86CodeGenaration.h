@@ -27,7 +27,7 @@ public:
   void CGactorsStmts(stringstream &buf, list<Node *> *stmts);                                                                            //actor 写入init部分前的statement定义
   void CGactorsinitVarAndState(stringstream &buf, list<Node *> *stmts);                                                                  //actor initVarAndState函数
   void CGactorsInit(stringstream &buf, Node *init);                                                                                      //actor init函数
-  void CGactorsWork(stringstream &buf, Node *work);                                                                                      //actor work函数
+  void CGactorsWork(stringstream &buf, Node *work, int partitionNum);                                                                                      //actor work函数
   /****************************************************/
   /*****************生成线程文件************************/
   void CGThreads();        //生成所有线程

@@ -3,6 +3,7 @@ SymbolTable *running_top;
 extern SymbolTable* top;
 extern SymbolTable S;
 extern sequentialNode* globalSequential;
+extern bool ifGetTime;
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -120,6 +121,9 @@ void X86CodeGeneration::CGGlobalHeader()
         buf<<"#include \"MathExtension.h\"\n";
     }
     buf << "#include <string>\n";
+    if(ifGetTime) {
+        buf << "#include <time.h>\n";
+    }
     buf << "using namespace std;\n";
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
     map<string, string> typeSet;
@@ -181,6 +185,13 @@ void X86CodeGeneration::CGGlobalHeader()
                 << "> " << edgename << ";" << endl;
         }
     }
+    if (ifGetTime) {
+        for(int i = 0; i< mp_->getParts(); i++) {
+            buf << "extern timespec thread" + to_string(i) + "_workTime;" << endl;
+        }
+        buf << "timespec diff(timespec start,timespec end);" <<endl;
+        buf << "void addTime(timespec *spec,timespec diff);" <<endl;
+    }
     buf << "#endif\n";
     ofstream out("Global.h");
     out << buf.str();
@@ -236,6 +247,33 @@ void X86CodeGeneration::CGGlobal()
                 }
         }
     }
+    if (ifGetTime) {
+        for(int i = 0; i< mp_->getParts(); i++) {
+            buf << "timespec thread" + to_string(i) + "_workTime = {0, 0};" << endl;
+        }
+        buf << "timespec diff(timespec start,timespec end){" << endl;
+        buf << "\ttimespec temp;" << endl;
+        buf << "\tif ((end.tv_nsec-start.tv_nsec)<0){" << endl;
+        buf << "\t\ttemp.tv_sec = end.tv_sec-start.tv_sec-1;" << endl;
+        buf << "\t\ttemp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;" << endl;
+        buf << "\t} else {" << endl;
+		buf << "\t\ttemp.tv_sec = end.tv_sec-start.tv_sec;" << endl;
+		buf << "\t\ttemp.tv_nsec = end.tv_nsec-start.tv_nsec;" << endl;
+	    buf << "\t}" << endl;
+	    buf << "\treturn temp;" <<endl;
+        buf << "}" << endl;
+
+        buf << "void addTime(timespec *spec,timespec diff) {" << endl;
+        buf << "\tspec->tv_nsec+=diff.tv_nsec;"<<endl;
+        buf << "\tint sec_add = spec->tv_nsec/1000000000;"<<endl;
+        buf << "\tif(sec_add>0){" << endl;
+        buf << "\t\tspec->tv_sec +=(diff.tv_sec+sec_add);" << endl;
+        buf << "\t\tspec->tv_nsec = spec->tv_nsec%1000000000;" << endl;
+        buf << "\t} else {" << endl;
+        buf << "\t\tspec->tv_sec += diff.tv_sec;";
+        buf << "\t}" << endl;
+        buf << "}" << endl; 
+    }
     ofstream out("Global.cpp");
     out << buf.str();
 }
@@ -255,6 +293,9 @@ void X86CodeGeneration::CGactors()
         buf << "#include \"Producer.h\"\n";
         buf << "#include \"Global.h\"\n";
         buf << "#include \"GlobalVar.h\"\n";
+        if (ifGetTime) {
+            buf << "#include<time.h>\n";
+        }
         buf << "using namespace std;\n";
         buf << "class " << className << "{\n"; // 类块开始
         vector<string> inEdgeName;
@@ -308,8 +349,9 @@ void X86CodeGeneration::CGactors()
         CGactorsinitVarAndState(buf, &stmts);
         /* composite 中init函数 */
         CGactorsInit(buf, init);
+        int partitionNum = mp_->findPartitionNumForFlatNode(flatNodes_[i]);
         /* composite中work函数 */
-        CGactorsWork(buf, work);
+        CGactorsWork(buf, work, partitionNum);
         /* 类体结束*/
         buf << "};\n";
         buf << "#endif";
@@ -525,12 +567,22 @@ void X86CodeGeneration::CGactorsInit(stringstream &buf, Node *init)
         buf << init->toString();
     buf << "\t}\n";
 }
-void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
+void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work, int partitionNum)
 {
     buf << "\tvoid work(){ \n";
+    if (ifGetTime) {
+        buf << "\ttimespec ts_start,ts_end;" << endl;
+	    buf << "\tclock_gettime(CLOCK_REALTIME, &ts_start);" << endl;
+    }
     /* work中的还含有流形式参数需要被替换 等符号表实现*/
     if (work != NULL)
         buf << work->toString();
+    if (ifGetTime) {
+        buf << "\t\tclock_gettime(CLOCK_REALTIME, &ts_end);\n";
+        buf << "\t\ttimespec temp=diff(ts_start,ts_end);\n";
+	    // buf << "\t\ttread" + to_string(partitionNum) + "workTime.tv_nsec+=temp.tv_nsec;\n";
+        buf << "\t\taddTime(&thread" + to_string(partitionNum) + "_workTime, temp);\n";
+    }
     buf << "\n\t\tpushToken();\n";
     buf << "\t\tpopToken();\n";
     buf << "\t}\n";
@@ -678,8 +730,8 @@ void X86CodeGeneration::CGMain()
         buf << "void* thread_" << i << "_fun_start(void *)\n"
             << "{\n\t"
             << "set_cpu(" << i << ");\n\t"
-            << "thread_" << i << "_fun();\n\t"
-            << "return 0;\n"
+            << "thread_" << i << "_fun();\n\t";
+        buf << "return 0;\n"
             << "}\n";
     }
     buf << "int main(int argc,char **argv)\n{\n";
@@ -696,6 +748,11 @@ void X86CodeGeneration::CGMain()
         buf << "\tpthread_create (&tid[" << i - 1 << "], NULL, thread_" << i << "_fun_start, (void*)NULL);\n";
     }
     buf << "\tthread_0_fun();\n";
+    if (ifGetTime) {
+        for (int j = 0; j < mp_->getParts(); j++) {
+            buf << "cout << \"thread" + to_string(j) + "_workTime =\" << thread" + to_string(j) + "_workTime.tv_sec << \"s\" << thread" + to_string(j) + "_workTime.tv_nsec / 1000000 << \"ms\" << endl;\n\t";
+        }
+    }
     buf << "\treturn 0;\n";
     buf << "}\n";
     buf << "\/\/设置运行次数\n";
