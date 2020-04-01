@@ -647,7 +647,7 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
     this -> outputFeatureMapSize = new vector<long long>();
     // 本层反向传播过程中 传入误差的尺寸`
     this -> inputErrorSize = new vector<long long>();
-   // 按照arg_list爲傳入整個sequential結構的參數列表((depth, rows, cols), ...)
+   // 按照arg_list爲傳入整個sequential結構的參數列表((rows, cols, depth), ...)
     this->inputSize = this -> getInputSize(sequential);
     for(int i = 0; i < this->dimension; i++) {
         this->outputFeatureMapSize->push_back((this->inputSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
@@ -690,16 +690,20 @@ void averagePooling2DLayerNode::init(sequentialNode *sequential) {
 
 void activationLayerNode::init(sequentialNode *sequential) {
     this -> inputSize = this -> getInputSize(sequential);
+    int temp = 1;
     for (auto iter : *(this -> inputSize)) {
-        this->count *= iter;
+        temp *= iter;
     }
+    this->count = temp;
 }
 
 void dropoutLayerNode::init(sequentialNode *sequential) {
     this -> inputSize = this -> getInputSize(sequential);
+    int temp = 1;
     for (auto iter : *(this -> inputSize)) {
-        this->count *= iter;
+        temp *= iter;
     }
+    this->count = temp;
     if (this -> arg_list != NULL) {
         this -> rate = this->arg_list->front();
     } else {

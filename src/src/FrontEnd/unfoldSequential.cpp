@@ -64,15 +64,19 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
             }
             case MaxPooling2D: {
                 ((maxPooling2DLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             case AveragePooling2D: {
                 ((averagePooling2DLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             case Activation: {
                 ((activationLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             case Dropout: {
                 ((dropoutLayerNode *)*iter)->init(globalSequential);
+                break;
             }
             default:
                 break;
@@ -583,14 +587,15 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     idNode *id_i = new idNode("i"), *id_j = new idNode("j");
     id_i->init = init_i;
     id_j->init = init_j;
-    primNode *prim = new primNode("int");
-    declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    primNode *primInt = new primNode("int");
+    declareNode *declI = new declareNode(primInt, id_i);
+    declI->id_list.push_back(id_j);
     stmts->push_back(declI);
-    stmts->push_back(declJ);
 
     idNode *id_temp = new idNode("temp");
     id_temp->init = new initNode(const_zero);
-    declareNode *declTemp = new declareNode(prim, id_temp);
+    primNode *primDouble = new primNode("double");
+    declareNode *declTemp = new declareNode(primDouble, id_temp);
     stmts->push_back(declTemp);
 
     Node *forNode1 = NULL, *init1 = NULL, *cond1 = NULL, *next_j = NULL, *stmt1 = NULL;
@@ -1700,7 +1705,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
                 for (f = 0; f < filters; f++) {
                     for (i = 0; i < kernelDim0; i++) {
                         for (j = 0; j < kernelDim1; j++) {
-                            temp += (input[inputIndex] * weight[f][depthIndex][kernelDim0 - i][kernelDim1 -j])
+                            temp += (input[inputIndex] * weight[f][depthIndex][kernelDim0 - 1 - i][kernelDim1 - 1 -j])
                         }
                     }
                 }
@@ -1777,7 +1782,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     // (j + n * stride1) * depth
     Node *inputFpIndex1 = new parenNode((expNode *)new binopNode((expNode *)idJ, "+", (expNode *)(new binopNode((expNode *)idN, "*", (expNode *)strideDim1))));
     Node *inputFpOffset1 = new binopNode((expNode *)inputFpIndex1, "*", (expNode *)depth);
-    Node *inputFpIndex = new binopNode((expNode *)inputFpIndex0, "+", (expNode *)(new binopNode((expNode *)inputFpIndex1, "+", (expNode *)depthIndex)));
+    Node *inputFpIndex = new binopNode((expNode *)inputFpOffset0, "+", (expNode *)(new binopNode((expNode *)inputFpOffset1, "+", (expNode *)depthIndex)));
     ((idNode *)inputFp) -> arg_list.push_back(inputFpIndex);
     Node *inputFpX = new binopNode((expNode *)inputFp, ".", (expNode *)idX);
     
@@ -1835,6 +1840,7 @@ compositeNode* UnfoldComposite::makeMaxPooling2DLayer(layerNode *layer) {
     }
     compInOut = new ComInOutNode(inputs_decl, outputs_decl);
     compHead = new compHeadNode("maxPooling2DLayer_" + to_string(layer->level), (ComInOutNode *)compInOut);
+    assert(layer->layerType == MaxPooling2D);
     compBody = makeMaxPooling2DLayerBody((maxPooling2DLayerNode *)layer, inputs_id, outputs_id);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     S.InsertCompositeSymbol(comp->compName, comp);
@@ -2045,7 +2051,8 @@ Node* UnfoldComposite::makeMaxPooling2DKernelOperWork(maxPooling2DLayerNode *lay
     stmt3 = new blockNode(stmtList3);
     forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextI, stmt3);
 
-    list<Node *> *stmtList2 = new list<Node *>({init3, init4, assign, forNode3});
+    Node *res = new binopNode((expNode *)outputX, "=", (expNode *)idMax);
+    list<Node *> *stmtList2 = new list<Node *>({init3, init4, assign, forNode3, res});
     stmt2 = new blockNode(stmtList2);
     forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextN, stmt2);
 
@@ -2422,6 +2429,7 @@ operatorNode* UnfoldComposite::makeSpecialSplitOperator(Node* input, long long s
             right->arg_list.push_back(rightIndex);
             Node *stmt = new binopNode((expNode *)left, "=", (expNode *)right);
             stmts -> push_back(stmt);
+            index++;
         }
         work = new blockNode(stmts);
         winStmt->push_back(win);
@@ -2515,7 +2523,6 @@ Node* UnfoldComposite::makeAveragePooling2DLayerBody(averagePooling2DLayerNode* 
     string compName = "averagePooling2D_" + to_string(layer->level);
     compositeNode *kernelComp = makeAveragePooling2DKernel(layer);
     for (int i = 0; i < depth; i++) {
-        string tempCompName =  compName + "_" + to_string(i);
         string tempResName = resStreamName + "_" + to_string(i);
         idNode *resId = new idNode(tempResName);
         res_join->push_back(resId);
@@ -2621,7 +2628,7 @@ Node* UnfoldComposite::makeAveragePooling2DKernelOperWork(averagePooling2DLayerN
     Node *inputDim0 = new constantNode("long long", layer->inputSize->at(0));
     Node *inputDim1 = new constantNode("long long", layer->inputSize->at(1));
     Node *poolSize = new constantNode("long long", layer->pool_size);
-    Node * base = new constantNode("interge", layer->pool_size * layer->pool_size);
+    Node * base = new constantNode("int", layer->pool_size * layer->pool_size);
     Node *constZero = new constantNode("long long", (long long)0);
     Node *init1 = NULL, *cond1 = NULL, *nextM = NULL, *stmt1 = NULL, *forNode1 = NULL;
     Node *init2 = NULL, *cond2 = NULL, *nextN = NULL, *stmt2 = NULL, *forNode2 = NULL;
@@ -2704,7 +2711,7 @@ compositeNode* UnfoldComposite::makeDAveragePooling2DLayer(averagePooling2DLayer
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     Node *inputDecl = makeStream("in", "double");
     Node *outputDecl = makeStream("out", "double");
-    list<Node *> *inputs_decl = new list<Node *>({inputDecl, inputDecl});
+    list<Node *> *inputs_decl = new list<Node *>({inputDecl});
     list<Node *> *outputs_decl = new list<Node *>({outputDecl});
     list<Node *> *inputs_id = new list<Node *>(), *outputs_id = new list<Node *>();
     for (auto iter: *inputs_decl) {
@@ -2714,7 +2721,7 @@ compositeNode* UnfoldComposite::makeDAveragePooling2DLayer(averagePooling2DLayer
         outputs_id->push_back(((inOutdeclNode *)iter)->id);
     }
     compInOut = new ComInOutNode(inputs_decl, outputs_decl);
-    compHead = new compHeadNode("dAveragePooling2DLayer_" + layer->level, (ComInOutNode *)compInOut);
+    compHead = new compHeadNode("dAveragePooling2DLayer_" + to_string(layer->level), (ComInOutNode *)compInOut);
     compBody = makeDAveragePooling2DLayerBody(layer, inputs_id, outputs_id);
     comp = new compositeNode((compHeadNode *)compHead, (compBodyNode *)compBody);
     S.InsertCompositeSymbol(comp->compName, comp);
@@ -2824,7 +2831,7 @@ Node* UnfoldComposite::makeDAveragePooling2DKernelOperWork(averagePooling2DLayer
     Node *outputDim0 = new constantNode("long long", layer->inputSize->at(0));
     Node *outputDim1 = new constantNode("long long", layer->inputSize->at(1));
     Node *poolSize = new constantNode("long long", layer->pool_size);
-    Node *base = new constantNode("long long", layer->pool_size * layer->pool_size);
+    Node *base = new constantNode("int", layer->pool_size * layer->pool_size);
     Node *constZero = new constantNode("long long", (long long)0);
 
     Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
@@ -3153,7 +3160,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
                     if (i == j) {
                         temp += in0[j].x * in1[i].x(1 - in1[i].x);
                     } else {
-                        temp += in0[j],x * in1[i].x * in1[j].x;
+                        temp -= in0[j],x * in1[i].x * in1[j].x;
                     }
                 }
                 out[i].x = temp;
@@ -3162,9 +3169,9 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
         Node *idJ = new idNode("j");
         ((declareNode *)declInt)->id_list.push_back((idNode *)idJ);
         Node *idTemp = new idNode("temp");
-        Node *declDouble = new declareNode(primInt, (idNode *)idTemp);
+        Node *declDouble = new declareNode(primDouble, (idNode *)idTemp);
         stmtList->push_back(declDouble);
-
+        
         idNode *input0J = new idNode(((idNode *)(inputs->front()))->name);
         input0J -> isArray = 1;
         input0J -> arg_list.push_back(idJ);
@@ -3184,9 +3191,9 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
         Node *res0 = new binopNode((expNode *)input0J_x, "*", (expNode *)(new binopNode((expNode *)input1X, "*", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)const_one, "-", (expNode *)input1X)))))));
         Node *assign0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new parenNode((expNode *)res0)));
         Node *ifBlock = new blockNode(new list<Node *>({assign0}));
-
+        // i != j
         Node *res1 = new binopNode((expNode *)input0J_x, "*", (expNode *)(new binopNode((expNode *)input1X, "*", (expNode *)input1J_x)));
-        Node *assign1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new parenNode((expNode *)res1)));
+        Node *assign1 = new binopNode((expNode *)idTemp, "-=", (expNode *)(new parenNode((expNode *)res1)));
         Node *elseBlock = new blockNode(new list<Node *>{assign1});
 
         Node *ifElse = new ifElseNode((expNode *)ifCond, ifBlock, elseBlock);
