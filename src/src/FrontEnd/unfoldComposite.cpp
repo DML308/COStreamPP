@@ -4,7 +4,7 @@
 #include <string.h>
 
 extern SymbolTable S;
-extern SymbolTable *runningTop;
+extern SymbolTable *runningTop,*top;
 
 extern list<Node*> *Program;
 vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
@@ -866,6 +866,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 
 compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
+    top = runningTop;
     compositeCallFlow(node->body_stmts);
     vector<compositeCallNode *> comCallList;
     compositeNode *pipeline = NULL;

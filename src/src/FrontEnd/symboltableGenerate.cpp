@@ -1691,13 +1691,52 @@ void genrateStmt(Node *stmt){
             if(op.compare("=") == 0){
                 Variable* variable;
                 if(left->type == Binop){
-                    //todo 处理数组
-                }else if(left->type == Id && right->type == Binop){
-                    if(static_cast<binopNode *>(right)->op.compare(".") == 0){
-                        return;
+                    //todo 处理 . 运算
+                    //expNode *array_left = static_cast<binopNode *>(left)->left;
+                    //expNode *array_right = static_cast<binopNode *>(left)->right;
+
+                }else if(left->type == Id && (right->type == Binop || right->type == Id || right->type == constant)){
+                    if(right->type == Binop){
+                        if(static_cast<binopNode *>(right)->op.compare(".") == 0){
+                            return;
+                        }
                     }
+                    
                     if(ifConstantFlow){
                         variable = top->LookupIdentifySymbol(static_cast<idNode*>(left)->name);
+                        if(variable == NULL){//roundrobin join 中的赋值是在符号表中找不到的
+                            break;
+                        }
+                        bool isArray = false;
+                        int index = 0;
+                        if(((idNode*)left)->arg_list.size()){
+                            isArray = true;
+                            //处理数组下标
+                            vector<int> arg_size = variable->array->arg_size;
+                            vector<int> each_size;
+
+                            for(int i=arg_size.size()-1;i>=0;i--){
+                                if(each_size.size()){
+                                    each_size.push_back(arg_size[i]*each_size.back());
+                                }else{
+                                    each_size.push_back(arg_size[i]);
+                                }  
+                            }
+                            
+                            int array_size = each_size.size()-1;
+                            for(auto i:((idNode*)left)->arg_list){
+
+                                int size = getOperationResult(i)->llval;
+                                if(array_size-index>0){
+                                    index += each_size[array_size - index] * size;
+                                }else{
+                                    index += size;
+                                }
+                            }
+
+
+                        }
+                        
                         //类型隐式转换
                         Constant *value_constant = getOperationResult(right);
                         if(value_constant){
@@ -1712,7 +1751,12 @@ void genrateStmt(Node *stmt){
                                 }
                             }
                         }
-                        variable->value  = value_constant;
+                        if(isArray){
+                            variable->array->values[index] = value_constant;
+                        }else{
+                            variable->value  = value_constant;
+                        }
+                       
                     }
                     
                 }
@@ -1835,29 +1879,32 @@ Constant* generateInitNode(Node* init_value){
 }
 
 // 解析声明语句中 数组的初始化
-list<Constant *> *generateInitArray(Node* init_value){
-    idNode *id = (idNode *)init_value;
+void generateInitArray(Node* init_value,vector<Constant*> &values){
     //ArrayConstant *array = new ArrayConstant(id->valType);
-    list<Constant *> *values = new list<Constant *>();
+    //vector<Constant *> *values = new vetor<Constant *>();
     if(init_value != NULL){
         switch (init_value->type)
         {
             case Initializer:{
                 list<Node *> init_values = static_cast<initNode *>(init_value)->value;
                 for(auto it = init_values.begin();it!=init_values.end();it++){
-                    values->push_back(generateInitNode(*it));
+                    if((*it)->type == Initializer){//多维数组
+                        generateInitArray(*it,values);
+                    }else{
+                        values.push_back(generateInitNode(*it));
+                    }     
                 }
                 break;
             }
             default:{
                 genrateStmt(init_value);
-                values->push_back(getOperationResult(init_value)); 
+                values.push_back(getOperationResult(init_value)); 
                 break;
             }
                 
         }
     }
-    return values;
+    //return values;
 }
 // 解析 Declare 节点
 void generateDeclareNode(declareNode* dlcNode){
@@ -1868,12 +1915,30 @@ void generateDeclareNode(declareNode* dlcNode){
         Node* init_value = (*it)->init;
         if((*it)->isArray){
             ArrayConstant *array = new ArrayConstant((*it)->valType);
-            array->values = *generateInitArray(init_value); // todo
+            int array_size = 1;
+            for(auto arg : (*it)->arg_list){
+                Constant *arg_value = getOperationResult(arg);
+                if(arg_value){
+                    array->arg_size.push_back(arg_value->llval);
+                    array_size *= arg_value->llval;
+                }
+                
+            }
+            vector<Constant *> array_values;
+            if(array_size){
+                if(init_value){
+                    generateInitArray(init_value,array_values); 
+                }else{
+                    array_values.resize(array_size);
+                }
+            }
+            
+            array->values = array_values;
             Variable *variable = new Variable("array",(*it)->name,array);
             top->InsertIdentifySymbol(variable);
         }else{
             Constant *value_constant = generateInitNode(init_value); // 解析初始化值
-             //类型隐式转换
+             //todo 类型隐式转换
             string val_type = dlcNode->prim->name; 
             (*it)->valType = val_type;  
             if(value_constant){
@@ -1887,8 +1952,7 @@ void generateDeclareNode(declareNode* dlcNode){
                     value_constant->llval = (int)value_constant->fval;
                 }
             }
-            }        
-            
+            }            
             top->InsertIdentifySymbol(*it,value_constant);
         }
         if(isOperatorState){
@@ -2254,7 +2318,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         top->count = 0;
     }
     
-    generateComposite(composite);
+    generateComposite(composite);//进行常量传播
     
     compBodyNode *body = composite->body; //body
     paramNode *param;
@@ -2304,7 +2368,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         inOutdeclNode *stream = it.second;
 
         if(!stream->isInOut){
-            stream->id->name = stream->id->name + to_string(top->count);
+            stream->id->name = composite->compName + stream->id->name + to_string(top->count);
         }
     }
 

@@ -299,7 +299,7 @@ void X86CodeGeneration::CGactors()
         //写入composite传入的参数 此处为声明，在init中赋值
         running_top = flatNodes_[i]->compositecall_runnningtop;
         SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
-        top = opt_top;
+        //top = opt_top;
         //ifCodeGeneration = false;
         //generatorOperatorNode(flatNodes_[i]->contents);
         opt_top = FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);

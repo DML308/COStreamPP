@@ -1,4 +1,4 @@
-//使用2个around
+//使锟斤拷2锟斤拷around
 int BITS_PER_WORD  = 32;
 
     // length of plain text, and cipher text
@@ -119,7 +119,11 @@ composite Identity(output stream<int x>Out, input stream<int x>In)
 		{
 			Out[0].x = In[0].x;
 		}
-	};
+		window{
+			In sliding(1,1);
+			Out tumbling(1);
+		}
+	};	
 }
 
 composite BitSlice(output stream<int x>Out, input stream<int x>In)
