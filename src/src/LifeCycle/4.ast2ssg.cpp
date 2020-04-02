@@ -200,7 +200,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 debug("splitjoin %s\n",exp->toString().c_str());
                 ((splitjoinNode *)exp)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)exp));
                 GraphToOperators(((splitjoinNode *)(exp))->replace_composite, ((splitjoinNode *)(exp))->replace_composite);
-                resizeSplitjoinWindow(((splitjoinNode *)(exp))->replace_composite);
+                //resizeSplitjoinWindow(((splitjoinNode *)(exp))->replace_composite);
             }
             else if (exp->type == Pipeline)
             {
@@ -261,7 +261,7 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             debug("splitjoin %s\n", it->toString().c_str());
             ((splitjoinNode *)it)->replace_composite = unfold->UnfoldSplitJoin(((splitjoinNode *)it));
             GraphToOperators(((splitjoinNode *)(it))->replace_composite, ((splitjoinNode *)(it))->replace_composite);
-            resizeSplitjoinWindow(((splitjoinNode *)(it))->replace_composite);
+            //resizeSplitjoinWindow(((splitjoinNode *)(it))->replace_composite);
             break;
         }
         case Pipeline:

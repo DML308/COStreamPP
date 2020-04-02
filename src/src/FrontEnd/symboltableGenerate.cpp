@@ -234,6 +234,14 @@ if(op.compare("+") == 0){
             return new Constant("double",left->lval*right->dval);
         }
 
+        //todo 隐式转换不全面
+        if(left->type.compare("double") == 0 && right->type.compare("long long") == 0){
+            return new Constant("double",left->dval*right->llval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->llval*right->dval);
+        }
+
         if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             return new Constant("float",left->fval*right->fval);
         }
@@ -298,6 +306,13 @@ if(op.compare("+") == 0){
         if(left->type.compare("long") == 0 && right->type.compare("double") == 0){
             return new Constant("double",left->lval/right->dval);
         }
+        //todo 隐式转换不全面
+        if(left->type.compare("double") == 0 && right->type.compare("long long") == 0){
+            return new Constant("double",left->dval/right->llval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->llval/right->dval);
+        }
 
         if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             return new Constant("float",left->fval/right->fval);
@@ -308,12 +323,12 @@ if(op.compare("+") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("float") == 0){
             return new Constant("float",left->ival/right->fval);
         }
-
+        //todo double -> dval
         if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
-            return new Constant("double",left->fval/right->fval);
+            return new Constant("double",left->dval/right->dval);
         }
         if(left->type.compare("double") == 0 && right->type.compare("int") == 0){
-            return new Constant("double",left->fval/right->ival);
+            return new Constant("double",left->dval/right->ival);
         }
         if(left->type.compare("int") == 0 && right->type.compare("double") == 0){
             return new Constant("double",left->ival/right->dval);
@@ -1047,7 +1062,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("double")){
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
              if(left->dval != right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1055,7 +1070,7 @@ if(op.compare("+") == 0){
             }
         }
         
-        if(left->type.compare("float") == 0 && right->type.compare("float")){
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             if(left->fval != right->fval){
                 return new Constant("bool",true);
             }else{
@@ -1138,7 +1153,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("double")){
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
              if(left->dval && right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1146,7 +1161,7 @@ if(op.compare("+") == 0){
             }
         }
         
-        if(left->type.compare("float") == 0 && right->type.compare("float")){
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             if(left->fval && right->fval){
                 return new Constant("bool",true);
             }else{
@@ -1154,7 +1169,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("bool")){
+        if(left->type.compare("bool") == 0 && right->type.compare("bool") == 0){
             if(left->bval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1162,7 +1177,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("int") == 0 && right->type.compare("bool")){
+        if(left->type.compare("int") == 0 && right->type.compare("bool") == 0){
             if(left->ival && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1170,7 +1185,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("int")){
+        if(left->type.compare("bool") == 0 && right->type.compare("int") == 0){
             if(left->bval && right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1178,7 +1193,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long") == 0){
             if(left->bval && right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1186,7 +1201,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long") == 0 && right->type.compare("bool") == 0){
             if(left->lval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1194,7 +1209,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long long") == 0){
             if(left->bval && right->llval){
                 return new Constant("bool",true);
             }else{
@@ -1202,7 +1217,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long long") == 0 && right->type.compare("bool") == 0){
             if(left->llval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1210,7 +1225,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1218,7 +1233,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval && right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1226,7 +1241,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("float") == 0 && right->type.compare("bool")){
+        if(left->type.compare("float") == 0 && right->type.compare("bool") == 0){
             if(left->fval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1234,7 +1249,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval && right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1242,7 +1257,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1325,7 +1340,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("double")){
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
              if(left->dval || right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1333,7 +1348,7 @@ if(op.compare("+") == 0){
             }
         }
         
-        if(left->type.compare("float") == 0 && right->type.compare("float")){
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             if(left->fval || right->fval){
                 return new Constant("bool",true);
             }else{
@@ -1341,7 +1356,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("bool")){
+        if(left->type.compare("bool") == 0 && right->type.compare("bool") == 0){
             if(left->bval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1349,7 +1364,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("int") == 0 && right->type.compare("bool")){
+        if(left->type.compare("int") == 0 && right->type.compare("bool") == 0){
             if(left->ival || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1357,7 +1372,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("int")){
+        if(left->type.compare("bool") == 0 && right->type.compare("int") == 0){
             if(left->bval || right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1365,7 +1380,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long") == 0){
             if(left->bval || right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1373,7 +1388,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long") == 0 && right->type.compare("bool") == 0){
             if(left->lval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1381,7 +1396,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long long") == 0){
             if(left->bval || right->llval){
                 return new Constant("bool",true);
             }else{
@@ -1389,7 +1404,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long long") == 0 && right->type.compare("bool") == 0){
             if(left->llval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1397,7 +1412,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1405,7 +1420,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval || right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1413,7 +1428,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("float") == 0 && right->type.compare("bool")){
+        if(left->type.compare("float") == 0 && right->type.compare("bool") == 0){
             if(left->fval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1421,7 +1436,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval || right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1429,7 +1444,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1611,6 +1626,10 @@ Constant* getOperationResult(Node* exp){
         
         break;
     }
+    case Paren:{
+        return getOperationResult(static_cast<parenNode *>(exp)->exp);
+        break;
+    }
     case constant:{
         constantNode *value = static_cast<constantNode *>(exp);
         string type = value->style;
@@ -1651,6 +1670,8 @@ Constant* getOperationResult(Node* exp){
 
 // 解析 语句
 void genrateStmt(Node *stmt){
+    if(stmt == NULL)
+        return;
     switch (stmt->type)
     {
         // exp 节点
@@ -1677,7 +1698,21 @@ void genrateStmt(Node *stmt){
                     }
                     if(ifConstantFlow){
                         variable = top->LookupIdentifySymbol(static_cast<idNode*>(left)->name);
-                        variable->value  = getOperationResult(right);
+                        //类型隐式转换
+                        Constant *value_constant = getOperationResult(right);
+                        if(value_constant){
+                            if(variable->type.compare("int") == 0 || variable->type.compare("long") == 0 || variable->type.compare("long long") == 0){
+                                if(value_constant->type.compare("double") == 0){
+                                    value_constant->type = "long long";
+                                    value_constant->llval = (int)value_constant->dval;
+                                }
+                                if(value_constant->type.compare("float") == 0){
+                                    value_constant->type = "long long";
+                                    value_constant->llval = (int)value_constant->fval;
+                                }
+                            }
+                        }
+                        variable->value  = value_constant;
                     }
                     
                 }
@@ -1837,8 +1872,24 @@ void generateDeclareNode(declareNode* dlcNode){
             Variable *variable = new Variable("array",(*it)->name,array);
             top->InsertIdentifySymbol(variable);
         }else{
-             Constant *constant = generateInitNode(init_value); // 解析初始化值
-             top->InsertIdentifySymbol(*it,constant);
+            Constant *value_constant = generateInitNode(init_value); // 解析初始化值
+             //类型隐式转换
+            string val_type = dlcNode->prim->name; 
+            (*it)->valType = val_type;  
+            if(value_constant){
+                if(val_type.compare("int") == 0 || val_type.compare("long") == 0 || val_type.compare("long long") == 0){
+                if(value_constant->type.compare("double") == 0){
+                    value_constant->type = "long long";
+                    value_constant->llval = (int)value_constant->dval;
+                }
+                if(value_constant->type.compare("float") == 0){
+                    value_constant->type = "long long";
+                    value_constant->llval = (int)value_constant->fval;
+                }
+            }
+            }        
+            
+            top->InsertIdentifySymbol(*it,value_constant);
         }
         if(isOperatorState){
             operator_state_identify.insert(make_pair((*it)->name,*it));
@@ -2267,6 +2318,7 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
                 Variable *variable = top->LookupIdentifySymbol(((idNode *)(*it))->name);
                  variable->value = (*paramValue);
                  top->InsertParamSymbol(variable);
+                 paramValue++;
                 /*if(variable->type.compare((*paramValue)->type) == 0){ //todo 参数类型匹配
                     variable->value = (*paramValue);
                 }else{

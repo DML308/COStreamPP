@@ -139,6 +139,8 @@ void compositeCallFlow(list<Node *> *stmts)
     /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到compositeCall_list中*/
     for (auto nd : *(stmts))
     {
+        if(nd == NULL)
+            continue;
         //cout<<"type:"<<nd->type<<endl;
         if (nd->type == Add)
         {
