@@ -4,7 +4,8 @@ int current_version[MAX_SCOPE_DEPTH]={0};
 //list<SymbolTable *> symbol_tables;
 bool isSorted = false;
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
-extern list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
+extern list<SymbolTable *> symbol_tables;
+extern vector<SymbolTable *> first_symbol_tables,last_symbol_tables;
 SymbolTable::SymbolTable(SymbolTable *p,YYLTYPE *loc){
     this->loc = loc;
     prev = p;
@@ -413,7 +414,7 @@ string SymbolTable::toParamString(SymbolTable *table){
     string params_str = "";
     unordered_map<string,Variable*>::iterator it;
     for(it=variableTable.begin();it!=variableTable.end();it++){
-        if(!table->LookupIdentifySymbol(it->first)){
+        if(table->variableTable.find(it->first)==table->variableTable.end()){
             Variable *variable = (Variable *)(it->second);
             string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
             params_str += param_str;
@@ -427,7 +428,7 @@ string SymbolTable::toParamValueString(SymbolTable *table){
     string params_str = "";
     unordered_map<string,Variable*>::iterator it;
     for(it=variableTable.begin();it!=variableTable.end();it++){
-        if(!table->LookupIdentifySymbol(it->first)){
+        if(table->variableTable.find(it->first)==table->variableTable.end()){
         Variable *variable = (Variable *)(it->second);
         string param_str;
         if(variable->value){
@@ -468,18 +469,17 @@ void SymbolTable::printSymbolTables(){
 }
 
 // 查找第一个大于 target 的 值
-int getFirstBigger(int target,list<SymbolTable *> symbol_tables) {
+int getFirstBigger(int target,vector<SymbolTable *> symbol_tables) {
     int count = 0;
     int left = 0,
         right = symbol_tables.size() - 1,
         middle = 0;
     while (left <= right) {
         middle = (left + right) / 2;
-        list<SymbolTable*>::iterator it = symbol_tables.begin();
-        advance(it,middle-1);
-        if ((*it)->loc->last_line > target)
+        
+        if (symbol_tables[middle]->loc->last_line > target)
             right = middle - 1;
-        else if ((*it)->loc->last_line < target)
+        else if (symbol_tables[middle]->loc->last_line < target)
             left = middle + 1;
         else
             return middle;
@@ -488,17 +488,16 @@ int getFirstBigger(int target,list<SymbolTable *> symbol_tables) {
 }
 
 // 查找最后 一个小于 target 的 值
-int getLastSmaller(int target,list<SymbolTable *> symbol_tables) {
+int getLastSmaller(int target,vector<SymbolTable *> symbol_tables) {
     int left = 0,
     right = symbol_tables.size() - 1,
         middle = 0;
     while (left <= right) {
         middle = (left + right) / 2;
-        list<SymbolTable*>::iterator it = symbol_tables.begin();
-        advance(it,middle-1);
-        if ((*it)->loc->first_line > target)
+
+        if (symbol_tables[middle]->loc->first_line > target)
             right = middle - 1;
-        else if ((*it)->loc->first_line < target)
+        else if (symbol_tables[middle]->loc->first_line < target)
             left = middle + 1;
         else
             return middle;
@@ -508,39 +507,40 @@ int getLastSmaller(int target,list<SymbolTable *> symbol_tables) {
 
 //list<SymbolTable *> first_symbol_tables(symbol_tables.size()),last_symbol_tables(symbol_tables.size());
 
-bool compareFirst(SymbolTable *a,SymbolTable *b){
-    return a->loc->first_line - b->loc->first_line;
+bool compareFirst(const SymbolTable *a,const SymbolTable *b){
+    return a->loc->first_line < b->loc->first_line;
 }
-bool compareLast(SymbolTable *a,SymbolTable *b){
-    return a->loc->last_line - b->loc->last_line;
+bool compareLast(const SymbolTable *a,const SymbolTable *b){
+    return a->loc->last_line < b->loc->last_line;
 }
 
 SymbolTable* FindRightSymbolTable(int target) {
     if(!isSorted){
-        first_symbol_tables.resize(symbol_tables.size());
-        last_symbol_tables.resize(symbol_tables.size());
-        copy(symbol_tables.begin(),symbol_tables.end(),last_symbol_tables.begin()); 
-        copy(symbol_tables.begin(),symbol_tables.end(),first_symbol_tables.begin()); 
-        first_symbol_tables.sort(compareFirst);
-        last_symbol_tables.sort(compareLast);
+        first_symbol_tables.resize(0);
+        last_symbol_tables.resize(0);
+        for(auto it :symbol_tables){
+            if(it){
+                if(it->loc){
+                    first_symbol_tables.push_back(it);
+                    last_symbol_tables.push_back(it);
+                }
+            }    
+        }
+        sort(first_symbol_tables.begin(),first_symbol_tables.end(),compareFirst);
+        sort(last_symbol_tables.begin(),last_symbol_tables.end(),compareLast);
         isSorted = true;
     }
     int line_start, line_end;
     line_end = getFirstBigger(target,last_symbol_tables);
     line_start = getLastSmaller(target,first_symbol_tables);
     
-    list<SymbolTable*>::iterator itLast = last_symbol_tables.begin();
-    advance(itLast,line_end-1);
-    YYLTYPE *last_loc = (*itLast)->loc;
-
-    list<SymbolTable*>::iterator itFirst = first_symbol_tables.begin();
-    advance(itFirst,line_start-1);
-    YYLTYPE *first_loc = (*itFirst)->loc;
+    YYLTYPE *last_loc = last_symbol_tables[line_end]->loc;
+    YYLTYPE *first_loc = first_symbol_tables[line_start]->loc;
 
     if(last_loc->first_line<= target && last_loc->last_line >= target){
-        return (*itLast);
+        return last_symbol_tables[line_end];;
     }else {
-        return (*itFirst);
+        return first_symbol_tables[line_start];
     }
 }
 

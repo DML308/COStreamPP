@@ -3,6 +3,7 @@ SymbolTable *running_top;
 extern SymbolTable* top;
 extern SymbolTable S;
 extern sequentialNode* globalSequential;
+extern bool ifConstantFlow;
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -299,7 +300,9 @@ void X86CodeGeneration::CGactors()
         running_top = flatNodes_[i]->compositecall_runnningtop;
         SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
         top = opt_top;
-        generatorOperatorNode(flatNodes_[i]->contents);
+        //ifCodeGeneration = false;
+        //generatorOperatorNode(flatNodes_[i]->contents);
+        opt_top = FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
         //for(auto it : running_top->)
         string param = running_top->toParamString(opt_top);
         buf << param;
@@ -476,11 +479,7 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
     buf << "\tvoid initVarAndState() {\n";
     //进行param的初始化
           
-    SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
-    top = opt_top;
-    for(auto it = stmts->begin();it != stmts->end();it++){
-        genrateStmt(*it);
-    }
+    SymbolTable *opt_top = top;
     string param = running_top->toParamValueString(opt_top);
     buf<<param;
     if (stmts != NULL)

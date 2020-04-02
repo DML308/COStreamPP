@@ -8,6 +8,8 @@
 #include <map>
 #include <unordered_map>
 #include <list>
+#include <algorithm>
+#include <vector>
 
 void EnterScope(void);
 void ExitScope(void);
@@ -92,10 +94,10 @@ class Constant{
 
 class ArrayConstant {
   public:
-    list<Constant *> values;
+    vector<Constant *> values;
     string type;
+    vector<int> arg_size;
     ArrayConstant(string type) : type(type){}
-
     void print();
 };
 
