@@ -1756,6 +1756,8 @@ void genrateStmt(Node *stmt){
                         }
                         bool isArray = false;
                         int index = 0;
+                        bool canGetIndex = true;
+                        int size;
                         if(((idNode*)left)->arg_list.size()){
                             isArray = true;
                             //处理数组下标
@@ -1772,8 +1774,19 @@ void genrateStmt(Node *stmt){
                             
                             int array_size = each_size.size()-1;
                             for(auto i:((idNode*)left)->arg_list){
-
-                                int size = getOperationResult(i)->llval;
+                                Constant *value = getOperationResult(i);
+                                if(value){
+                                    if(value->llval){
+                                        size = value->llval;
+                                    }else{
+                                        canGetIndex = false;
+                                        break;
+                                    }
+                                }else{
+                                    canGetIndex = false;
+                                    break;
+                                }
+                                
                                 if(array_size-index>0){
                                     index += each_size[array_size - index] * size;
                                 }else{
@@ -1799,7 +1812,9 @@ void genrateStmt(Node *stmt){
                             }
                         }
                         if(isArray){
-                            ((ArrayConstant *)variable->value)->values[index] = value_constant;
+                            if(canGetIndex){
+                                ((ArrayConstant *)variable->value)->values[index] = value_constant;
+                            }
                         }else{
                             variable->value  = value_constant;
                         }
