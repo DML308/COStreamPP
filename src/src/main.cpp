@@ -35,6 +35,8 @@ bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常�
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
 list<SymbolTable *> symbol_tables;
 vector<SymbolTable *> first_symbol_tables,last_symbol_tables;
+
+list<Variable *> paramArrayVariable;//代码生成使用
 //===----------------------------------------------------------------------===//
 // Main
 //===----------------------------------------------------------------------===//

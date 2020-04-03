@@ -1593,13 +1593,59 @@ Constant* getOperationResult(Node* exp){
     case Id:
         {
             idNode *id = static_cast<idNode *>(exp);
-            if(id->isArray){
-                return NULL;
-            }
+            
             string name = id->name;
-            Variable *val = top->LookupIdentifySymbol(name);
-            if(val){
-                return val->value;
+            Variable *variable = top->LookupIdentifySymbol(name);
+            
+            if(id->isArray){
+                variable->isArray = true;
+                if(id->arg_list.size()){
+                int index = 0;
+                bool canGetIndex = true;
+                        //处理数组下标
+                vector<int> arg_size = ((ArrayConstant *)variable->value)->arg_size;
+                vector<int> each_size;
+                for(int i=arg_size.size()-1;i>=0;i--){
+                    if(each_size.size()){
+                        each_size.push_back(arg_size[i]*each_size.back());
+                    }else{
+                        each_size.push_back(arg_size[i]);
+                        }                          
+                }
+                        
+                int array_size = each_size.size()-1;
+                for(auto i:id->arg_list){
+                    int size;
+                    Constant *value = getOperationResult(i);
+                    if(value){
+                        if(value->llval){
+                            size = value->llval;
+                        }else{
+                            canGetIndex = false;
+                            break;
+                        }
+                    }else{
+                        canGetIndex = false;
+                        break;
+                    }
+                    if(array_size-index>0){
+                        index += each_size[array_size - index] * size;
+                    }else{
+                        index += size;
+                    }
+                }
+                if(canGetIndex){
+                    return ((ArrayConstant *)variable->value)->values[index];
+                }else{
+                    return NULL;
+                }
+                
+            }
+            return variable->value;
+            }
+
+            if(variable){
+                return variable->value;
             }else{
                 return NULL;
             }
@@ -1610,14 +1656,15 @@ Constant* getOperationResult(Node* exp){
         Node *left = static_cast<binopNode *>(exp)->left;
         Node *right = static_cast<binopNode *>(exp)->right;
         Constant *leftV,*rightV;
+        string op = static_cast<binopNode *>(exp)->op;
+        if(op.compare(".") == 0) return NULL;
         if(left){
             leftV =  getOperationResult(static_cast<binopNode *>(exp)->left);
         }
         if(right){
             rightV = getOperationResult(static_cast<binopNode *>(exp)->right);
         }
-        string op = static_cast<binopNode *>(exp)->op;
-        if(op.compare(".") == 0) return NULL;
+        
         if(leftV && rightV){
             return getResult(op,leftV,rightV);
         }else{
@@ -1712,7 +1759,7 @@ void genrateStmt(Node *stmt){
                         if(((idNode*)left)->arg_list.size()){
                             isArray = true;
                             //处理数组下标
-                            vector<int> arg_size = variable->array->arg_size;
+                            vector<int> arg_size = ((ArrayConstant *)variable->value)->arg_size;
                             vector<int> each_size;
 
                             for(int i=arg_size.size()-1;i>=0;i--){
@@ -1752,7 +1799,7 @@ void genrateStmt(Node *stmt){
                             }
                         }
                         if(isArray){
-                            variable->array->values[index] = value_constant;
+                            ((ArrayConstant *)variable->value)->values[index] = value_constant;
                         }else{
                             variable->value  = value_constant;
                         }
@@ -1932,9 +1979,8 @@ void generateDeclareNode(declareNode* dlcNode){
                     array_values.resize(array_size);
                 }
             }
-            
             array->values = array_values;
-            Variable *variable = new Variable("array",(*it)->name,array);
+            Variable *variable = new Variable((*it)->valType,(*it)->name,array);
             top->InsertIdentifySymbol(variable);
         }else{
             Constant *value_constant = generateInitNode(init_value); // 解析初始化值
@@ -2242,39 +2288,7 @@ void generateComposite(compositeNode* composite){
                 } 
             } 
         } 
-        /*if(composite->head->originalInOut){
-
-            ComInOutNode *originalInOut = composite->head->originalInOut;
-            
-            if(inout != NULL){
-            list<Node *> *original_input_List = originalInOut->input_List; //原始输入流
-            list<Node *> *original_output_List = originalInOut->output_List; //原始输出流
-
-            list<Node *> *input_List = inout->input_List; // 流代替后 输入流 
-            list<Node *> *output_List = inout->output_List; //流代替后 输出流
-
-            
-            if(input_List != NULL && original_input_List != NULL){
-                auto original_input = original_input_List->begin();
-                for(auto it = input_List->begin();it!=input_List->end();it++){
-                    //top->InsertStreamSymbol(((inOutdeclNode *)*original_input)->id->name ,static_cast<inOutdeclNode *>(*it));
-                    original_input++;
-                }
-            }
-
-            if(output_List != NULL && original_output_List != NULL){
-                auto original_output = original_output_List->begin();
-                for(auto it = output_List->begin();it!=output_List->end();it++){
-                     //top->InsertStreamSymbol(((inOutdeclNode *)*original_output)->id->name ,static_cast<inOutdeclNode *>(*it));
-                     original_output++;
-                }  
-            } 
-        } 
-
-        }else{
-            
-        }
-    */
+        
 
     // 解析 param
         if(param != NULL){
@@ -2318,10 +2332,52 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         top->count = 0;
     }
     
-    generateComposite(composite);//进行常量传播
-    
+    ComInOutNode *inout = composite->head->inout; //输入输出参数
     compBodyNode *body = composite->body; //body
     paramNode *param;
+    list<Node *> *body_stmt;
+
+    if(body != NULL){
+        param = body->param; // param
+        body_stmt = body->stmt_List;
+    
+
+        //解析 输入输出流 stream 作为参数加入符号表
+        if(inout != NULL){
+            list<Node *> *input_List = inout->input_List; //原始输入流
+            list<Node *> *output_List = inout->output_List; //原始输出流
+            if(input_List != NULL){
+                for(auto it = input_List->begin();it!=input_List->end();it++){
+                    inOutdeclNode *copy_inoutdeclNode = new inOutdeclNode();
+                    copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
+                    idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
+                    copy_inoutdeclNode->id = copy_id;
+                    copy_inoutdeclNode->isInOut = true;
+                    top->InsertStreamSymbol(copy_inoutdeclNode);
+                }
+            }
+            if(output_List != NULL){
+                for(auto it = output_List->begin();it!=output_List->end();it++){
+                    inOutdeclNode *copy_inoutdeclNode = new inOutdeclNode();
+                    copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
+                    idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
+                    copy_inoutdeclNode->id = copy_id;
+                    copy_inoutdeclNode->isInOut = true;
+                    top->InsertStreamSymbol(copy_inoutdeclNode);
+                } 
+            } 
+        } 
+        // 解析 param
+        if(param != NULL){
+            generateNodeList(*(param->param_list)); 
+        }
+    }
+
+    //generateComposite(composite);//进行常量传播
+
+    
+    //compBodyNode *body = composite->body; //body
+    //paramNode *param;
 
     //在符号表中将数据流替换为真实数据流
     if(composite->head->inout){
@@ -2363,26 +2419,23 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         }
     }
    
-   //多次调用同一个 composite,其内部声明的数据流通过count来进行区分
-   for(auto it : top->getStreamTable()){
-        inOutdeclNode *stream = it.second;
+   
 
-        if(!stream->isInOut){
-            stream->id->name = composite->compName + stream->id->name + to_string(top->count);
-        }
-    }
-
+    // 传入compositecall参数到param
     list<Constant*>::iterator paramValue =  paramList.begin();
     if(body != NULL){
         param = body->param; // param
-    // 解析 param
+    
         if(param != NULL){
             list<Node *> param_list = *(param->param_list);
             for(auto it = param_list.begin();it != param_list.end();it++){
                 Variable *variable = top->LookupIdentifySymbol(((idNode *)(*it))->name);
-                 variable->value = (*paramValue);
-                 top->InsertParamSymbol(variable);
-                 paramValue++;
+                if((*paramValue)->isArray){
+                    variable->isArray = true;
+                }
+                variable->value = (*paramValue); 
+                top->InsertParamSymbol(variable);
+                paramValue++;
                 /*if(variable->type.compare((*paramValue)->type) == 0){ //todo 参数类型匹配
                     variable->value = (*paramValue);
                 }else{
@@ -2391,84 +2444,22 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
                 }*/ 
             }
         }
-        //解析window 不能放这里
-        /*for (auto it : *body->stmt_List)
-        {
-            operatorNode *exp = NULL;
-            if(it->type == Binop){
-                Node *right = ((binopNode *)it)->right;
-                if(right->type == Operator_){
-                    exp = (operatorNode *)right;
-                }
-            }
-            if (it->type == Operator_)
-            {
-                exp = ((operatorNode *)it);
-            }
-            if(exp!=NULL){
-                //cout<<"exp->type ="<<exp->type<<endl;
-                // 解析window
-                
-                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
-                /*operBodyNode *operBody = exp->operBody;
-                //paramNode *param = operBody->param;
-                list<Node *> stmts = operBody->stmt_list;
-                list<Node *> *win_list = new list<Node *>();
-                /*动态分配生成新的windowNode*/ // 求出具体window大小
-                /*for (auto it : *operBody->win->win_list)
-                {
-                    Node *winType = ((winStmtNode *)it)->winType;
-                    string winName = ((winStmtNode *)it)->winName;
-                    winStmtNode *copy_winstmt_node;
-                    if(winType->type == Sliding){
-                        slidingNode *sliding = (slidingNode *)winType;
-                        list<Node *> *sliding_list = sliding->arg_list;
-                        list<Node *> *copy_list = new list<Node *>();
-                        for (auto it : *sliding_list){
-                            constantNode *constant_node;
-                            Constant *value = getOperationResult(it);
-                            if(value->type.compare("int") == 0){ //todo
-                                // constant_node = new constantNode(value->type,value->ival);
-                            }
-                            if(value->type.compare("long") == 0){
-                                constant_node = new constantNode(value->type,value->lval);
-                            }
-                            if(value->type.compare("long long") == 0){
-                                constant_node = new constantNode(value->type,value->llval);
-                            }
-                            copy_list->push_back(constant_node);
-                        }
-                        slidingNode *copy_sliding = new slidingNode(copy_list);
-                        copy_winstmt_node = new winStmtNode(winName,copy_sliding);
-                    }
-                    if(winType->type == Tumbling){
-                        slidingNode *sliding = (slidingNode *)winType;
-                        list<Node *> *sliding_list = sliding->arg_list;
-                        list<Node *> *copy_list = new list<Node *>();
-                        for (auto it : *sliding_list){
-                            constantNode *constant_node;
-                            Constant *value = getOperationResult(it);
-                            if(value->type.compare("int") == 0){ //todo
-                                // constant_node = new constantNode(value->type,value->ival);
-                            }
-                            if(value->type.compare("long") == 0){
-                                // constant_node = new constantNode(value->type,value->lval);
-                            }
-                            if(value->type.compare("long long") == 0){
-                                constant_node = new constantNode(value->type,value->llval);
-                            }
-                            copy_list->push_back(constant_node);
-                        }
-                        tumblingNode *copy_sliding = new tumblingNode(copy_list);
-                        copy_winstmt_node = new winStmtNode(winName,copy_sliding);
-                    }
-                    win_list->push_back(copy_winstmt_node);
-                }
-                operBody->win->win_list = win_list;
-                //windowNode *win = new windowNode(win_list);  
-            }  
-            
-        }*/
+    }
+
+    //先传递composite参数和数据流，再进行body解析，进行常量传播 
+    if(body_stmt != NULL){
+        for(auto it = body_stmt->begin();it != body_stmt->end();it++){
+            genrateStmt(*it);
+        }        
+    }
+
+    //多次调用同一个 composite,其内部声明的数据流通过count来进行区分
+   for(auto it : top->getStreamTable()){
+        inOutdeclNode *stream = it.second;
+
+        if(!stream->isInOut){
+            stream->id->name = composite->compName + stream->id->name + to_string(top->count);
+        }
     }
     top->printSymbolTables();
     return top;

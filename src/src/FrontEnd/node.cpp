@@ -369,7 +369,9 @@ string declareNode::toString()
         if ((*iter)->init != NULL)
             str += "=" + (*iter)->init->toString();
     }
-    if (str[str.size() - 1] != ';')
+    if (str[str.size() - 1] != ';'){
+        str+=";";
+    }
     return str;
 }
 

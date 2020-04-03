@@ -6,6 +6,8 @@ bool isSorted = false;
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 extern list<SymbolTable *> symbol_tables;
 extern vector<SymbolTable *> first_symbol_tables,last_symbol_tables;
+
+extern list<Variable *> paramArrayVariable;
 SymbolTable::SymbolTable(SymbolTable *p,YYLTYPE *loc){
     this->loc = loc;
     prev = p;
@@ -416,6 +418,10 @@ string SymbolTable::toParamString(SymbolTable *table){
     for(it=variableTable.begin();it!=variableTable.end();it++){
         if(table->variableTable.find(it->first)==table->variableTable.end()){
             Variable *variable = (Variable *)(it->second);
+            if(variable->isArray){
+                paramArrayVariable.push_back(variable);
+                continue;
+            }
             string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
             params_str += param_str;
         }
@@ -431,8 +437,11 @@ string SymbolTable::toParamValueString(SymbolTable *table){
         if(table->variableTable.find(it->first)==table->variableTable.end()){
         Variable *variable = (Variable *)(it->second);
         string param_str;
+        if(variable->isArray){
+            continue;
+        }
         if(variable->value){
-            param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
+            param_str ="\t" + variable->name + "=" + variable->value->printStr() + ";" +"\n";
         }
         params_str += param_str;
         }
@@ -447,13 +456,13 @@ void SymbolTable::printSymbolTables(){
         string type = it->first;
         if(it->second != NULL){
             string type = it->second->type;
-            if(type.compare("array") == 0){
-                it->second->array->print();
+            if(it->second->isArray){
+                ((ArrayConstant *)(it->second->value))->print();
             }else{
                 if(!it->second->value){
                     cout<<"undefined"<<endl;
                 }else{
-                    it->second->value->print(false);
+                    it->second->value->print();
                 }
                 
             }  
@@ -544,14 +553,38 @@ SymbolTable* FindRightSymbolTable(int target) {
     }
 }
 
+string ArrayConstant::printEachLevel(int level){
+    string str = "{";
+    for(int i=0;i<this->arg_size[level];i++){
+        if(level == this->arg_size.size()-1){
+            str += this->values[index]->printStr();
+            index++;
+        }else{
+            str += printEachLevel(level+1); //
+        }
+        if(i!=this->arg_size[level]-1){
+            str+=',';
+        }
+    }
+    str+='}';
+    return str;
+}
+string ArrayConstant::printStr(){
+    this->index = 0;
+    return printEachLevel(0);
+}
+
 void ArrayConstant::print(){
+    this->index = 0;
     int count = 0;
-      for(auto it : values){
+    //printEachLevel(0);
+
+    for(auto it : values){
         if(count != 0){
           cout<<",";
         }
         count++;
-        (it)->print(true);
-      }
+        (it)->print();
+    }
       cout<<endl;
 }
