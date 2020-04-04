@@ -24,3 +24,4 @@ src/a
 /*.cpp
 /Makefile
 *.o
+core
