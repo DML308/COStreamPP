@@ -4,7 +4,7 @@
 #include <string.h>
 
 extern SymbolTable S;
-extern SymbolTable *runningTop;
+extern SymbolTable *runningTop,*top;
 
 extern list<Node*> *Program;
 vector<Node *> compositeCall_list; //存储splitjoin/pipeline中的compositeCall调用
@@ -402,7 +402,8 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
-    compositeCallFlow(node->body_stmts);
+    compositeCall_list = node->compositeCall_list;
+    //compositeCallFlow(node->body_stmts);
     if (node->split->dup_round->type == RoundRobin)
     {
         tmp = UnfoldRoundrobin(comName, node);
@@ -866,7 +867,9 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 
 compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
-    compositeCallFlow(node->body_stmts);
+    top = runningTop;
+    compositeCall_list = node->compositeCall_list;
+    //compositeCallFlow(node->body_stmts);
     vector<compositeCallNode *> comCallList;
     compositeNode *pipeline = NULL;
     string streamName = "Pstream";

@@ -1,16 +1,20 @@
 #include "symbol.h"
-int Level=0;
-int current_version[MAX_SCOPE_DEPTH]={0};
+int Level = 0;
+int current_version[MAX_SCOPE_DEPTH] = {0};
 //list<SymbolTable *> symbol_tables;
 bool isSorted = false;
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
-extern list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
-SymbolTable::SymbolTable(SymbolTable *p,YYLTYPE *loc){
+extern list<SymbolTable *> symbol_tables;
+extern vector<SymbolTable *> first_symbol_tables, last_symbol_tables;
+
+extern list<Variable *> paramArrayVariable;
+SymbolTable::SymbolTable(SymbolTable *p, YYLTYPE *loc)
+{
     this->loc = loc;
     prev = p;
     symbol_tables.push_back(this);
     symboltables[Level][current_version[Level]] = this;
-    //current_version[Level]++; //创建了新的符号表,当前层的 version + 1 
+    //current_version[Level]++; //创建了新的符号表,当前层的 version + 1
 }
 
 /* enterScope */
@@ -31,7 +35,7 @@ void ExitScope()
     {
         cout << "missing '{' detected" << endl;
     }
-    current_version[Level]++; //创建了新的符号表,当前层的 version + 1 
+    current_version[Level]++; //创建了新的符号表,当前层的 version + 1
     Level--;
 }
 
@@ -51,15 +55,13 @@ void SymbolTable::InsertSymbol(idNode *node)
         {
             if ((*it)->level == Level && (*it)->version == current_version[Level])
             {
-                cout << (*it)->loc->first_line<<": idNode had been declared! ";
+                cout << (*it)->loc->first_line << ": idNode had been declared! ";
                 exit(-1);
             }
         }
         idTable[node->name].push_back(node);
     }
 }
-
-
 
 /* 必须查找上层作用域名 还未修改*/
 bool SymbolTable::LookupSymbol(string name)
@@ -87,27 +89,37 @@ CompositeSymbol *SymbolTable::LookupCompositeSymbol(string name)
 {
     SymbolTable *right_pre;
     auto iter = compTable.find(name);
-    if(!(iter == compTable.end())){
+    if (!(iter == compTable.end()))
+    {
         return iter->second;
-    }else{ // 往上层作用域查找
-        if(prev == NULL) return NULL;
+    }
+    else
+    { // 往上层作用域查找
+        if (prev == NULL)
+            return NULL;
         right_pre = prev;
-        do{
+        do
+        {
             iter = right_pre->compTable.find(name);
-            if(right_pre->prev != NULL){
+            if (right_pre->prev != NULL)
+            {
                 right_pre = right_pre->prev;
-            }else{
+            }
+            else
+            {
                 break;
             }
-        }while(iter == right_pre->compTable.end());
-        if(iter == right_pre->compTable.end()){
+        } while (iter == right_pre->compTable.end());
+        if (iter == right_pre->compTable.end())
+        {
             return NULL;
-        }else{
+        }
+        else
+        {
             return iter->second;
         }
     }
 }
-
 
 idNode *SymbolTable::operator[](string str)
 {
@@ -136,16 +148,15 @@ void SymbolTable::put(string s, idNode *id)
 
 idNode *SymbolTable::get(string s)
 {
-    
+
     for (SymbolTable *e = this; e != NULL; e = e->getPrev())
     {
-        for(auto it:e->table)
-        cout<<it.first<<" ";
-        cout<<endl;
+        for (auto it : e->table)
+            cout << it.first << " ";
+        cout << endl;
         auto found = e->table.find(s);
         if (found != e->table.end())
             return found->second;
-        
     }
     string mesg = s + " has not been defined!";
     cout << mesg << endl;
@@ -153,26 +164,30 @@ idNode *SymbolTable::get(string s)
     return NULL;
 }
 
-void SymbolTable::InsertIdentifySymbol(Node *node){
+void SymbolTable::InsertIdentifySymbol(Node *node)
+{
     string name;
     Variable *variable = NULL;
-    switch(node->type){
-        case Id:{
-            idNode * id = static_cast<idNode *>(node);
-            name = id->name;
-            string type = id->valType;
-            variable = new Variable(type,name);
-            static_cast<idNode *>(node)->level = Level;
-            static_cast<idNode *>(node)->version = current_version[Level];
-            variable->level = Level;
-            variable->version = current_version[Level];
-            break;
-        }
-        case InOutdcl:{
-            name = static_cast<inOutdeclNode *>(node)->id->name;
-            // 是否需要设置 level version ?
-            break;
-        }
+    switch (node->type)
+    {
+    case Id:
+    {
+        idNode *id = static_cast<idNode *>(node);
+        name = id->name;
+        string type = id->valType;
+        variable = new Variable(type, name);
+        static_cast<idNode *>(node)->level = Level;
+        static_cast<idNode *>(node)->version = current_version[Level];
+        variable->level = Level;
+        variable->version = current_version[Level];
+        break;
+    }
+    case InOutdcl:
+    {
+        name = static_cast<inOutdeclNode *>(node)->id->name;
+        // 是否需要设置 level version ?
+        break;
+    }
     }
     auto iter = variableTable.find(name);
     if (iter == variableTable.end())
@@ -181,12 +196,13 @@ void SymbolTable::InsertIdentifySymbol(Node *node){
     }
     else
     {
-        cout <<node->loc->first_line<<": "<<name<<" had been declared!";
+        cout << node->loc->first_line << ": " << name << " had been declared!";
         exit(-1);
     }
 }
 
-void SymbolTable::InsertIdentifySymbol(Variable *variable){
+void SymbolTable::InsertIdentifySymbol(Variable *variable)
+{
 
     string name = variable->name;
     variable->level = Level;
@@ -199,64 +215,84 @@ void SymbolTable::InsertIdentifySymbol(Variable *variable){
     }
     else
     {
-        cout << name<<" had been declared!";
-        exit(-1);cout << name<<" had been declared!";
+        cout << name << " had been declared!";
+        exit(-1);
+        cout << name << " had been declared!";
     }
 }
 
-void SymbolTable::InsertStreamSymbol(inOutdeclNode* inOutNode){
+void SymbolTable::InsertStreamSymbol(inOutdeclNode *inOutNode)
+{
     string name = ((idNode *)(inOutNode->id))->name;
     auto iter = streamTable.find(name);
-    if(iter == streamTable.end()){
-        streamTable.insert(make_pair(name,inOutNode));
-    }else{
-        cout << inOutNode->loc->first_line << ": " << "stream " << name <<" had been declared!";
+    if (iter == streamTable.end())
+    {
+        streamTable.insert(make_pair(name, inOutNode));
+    }
+    else
+    {
+        cout << inOutNode->loc->first_line << ": "
+             << "stream " << name << " had been declared!";
         exit(-1);
     }
 }
 
-inOutdeclNode* SymbolTable::LookUpStreamSymbol(string name){
+inOutdeclNode *SymbolTable::LookUpStreamSymbol(string name)
+{
     SymbolTable *right_pre;
     auto iter = streamTable.find(name);
-    if(!(iter == streamTable.end())){
+    if (!(iter == streamTable.end()))
+    {
         return iter->second;
-    }else{ // 往上层作用域查找
-        if(prev == NULL) return NULL;
+    }
+    else
+    { // 往上层作用域查找
+        if (prev == NULL)
+            return NULL;
         right_pre = prev;
-        while(right_pre!=NULL){
+        while (right_pre != NULL)
+        {
             iter = right_pre->streamTable.find(name);
-            if(iter != right_pre->streamTable.end()){
+            if (iter != right_pre->streamTable.end())
+            {
                 break;
             }
             right_pre = right_pre->prev;
         }
-        if(right_pre == NULL){
+        if (right_pre == NULL)
+        {
             return NULL;
-        }else{
+        }
+        else
+        {
             return iter->second;
         }
     }
 }
-void SymbolTable::InsertIdentifySymbol(Node *node,Constant *constant){
+void SymbolTable::InsertIdentifySymbol(Node *node, Constant *constant)
+{
     string name;
     Variable *variable = NULL;
-    switch(node->type){
-        case Id:{
-            idNode * id = static_cast<idNode *>(node);
-            name = id->name;
-            string type = id->valType;
-            variable = new Variable(type,name,constant);
-            static_cast<idNode *>(node)->level = Level;
-            static_cast<idNode *>(node)->version = current_version[Level];
-            variable->level = Level;
-            variable->version = current_version[Level];
-            break;
-        }
-        case InOutdcl:{
-            name = static_cast<inOutdeclNode *>(node)->id->name;
-            // 是否需要设置 level version ?
-            break;
-        }
+    switch (node->type)
+    {
+    case Id:
+    {
+        idNode *id = static_cast<idNode *>(node);
+        name = id->name;
+        string type = id->valType;
+        variable = new Variable(type, name, constant);
+        static_cast<idNode *>(node)->level = Level;
+        static_cast<idNode *>(node)->version = current_version[Level];
+        variable->level = Level;
+        variable->version = current_version[Level];
+        break;
+    }
+    case InOutdcl:
+    {
+        name = static_cast<inOutdeclNode *>(node)->id->name;
+        // 是否需要设置 level version ?
+        break;
+    }
     }
     auto iter = variableTable.find(name);
     if (iter == variableTable.end())
@@ -265,29 +301,39 @@ void SymbolTable::InsertIdentifySymbol(Node *node,Constant *constant){
     }
     else
     {
-        cout <<node->loc->first_line << ": " << name<<" had been declared!";
+        cout << node->loc->first_line << ": " << name << " had been declared!";
         exit(-1);
     }
 }
 
-Variable* SymbolTable::LookupIdentifySymbol(string name){
+Variable *SymbolTable::LookupIdentifySymbol(string name)
+{
     SymbolTable *right_pre;
     auto iter = variableTable.find(name);
-    if(!(iter == variableTable.end())){
+    if (!(iter == variableTable.end()))
+    {
         return iter->second;
-    }else{ // 往上层作用域查找
-        if(prev == NULL) return NULL;
+    }
+    else
+    { // 往上层作用域查找
+        if (prev == NULL)
+            return NULL;
         right_pre = prev;
-        while(right_pre!=NULL){
+        while (right_pre != NULL)
+        {
             iter = right_pre->variableTable.find(name);
-            if(iter != right_pre->variableTable.end()){
+            if (iter != right_pre->variableTable.end())
+            {
                 break;
             }
             right_pre = right_pre->prev;
         }
-        if(right_pre == NULL){
+        if (right_pre == NULL)
+        {
             return NULL;
-        }else{
+        }
+        else
+        {
             return iter->second;
         }
     }
@@ -316,7 +362,8 @@ Variable* SymbolTable::LookupIdentifySymbol(string name){
     }
 }*/
 
-void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
+void SymbolTable::InsertFunctionSymbol(funcDclNode *func)
+{
     auto iter = funcTable.find(func->name);
     if (iter == funcTable.end())
     {
@@ -324,30 +371,42 @@ void SymbolTable::InsertFunctionSymbol(funcDclNode *func){
     }
     else
     {
-        cout << func->loc->first_line << ": " << func->name<<" had been declared!";
+        cout << func->loc->first_line << ": " << func->name << " had been declared!";
         exit(-1);
     }
 }
 
-funcDclNode* SymbolTable::LookupFunctionSymbol(string name){
+funcDclNode *SymbolTable::LookupFunctionSymbol(string name)
+{
     SymbolTable *right_pre;
     auto iter = funcTable.find(name);
-    if(!(iter == funcTable.end())){
+    if (!(iter == funcTable.end()))
+    {
         return iter->second;
-    }else{
-        if(prev == NULL) return NULL;
+    }
+    else
+    {
+        if (prev == NULL)
+            return NULL;
         right_pre = prev;
-        do{
+        do
+        {
             iter = right_pre->funcTable.find(name);
-            if(right_pre->prev != NULL){
+            if (right_pre->prev != NULL)
+            {
                 right_pre = right_pre->prev;
-            }else{
+            }
+            else
+            {
                 break;
             }
-        }while(iter == right_pre->funcTable.end());
-        if(iter == right_pre->funcTable.end()){
+        } while (iter == right_pre->funcTable.end());
+        if (iter == right_pre->funcTable.end())
+        {
             return NULL;
-        }else{
+        }
+        else
+        {
             return iter->second;
         }
     }
@@ -369,8 +428,6 @@ funcDclNode* SymbolTable::LookupFunctionSymbol(string name){
     }
 }*/
 
-
-
 void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
 {
     optTable.insert(make_pair(name, opt));
@@ -378,108 +435,143 @@ void SymbolTable::InsertOperatorSymbol(string name, operatorNode *opt)
     static_cast<operatorNode *>(opt)->version = current_version[Level];
 }
 
-void SymbolTable::InsertParamSymbol(Variable *variable){
-    paramTable.insert(make_pair(variable->name,variable));
+void SymbolTable::InsertParamSymbol(Variable *variable)
+{
+    paramTable.insert(make_pair(variable->name, variable));
 }
 
-constantNode* SymbolTable::fromVariableToConstant(Variable *value){
-      string type = value->value->type;
-      string name = value->name;
-      if(type.compare("int") == 0){
-        return new constantNode(type,value->value->ival);
-      }
-      if(type.compare("long") == 0){
-        return new constantNode(type,value->value->lval);
-      }
-      if(type.compare("long long") == 0){
-        return new constantNode(type,value->value->llval);
-      }
-      if(type.compare("double") == 0){
-        return new constantNode(type,value->value->dval);
-      }
-      if(type.compare("float") == 0){
-        return new constantNode(type,value->value->fval);
-      }
-      if(type.compare("bool") == 0){
-        return new constantNode(type,value->value->bval);
-      }
-      if(type.compare("string") == 0){
-        return new constantNode(type,value->value->sval);
-      }
-      return NULL;
+constantNode *SymbolTable::fromVariableToConstant(Variable *value)
+{
+    string type = value->value->type;
+    string name = value->name;
+    if (type.compare("int") == 0)
+    {
+        return new constantNode(type, value->value->ival);
     }
+    if (type.compare("long") == 0)
+    {
+        return new constantNode(type, value->value->lval);
+    }
+    if (type.compare("long long") == 0)
+    {
+        return new constantNode(type, value->value->llval);
+    }
+    if (type.compare("double") == 0)
+    {
+        return new constantNode(type, value->value->dval);
+    }
+    if (type.compare("float") == 0)
+    {
+        return new constantNode(type, value->value->fval);
+    }
+    if (type.compare("bool") == 0)
+    {
+        return new constantNode(type, value->value->bval);
+    }
+    if (type.compare("string") == 0)
+    {
+        return new constantNode(type, value->value->sval);
+    }
+    return NULL;
+}
 
-string SymbolTable::toParamString(SymbolTable *table){
+string SymbolTable::toParamString(SymbolTable *table)
+{
     string params_str = "";
-    unordered_map<string,Variable*>::iterator it;
-    for(it=variableTable.begin();it!=variableTable.end();it++){
-        if(!table->LookupIdentifySymbol(it->first)){
+    unordered_map<string, Variable *>::iterator it;
+    for (it = variableTable.begin(); it != variableTable.end(); it++)
+    {
+        if (table->variableTable.find(it->first) == table->variableTable.end())
+        {
             Variable *variable = (Variable *)(it->second);
-            string param_str ="\t" + variable->type + " " + variable->name + ";" +"\n";
+            if (variable->isArray)
+            {
+                paramArrayVariable.push_back(variable);
+                continue;
+            }
+            string param_str = "\t" + variable->type + " " + variable->name + ";" + "\n";
             params_str += param_str;
         }
-        
     }
     return params_str;
 }
 
-string SymbolTable::toParamValueString(SymbolTable *table){
+string SymbolTable::toParamValueString(SymbolTable *table)
+{
     string params_str = "";
-    unordered_map<string,Variable*>::iterator it;
-    for(it=variableTable.begin();it!=variableTable.end();it++){
-        if(!table->LookupIdentifySymbol(it->first)){
-        Variable *variable = (Variable *)(it->second);
-        string param_str;
-        if(variable->value){
-            param_str ="\t" + variable->name + "=" + variable->value->printStr(false) + ";" +"\n";
-        }
-        params_str += param_str;
+    unordered_map<string, Variable *>::iterator it;
+    for (it = variableTable.begin(); it != variableTable.end(); it++)
+    {
+        if (table->variableTable.find(it->first) == table->variableTable.end())
+        {
+            Variable *variable = (Variable *)(it->second);
+            string param_str;
+            if (variable->isArray)
+            {
+                continue;
+            }
+            if (variable->value)
+            {
+                param_str = "\t" + variable->name + "=" + variable->value->printStr() + ";" + "\n";
+            }
+            params_str += param_str;
         }
     }
     return params_str;
 }
 
-void SymbolTable::printSymbolTables(){
-    cout<<"---------- Identify Table: ----------\n";
-    for(auto it = variableTable.begin();it!=variableTable.end();it++){
-        cout<<it->first<<":\t";
+void SymbolTable::printSymbolTables()
+{
+    cout << "---------- Identify Table: ----------\n";
+    for (auto it = variableTable.begin(); it != variableTable.end(); it++)
+    {
+        cout << it->first << ":\t";
         string type = it->first;
-        if(it->second != NULL){
+        if (it->second != NULL)
+        {
             string type = it->second->type;
-            if(type.compare("array") == 0){
-                it->second->array->print();
-            }else{
-                if(!it->second->value){
-                    cout<<"undefined"<<endl;
-                }else{
-                    it->second->value->print(false);
+            if (it->second->isArray)
+            {
+                ((ArrayConstant *)(it->second->value))->print();
+            }
+            else
+            {
+                if (!it->second->value)
+                {
+                    cout << "undefined" << endl;
                 }
-                
-            }  
-        }else{
-            cout<<endl;
-        }   
+                else
+                {
+                    it->second->value->print();
+                }
+            }
+        }
+        else
+        {
+            cout << endl;
+        }
     }
-    cout<<"---------- Composite Table: ----------\n";
-    for(auto it = compTable.begin();it!=compTable.end();it++){
-        cout<<it->first<<endl;  
+    cout << "---------- Composite Table: ----------\n";
+    for (auto it = compTable.begin(); it != compTable.end(); it++)
+    {
+        cout << it->first << endl;
     }
-
 }
 
 // 查找第一个大于 target 的 值
-int getFirstBigger(int target,list<SymbolTable *> symbol_tables) {
+int getFirstBigger(int target, vector<SymbolTable *> symbol_tables)
+{
     int count = 0;
     int left = 0,
         right = symbol_tables.size() - 1,
         middle = 0;
-    while (left <= right) {
+    while (left <= right)
+    {
         middle = (left + right) / 2;
-        list<SymbolTable*>::iterator it = symbol_tables.begin();
-        advance(it,middle-1);
-        if ((*it)->loc->last_line > target)
+
+        if (symbol_tables[middle]->loc->last_line > target)
             right = middle - 1;
-        else if ((*it)->loc->last_line < target)
+        else if (symbol_tables[middle]->loc->last_line < target)
             left = middle + 1;
         else
             return middle;
@@ -488,70 +580,201 @@ int getFirstBigger(int target,list<SymbolTable *> symbol_tables) {
 }
 
 // 查找最后 一个小于 target 的 值
-int getLastSmaller(int target,list<SymbolTable *> symbol_tables) {
+int getLastSmaller(int target, vector<SymbolTable *> symbol_tables)
+{
     int left = 0,
-    right = symbol_tables.size() - 1,
+        right = symbol_tables.size() - 1,
         middle = 0;
-    while (left <= right) {
+    while (left <= right)
+    {
         middle = (left + right) / 2;
-        list<SymbolTable*>::iterator it = symbol_tables.begin();
-        advance(it,middle-1);
-        if ((*it)->loc->first_line > target)
+
+        if (symbol_tables[middle]->loc->first_line > target)
             right = middle - 1;
-        else if ((*it)->loc->first_line < target)
+        else if (symbol_tables[middle]->loc->first_line < target)
             left = middle + 1;
         else
             return middle;
     }
-   return right;
+    return right;
 }
 
 //list<SymbolTable *> first_symbol_tables(symbol_tables.size()),last_symbol_tables(symbol_tables.size());
 
-bool compareFirst(SymbolTable *a,SymbolTable *b){
-    return a->loc->first_line - b->loc->first_line;
+bool compareFirst(const SymbolTable *a, const SymbolTable *b)
+{
+    return a->loc->first_line < b->loc->first_line;
 }
-bool compareLast(SymbolTable *a,SymbolTable *b){
-    return a->loc->last_line - b->loc->last_line;
+bool compareLast(const SymbolTable *a, const SymbolTable *b)
+{
+    return a->loc->last_line < b->loc->last_line;
 }
 
-SymbolTable* FindRightSymbolTable(int target) {
-    if(!isSorted){
-        first_symbol_tables.resize(symbol_tables.size());
-        last_symbol_tables.resize(symbol_tables.size());
-        copy(symbol_tables.begin(),symbol_tables.end(),last_symbol_tables.begin()); 
-        copy(symbol_tables.begin(),symbol_tables.end(),first_symbol_tables.begin()); 
-        first_symbol_tables.sort(compareFirst);
-        last_symbol_tables.sort(compareLast);
+SymbolTable *FindRightSymbolTable(int target)
+{
+    if (!isSorted)
+    {
+        first_symbol_tables.resize(0);
+        last_symbol_tables.resize(0);
+        for (auto it : symbol_tables)
+        {
+            if (it)
+            {
+                if (it->loc)
+                {
+                    first_symbol_tables.push_back(it);
+                    last_symbol_tables.push_back(it);
+                }
+            }
+        }
+        sort(first_symbol_tables.begin(), first_symbol_tables.end(), compareFirst);
+        sort(last_symbol_tables.begin(), last_symbol_tables.end(), compareLast);
         isSorted = true;
     }
     int line_start, line_end;
-    line_end = getFirstBigger(target,last_symbol_tables);
-    line_start = getLastSmaller(target,first_symbol_tables);
-    
-    list<SymbolTable*>::iterator itLast = last_symbol_tables.begin();
-    advance(itLast,line_end-1);
-    YYLTYPE *last_loc = (*itLast)->loc;
+    line_end = getFirstBigger(target, last_symbol_tables);
+    line_start = getLastSmaller(target, first_symbol_tables);
 
-    list<SymbolTable*>::iterator itFirst = first_symbol_tables.begin();
-    advance(itFirst,line_start-1);
-    YYLTYPE *first_loc = (*itFirst)->loc;
+    YYLTYPE *last_loc = last_symbol_tables[line_end]->loc;
+    YYLTYPE *first_loc = first_symbol_tables[line_start]->loc;
 
-    if(last_loc->first_line<= target && last_loc->last_line >= target){
-        return (*itLast);
-    }else {
-        return (*itFirst);
+    if (last_loc->first_line <= target && last_loc->last_line >= target)
+    {
+        return last_symbol_tables[line_end];
+        ;
+    }
+    else
+    {
+        return first_symbol_tables[line_start];
     }
 }
 
-void ArrayConstant::print(){
+string ArrayConstant::printEachLevel(int level)
+{
+    string str = "{";
+    for (int i = 0; i < this->arg_size[level]; i++)
+    {
+        if (level == this->arg_size.size() - 1)
+        {
+            str += this->values[index]->printStr();
+            index++;
+        }
+        else
+        {
+            str += printEachLevel(level + 1); //
+        }
+        if (i != this->arg_size[level] - 1)
+        {
+            str += ',';
+        }
+    }
+    str += '}';
+    return str;
+}
+string ArrayConstant::printStr()
+{
+    this->index = 0;
+    return printEachLevel(0);
+}
+
+void ArrayConstant::print()
+{
+    this->index = 0;
     int count = 0;
-      for(auto it : values){
-        if(count != 0){
-          cout<<",";
+    //printEachLevel(0);
+
+    for (auto it : values)
+    {
+        if (count != 0)
+        {
+            cout << ",";
         }
         count++;
-        (it)->print(true);
-      }
-      cout<<endl;
+        if (it)
+        {
+            (it)->print();
+        }
+    }
+    cout << endl;
+}
+
+Constant *copyConstant(Constant *value)
+{
+    string type = value->type;
+    Constant *constant_value; //复制一份做值传递
+    if (!value->isArray)
+    {
+        if (type.compare("long long") == 0)
+        {
+            constant_value = new Constant(type, value->llval);
+        }
+        if (type.compare("int") == 0)
+        {
+            constant_value = new Constant(type, value->ival);
+        }
+        if (type.compare("long") == 0)
+        {
+            constant_value = new Constant(type, value->lval);
+        }
+        if (type.compare("float") == 0)
+        {
+            constant_value = new Constant(type, value->fval);
+        }
+        if (type.compare("double") == 0)
+        {
+            constant_value = new Constant(type, value->dval);
+        }
+    }else{
+        //constant_value = new constantNode("array",0);
+        ArrayConstant *copy_array_value = new ArrayConstant(type);
+        ArrayConstant *array_value = (ArrayConstant *)value;
+        vector<int> copy_arg_size;
+        copy(array_value->arg_size.begin(),array_value->arg_size.end(),copy_arg_size.begin());
+        vector<Constant *> array_values = array_value->values;
+        vector<Constant *> copy_array_values;
+        auto copy_v = copy_array_values.begin();
+        for(auto it : array_values){
+            copy_array_values.push_back(copyConstant(it));
+        }
+        copy_array_value->arg_size = copy_arg_size;
+        copy_array_value->values = copy_array_values;
+
+        constant_value = copy_array_value;
+    }
+    return constant_value;
+}
+
+constantNode *copyConstantNode(Constant *value)
+{
+    string type = value->type;
+    constantNode *constant_value; //复制一份做值传递
+    if (!value->isArray)
+    {
+        if (type.compare("long long") == 0)
+        {
+            constant_value = new constantNode(type, value->llval);
+        }
+        if (type.compare("int") == 0)
+        {
+            constant_value = new constantNode(type, value->ival);
+        }
+        if (type.compare("long") == 0)
+        {
+            constant_value = new constantNode(type, value->lval);
+        }
+        if (type.compare("float") == 0)
+        {
+            constant_value = new constantNode(type, value->fval);
+        }
+        if (type.compare("double") == 0)
+        {
+            constant_value = new constantNode(type, value->dval);
+        }
+    }else{
+        constant_value = new constantNode("array",0);
+        ArrayConstant *copy_array_value = new ArrayConstant(type);
+        ArrayConstant *array_value = (ArrayConstant *)value;
+        constant_value->value = copyConstant(array_value);
+    }
+    return constant_value;
 }

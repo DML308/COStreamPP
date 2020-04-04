@@ -119,29 +119,29 @@ prog.start: translation.unit { Program = $1 ; };
 
 translation.unit:
           external.definition   {
-                                      line("Line:%-4d",@1.first_line);
+                                      line("Line:%-4d",@$.first_line);
                                       debug ("translation.unit ::= external.definition\n");
                                       $$ = new list<Node*>({$1});
                                 }
         | translation.unit external.definition  {
-                                                      line("Line:%-4d",@1.first_line);
+                                                      line("Line:%-4d",@$.first_line);
                                                       debug ("translation.unit ::= translation.unit external.definition\n");
                                                       $$->push_back($2);
                                                 }
         ;
 external.definition:
           declaration           {
-                                      line("Line:%-4d",@1.first_line);
+                                      line("Line:%-4d",@$.first_line);
                                       debug ("external.definition ::= declaration\n");
                                       $$ = $1;
                                 }
         | function.definition   {
-                                      line("Line:%-4d",@1.first_line);
+                                      line("Line:%-4d",@$.first_line);
                                       debug ("external.definition ::= function.definition\n");
                                       $$ = $1 ;
                                 }
         | composite.definition  {
-                                      line("Line:%-4d",@1.first_line);
+                                      line("Line:%-4d",@$.first_line);
                                       debug ("external.definition ::= composite.definition\n");
                                       $$ = $1 ;
                                 }
@@ -155,12 +155,12 @@ external.definition:
 /*************************************************************************/
 declaration:
       declaring.list ';'        {
-                                      line("Line:%-4d",@1.first_line);
+                                      line("Line:%-4d",@$.first_line);
                                       debug ("declaration ::= declaring.list ';' \n");
                                       $$ = $1 ;
                                 }
     | stream.declaring.list ';' {
-                                      line("Line:%-4d",@1.first_line);
+                                      line("Line:%-4d",@$.first_line);
                                       debug ("declaration ::= stream.declaring.list ';' \n");
                                       $$ = $1 ;
                                 }
@@ -169,8 +169,8 @@ declaring.list:
           type.specifier      idNode       initializer.opt  {
               //top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
               (static_cast<idNode*>$2)->init = $3;
-              $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@2) ;
-              line("Line:%-4d",@1.first_line);
+              $$ = new declareNode((primNode*)$1,(static_cast<idNode*>$2),@$) ;
+              line("Line:%-4d",@$.first_line);
               debug ("declaring.list ::= type.specifier(%s) IDENTIFIER(%s) initializer.opt \n",$1->toString().c_str(),$2->toString().c_str());
           }
         | declaring.list     ',' idNode        initializer.opt{
@@ -178,24 +178,24 @@ declaring.list:
               (static_cast<idNode*>$3)->init = $4;
               ((declareNode*)$1)->id_list.push_back((static_cast<idNode*>$3));
               $$=$1;
-              line("Line:%-4d",@1.first_line);
+              line("Line:%-4d",@$.first_line);
               debug ("declaring.list ::= declaring.list ',' IDENTIFIER(%s) initializer.opt \n",$3->toString().c_str());
           }
         ;
 stream.declaring.list:
           stream.type.specifier IDENTIFIER    {
-                                                  line("Line:%-4d",@1.first_line);
+                                                  line("Line:%-4d",@$.first_line);
                                                   debug ("stream.declaring.list ::= stream.type.specifier %s \n",$2->c_str());
-                                                  idNode *id=new idNode(*($2),@2);
+                                                  idNode *id=new idNode(*($2),@$);
                                                   //top->put(*($2),id);
                                                   //issue : 声明的变量和stream内部变量放在了一起
                                                   ((strdclNode*)($1))->declare_stream_id.push_back(id);
                                                   $$ = $1 ;
                                               }
         | stream.declaring.list ',' IDENTIFIER{
-                                                  line("Line:%-4d",@1.first_line);
+                                                  line("Line:%-4d",@$.first_line);
                                                   debug ("stream.declaring.list ::= stream.declaring.list ',' %s \n",$3->c_str());
-                                                  idNode *id=new idNode(*($3),@3);
+                                                  idNode *id=new idNode(*($3),@$);
                                                   //top->put(*($3),id);
                                                   ((strdclNode*)($1))->declare_stream_id.push_back(id);
                                                   $$ = $1 ;
@@ -203,7 +203,7 @@ stream.declaring.list:
         ;
 stream.type.specifier:
           STREAM '<' stream.declaration.list '>'{
-                                                    line("Line:%-4d",@1.first_line);
+                                                    line("Line:%-4d",@$.first_line);
                                                     debug ("stream.type.specifier ::=  STREAM '<' stream.declaration.list(%s) '>' \n",$3->toString().c_str());
                                                     $$ = $3 ;
                                                 }
@@ -212,7 +212,7 @@ stream.declaration.list:
           type.specifier idNode     {
                                         //top->put(static_cast<idNode*>($2)->name,static_cast<idNode*>($2));
                                         (static_cast<idNode*>$2)->valType = (static_cast<primNode*>$1)->name;
-                                        $$ = new strdclNode((idNode*)$2,@1) ;
+                                        $$ = new strdclNode((idNode*)$2,@$) ;
                                     }
         | stream.declaration.list ',' type.specifier idNode {
                                         //top->put(static_cast<idNode*>($4)->name,static_cast<idNode*>($4));
@@ -227,17 +227,17 @@ stream.declaration.list:
 /*************************************************************************/
 array.declarator:
           '[' ']'   {
-                            //line("Line:%-4d",@1.first_line);
+                            //line("Line:%-4d",@$.first_line);
                             //debug ("array.declarator ::= '[' ']' \n");
-                            $$ = new arrayNode(NULL, @1) ;
+                            $$ = new arrayNode(NULL, @$) ;
                     }
         | '[' exp ']' {
-                            // line("Line:%-4d",@1.first_line);
+                            // line("Line:%-4d",@$.first_line);
                             // debug ("array.declarator ::= '[' exp ']' \n");
-                            $$ = new arrayNode((expNode*)$2, @1) ;
+                            $$ = new arrayNode((expNode*)$2, @$) ;
                     }
         | array.declarator '[' exp ']'  {
-                            // line("Line:%-4d",@1.first_line);
+                            // line("Line:%-4d",@$.first_line);
                             // debug ("array.declarator ::= array.declarator '[' exp ']' \n");
                             (static_cast<arrayNode*>$1)->arg_list.push_back((expNode*)$3); $$ = $1;
                     }
@@ -256,7 +256,7 @@ initializer.opt:
                                     $$ = NULL ;
                                 }
         | '=' initializer       {
-                                    line("Line:%-4d",@1.first_line);
+                                    line("Line:%-4d",@$.first_line);
                                     debug ("initializer.opt ::= '=' initializer(%s) \n",$2->toString().c_str());
                                     $$ = $2 ;
                                 }
@@ -269,7 +269,7 @@ initializer:
 
 initializer.list:
           initializer   {
-                            $$ = new initNode($1,@1);
+                            $$ = new initNode($1,@$);
                         }
         | initializer.list ',' initializer  {
                             static_cast<initNode*>$1->value.push_back($3);
@@ -281,8 +281,8 @@ initializer.list:
 /*************************************************************************/
 tuple:
           '(' argument.expression.list ')' {
-                            $$ = new tupleNode($2, @1);
-                            line("Line:%-4d",@1.first_line);
+                            $$ = new tupleNode($2, @$);
+                            line("Line:%-4d",@$.first_line);
                             debug("tuple");
                         }
 /*************************************************************************/
@@ -293,12 +293,12 @@ tuple:
 function.definition:
           type.specifier IDENTIFIER '(' ')' function.body {
                 $$ = new funcDclNode((primNode*)$1,$2,NULL,(funcBodyNode*)$5) ;
-                line("Line:%-4d",@1.first_line);
+                line("Line:%-4d",@$.first_line);
                 debug ("function.definition ::=  %s\n",$$->toString().c_str());
         }
         | type.specifier IDENTIFIER '(' parameter.list ')' function.body  {
                 $$ = new funcDclNode((primNode*)$1,$2,$4,(funcBodyNode*)$6) ;
-                line("Line:%-4d",@1.first_line);
+                line("Line:%-4d",@$.first_line);
                 debug ("function.definition ::=  %s\n",$$->toString().c_str());
                 
         }
@@ -323,12 +323,12 @@ parameter.declaration:
         ;
 function.body:
           lblock rblock                   {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("function.body ::= '{' '}' \n");
                                           $$ = new funcBodyNode(NULL) ;
                                           }
         | lblock statement.list rblock    {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("function.body ::= '{' statement.list '}' \n");
                                           $$ = new funcBodyNode($2) ;
                                     }
@@ -347,25 +347,25 @@ statement.list:
 /*************************************************************************/
 composite.definition:
       composite.head composite.body {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("composite.definition ::= composite.head composite.body \n");
-                                          $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2,@1) ;
+                                          $$ = new compositeNode((compHeadNode*)$1,(compBodyNode*)$2,@$) ;
                                           //S.InsertCompositeSymbol(((compositeNode*)$$)->compName,(compositeNode*)$$);
                                     }
     ;
 composite.head:
       COMPOSITE IDENTIFIER '(' composite.head.inout ')'   {
-            line("Line:%-4d",@1.first_line);
+            line("Line:%-4d",@$.first_line);
             debug ("composite.head ::= COMPOSITE %s '(' composite.head.inout ')' \n",$2->c_str());
             $$ = new compHeadNode(*($2),(ComInOutNode*)$4) ;
       }
     ;
 composite.head.inout:
       /*empty*/                                                                           { $$ = NULL ;}
-    | INPUT composite.head.inout.member.list                                              { $$ = new ComInOutNode($2,NULL, @1)  ; }
-    | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list  { $$ = new ComInOutNode($2,$5,   @1)  ; }
-    | OUTPUT composite.head.inout.member.list                                             { $$ = new ComInOutNode(NULL,$2, @1)  ; }
-    | OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list  { $$ = new ComInOutNode($5,$2,   @1)  ; }
+    | INPUT composite.head.inout.member.list                                              { $$ = new ComInOutNode($2,NULL, @$)  ; }
+    | INPUT composite.head.inout.member.list ',' OUTPUT composite.head.inout.member.list  { $$ = new ComInOutNode($2,$5,   @$)  ; }
+    | OUTPUT composite.head.inout.member.list                                             { $$ = new ComInOutNode(NULL,$2, @$)  ; }
+    | OUTPUT composite.head.inout.member.list ',' INPUT composite.head.inout.member.list  { $$ = new ComInOutNode($5,$2,   @$)  ; }
     ;
 composite.head.inout.member.list:
       composite.head.inout.member                                       {     $$ = new list<Node*>({$1});   }
@@ -373,11 +373,11 @@ composite.head.inout.member.list:
     ;
 composite.head.inout.member:
       stream.type.specifier IDENTIFIER    { 
-                  line("Line:%-4d",@1.first_line);
+                  line("Line:%-4d",@$.first_line);
                   debug ("composite.head.inout.member ::= stream.type.specifier IDENTIFIER(%s)  \n",$2->c_str());
-                  idNode *id = new idNode(*($2),@2);
+                  idNode *id = new idNode(*($2),@$);
                  // top->put(*($2),id);
-                  $$ = new inOutdeclNode($1,id,@2) ; 
+                  $$ = new inOutdeclNode($1,id,@$) ; 
             }
     ;
 /*************************************************************************/
@@ -392,7 +392,7 @@ composite.body:
 composite.body.param.opt:
           /*empty*/                 { $$ = NULL ; }
         | PARAM parameter.list ';'  {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("composite.body.param.opt ::= PARAM parameter.list \n");
                                           $$ = new paramNode($2) ;
                                     }
@@ -406,12 +406,12 @@ composite.body.statement.list:
         ;
 costream.composite.statement:
           composite.body.operator   {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("costream.composite.statement ::= composite.body.operator \n");
                                           $$ = $1 ;
                                     }
         | statement                 {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("costream.composite.statement ::= statement \n");
                                           $$ = $1 ;
                                     }
@@ -426,12 +426,12 @@ costream.composite.statement:
 /*****************************************************************************/
 composite.body.operator:
           operator.file.writer      {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("composite.body.operator ::= operator.file.writer \n");
                                           $$ = $1 ;
                                     }
         | operator.add              {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("composite.body.operator ::= operator.add \n");
                                           $$ = $1 ;
                                     }
@@ -444,70 +444,70 @@ operator.file.writer:
         ;
 operator.add:
           ADD operator.pipeline     {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("operator.add ::= ADD operator.pipeline \n");
-                                          $$ = new addNode((pipelineNode*)$2,@1) ;
+                                          $$ = new addNode((pipelineNode*)$2,@$) ;
                                     }
         | ADD operator.splitjoin    {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("operator.add ::= ADD operator.splitjoin \n");
-                                          $$ = new addNode((splitNode*)$2,@1) ;
+                                          $$ = new addNode((splitNode*)$2,@$) ;
                                     }
         | ADD operator.default.call {
-                                          line("Line:%-4d",@1.first_line);
+                                          line("Line:%-4d",@$.first_line);
                                           debug ("operator.add ::= ADD operator.default.call \n");
-                                          $$ = new addNode((compositeCallNode*)$2,@1) ;
+                                          $$ = new addNode((compositeCallNode*)$2,@$) ;
                                     }
         ;
 operator.pipeline:
-          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@1) ; }
+          PIPELINE lblock  splitjoinPipeline.statement.list rblock     { $$ = new pipelineNode(NULL,$3,NULL,@$) ; }
         ;
 operator.sequential.add:
           ADD operator.layer              {
-                                                line("Line:%-4d",@1.first_line);
+                                                line("Line:%-4d",@$.first_line);
                                                 debug("operator.sequential.add ::= ADD operator.layer \n");
-                                                $$ = new addNode((layerNode*)$2, @1);
+                                                $$ = new addNode((layerNode*)$2, @$);
                                           }
         ;
 operator.layer:
           DENSE '(' argument.expression.list ')' ';'      {
-                                                                line("Line%-4d", @1.first_line);
+                                                                line("Line%-4d", @$.first_line);
                                                                 debug("operator.layer ::=DENSE ( argument.expression.list );\n");
-                                                                $$ = new denseLayerNode("dense", $3, @1);
+                                                                $$ = new denseLayerNode("dense", $3, @$);
                                                                 debug("Create dense layer!\n");
                                                           }
           | CONV2D '(' argument.expression.list ')' ';'      {
-                                                                line("Line%-4d", @1.first_line);
+                                                                line("Line%-4d", @$.first_line);
                                                                 debug("operator.layer ::=CONV2 ( argument.expression.list );\n");
-                                                                layerNode* layer = new conv2DLayerNode("conv2D", $3, @1);
+                                                                layerNode* layer = new conv2DLayerNode("conv2D", $3, @$);
                                                                 $$ = layer;
                                                                 debug("Create conv2D layer!\n");
                                                           }
           | MAXPOOLING2D '(' argument.expression.list ')' ';' {
-                                                                line("Line%-4d", @1.first_line);
+                                                                line("Line%-4d", @$.first_line);
                                                                 debug("operator.layer ::=MAXPOOLING2D ( argument.expression.list );\n");
-                                                                layerNode* layer = new maxPooling2DLayerNode("maxPooling2D", $3, @1);
+                                                                layerNode* layer = new maxPooling2DLayerNode("maxPooling2D", $3, @$);
                                                                 $$ = layer;
                                                                 debug("Create maxPooling2D layer!\n");
                                                             }
           | AVERAGEPOOLING2D '(' argument.expression.list ')' ';' {
-                                                                line("Line%-4d", @1.first_line);
+                                                                line("Line%-4d", @$.first_line);
                                                                 debug("operator.layer ::=AVERAGEPOOLING2D ( argument.expression.list );\n");
-                                                                layerNode* layer = new averagePooling2DLayerNode("averagePooling2D", $3, @1);
+                                                                layerNode* layer = new averagePooling2DLayerNode("averagePooling2D", $3, @$);
                                                                 $$ = layer;
                                                                 debug("Create averagePooling2D layer!\n");
                                                             }
           | ACTIVATION '(' argument.expression.list ')' ';' {
-                                                                line("Line%-4d", @1.first_line);
+                                                                line("Line%-4d", @$.first_line);
                                                                 debug("operator.layer ::=ACTIVATION ( argument.expression.list );\n");
-                                                                layerNode* layer = new activationLayerNode("activation", $3, @1);
+                                                                layerNode* layer = new activationLayerNode("activation", $3, @$);
                                                                 $$ = layer;
                                                                 debug("Create activation layer!\n");
                                                             }
          |  DROPOUT '(' argument.expression.list ')' ';' {
-                                                                line("Line%-4d", @1.first_line);
+                                                                line("Line%-4d", @$.first_line);
                                                                 debug("operator.layer ::=DROPOUT ( argument.expression.list );\n");
-                                                                layerNode* layer = new dropoutLayerNode("dropout", $3, @1);
+                                                                layerNode* layer = new dropoutLayerNode("dropout", $3, @$);
                                                                 $$ = layer;
                                                                 debug("Create dropout layer!\n");
                                                             }
@@ -515,78 +515,78 @@ operator.layer:
         ;
 splitjoinPipeline.statement.list:
           statement                                       {
-                                                                line("Line:%-4d",@1.first_line);
+                                                                line("Line:%-4d",@$.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= statement \n");
                                                                 $$ = new list<Node*>({$1});
                                                           }
         | operator.add                                    {
-                                                                line("Line:%-4d",@1.first_line);
+                                                                line("Line:%-4d",@$.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= operator.add \n");
                                                                 $$ = new list<Node*>({$1});
                                                           }
         | splitjoinPipeline.statement.list statement      {
-                                                                line("Line:%-4d",@1.first_line);
+                                                                line("Line:%-4d",@$.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= splitjoinPipeline.statement.list statement \n");
                                                                 $$->push_back($2);
                                                           }
         | splitjoinPipeline.statement.list operator.add   {
-                                                                line("Line:%-4d",@1.first_line);
+                                                                line("Line:%-4d",@$.first_line);
                                                                 debug ("splitjoinPipeline.statement.list ::= splitjoinPipeline.statement.list operator.add \n");
                                                                 $$->push_back($2);
                                                           }
         ;
 operator.splitjoin:
           SPLITJOIN lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock     {
-                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$3,NULL,$4,(joinNode*)$5,@1);
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$3,NULL,$4,(joinNode*)$5,@$);
             }
         | SPLITJOIN lblock statement.list split.statement splitjoinPipeline.statement.list join.statement rblock  {
-                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$4,$3,$5,(joinNode*)$6,@1);
+                   $$=new splitjoinNode(NULL,NULL,(splitNode*)$4,$3,$5,(joinNode*)$6,@$);
             }
         ;
 split.statement:
-          SPLIT duplicate.statement                        { $$ = new splitNode($2,@1) ; }
-        | SPLIT roundrobin.statement                       { $$ = new splitNode($2,@1) ; }
+          SPLIT duplicate.statement                        { $$ = new splitNode($2,@$) ; }
+        | SPLIT roundrobin.statement                       { $$ = new splitNode($2,@$) ; }
         ;
 roundrobin.statement:
-          ROUNDROBIN '(' ')' ';'                            { $$ = new roundrobinNode(NULL,@1) ; }
-        | ROUNDROBIN '(' argument.expression.list ')' ';'   { $$ = new roundrobinNode($3,@1) ; }
+          ROUNDROBIN '(' ')' ';'                            { $$ = new roundrobinNode(NULL,@$) ; }
+        | ROUNDROBIN '(' argument.expression.list ')' ';'   { $$ = new roundrobinNode($3,@$) ; }
         ;
 duplicate.statement:
-          DUPLICATE '('  ')' ';'                            { $$ = new duplicateNode(NULL,@1) ; }
-        | DUPLICATE '(' exp ')'  ';'                        { $$ = new duplicateNode((expNode*)$3,@1)  ;}
+          DUPLICATE '('  ')' ';'                            { $$ = new duplicateNode(NULL,@$) ; }
+        | DUPLICATE '(' exp ')'  ';'                        { $$ = new duplicateNode((expNode*)$3,@$)  ;}
         ;
 join.statement:
-          JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,@1) ;}
+          JOIN roundrobin.statement                         { $$ = new joinNode((roundrobinNode*)$2,@$) ;}
         ;
 argument.expression.list:
-          exp                                               { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
-        | tuple                                            { $$ = new list<Node*>({$1}); line("test%-4d",@1.first_line); debug("param\n");}
-        | argument.expression.list ',' exp                  { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push param\n");}
-        | argument.expression.list ',' tuple               { $$ ->push_back($3);line("test%-4d",@1.first_line); debug("push tuple param\n"); }
+          exp                                               { $$ = new list<Node*>({$1}); line("test%-4d",@$.first_line); debug("param\n");}
+        | tuple                                            { $$ = new list<Node*>({$1}); line("test%-4d",@$.first_line); debug("param\n");}
+        | argument.expression.list ',' exp                  { $$ ->push_back($3);line("test%-4d",@$.first_line); debug("push param\n");}
+        | argument.expression.list ',' tuple               { $$ ->push_back($3);line("test%-4d",@$.first_line); debug("push tuple param\n"); }
         ;
 operator.default.call:
           IDENTIFIER  '(' ')' ';'                           { 
-                  //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1);
-                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@1);
+                  //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@$);
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@$);
             }
         | IDENTIFIER  '(' argument.expression.list ')' ';'  {
-                  //$$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@1);
-                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,NULL,@1);
+                  //$$ = new compositeCallNode(NULL,*($1),$3,NULL,S.LookupCompositeSymbol(*($1)),@$);
+                  $$ = new compositeCallNode(NULL,*($1),$3,NULL,NULL,@$);
             }
         ;
 sequential.statement.list:
           statement                                          {
-                                                                line("Line:%-4d", @1.first_line);
+                                                                line("Line:%-4d", @$.first_line);
                                                                 debug("sequential.statement.list ::= statement \n");
                                                                 $$ = new list<Node *>({$1});
                                                              }
         | operator.sequential.add                             {
-                                                                line("Line:%-4d", @1.first_line);
+                                                                line("Line:%-4d", @$.first_line);
                                                                 debug("sequential.statement.list ::= operator.sequential.add\n");
                                                                 $$ = new list<Node *>({$1});
                                                              }
         | sequential.statement.list operator.sequential.add    {
-                                                                line("Line:%-4d", @1.first_line);
+                                                                line("Line:%-4d", @$.first_line);
                                                                 debug("sequential.statement.list ::= sequential.statement.list operator.sequential.add\n");
                                                                 $$ ->push_back($2);
                                                              }
@@ -596,7 +596,7 @@ sequential.statement.list:
 /*************************************************************************/
 statement:
           labeled.statement
-        | compound.statement   { line("Line:%-4d",@1.first_line);debug("statement::=compound.statement\n");}
+        | compound.statement   { line("Line:%-4d",@$.first_line);debug("statement::=compound.statement\n");}
         | expression.statement
         | selection.statement
         | iteration.statement
@@ -611,19 +611,19 @@ statement:
 
 labeled.statement:
           CASE exp ':' statement                    {
-                                                          line("Line:%-4d",@1.first_line);
+                                                          line("Line:%-4d",@$.first_line);
                                                           debug ("labeled.statement ::= CASE exp ':' statement \n");
-                                                          $$ = new caseNode((expNode*)$2,$4,@3) ;
+                                                          $$ = new caseNode((expNode*)$2,$4,@$) ;
                                                     }
         | DEFAULT ':' statement                     {
-                                                          line("Line:%-4d",@1.first_line);
+                                                          line("Line:%-4d",@$.first_line);
                                                           debug ("labeled.statement ::= DEFAULT ':' statement \n");
-                                                          $$ = new defaultNode($3,@2) ;
+                                                          $$ = new defaultNode($3,@$) ;
                                                     }
         ;
 compound.statement:
-          lblock rblock                                     {  $$ = new blockNode(NULL,@1,@2); }
-        | lblock composite.body.statement.list rblock       {  $$ = new blockNode($2,@1,@3) ; }
+          lblock rblock                                     {  $$ = new blockNode(NULL,@$,@$); }
+        | lblock composite.body.statement.list rblock       {  $$ = new blockNode($2,@$,@$) ; }
         ;
 
 expression.statement:
@@ -631,32 +631,32 @@ expression.statement:
         ;
 
 selection.statement:
-          IF '(' exp ')' costream.composite.statement   {  $$ = new ifNode((expNode*)$3,$5,@1) ; }
+          IF '(' exp ')' costream.composite.statement   {  $$ = new ifNode((expNode*)$3,$5,@$) ; }
         | IF '(' exp ')' costream.composite.statement 
           ELSE costream.composite.statement             {
-                                                          line("Line:%-4d",@1.first_line);
+                                                          line("Line:%-4d",@$.first_line);
                                                           debug ("selection.statement ::= if(exp) costream.composite.statement else ...\n");
-                                                          $$ = new ifElseNode((expNode*)$3,$5,$7,@1);
+                                                          $$ = new ifElseNode((expNode*)$3,$5,$7,@$);
                                                         }
-        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,$5,@1); }
+        | SWITCH '(' exp ')' statement                  {  $$ = new switchNode((expNode*)$3,$5,@$); }
         ;
 iteration.statement:
-          WHILE '(' exp ')' costream.composite.statement                          {  $$ = new whileNode((expNode*)$3,$5,@1) ; }
-        | DO  costream.composite.statement WHILE '(' exp ')' ';'                  {  $$ = new doNode($2,(expNode*)$5,@1) ; }
+          WHILE '(' exp ')' costream.composite.statement                          {  $$ = new whileNode((expNode*)$3,$5,@$) ; }
+        | DO  costream.composite.statement WHILE '(' exp ')' ';'                  {  $$ = new doNode($2,(expNode*)$5,@$) ; }
         | FOR '(' exp   ';' exp ';' exp ')'  costream.composite.statement     {
-                  line("Line:%-4d",@1.first_line);
+                  line("Line:%-4d",@$.first_line);
                   debug ("iteration.statement ::= for(...)  costream.composite.statement \n");
-                  $$ = new forNode($3,(expNode*)$5,(expNode*)$7,$9,@1) ;
+                  $$ = new forNode($3,(expNode*)$5,(expNode*)$7,$9,@$) ;
             }
         | FOR '(' declaration  ';' exp ';' exp ')'  costream.composite.statement  {  
-                  $$ = new forNode($3,(expNode*)$5,(expNode*)$7,$9,@1) ; 
+                  $$ = new forNode($3,(expNode*)$5,(expNode*)$7,$9,@$) ; 
             }
         | FOR '(' error ')' costream.composite.statement                          {  $$ = NULL ; }
         ;
 jump.statement:
-          CONTINUE ';'        {  $$ = new continueNode(@1) ; }
-        | BREAK ';'           {  $$ = new breakNode(@1) ; }
-        | RETURN exp ';'      {  $$ = new returnNode((expNode*)$2,@1) ; }
+          CONTINUE ';'        {  $$ = new continueNode(@$) ; }
+        | BREAK ';'           {  $$ = new breakNode(@$) ; }
+        | RETURN exp ';'      {  $$ = new returnNode((expNode*)$2,@$) ; }
         ;
 
 /*************************************************************************/
@@ -675,46 +675,46 @@ assignment.operator:
         | ERassign        { $$ = new string("^=") ; }
         | ORassign        { $$ = new string("|=") ; }
         ;
-exp:      idNode          { line("Line:%-4d",@1.first_line);
+exp:      idNode          { line("Line:%-4d",@$.first_line);
                             debug ("exp ::= idnode \n");
                             //$1=top->get(static_cast<idNode*>$1->name);
                             $$ = $1 ;  }
         | constant        { $$ = $1 ; }
         /* | tuple          { $$ = $1 ; } */
-        | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@2) ; }
-        | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@2) ; }
-        | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@2) ; }
-        | exp '*' exp     { $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@2) ; }
-        | exp '/' exp     { $$ = new binopNode((expNode*)$1,"/",(expNode*)$3,@2) ; }
-        | exp '%' exp     { $$ = new binopNode((expNode*)$1,"%",(expNode*)$3,@2) ;}
-        | exp OROR exp    { $$ = new binopNode((expNode*)$1,"||",(expNode*)$3,@2) ;}
-        | exp ANDAND exp  { $$ = new binopNode((expNode*)$1,"&&",(expNode*)$3,@2) ;}
-        | exp '|' exp     { $$ = new binopNode((expNode*)$1,"|",(expNode*)$3,@2) ;}
-        | exp '&' exp     { $$ = new binopNode((expNode*)$1,"&",(expNode*)$3,@2) ;}
-        | exp '^' exp     { $$ = new binopNode((expNode*)$1,"^",(expNode*)$3,@2) ;}
-        | exp LS exp      { $$ = new binopNode((expNode*)$1,"<<",(expNode*)$3,@2) ;}
-        | exp RS exp      { $$ = new binopNode((expNode*)$1,">>",(expNode*)$3,@2) ;}
-        | exp '<' exp     { $$ = new binopNode((expNode*)$1,"<",(expNode*)$3,@2) ;}
-        | exp '>' exp     { $$ = new binopNode((expNode*)$1,">",(expNode*)$3,@2) ;}
-        | exp LE exp      { $$ = new binopNode((expNode*)$1,"<=",(expNode*)$3,@2) ;}
-        | exp GE exp      { $$ = new binopNode((expNode*)$1,">=",(expNode*)$3,@2) ;}
-        | exp EQ exp      { $$ = new binopNode((expNode*)$1,"==",(expNode*)$3,@2) ;}
-        | exp NE exp      { $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,@2) ;}
-        | exp '?' exp ':' exp { $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,@4); }
-        | '+' exp         { $$ = new unaryNode("+",(expNode*)$2,@2) ; }
-        | '-' exp         { $$ = new unaryNode("-",(expNode*)$2,@2) ; }
-        | '~' exp         { $$ = new unaryNode("~",(expNode*)$2,@2) ; }
-        | '!' exp         { $$ = new unaryNode("!",(expNode*)$2,@2) ; }
-        |  ICR exp        { $$ = new unaryNode("PREINC",(expNode*)$2,@2) ; }
-        |  DECR exp       { $$ = new unaryNode("PREDEC",(expNode*)$2,@2) ; }
-        |  exp ICR        { $$ = new unaryNode("POSTINC",(expNode*)$1,@2) ; }
-        |  exp DECR       { $$ = new unaryNode("POSTDEC",(expNode*)$1,@2) ; }
-        |  '(' exp ')'    { $$ = new parenNode((expNode*)$2,@2) ; }
-        | '(' basic.type.name ')' exp     { $$ = new castNode((primNode*)$2,(expNode*)$4,@3); }
+        | idNode '.' idNode { $$ = new binopNode((expNode*)$1,".",(expNode*)$3,@$) ; }
+        | exp '+' exp     { $$ = new binopNode((expNode*)$1,"+",(expNode*)$3,@$) ; }
+        | exp '-' exp     { $$ = new binopNode((expNode*)$1,"-",(expNode*)$3,@$) ; }
+        | exp '*' exp     { $$ = new binopNode((expNode*)$1,"*",(expNode*)$3,@$) ; }
+        | exp '/' exp     { $$ = new binopNode((expNode*)$1,"/",(expNode*)$3,@$) ; }
+        | exp '%' exp     { $$ = new binopNode((expNode*)$1,"%",(expNode*)$3,@$) ;}
+        | exp OROR exp    { $$ = new binopNode((expNode*)$1,"||",(expNode*)$3,@$) ;}
+        | exp ANDAND exp  { $$ = new binopNode((expNode*)$1,"&&",(expNode*)$3,@$) ;}
+        | exp '|' exp     { $$ = new binopNode((expNode*)$1,"|",(expNode*)$3,@$) ;}
+        | exp '&' exp     { $$ = new binopNode((expNode*)$1,"&",(expNode*)$3,@$) ;}
+        | exp '^' exp     { $$ = new binopNode((expNode*)$1,"^",(expNode*)$3,@$) ;}
+        | exp LS exp      { $$ = new binopNode((expNode*)$1,"<<",(expNode*)$3,@$) ;}
+        | exp RS exp      { $$ = new binopNode((expNode*)$1,">>",(expNode*)$3,@$) ;}
+        | exp '<' exp     { $$ = new binopNode((expNode*)$1,"<",(expNode*)$3,@$) ;}
+        | exp '>' exp     { $$ = new binopNode((expNode*)$1,">",(expNode*)$3,@$) ;}
+        | exp LE exp      { $$ = new binopNode((expNode*)$1,"<=",(expNode*)$3,@$) ;}
+        | exp GE exp      { $$ = new binopNode((expNode*)$1,">=",(expNode*)$3,@$) ;}
+        | exp EQ exp      { $$ = new binopNode((expNode*)$1,"==",(expNode*)$3,@$) ;}
+        | exp NE exp      { $$ = new binopNode((expNode*)$1,"!=",(expNode*)$3,@$) ;}
+        | exp '?' exp ':' exp { $$ = new ternaryNode((expNode*)$1,(expNode*)$3,(expNode*)$5,@$); }
+        | '+' exp         { $$ = new unaryNode("+",(expNode*)$2,@$) ; }
+        | '-' exp         { $$ = new unaryNode("-",(expNode*)$2,@$) ; }
+        | '~' exp         { $$ = new unaryNode("~",(expNode*)$2,@$) ; }
+        | '!' exp         { $$ = new unaryNode("!",(expNode*)$2,@$) ; }
+        |  ICR exp        { $$ = new unaryNode("PREINC",(expNode*)$2,@$) ; }
+        |  DECR exp       { $$ = new unaryNode("PREDEC",(expNode*)$2,@$) ; }
+        |  exp ICR        { $$ = new unaryNode("POSTINC",(expNode*)$1,@$) ; }
+        |  exp DECR       { $$ = new unaryNode("POSTDEC",(expNode*)$1,@$) ; }
+        |  '(' exp ')'    { $$ = new parenNode((expNode*)$2,@$) ; }
+        | '(' basic.type.name ')' exp     { $$ = new castNode((primNode*)$2,(expNode*)$4,@$); }
         | exp assignment.operator exp     { 
-                              line("Line:%-4d",@1.first_line);
+                              line("Line:%-4d",@$.first_line);
                               debug ("exp ::= exp(%s) assignment.operator(%s) exp(%s)\n",$1->toString().c_str(),$2->c_str(),$3->toString().c_str()); 
-                              $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
+                              $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@$ ) ;
                               //当类型为splitjoin，pipeline，operator，compositecall时设置输出流
                               if($3->type==SplitJoin){
 
@@ -735,89 +735,89 @@ exp:      idNode          { line("Line:%-4d",@1.first_line);
                               }
                         }
         | tuple assignment.operator exp {
-                                    line("Line:%-4d",@1.first_line);
+                                    line("Line:%-4d",@$.first_line);
                                     debug("multiple outputs\n");
-                                    $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@2 ) ;
+                                    $$ = new binopNode((expNode*)$1,*($2),(expNode*)$3,@$ ) ;
                                     if ($3->type  == Operator_) {
                                           ((operatorNode*)$3)->outputs= ((tupleNode *)$1)->tupleList;
                                     } else if ($3->type  == CompositeCall) {
                                           ((compositeCallNode*)$3)->outputs= ((tupleNode *)$1)->tupleList;
                                     }
                               }
-        | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@1) ; }
-        | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@1) ; }
+        | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@$) ; }
+        | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@$) ; }
         | FILEREADER '(' ')' '(' stringConstant ')'   { 
-                  line("Line:%-4d",@1.first_line);
+                  line("Line:%-4d",@$.first_line);
                   debug ("exp ::= FILEREADER()( stringConstant )\n"); 
                   $$ = NULL ; 
             }
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
-                  line("Line:%-4d",@1.first_line);
+                  line("Line:%-4d",@$.first_line);
                   debug ("exp ::= %s() operator.selfdefine.body\n",$1->c_str());
-                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4,@1) ; 
+                  $$ = new operatorNode(NULL,*($1),NULL,(operBodyNode*)$4,@$) ; 
                   //error("%s",((operatorNode*)$$)->operName.c_str());
             }
         | IDENTIFIER '(' argument.expression.list ')' operator.selfdefine.body   { 
-                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5,@1) ; 
+                  $$ = new operatorNode(NULL,*($1),$3,(operBodyNode*)$5,@$) ; 
             }
         | IDENTIFIER '('  ')'  '(' ')'  { 
-                  line("Line:%-3d",@1.first_line);
+                  line("Line:%-3d",@$.first_line);
                   debug ("exp ::= %s()()\n",$1->c_str()); 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  //$$ = new compositeCallNode(NULL,*($1),NULL,NULL,S.LookupCompositeSymbol(*($1)),@$) ; 
                   // 建立符号表时 补上真是的composite节点
-                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,NULL,NULL,@$) ; 
             }
         | IDENTIFIER '('  ')'  '(' argument.expression.list ')' { 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  $$ = new compositeCallNode(NULL,*($1),$5,NULL,NULL,@1) ; 
-                  //$$ = new compositeCallNode(NULL,*($1),$5,NULL,S.LookupCompositeSymbol(*($1)),@1) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$5,NULL,NULL,@$) ; 
+                  //$$ = new compositeCallNode(NULL,*($1),$5,NULL,S.LookupCompositeSymbol(*($1)),@$) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' ')'  { 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  //$$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
-                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,NULL,@1) ; 
+                  //$$ = new compositeCallNode(NULL,*($1),NULL,$3,S.LookupCompositeSymbol(*($1)),@$) ; 
+                  $$ = new compositeCallNode(NULL,*($1),NULL,$3,NULL,@$) ; 
             }
         | IDENTIFIER '(' argument.expression.list ')'  '(' argument.expression.list ')'    { 
                   //if(S.LookupCompositeSymbol(*$1)==NULL) error("Line:%s\tthe composite has not been declared!",$1->c_str());
-                  //$$ = new compositeCallNode(NULL,*($1),$6,$3,S.LookupCompositeSymbol(*($1)),@1) ; 
-                  $$ = new compositeCallNode(NULL,*($1),$6,$3,NULL,@1) ;
+                  //$$ = new compositeCallNode(NULL,*($1),$6,$3,S.LookupCompositeSymbol(*($1)),@$) ; 
+                  $$ = new compositeCallNode(NULL,*($1),$6,$3,NULL,@$) ;
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock split.statement  splitjoinPipeline.statement.list  join.statement rblock { 
             /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode($3,NULL,(splitNode*)$6,NULL,$7,(joinNode*)$8,@1)  ; 
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$6,NULL,$7,(joinNode*)$8,@$)  ; 
 
             }
         |  SPLITJOIN '(' argument.expression.list ')'  lblock statement.list split.statement splitjoinPipeline.statement.list  join.statement rblock  { 
                   /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,@1)  ; 
+                  $$ = new splitjoinNode($3,NULL,(splitNode*)$7,$6,$8,(joinNode*)$9,@$)  ; 
             }
         |   PIPELINE '(' argument.expression.list ')'  lblock splitjoinPipeline.statement.list rblock  {
                    /*    1.argument.expression.list是一个identifier
                   2.查找符号表 identifier是否出现过 */
-                  $$ = new pipelineNode(NULL,$6,$3,@1) ; 
+                  $$ = new pipelineNode(NULL,$6,$3,@$) ; 
             }
         |   SEQUENTIAL '(' argument.expression.list ')'  '(' argument.expression.list ')' lblock sequential.statement.list rblock {
                   /*     1.argument.expression.list是一个identifier
                   2. argument.expression.list*/
-                  line("Line%-4d", @1.first_line);
+                  line("Line%-4d", @$.first_line);
                   debug("exp ::= SEQUENTIAL\n");
-                  $$ = new sequentialNode(NULL,$3,$6,$9,@1); 
+                  $$ = new sequentialNode(NULL,$3,$6,$9,@$); 
         }
         ;
 
 operator.selfdefine.body:
        lblock operator.selfdefine.body.init operator.selfdefine.body.work operator.selfdefine.body.window.list rblock
         {
-            line("Line:%-4d",@1.first_line);
+            line("Line:%-4d",@$.first_line);
             debug ("operator.selfdefine.body ::=  { init work window.list }\n");
             $$ = new operBodyNode(NULL,$2,$3,(windowNode*)$4) ;
         }
      | lblock statement.list operator.selfdefine.body.init  operator.selfdefine.body.work operator.selfdefine.body.window.list rblock
         {
-            line("Line:%-4d",@1.first_line);
+            line("Line:%-4d",@$.first_line);
             debug ("operator.selfdefine.body ::=  { statement.list init work window.list }\n");
             $$ = new operBodyNode($2,$3,$4,(windowNode*)$5);
         }
@@ -835,7 +835,7 @@ operator.selfdefine.body.work:
 operator.selfdefine.body.window.list:
       /*empty*/                                         { $$ = NULL ; }
       | WINDOW lblock operator.selfdefine.window.list rblock  {
-                                                            line("Line:%-4d",@1.first_line);
+                                                            line("Line:%-4d",@$.first_line);
                                                             debug ("operator.selfdefine.body.window.list ::= WINDOW { operator.selfdefine.window.list }\n");
                                                             $$ = new windowNode($3) ;
                                                         }
@@ -848,17 +848,17 @@ operator.selfdefine.window.list:
 
 operator.selfdefine.window:
       IDENTIFIER window.type ';'                {
-                                                    line("Line:%-4d",@1.first_line);
+                                                    line("Line:%-4d",@$.first_line);
                                                     debug ("operator.selfdefine.window ::= %s window.type (sliding? (arg_list?))\n",$1->c_str());
-                                                    $$ = new winStmtNode(*($1),$2,@1) ;
+                                                    $$ = new winStmtNode(*($1),$2,@$) ;
                                                 }
     ;
 
 window.type:
-      SLIDING '('  ')'                          {     $$ = new slidingNode(NULL,@1) ;  }
-    | TUMBLING '('  ')'                         {     $$ = new tumblingNode(NULL,@1) ; }
-    | SLIDING '(' argument.expression.list ')'  {     $$ = new slidingNode($3,@1) ;    }
-    | TUMBLING '(' argument.expression.list ')' {     $$ = new tumblingNode($3,@1) ;   }
+      SLIDING '('  ')'                          {     $$ = new slidingNode(NULL,@$) ;  }
+    | TUMBLING '('  ')'                         {     $$ = new tumblingNode(NULL,@$) ; }
+    | SLIDING '(' argument.expression.list ')'  {     $$ = new slidingNode($3,@$) ;    }
+    | TUMBLING '(' argument.expression.list ')' {     $$ = new tumblingNode($3,@$) ;   }
     ;
 
 
@@ -878,9 +878,9 @@ rblock: '}' {
             }
 
 constant:
-          doubleConstant    { $$ = new constantNode("double",$1,@1) ; }
-        | integerConstant   { $$ = new constantNode("long long",$1,@1) ; }
-        | stringConstant    { $$ = new constantNode("string",*($1),@1) ; }
+          doubleConstant    { $$ = new constantNode("double",$1,@$) ; }
+        | integerConstant   { $$ = new constantNode("long long",$1,@$) ; }
+        | stringConstant    { $$ = new constantNode("string",*($1),@$) ; }
         ;
 type.specifier:
           basic.type.name       { $$ = $1 ;}
@@ -890,20 +890,20 @@ type.specifier:
                                 }
         ;
 basic.type.name:
-          INT         { $$ = new primNode("int",@1 ); }
-        | LONG        { $$ = new primNode("long",@1 ); }
-        | LONG LONG   { $$ = new primNode("long long",@1 ); }
-        | FLOAT       { $$ = new primNode("float",@1 ); }
-        | DOUBLE      { $$ = new primNode("double",@1 ); }
-        | STRING      { $$ = new primNode("string",@1 ); }
+          INT         { $$ = new primNode("int",@$ ); }
+        | LONG        { $$ = new primNode("long",@$ ); }
+        | LONG LONG   { $$ = new primNode("long long",@$ ); }
+        | FLOAT       { $$ = new primNode("float",@$ ); }
+        | DOUBLE      { $$ = new primNode("double",@$ ); }
+        | STRING      { $$ = new primNode("string",@$ ); }
         ;
 
 idNode:
           IDENTIFIER  { 
-                        $$ = new idNode($1,@1);
+                        $$ = new idNode($1,@$);
                       }
         | IDENTIFIER  array.declarator { 
-                        $$ = new idNode($1,@1);
+                        $$ = new idNode($1,@$);
                         ((idNode*)$$)->isArray = 1;
                         (static_cast<idNode*>$$)->arg_list = (static_cast<arrayNode*>$2)->arg_list;
                       }  

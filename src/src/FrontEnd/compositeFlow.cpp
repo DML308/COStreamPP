@@ -134,11 +134,13 @@ void addComposite(list<Node *> stmts){
 /* 这个函数需要常量传播，目前为理想的情况 splitjoin,pipeline的循环结构都为常量*/
 void compositeCallFlow(list<Node *> *stmts)
 {
-    top = runningTop;
+    
     //cout<<"stmts.size() = "<<stmts->size()<<endl;
     /*遍历splitjoin/pipeline结构中的statement，将compositecallNode加入到compositeCall_list中*/
     for (auto nd : *(stmts))
     {
+        if(nd == NULL)
+            continue;
         //cout<<"type:"<<nd->type<<endl;
         if (nd->type == Add)
         {

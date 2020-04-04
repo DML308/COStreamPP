@@ -10,6 +10,9 @@ operatorNode *right_opt; // 正在判断是否为有状态的 operator节点
 SymbolTable *right_opt_symboltable; // 正在判断是否为有状态的operator节点的 作用域
 map<string,Node *> operator_state_identify; // operator 中 init work 外定义的 变量
 
+vector<vector<Node *> > compositecall_list_stack;
+vector<Node *> right_compositecall_list;
+
 bool isOperatorState = false; //是否进行 变量收集
 bool isOperatorCheck = false; //是否进行 状态判断
 
@@ -67,6 +70,7 @@ void generateComposite(compositeNode* composite);
 void generatorBlcokNode(blockNode *blockNode);
 void generateDeclareNode(declareNode* dlcNode);
 void generateStrDlcNode(strdclNode* streamDeclearNode);
+void genrateStmt(Node *stmt);
 
 // 解析 NodeList
 void generateNodeList(list<Node *> id_list){
@@ -234,6 +238,14 @@ if(op.compare("+") == 0){
             return new Constant("double",left->lval*right->dval);
         }
 
+        //todo 隐式转换不全面
+        if(left->type.compare("double") == 0 && right->type.compare("long long") == 0){
+            return new Constant("double",left->dval*right->llval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->llval*right->dval);
+        }
+
         if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             return new Constant("float",left->fval*right->fval);
         }
@@ -298,6 +310,13 @@ if(op.compare("+") == 0){
         if(left->type.compare("long") == 0 && right->type.compare("double") == 0){
             return new Constant("double",left->lval/right->dval);
         }
+        //todo 隐式转换不全面
+        if(left->type.compare("double") == 0 && right->type.compare("long long") == 0){
+            return new Constant("double",left->dval/right->llval);
+        }
+        if(left->type.compare("long long") == 0 && right->type.compare("double") == 0){
+            return new Constant("double",left->llval/right->dval);
+        }
 
         if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             return new Constant("float",left->fval/right->fval);
@@ -308,12 +327,12 @@ if(op.compare("+") == 0){
         if(left->type.compare("int") == 0 && right->type.compare("float") == 0){
             return new Constant("float",left->ival/right->fval);
         }
-
+        //todo double -> dval
         if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
-            return new Constant("double",left->fval/right->fval);
+            return new Constant("double",left->dval/right->dval);
         }
         if(left->type.compare("double") == 0 && right->type.compare("int") == 0){
-            return new Constant("double",left->fval/right->ival);
+            return new Constant("double",left->dval/right->ival);
         }
         if(left->type.compare("int") == 0 && right->type.compare("double") == 0){
             return new Constant("double",left->ival/right->dval);
@@ -1047,7 +1066,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("double")){
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
              if(left->dval != right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1055,7 +1074,7 @@ if(op.compare("+") == 0){
             }
         }
         
-        if(left->type.compare("float") == 0 && right->type.compare("float")){
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             if(left->fval != right->fval){
                 return new Constant("bool",true);
             }else{
@@ -1138,7 +1157,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("double")){
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
              if(left->dval && right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1146,7 +1165,7 @@ if(op.compare("+") == 0){
             }
         }
         
-        if(left->type.compare("float") == 0 && right->type.compare("float")){
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             if(left->fval && right->fval){
                 return new Constant("bool",true);
             }else{
@@ -1154,7 +1173,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("bool")){
+        if(left->type.compare("bool") == 0 && right->type.compare("bool") == 0){
             if(left->bval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1162,7 +1181,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("int") == 0 && right->type.compare("bool")){
+        if(left->type.compare("int") == 0 && right->type.compare("bool") == 0){
             if(left->ival && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1170,7 +1189,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("int")){
+        if(left->type.compare("bool") == 0 && right->type.compare("int") == 0){
             if(left->bval && right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1178,7 +1197,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long") == 0){
             if(left->bval && right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1186,7 +1205,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long") == 0 && right->type.compare("bool") == 0){
             if(left->lval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1194,7 +1213,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long long") == 0){
             if(left->bval && right->llval){
                 return new Constant("bool",true);
             }else{
@@ -1202,7 +1221,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long long") == 0 && right->type.compare("bool") == 0){
             if(left->llval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1210,7 +1229,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1218,7 +1237,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval && right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1226,7 +1245,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("float") == 0 && right->type.compare("bool")){
+        if(left->type.compare("float") == 0 && right->type.compare("bool") == 0){
             if(left->fval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1234,7 +1253,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval && right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1242,7 +1261,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval && right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1325,7 +1344,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("double")){
+        if(left->type.compare("double") == 0 && right->type.compare("double") == 0){
              if(left->dval || right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1333,7 +1352,7 @@ if(op.compare("+") == 0){
             }
         }
         
-        if(left->type.compare("float") == 0 && right->type.compare("float")){
+        if(left->type.compare("float") == 0 && right->type.compare("float") == 0){
             if(left->fval || right->fval){
                 return new Constant("bool",true);
             }else{
@@ -1341,7 +1360,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("bool")){
+        if(left->type.compare("bool") == 0 && right->type.compare("bool") == 0){
             if(left->bval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1349,7 +1368,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("int") == 0 && right->type.compare("bool")){
+        if(left->type.compare("int") == 0 && right->type.compare("bool") == 0){
             if(left->ival || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1357,7 +1376,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("int")){
+        if(left->type.compare("bool") == 0 && right->type.compare("int") == 0){
             if(left->bval || right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1365,7 +1384,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long") == 0){
             if(left->bval || right->ival){
                 return new Constant("bool",true);
             }else{
@@ -1373,7 +1392,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long") == 0 && right->type.compare("bool") == 0){
             if(left->lval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1381,7 +1400,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("long long")){
+        if(left->type.compare("bool") == 0 && right->type.compare("long long") == 0){
             if(left->bval || right->llval){
                 return new Constant("bool",true);
             }else{
@@ -1389,7 +1408,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("long long") == 0 && right->type.compare("bool")){
+        if(left->type.compare("long long") == 0 && right->type.compare("bool") == 0){
             if(left->llval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1397,7 +1416,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1405,7 +1424,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval || right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1413,7 +1432,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("float") == 0 && right->type.compare("bool")){
+        if(left->type.compare("float") == 0 && right->type.compare("bool") == 0){
             if(left->fval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1421,7 +1440,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("bool") == 0 && right->type.compare("double")){
+        if(left->type.compare("bool") == 0 && right->type.compare("double") == 0){
             if(left->bval || right->dval){
                 return new Constant("bool",true);
             }else{
@@ -1429,7 +1448,7 @@ if(op.compare("+") == 0){
             }
         }
 
-        if(left->type.compare("double") == 0 && right->type.compare("bool")){
+        if(left->type.compare("double") == 0 && right->type.compare("bool") == 0){
             if(left->dval || right->bval){
                 return new Constant("bool",true);
             }else{
@@ -1578,13 +1597,59 @@ Constant* getOperationResult(Node* exp){
     case Id:
         {
             idNode *id = static_cast<idNode *>(exp);
-            if(id->isArray){
-                return NULL;
-            }
+            
             string name = id->name;
-            Variable *val = top->LookupIdentifySymbol(name);
-            if(val){
-                return val->value;
+            Variable *variable = top->LookupIdentifySymbol(name);
+            
+            if(id->isArray){
+                variable->isArray = true;
+                if(id->arg_list.size()){
+                int index = 0;
+                bool canGetIndex = true;
+                        //处理数组下标
+                vector<int> arg_size = ((ArrayConstant *)variable->value)->arg_size;
+                vector<int> each_size;
+                for(int i=arg_size.size()-1;i>=0;i--){
+                    if(each_size.size()){
+                        each_size.push_back(arg_size[i]*each_size.back());
+                    }else{
+                        each_size.push_back(arg_size[i]);
+                        }                          
+                }
+                        
+                int array_size = each_size.size()-1;
+                for(auto i:id->arg_list){
+                    int size;
+                    Constant *value = getOperationResult(i);
+                    if(value){
+                        if(value->llval){
+                            size = value->llval;
+                        }else{
+                            canGetIndex = false;
+                            break;
+                        }
+                    }else{
+                        canGetIndex = false;
+                        break;
+                    }
+                    if(array_size-index>0){
+                        index += each_size[array_size - index] * size;
+                    }else{
+                        index += size;
+                    }
+                }
+                if(canGetIndex){
+                    return ((ArrayConstant *)variable->value)->values[index];
+                }else{
+                    return NULL;
+                }
+                
+            }
+            return variable->value;
+            }
+
+            if(variable){
+                return variable->value;
             }else{
                 return NULL;
             }
@@ -1595,20 +1660,25 @@ Constant* getOperationResult(Node* exp){
         Node *left = static_cast<binopNode *>(exp)->left;
         Node *right = static_cast<binopNode *>(exp)->right;
         Constant *leftV,*rightV;
+        string op = static_cast<binopNode *>(exp)->op;
+        if(op.compare(".") == 0) return NULL;
         if(left){
             leftV =  getOperationResult(static_cast<binopNode *>(exp)->left);
         }
         if(right){
             rightV = getOperationResult(static_cast<binopNode *>(exp)->right);
         }
-        string op = static_cast<binopNode *>(exp)->op;
-        if(op.compare(".") == 0) return NULL;
+        
         if(leftV && rightV){
             return getResult(op,leftV,rightV);
         }else{
             return NULL;
         }
         
+        break;
+    }
+    case Paren:{
+        return getOperationResult(static_cast<parenNode *>(exp)->exp);
         break;
     }
     case constant:{
@@ -1649,8 +1719,670 @@ Constant* getOperationResult(Node* exp){
     }
 }
 
+Node *workNodeCopy(Node *u)
+{
+    if(!u){
+        return NULL;
+    }
+    switch (u->type)
+    {
+    case CompositeCall:{
+        
+        compositeCallNode * comCallNode = static_cast<compositeCallNode *>(u);
+        compositeNode *actual_composite = comCallNode->actual_composite;
+        list<Node *> *outputs = comCallNode->outputs;
+        list<Node *> *inputs = comCallNode->inputs;
+        list<Node *> *stream_List = comCallNode->stream_List;
+        list<Node *> *copy_stream_List;
+        if(stream_List){
+            int length = stream_List->size();
+            copy_stream_List =  new list<Node *>(length);
+            std::copy(stream_List->begin(),stream_List->end(),copy_stream_List->begin());
+        }else{
+            copy_stream_List = stream_List;
+        }
+        
+        string compName = comCallNode->compName;
+        compositeCallNode *tmp = new compositeCallNode(outputs, compName, copy_stream_List, inputs,actual_composite);
+        return tmp;
+        break;
+    }
+    case Split:
+    {
+        Node *dup_round = workNodeCopy(static_cast<splitNode *>(u)->dup_round);
+        splitNode *tmp = new splitNode(dup_round);
+        return tmp;
+    }
+    case RoundRobin:
+    {
+        list<Node *> *arg_list = new list<Node *>();
+        if (static_cast<roundrobinNode *>(u)->arg_list != NULL)
+            for (auto it : *static_cast<roundrobinNode *>(u)->arg_list)
+                arg_list->push_back(workNodeCopy(it));
+        roundrobinNode *tmp = new roundrobinNode(arg_list);
+        return tmp;
+    }
+    case Duplicate:
+    {
+        Node *exp = workNodeCopy(static_cast<duplicateNode *>(u)->exp);
+        duplicateNode *tmp = new duplicateNode((expNode *)exp);
+        return tmp;
+    }
+    case Join:
+    {
+        Node *rdb = workNodeCopy(static_cast<joinNode *>(u)->rdb);
+        joinNode *tmp = new joinNode((roundrobinNode *)rdb);
+        return tmp;
+    }
+    case SplitJoin:
+    {
+        list<Node *> *outputs = new list<Node *>();
+        list<Node *> *inputs = new list<Node *>();
+
+        Node *split = workNodeCopy(static_cast<splitjoinNode *>(u)->split);
+
+        Node *join = workNodeCopy(static_cast<splitjoinNode *>(u)->join);
+        list<Node *> *stmt_list = new list<Node *>();
+        list<Node *> *body_list = new list<Node *>();
+        if (static_cast<splitjoinNode *>(u)->outputs != NULL)
+            for (auto it : *static_cast<splitjoinNode *>(u)->outputs)
+                outputs->push_back(workNodeCopy(it));
+        if (static_cast<splitjoinNode *>(u)->inputs != NULL)
+            for (auto it : *static_cast<splitjoinNode *>(u)->inputs)
+                inputs->push_back(workNodeCopy(it));
+        if (static_cast<splitjoinNode *>(u)->stmt_list != NULL)
+            for (auto it : *static_cast<splitjoinNode *>(u)->stmt_list)
+                stmt_list->push_back(workNodeCopy(it));
+        if (static_cast<splitjoinNode *>(u)->body_stmts != NULL)
+            for (auto it : *static_cast<splitjoinNode *>(u)->body_stmts)
+                body_list->push_back(workNodeCopy(it));
+        splitjoinNode *tmp = new splitjoinNode(inputs, outputs, (splitNode *)split, stmt_list, body_list, (joinNode *)join);
+        tmp->replace_composite = NULL;
+        return tmp;
+    }
+    case Pipeline:
+    {
+        list<Node *> *outputs = new list<Node *>();
+        list<Node *> *inputs = new list<Node *>();
+        list<Node *> *body_stmts = new list<Node *>();
+        if (static_cast<pipelineNode *>(u)->outputs != NULL)
+            for (auto it : *static_cast<pipelineNode *>(u)->outputs)
+                outputs->push_back(workNodeCopy(it));
+        if (static_cast<pipelineNode *>(u)->inputs != NULL)
+            for (auto it : *static_cast<pipelineNode *>(u)->inputs)
+                inputs->push_back(workNodeCopy(it));
+        if (static_cast<pipelineNode *>(u)->body_stmts != NULL)
+            for (auto it : *static_cast<pipelineNode *>(u)->body_stmts)
+                body_stmts->push_back(workNodeCopy(it));
+        pipelineNode *tmp = new pipelineNode(outputs, body_stmts, inputs);
+        tmp->replace_composite = NULL;
+        return tmp;
+    }
+    case constant:
+        break;
+    case Decl:
+    {
+        Node *prim = workNodeCopy(static_cast<declareNode *>(u)->prim);
+        Node *id = static_cast<declareNode *>(u)->id_list.front();
+        declareNode *tmp = new declareNode((primNode *)prim, (idNode *)id);
+        for (auto it = ++static_cast<declareNode *>(u)->id_list.begin(); it != static_cast<declareNode *>(u)->id_list.end(); ++it)
+            tmp->id_list.push_back((idNode *)workNodeCopy(*it));
+        return tmp;
+        break;
+    }
+    case Id:
+    {
+        idNode *node = static_cast<idNode *>(u);
+        idNode *tmp = new idNode(node->name);
+        tmp->arg_list = node->arg_list;
+        tmp->init = node->init;
+        tmp->isArray = node->isArray;
+        tmp->isParam = node->isParam;
+        tmp->isStream = node->isStream;
+        tmp->level = node->level;
+        tmp->version = node->version;
+        tmp->type = node->type;
+        tmp->valType = node->valType;
+        //cout << "location:" << node->loc->first_line << " idname= " << node->name << "   " << node << " " << u << endl;
+        return tmp;
+        break;
+    }
+    case Binop:
+    {
+        Node *left = workNodeCopy(static_cast<binopNode *>(u)->left);
+        Node *right = workNodeCopy(static_cast<binopNode *>(u)->right);
+        binopNode *tmp = new binopNode((expNode *)left, static_cast<binopNode *>(u)->op, (expNode *)right);
+        return tmp;
+        break;
+    }
+    case Paren:
+    {
+        Node *exp = workNodeCopy(static_cast<parenNode *>(u)->exp);
+        parenNode *tmp = new parenNode((expNode *)exp);
+        return tmp;
+        break;
+    }
+    case Unary:
+    {
+        Node *exp = workNodeCopy(static_cast<unaryNode *>(u)->exp);
+        unaryNode *tmp = new unaryNode(static_cast<unaryNode *>(u)->op, (expNode *)exp);
+        return tmp;
+        break;
+    }
+    case Cast:
+    {
+
+        workNodeCopy(static_cast<castNode *>(u)->exp);
+        break;
+    }
+    case Ternary:
+    {
+        Node *first = workNodeCopy(static_cast<ternaryNode *>(u)->first);
+        Node *second = workNodeCopy(static_cast<ternaryNode *>(u)->second);
+        Node *third = workNodeCopy(static_cast<ternaryNode *>(u)->third);
+        ternaryNode *tmp = new ternaryNode((expNode *)first, (expNode *)second, (expNode *)third);
+        return tmp;
+        break;
+    }
+    case Initializer:
+    case Label:
+        break;
+    case Switch:
+    {
+        Node *exp = workNodeCopy(static_cast<switchNode *>(u)->exp);
+        Node *stat = workNodeCopy(static_cast<switchNode *>(u)->stat);
+        switchNode *tmp = new switchNode((expNode *)exp, stat);
+        return tmp;
+        break;
+    }
+    case Case:
+    {
+        Node *exp = workNodeCopy(static_cast<caseNode *>(u)->exp);
+        Node *stmt = workNodeCopy(static_cast<caseNode *>(u)->stmt);
+        caseNode *tmp = new caseNode((expNode *)exp, (expNode *)stmt);
+        return tmp;
+        break;
+    }
+    case Default:
+    {
+        return static_cast<defaultNode *>(u);
+        break;
+    }
+    case If:
+    {
+        Node *exp = workNodeCopy(static_cast<ifNode *>(u)->exp);
+        Node *stmt = workNodeCopy(static_cast<ifNode *>(u)->stmt);
+        ifNode *tmp = new ifNode((expNode *)exp, stmt);
+        return tmp;
+        break;
+    }
+    case IfElse:
+    {
+        Node *exp = workNodeCopy(static_cast<ifElseNode *>(u)->exp);
+        Node *stmt1 = workNodeCopy(static_cast<ifElseNode *>(u)->stmt1);
+        Node *stmt2 = workNodeCopy(static_cast<ifElseNode *>(u)->stmt2);
+        ifElseNode *tmp = new ifElseNode((expNode *)exp, (expNode *)stmt1, (expNode *)stmt2);
+        return tmp;
+        break;
+    }
+    case While:
+    {
+        workNodeCopy(static_cast<whileNode *>(u)->exp);
+        workNodeCopy(static_cast<whileNode *>(u)->stmt);
+        break;
+    }
+    case Do:
+    {
+        workNodeCopy(static_cast<doNode *>(u)->exp);
+        workNodeCopy(static_cast<doNode *>(u)->stmt);
+        break;
+    }
+    case For:
+    {
+        Node *init = workNodeCopy(static_cast<forNode *>(u)->init);
+        Node *cond = workNodeCopy(static_cast<forNode *>(u)->cond);
+        Node *next = workNodeCopy(static_cast<forNode *>(u)->next);
+        Node *stmt = workNodeCopy(static_cast<forNode *>(u)->stmt);
+        forNode *tmp = new forNode(init, (expNode *)cond, (expNode *)next, stmt);
+        return tmp;
+        break;
+    }
+    case Continue:
+    {
+        return static_cast<continueNode *>(u);
+        break;
+    }
+    case Break:
+    {
+        return static_cast<breakNode *>(u);
+        break;
+    }
+    case Return:
+    {
+        Node *exp = workNodeCopy(static_cast<returnNode *>(u)->exp);
+        returnNode *tmp = new returnNode((expNode *)tmp);
+        return tmp;
+        break;
+    }
+    case Block:
+    {
+        list<Node *> *stmt_list = new list<Node *>();
+        for (auto it : static_cast<blockNode *>(u)->stmt_list)
+        {
+            stmt_list->push_back(workNodeCopy(it));
+        }
+        blockNode *block = new blockNode(stmt_list);
+        return block;
+        break;
+    }
+    case primary:
+    {
+        return static_cast<primNode *>(u);
+        break;
+    }
+    case Array:
+    {
+        return static_cast<arrayNode *>(u);
+        break;
+    }
+    case Call:
+    {
+        list<Node *> *ids = new list<Node *>();
+        for (auto it : static_cast<callNode *>(u)->arg_list)
+        {
+            ids->push_back(workNodeCopy(it));
+        }
+        callNode *tmp = new callNode(static_cast<callNode *>(u)->name, ids);
+        return tmp;
+        break;
+    }
+    default:
+        break;
+    }
+    return u;
+}
+
+//替换 compositecall 传入的参数 => 常量
+void compositeVariableReplace(Node *node){
+        if(node->type == CompositeCall){
+                compositeCallNode *call_composite = (compositeCallNode *)node;
+                list<Node *> *params= call_composite->stream_List;
+                list<Node *> *actual_params = new list<Node *>();
+                if(params){
+                for(auto param : *params){
+                    if(param->type == Id){
+                        Variable *value = top->LookupIdentifySymbol(((idNode *)param)->name);
+                        constantNode *constant_value = copyConstantNode(value->value);
+                        actual_params->push_back(constant_value);
+                    }
+                    else if(param->type == constant){
+                        actual_params->push_back(param);
+                    }else if(param->type == Binop || param->type == Unary){
+                        Constant *value = getOperationResult(param);
+                        constantNode *constant_value = copyConstantNode(value);
+                        actual_params->push_back(constant_value);
+                    }
+                    call_composite->stream_List = actual_params;
+                }
+                }
+        }
+        if(node->type == SplitJoin){
+            //todo 找到for中的变量,然后替换,不支持for中变量的赋值
+        }
+        if(node->type == Pipeline){
+
+        }
+}
+
+//模拟for循环执行过程
+void generateForConstant(forNode* for_nd){
+
+            //top = new SymbolTable(top,NULL);
+            //top = runningTop; // test
+            /*获得for循环中的init，cond和next值 目前只处理for循环中数据是 整型 的情况 */
+            long long initial = MAX_INF;
+            long long condition = MAX_INF;
+            //forNode *for_nd = (forNode *)nd;
+            Node *init = for_nd->init;
+            expNode *cond = for_nd->cond;
+            expNode *next = for_nd->next;
+            string con_op;
+            string con_id;
+            list<Node *> *stmts = NULL;
+
+            Variable *init_v ;
+            
+            if (init->type == Decl)
+            {
+                declareNode *init_d = static_cast<declareNode *>(init);
+                idNode *id_nd = init_d->id_list.front();
+                /* 必须初始化 */
+                if (id_nd->init == NULL)
+                {
+                    cout << "for init部分未初始化 " << endl;
+                    exit(-1);
+                }
+                initNode *init_nd = (initNode *)(id_nd->init);
+                Node *con_init = init_nd->value.front();
+                assert(con_init->type == constant && ((constantNode *)con_init)->style == "long long");
+                initial = getOperationResult(con_init)->llval;// ((constantNode *)con_init)->llval; //todo 支持浮点数
+                con_id = id_nd->name;
+                init_v = new Variable("long long",con_id,initial);
+            }
+            else if (init->type == Binop)
+            {
+                binopNode *init_b = (binopNode *)(init);
+                Node *left = init_b->left;
+                if(init_b->op.compare("=") == 0){
+                    con_id = ((idNode *)left)->name;
+                }
+                init_v = top->LookupIdentifySymbol(con_id);
+                Constant *con_init = getOperationResult(init_b->right);
+                //binopNode *init_b = (binopNode *)init;
+                //assert(init_b->right->type == constant);
+                //constantNode *con_init = (constantNode *)(init_b->right);
+                //assert(con_init->style == "integer");
+                if(con_init->type.compare("int") == 0){
+                    initial = con_init->ival;
+                }
+                if(con_init->type.compare("long") == 0){
+                    initial = con_init->lval;
+                }
+                if(con_init->type.compare("long long") == 0){
+                    initial = con_init->llval;
+                }
+                init_v->value = con_init;
+
+            }else if(init->type == Id){
+                init_v = top->LookupIdentifySymbol(((idNode *)init)->name);
+            }
+
+
+            /* 获取cond值 */
+            if (cond->type == Binop)
+            {
+                binopNode *cond_b = (binopNode *)cond;
+                //assert(cond_b->right->type == constant); todo
+                //assert(con_cond->style == "integer");
+                Constant *con_cond = getOperationResult(cond_b->right);
+                if(con_cond->type.compare("int") == 0){
+                    condition = con_cond->ival;
+                }
+                if(con_cond->type.compare("long") == 0){
+                    condition = con_cond->lval;
+                }
+                if(con_cond->type.compare("long long") == 0){
+                    condition = con_cond->llval;
+                }
+                /*if(condition_variable->type.compare("double") == 0){ // TODO 支持浮点数
+                    condition = condition_variable->value->dval;
+                }
+                if(condition_variable->type.compare("float") == 0){
+                    condition =  condition_variable->value->dval;
+                }
+                if(condition_variable->type.compare("string") == 0){
+                    cout<<"string is not suitable in for";
+                    exit(-1);
+                }
+                /*if(cond_b->right->type == constant){
+                    constantNode *con_cond = (constantNode *)(cond_b->right);
+                    condition = con_cond->llval;
+                }else if(cond_b->right->type == Id){
+                    //获得变量对应的值
+                    idNode *con_cond = (idNode *)(cond_b->right);
+                    Variable *condition_variable = runningTop->LookupIdentifySymbol(con_cond->name);
+                    if(condition_variable->type.compare("int") == 0){
+                        condition = condition_variable->value->llval;
+                    }
+                    if(condition_variable->type.compare("long") == 0){
+                        condition = condition_variable->value->llval;
+                    }
+                    if(condition_variable->type.compare("long long") == 0){
+                        condition = condition_variable->value->llval;
+                    }
+                    if(condition_variable->type.compare("integer") == 0){ // attention!
+                        condition = condition_variable->value->llval;
+                    }
+                    /*if(condition_variable->type.compare("double") == 0){
+                        condition = condition_variable->value->dval;
+                    }
+                    if(condition_variable->type.compare("float") == 0){
+                        condition =  condition_variable->value->dval;
+                    }
+                    if(condition_variable->type.compare("string") == 0){
+                        cout<<"string is not suitable in for";
+                        exit(-1);
+                    }
+                }else if(cond_b->right->type = Binop){
+
+                }
+                */
+                con_op = cond_b->op;
+                if (cond_b->op == "<" || cond_b->op == ">")
+                    condition += 0;
+                else
+                    condition += 1;
+            }
+            //cout << "init= " << initial << " cond= " << condition << endl;
+            if (initial == MAX_INF || condition == MAX_INF)
+            {
+                cout << "init or condition is not a constant !";
+                exit(-1);
+            }
+            /* 获取next值 */
+            vector<long long> step_value; //存储每次循环变量的值,(maybe不支持循环体内部改变该值)
+            if (next->type == Binop)
+            {
+                binopNode *next_b = ((binopNode *)next);
+                Node *right = next_b->right;
+                string op;
+                long long step;
+
+                if(right->type == constant){
+                    Constant *step_v = getOperationResult(right);
+                    if(step_v->type.compare("int") == 0){ //todo 支持浮点数
+                        step = step_v->ival;
+                    }
+                    if(step_v->type.compare("long") == 0){
+                        step = step_v->lval;
+                    }
+                    if(step_v->type.compare("long long") == 0){
+                        step = step_v->llval;
+                    }
+                    op = next_b->op;
+                }else if(right->type == Binop){ // 解析 i = i + x;
+                    Node *next_left = ((binopNode *)right)->left;
+                    Node *next_right = ((binopNode *)right)->right;
+                    Constant *step_v;
+                    if(((idNode *)next_left)->name.compare(con_id) != 0){
+                        step_v = getOperationResult(next_left);
+                    }else{
+                        step_v = getOperationResult(next_right);
+                    }
+                    step = step_v->llval;// 只支持整型
+                    op = ((binopNode *)right)->op;
+                }
+                if(con_op.compare("<") == 0 || con_op.compare("<=") == 0){
+                    if (op == "*=" || op == "*")
+                    {
+                        int cnt = 0;
+                        if (initial < condition)
+                        {
+                            for (int i = initial; i < condition; i *= step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            initial = 0;
+                            condition = 0;
+                        }
+                    }
+                    else if (op == "/=" || op == "/")
+                    {
+                        int cnt = 0;
+                        if (initial < condition && step < 1)
+                        {
+                            for (int i = initial; i < condition; i /= step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "+=" || op == "+"){
+                        int cnt = 0;
+                        if (initial < condition && step > 0)
+                        {
+                            for (int i = initial; i < condition; i += step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "-=" || op == "-"){
+                        int cnt = 0;
+                        if (initial < condition && step < 0) //todo 未考虑step为负
+                        {
+                            for (int i = initial; i < condition; i -= step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }       
+                }else{
+                    if (op == "*=" || op == "*")
+                    {
+                        int cnt = 0;
+                        if (initial > condition && step < 1)
+                        {
+                            for (int i = initial; i > condition; i *= step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            initial = 0;
+                            condition = 0;
+                        }
+                    }
+                    else if (op == "/=" || op == "/")
+                    {
+                        int cnt = 0;
+                        if (initial > condition)
+                        {
+                            for (int i = initial; i > condition; i /= step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "+=" || op == "+"){
+                        int cnt = 0;
+                        if (initial > condition && step < 0)
+                        {
+                            for (int i = initial; i > condition; i += step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    }
+                    else if(op == "-=" || op == "-"){
+                        int cnt = 0;
+                        if (initial > condition && step > 0) //todo 未考虑step为负
+                        {
+                            for (int i = initial; i > condition; i -= step)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }
+                        else
+                        {
+                            cout << " infinite loop " << endl;
+                        }
+                    } 
+                }
+                
+            }else if(next->type == Unary){
+                unaryNode *next_u = (unaryNode *)(next);
+                int cnt = 0;
+                int i;
+                if(next_u->op.compare("POSTINC") == 0){ //++
+                    if(con_op.compare("<") == 0 || con_op.compare("<=") == 0){
+                        if(initial < condition){
+                            for (i = initial; i < condition; i++)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }else{
+                            cout << " infinite loop " << endl;
+                            exit(-1);
+                        }
+                    }else{
+                        cout << " infinite loop " << endl;
+                        exit(-1);
+                    }
+                }else if(next_u->op.compare("POSTDEC") == 0){ //--
+                    if(con_op.compare(">") == 0 || con_op.compare(">=") == 0){
+                        if(initial > condition){
+                            for (i = initial; i > condition; i--)
+                                step_value.push_back(i);
+                                //cnt++;
+                            initial = 0;
+                            //condition = cnt;
+                        }else{
+                            cout << " infinite loop " << endl;
+                            exit(-1);
+                        } 
+                    }else{
+                        cout << " infinite loop " << endl;
+                        exit(-1);
+                    }
+                }    
+            }
+            for(int i=0;i<step_value.size();i++){
+                list<Node *> stmt;
+                init_v->value->llval = step_value[i];
+                genrateStmt(for_nd->stmt);
+                //stmt.push_back(for_nd->stmt);
+                //addComposite(stmt);
+            }
+}
+
 // 解析 语句
 void genrateStmt(Node *stmt){
+    if(stmt == NULL)
+        return;
     switch (stmt->type)
     {
         // exp 节点
@@ -1670,14 +2402,87 @@ void genrateStmt(Node *stmt){
             if(op.compare("=") == 0){
                 Variable* variable;
                 if(left->type == Binop){
-                    //todo 处理数组
-                }else if(left->type == Id && right->type == Binop){
-                    if(static_cast<binopNode *>(right)->op.compare(".") == 0){
-                        return;
+                    //todo 处理 . 运算
+                    //expNode *array_left = static_cast<binopNode *>(left)->left;
+                    //expNode *array_right = static_cast<binopNode *>(left)->right;
+
+                }else if(left->type == Id && (right->type == Binop || right->type == Id || right->type == constant)){
+                    if(right->type == Binop){
+                        if(static_cast<binopNode *>(right)->op.compare(".") == 0){
+                            return;
+                        }
                     }
+                    
                     if(ifConstantFlow){
                         variable = top->LookupIdentifySymbol(static_cast<idNode*>(left)->name);
-                        variable->value  = getOperationResult(right);
+                        if(variable == NULL){//roundrobin join 中的赋值是在符号表中找不到的
+                            break;
+                        }
+                        bool isArray = false;
+                        int index = 0;
+                        bool canGetIndex = true;
+                        int size;
+                        if(((idNode*)left)->arg_list.size()){
+                            isArray = true;
+                            //处理数组下标
+                            vector<int> arg_size = ((ArrayConstant *)variable->value)->arg_size;
+                            vector<int> each_size;
+
+                            for(int i=arg_size.size()-1;i>=0;i--){
+                                if(each_size.size()){
+                                    each_size.push_back(arg_size[i]*each_size.back());
+                                }else{
+                                    each_size.push_back(arg_size[i]);
+                                }  
+                            }
+                            
+                            int array_size = each_size.size()-1;
+                            for(auto i:((idNode*)left)->arg_list){
+                                Constant *value = getOperationResult(i);
+                                if(value){
+                                    if(value->llval){
+                                        size = value->llval;
+                                    }else{
+                                        canGetIndex = false;
+                                        break;
+                                    }
+                                }else{
+                                    canGetIndex = false;
+                                    break;
+                                }
+                                
+                                if(array_size-index>0){
+                                    index += each_size[array_size - index] * size;
+                                }else{
+                                    index += size;
+                                }
+                            }
+
+
+                        }
+                        
+                        //类型隐式转换
+                        Constant *value_constant = getOperationResult(right);
+                        if(value_constant){
+                            if(variable->type.compare("int") == 0 || variable->type.compare("long") == 0 || variable->type.compare("long long") == 0){
+                                if(value_constant->type.compare("double") == 0){
+                                    value_constant->type = "long long";
+                                    value_constant->llval = (int)value_constant->dval;
+                                }
+                                if(value_constant->type.compare("float") == 0){
+                                    value_constant->type = "long long";
+                                    value_constant->llval = (int)value_constant->fval;
+                                }
+                            }
+                        }
+                        if(isArray){
+                            if(canGetIndex){
+                                ((ArrayConstant *)variable->value)->values[index] = value_constant;
+                            }
+                        }else{
+                            variable->value  = value_constant;
+                        }
+                       
                     }
                     
                 }
@@ -1742,11 +2547,21 @@ void genrateStmt(Node *stmt){
         }
         case For:{
             EnterScopeFn(stmt);
-            genrateStmt(static_cast<forNode *>(stmt)->init);
-            genrateStmt(static_cast<forNode *>(stmt)->cond);
-            genrateStmt(static_cast<forNode *>(stmt)->next);
-            genrateStmt(static_cast<forNode *>(stmt)->stmt);
+            forNode *for_nd = static_cast<forNode *>(stmt);
+            if(ifConstantFlow){
+                generateForConstant(for_nd);
+            }else{
+                genrateStmt(for_nd->init);
+                genrateStmt(for_nd->cond);
+                genrateStmt(for_nd->next);
+                genrateStmt(for_nd->stmt);
+            }
             ExitScopeFn();
+            break;
+        }
+        case Add:{
+            addNode *add = static_cast<addNode *>(stmt);
+            genrateStmt(add->content);
             break;
         }
         case Call:{
@@ -1754,22 +2569,70 @@ void genrateStmt(Node *stmt){
             // print pow 等函数调用 如何与自定义函数 区分 
             //func != NULL;
             static_cast<callNode *>(stmt)->actual_callnode = func;
+            if(ifConstantFlow){
+                //jiaru
+            }
             // 检查传入的参数是否存在
             break;
         }
         case CompositeCall:{
             compositeNode *actual_comp = S.LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName)->composite;
             static_cast<compositeCallNode *>(stmt)->actual_composite = actual_comp;
+            if(ifConstantFlow){
+                Node *copy = workNodeCopy(stmt);
+                compositeVariableReplace(copy);
+                right_compositecall_list.push_back(copy);
+            }
             // 检查传入的参数是否存在 以及 获得参数值 
             break;
         }
         case SplitJoin:{
-            generatorSplitjoinNode(static_cast<splitjoinNode *>(stmt));
+            if(ifConstantFlow){
+                vector<Node *> compositeCall_list;
+                compositecall_list_stack.push_back(compositeCall_list);
+                right_compositecall_list = compositeCall_list;
+                Node *copy = workNodeCopy(stmt);
 
+                generatorSplitjoinNode(static_cast<splitjoinNode *>(copy));
+                if(compositecall_list_stack.size()>1){
+                    ((splitjoinNode *)copy)->compositeCall_list = right_compositecall_list;
+                }else{
+                    ((splitjoinNode *)stmt)->compositeCall_list = right_compositecall_list;
+                }
+                
+
+                compositecall_list_stack.pop_back();
+                if(compositecall_list_stack.size()){
+                    right_compositecall_list = compositecall_list_stack.back();
+                    right_compositecall_list.push_back(copy);
+                }
+            }else{
+                generatorSplitjoinNode(static_cast<splitjoinNode *>(stmt));
+            }
             break;  
         }
         case Pipeline:{
-            generatorPipelineNode(static_cast<pipelineNode *>(stmt));
+            if(ifConstantFlow){
+                vector<Node *> compositeCall_list;
+                compositecall_list_stack.push_back(compositeCall_list);
+                right_compositecall_list = compositeCall_list;
+                Node *copy = workNodeCopy(stmt);
+
+                generatorPipelineNode(static_cast<pipelineNode *>(copy));
+                if(compositecall_list_stack.size() > 1){
+                    ((pipelineNode *)copy)->compositeCall_list = right_compositecall_list;
+                }else{
+                    ((pipelineNode *)stmt)->compositeCall_list = right_compositecall_list;
+                }
+
+                compositecall_list_stack.pop_back();
+                if(compositecall_list_stack.size()){
+                    right_compositecall_list = compositecall_list_stack.back();
+                    right_compositecall_list.push_back(copy);
+                }
+            }else{
+                generatorPipelineNode(static_cast<pipelineNode *>(stmt));
+            }
             break;
         }
         default:
@@ -1800,29 +2663,32 @@ Constant* generateInitNode(Node* init_value){
 }
 
 // 解析声明语句中 数组的初始化
-list<Constant *> *generateInitArray(Node* init_value){
-    idNode *id = (idNode *)init_value;
+void generateInitArray(Node* init_value,vector<Constant*> &values){
     //ArrayConstant *array = new ArrayConstant(id->valType);
-    list<Constant *> *values = new list<Constant *>();
+    //vector<Constant *> *values = new vetor<Constant *>();
     if(init_value != NULL){
         switch (init_value->type)
         {
             case Initializer:{
                 list<Node *> init_values = static_cast<initNode *>(init_value)->value;
                 for(auto it = init_values.begin();it!=init_values.end();it++){
-                    values->push_back(generateInitNode(*it));
+                    if((*it)->type == Initializer){//多维数组
+                        generateInitArray(*it,values);
+                    }else{
+                        values.push_back(generateInitNode(*it));
+                    }     
                 }
                 break;
             }
             default:{
                 genrateStmt(init_value);
-                values->push_back(getOperationResult(init_value)); 
+                values.push_back(getOperationResult(init_value)); 
                 break;
             }
                 
         }
     }
-    return values;
+    //return values;
 }
 // 解析 Declare 节点
 void generateDeclareNode(declareNode* dlcNode){
@@ -1833,12 +2699,44 @@ void generateDeclareNode(declareNode* dlcNode){
         Node* init_value = (*it)->init;
         if((*it)->isArray){
             ArrayConstant *array = new ArrayConstant((*it)->valType);
-            array->values = *generateInitArray(init_value); // todo
-            Variable *variable = new Variable("array",(*it)->name,array);
+            int array_size = 1;
+            for(auto arg : (*it)->arg_list){
+                Constant *arg_value = getOperationResult(arg);
+                if(arg_value){
+                    array->arg_size.push_back(arg_value->llval);
+                    array_size *= arg_value->llval;
+                }
+                
+            }
+            vector<Constant *> array_values;
+            if(array_size){
+                if(init_value){
+                    generateInitArray(init_value,array_values); 
+                }else{
+                    array_values.resize(array_size);
+                }
+            }
+            array->values = array_values;
+            Variable *variable = new Variable((*it)->valType,(*it)->name,array);
             top->InsertIdentifySymbol(variable);
         }else{
-             Constant *constant = generateInitNode(init_value); // 解析初始化值
-             top->InsertIdentifySymbol(*it,constant);
+            Constant *value_constant = generateInitNode(init_value); // 解析初始化值
+             //todo 类型隐式转换
+            string val_type = dlcNode->prim->name; 
+            (*it)->valType = val_type;  
+            if(value_constant){
+                if(val_type.compare("int") == 0 || val_type.compare("long") == 0 || val_type.compare("long long") == 0){
+                if(value_constant->type.compare("double") == 0){
+                    value_constant->type = "long long";
+                    value_constant->llval = (int)value_constant->dval;
+                }
+                if(value_constant->type.compare("float") == 0){
+                    value_constant->type = "long long";
+                    value_constant->llval = (int)value_constant->fval;
+                }
+            }
+            }            
+            top->InsertIdentifySymbol(*it,value_constant);
         }
         if(isOperatorState){
             operator_state_identify.insert(make_pair((*it)->name,*it));
@@ -2073,9 +2971,9 @@ void generateSymbolTable(list<Node *> *program,SymbolTable *symbol_tables[][MAX_
             }
             case Composite:{ 
                 top->InsertCompositeSymbol(static_cast<compositeNode *>(it)->compName,static_cast<compositeNode *>(it));
-                EnterScopeFn(it);/* 进入 composite 块级作用域 */ 
-                generateComposite(static_cast<compositeNode *>(it));
-                ExitScopeFn(); /* 退出 composite 块级作用域 */ 
+                //EnterScopeFn(it);/* 进入 composite 块级作用域 */ 
+                //generateComposite(static_cast<compositeNode *>(it));
+                //ExitScopeFn(); /* 退出 composite 块级作用域 */ 
                 break;
             }
             case FuncDcl:{ // 仅支持全局作用域下的函数声明
@@ -2127,39 +3025,7 @@ void generateComposite(compositeNode* composite){
                 } 
             } 
         } 
-        /*if(composite->head->originalInOut){
-
-            ComInOutNode *originalInOut = composite->head->originalInOut;
-            
-            if(inout != NULL){
-            list<Node *> *original_input_List = originalInOut->input_List; //原始输入流
-            list<Node *> *original_output_List = originalInOut->output_List; //原始输出流
-
-            list<Node *> *input_List = inout->input_List; // 流代替后 输入流 
-            list<Node *> *output_List = inout->output_List; //流代替后 输出流
-
-            
-            if(input_List != NULL && original_input_List != NULL){
-                auto original_input = original_input_List->begin();
-                for(auto it = input_List->begin();it!=input_List->end();it++){
-                    //top->InsertStreamSymbol(((inOutdeclNode *)*original_input)->id->name ,static_cast<inOutdeclNode *>(*it));
-                    original_input++;
-                }
-            }
-
-            if(output_List != NULL && original_output_List != NULL){
-                auto original_output = original_output_List->begin();
-                for(auto it = output_List->begin();it!=output_List->end();it++){
-                     //top->InsertStreamSymbol(((inOutdeclNode *)*original_output)->id->name ,static_cast<inOutdeclNode *>(*it));
-                     original_output++;
-                }  
-            } 
-        } 
-
-        }else{
-            
-        }
-    */
+        
 
     // 解析 param
         if(param != NULL){
@@ -2203,10 +3069,52 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         top->count = 0;
     }
     
-    generateComposite(composite);
-    
+    ComInOutNode *inout = composite->head->inout; //输入输出参数
     compBodyNode *body = composite->body; //body
     paramNode *param;
+    list<Node *> *body_stmt;
+
+    if(body != NULL){
+        param = body->param; // param
+        body_stmt = body->stmt_List;
+    
+
+        //解析 输入输出流 stream 作为参数加入符号表
+        if(inout != NULL){
+            list<Node *> *input_List = inout->input_List; //原始输入流
+            list<Node *> *output_List = inout->output_List; //原始输出流
+            if(input_List != NULL){
+                for(auto it = input_List->begin();it!=input_List->end();it++){
+                    inOutdeclNode *copy_inoutdeclNode = new inOutdeclNode();
+                    copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
+                    idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
+                    copy_inoutdeclNode->id = copy_id;
+                    copy_inoutdeclNode->isInOut = true;
+                    top->InsertStreamSymbol(copy_inoutdeclNode);
+                }
+            }
+            if(output_List != NULL){
+                for(auto it = output_List->begin();it!=output_List->end();it++){
+                    inOutdeclNode *copy_inoutdeclNode = new inOutdeclNode();
+                    copy_inoutdeclNode->strType = static_cast<inOutdeclNode *>(*it)->strType;
+                    idNode *copy_id = new idNode(static_cast<inOutdeclNode *>(*it)->id->name);
+                    copy_inoutdeclNode->id = copy_id;
+                    copy_inoutdeclNode->isInOut = true;
+                    top->InsertStreamSymbol(copy_inoutdeclNode);
+                } 
+            } 
+        } 
+        // 解析 param
+        if(param != NULL){
+            generateNodeList(*(param->param_list)); 
+        }
+    }
+
+    //generateComposite(composite);//进行常量传播
+
+    
+    //compBodyNode *body = composite->body; //body
+    //paramNode *param;
 
     //在符号表中将数据流替换为真实数据流
     if(composite->head->inout){
@@ -2248,25 +3156,23 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
         }
     }
    
-   //多次调用同一个 composite,其内部声明的数据流通过count来进行区分
-   for(auto it : top->getStreamTable()){
-        inOutdeclNode *stream = it.second;
+   
 
-        if(!stream->isInOut){
-            stream->id->name = stream->id->name + to_string(top->count);
-        }
-    }
-
+    // 传入compositecall参数到param
     list<Constant*>::iterator paramValue =  paramList.begin();
     if(body != NULL){
         param = body->param; // param
-    // 解析 param
+    
         if(param != NULL){
             list<Node *> param_list = *(param->param_list);
             for(auto it = param_list.begin();it != param_list.end();it++){
                 Variable *variable = top->LookupIdentifySymbol(((idNode *)(*it))->name);
-                 variable->value = (*paramValue);
-                 top->InsertParamSymbol(variable);
+                if((*paramValue)->isArray){
+                    variable->isArray = true;
+                }
+                variable->value = (*paramValue); 
+                top->InsertParamSymbol(variable);
+                paramValue++;
                 /*if(variable->type.compare((*paramValue)->type) == 0){ //todo 参数类型匹配
                     variable->value = (*paramValue);
                 }else{
@@ -2275,84 +3181,22 @@ SymbolTable* generateCompositeRunningContext(compositeCallNode *call,compositeNo
                 }*/ 
             }
         }
-        //解析window 不能放这里
-        /*for (auto it : *body->stmt_List)
-        {
-            operatorNode *exp = NULL;
-            if(it->type == Binop){
-                Node *right = ((binopNode *)it)->right;
-                if(right->type == Operator_){
-                    exp = (operatorNode *)right;
-                }
-            }
-            if (it->type == Operator_)
-            {
-                exp = ((operatorNode *)it);
-            }
-            if(exp!=NULL){
-                //cout<<"exp->type ="<<exp->type<<endl;
-                // 解析window
-                
-                /* 除了window都可以指向一块内存 对于window动态分配一块内存，替换window中的名字，再函数的结尾将流进行替换*/
-                /*operBodyNode *operBody = exp->operBody;
-                //paramNode *param = operBody->param;
-                list<Node *> stmts = operBody->stmt_list;
-                list<Node *> *win_list = new list<Node *>();
-                /*动态分配生成新的windowNode*/ // 求出具体window大小
-                /*for (auto it : *operBody->win->win_list)
-                {
-                    Node *winType = ((winStmtNode *)it)->winType;
-                    string winName = ((winStmtNode *)it)->winName;
-                    winStmtNode *copy_winstmt_node;
-                    if(winType->type == Sliding){
-                        slidingNode *sliding = (slidingNode *)winType;
-                        list<Node *> *sliding_list = sliding->arg_list;
-                        list<Node *> *copy_list = new list<Node *>();
-                        for (auto it : *sliding_list){
-                            constantNode *constant_node;
-                            Constant *value = getOperationResult(it);
-                            if(value->type.compare("int") == 0){ //todo
-                                // constant_node = new constantNode(value->type,value->ival);
-                            }
-                            if(value->type.compare("long") == 0){
-                                constant_node = new constantNode(value->type,value->lval);
-                            }
-                            if(value->type.compare("long long") == 0){
-                                constant_node = new constantNode(value->type,value->llval);
-                            }
-                            copy_list->push_back(constant_node);
-                        }
-                        slidingNode *copy_sliding = new slidingNode(copy_list);
-                        copy_winstmt_node = new winStmtNode(winName,copy_sliding);
-                    }
-                    if(winType->type == Tumbling){
-                        slidingNode *sliding = (slidingNode *)winType;
-                        list<Node *> *sliding_list = sliding->arg_list;
-                        list<Node *> *copy_list = new list<Node *>();
-                        for (auto it : *sliding_list){
-                            constantNode *constant_node;
-                            Constant *value = getOperationResult(it);
-                            if(value->type.compare("int") == 0){ //todo
-                                // constant_node = new constantNode(value->type,value->ival);
-                            }
-                            if(value->type.compare("long") == 0){
-                                // constant_node = new constantNode(value->type,value->lval);
-                            }
-                            if(value->type.compare("long long") == 0){
-                                constant_node = new constantNode(value->type,value->llval);
-                            }
-                            copy_list->push_back(constant_node);
-                        }
-                        tumblingNode *copy_sliding = new tumblingNode(copy_list);
-                        copy_winstmt_node = new winStmtNode(winName,copy_sliding);
-                    }
-                    win_list->push_back(copy_winstmt_node);
-                }
-                operBody->win->win_list = win_list;
-                //windowNode *win = new windowNode(win_list);  
-            }  
-            
-        }*/
+    }
+
+    //先传递composite参数和数据流，再进行body解析，进行常量传播 
+    if(body_stmt != NULL){
+        for(auto it = body_stmt->begin();it != body_stmt->end();it++){
+            genrateStmt(*it);
+        }        
+    }
+
+    //多次调用同一个 composite,其内部声明的数据流通过count来进行区分
+   for(auto it : top->getStreamTable()){
+        inOutdeclNode *stream = it.second;
+
+        if(!stream->isInOut){
+            stream->id->name = composite->compName + stream->id->name + to_string(top->count);
+        }
     }
     top->printSymbolTables();
     return top;
@@ -2372,6 +3216,11 @@ list<Constant *> generateStreamList(list<Node *> *stream_List,SymbolTable *s){
     list<Constant *> paramList;
     top = s;
     for(auto it = stream_List->begin();it != stream_List->end();it++){
+        if((*it)->type == constant){
+            if(((constantNode *)(*it))->value){
+                paramList.push_back(((constantNode *)(*it))->value);
+            }
+        }
         paramList.push_back(getOperationResult((*it)));
     }
     return paramList;

@@ -46,6 +46,7 @@ class primNode : public Node
     string toString();
 };
 
+class Constant;
 class constantNode : public Node
 {
   public:
@@ -56,6 +57,7 @@ class constantNode : public Node
     long long llval;
     long lval;
     int ival;
+    Constant *value;
     constantNode(string type, string str, YYLTYPE loc = YYLTYPE()) : style(type), sval(str)
     {
         setLoc(loc);
@@ -486,6 +488,7 @@ class pipelineNode : public Node
     list<Node *> *inputs;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
+    vector<Node *> compositeCall_list;
     pipelineNode(list<Node *> *outputs,list<Node *> *body_stmts, list<Node *> *inputs,YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -570,6 +573,7 @@ class splitjoinNode : public Node
     list<Node *> *stmt_list;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
+    vector<Node *> compositeCall_list;
     splitjoinNode(list<Node *> *inputs,
                   list<Node *> *outputs,
                   splitNode *split,

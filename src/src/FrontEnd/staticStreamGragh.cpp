@@ -155,6 +155,7 @@ void StaticStreamGraph::SetFlatNodesWeights()
 
                             Constant *value = getOperationResult(first);
                             if(value->type.compare("int") == 0){ //todo
+                                first_val = value->ival;
                                 // constant_node = new constantNode(value->type,value->ival);
                             }
                             if(value->type.compare("long") == 0){

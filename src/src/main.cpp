@@ -16,6 +16,7 @@
 #include "HeuristicGreedyPartition.h"
 #include "CodeGeneration.h"
 #include "symboltableGenerate.h"
+#include "time.h"
 
 extern FILE *yyin;                               // flex uses yyin as input file's pointer
 extern int yyparse();                            // parser.cc provides yyparse()
@@ -32,12 +33,17 @@ SchedulerSSG *SSSG = NULL;
 bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常量传播 在静态数据流图生成过程中借助执行上下文进行常量传播
 
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
-list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
+list<SymbolTable *> symbol_tables;
+vector<SymbolTable *> first_symbol_tables,last_symbol_tables;
+
+list<Variable *> paramArrayVariable;//代码生成使用
 //===----------------------------------------------------------------------===//
 // Main
 //===----------------------------------------------------------------------===//
 int main(int argc, char *argv[])
 {
+    clock_t start,end;
+    start = clock();
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
     int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
@@ -153,5 +159,7 @@ int main(int argc, char *argv[])
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
     removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
+    end = clock();
+    cout<<(double)(end-start)/CLOCKS_PER_SEC<<"\n";
     return 0;
 }

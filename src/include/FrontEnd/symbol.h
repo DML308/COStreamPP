@@ -8,6 +8,8 @@
 #include <map>
 #include <unordered_map>
 #include <list>
+#include <algorithm>
+#include <vector>
 
 void EnterScope(void);
 void ExitScope(void);
@@ -21,18 +23,21 @@ class Constant{
     float fval;
     double dval;
     bool bval;
+
+    bool isArray;
     string sval;
     string type;
-    Constant(string type, int i) :type(type), ival(i){}
-    Constant(string type, long l) :type(type), lval(l){}
-    Constant(string type, long long l) :type(type), llval(l){}
-    Constant(string type, float f) :type(type), fval(f){}
-    Constant(string type, double d) :type(type), dval(d){}
-    Constant(string type, string str) :type(type), sval(str){}
-    Constant(string type, bool b) :type(type), bval(b){}
+    Constant(string type, int i) :type(type), ival(i),isArray(false){}
+    Constant(string type, long l) :type(type), lval(l),isArray(false){}
+    Constant(string type, long long l) :type(type), llval(l),isArray(false){}
+    Constant(string type, float f) :type(type), fval(f),isArray(false){}
+    Constant(string type, double d) :type(type), dval(d),isArray(false){}
+    Constant(string type, string str) :type(type), sval(str),isArray(false){}
+    Constant(string type, bool b) :type(type), bval(b),isArray(false){}
+    Constant(string type) :type(type){}
     ~Constant() {}
 
-    void print(bool isArray){
+    void print(){
       if(type.compare("int") == 0){
             cout<<ival;
         }
@@ -54,12 +59,9 @@ class Constant{
       if(type.compare("bool") == 0){
           cout<<bval;
       }
-      if(!isArray){
-        cout<<endl;
-      }
   }
 
-  string printStr(bool isArray){
+  string printStr(){
       string str = "";
       if(type.compare("int") == 0){
             str = to_string(ival);
@@ -82,56 +84,62 @@ class Constant{
       if(type.compare("bool") == 0){
           str = to_string(bval);
       }
-      if(!isArray){
-        
-      }
       return str;
   }
 
 };
 
-class ArrayConstant {
+class ArrayConstant : public Constant{
   public:
-    list<Constant *> values;
-    string type;
-    ArrayConstant(string type) : type(type){}
-
+    vector<Constant *> values;
+    //string type;
+    vector<int> arg_size;
+    int index;//用于遍历
+    ArrayConstant(string type) : Constant(type){this->isArray = true;}
     void print();
+    string printEachLevel(int level);
+    string printStr();
 };
+
+constantNode *copyConstantNode(Constant *value);
+Constant *copyConstant(Constant *value);
 
 class Variable {
   public:
-    string type; // int,long,long long,float,double,string,array 
+    string type; // int,long,long long,float,double,string
     string name;
     constantNode *cvalue;
     Constant *value;
-    ArrayConstant *array;
+    //ArrayConstant *array;
+    bool isArray;
     int level = 0,version = 0;
-    Variable(string type,string name,Constant* constant):type(type),name(name){
+    Variable(string type,string name,Constant* constant):type(type),name(name),isArray(false){
       this->value = constant;
     }
-    Variable(string type,string name):type(type),name(name){
+    Variable(string type,string name):type(type),name(name),isArray(false){
     }
-    Variable(string type,string name,int i):type(type),name(name){
+    Variable(string type,string name,int i):type(type),name(name),isArray(false){
       this->value = new Constant(type,i);
     }
-    Variable(string type,string name,long i):type(type),name(name){
+    Variable(string type,string name,long i):type(type),name(name),isArray(false){
       this->value = new Constant(type,i);
     }
-    Variable(string type,string name,long long i):type(type),name(name){
+    Variable(string type,string name,long long i):type(type),name(name),isArray(false){
       this->value = new Constant(type,i);
     }
-    Variable(string type,string name,float i):type(type),name(name){
+    Variable(string type,string name,float i):type(type),name(name),isArray(false){
       this->value = new Constant(type,i);
     }
-    Variable(string type,string name,double i):type(type),name(name){
+    Variable(string type,string name,double i):type(type),name(name),isArray(false){
       this->value = new Constant(type,i);
     }
-    Variable(string type,string name,string i):type(type),name(name){
+    Variable(string type,string name,string i):type(type),name(name),isArray(false){
       this->value = new Constant(type,i);
     }
     Variable(string type,string name,ArrayConstant* array):type(type),name(name){
-      this->array = array;
+      this->value = array;
+      this->isArray = true;
+
     }
     ~Variable(){
   };

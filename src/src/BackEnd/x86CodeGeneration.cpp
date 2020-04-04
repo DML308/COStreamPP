@@ -3,6 +3,10 @@ SymbolTable *running_top;
 extern SymbolTable* top;
 extern SymbolTable S;
 extern sequentialNode* globalSequential;
+extern bool ifConstantFlow;
+
+list<Node *> stateArrayVariable;
+extern list<Variable *> paramArrayVariable;
 X86CodeGeneration::X86CodeGeneration(int cpuCoreNum, SchedulerSSG *sssg, const char *, StageAssignment *psa, Partition *mp)
 {
     psa_ = psa;
@@ -116,9 +120,12 @@ void X86CodeGeneration::CGGlobalHeader()
     buf << "#define _GLOBAL_H\n";
     buf << "#include \"Buffer.h\"\n";
     buf << "#include <math.h>\n";
-    if(globalSequential->ifNeedMathExtension) {
-        buf<<"#include \"MathExtension.h\"\n";
+    if(globalSequential){
+        if(globalSequential->ifNeedMathExtension) {
+            buf<<"#include \"MathExtension.h\"\n";
+        }
     }
+    
     buf << "#include <string>\n";
     buf << "using namespace std;\n";
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
@@ -244,6 +251,8 @@ void X86CodeGeneration::CGactors()
 {
     for (int i = 0; i < nActors_; ++i)
     {
+        paramArrayVariable.clear();
+        stateArrayVariable.clear();
         stringstream buf;
         string className = flatNodes_[i]->name;
         buf << "#ifndef _" << className << "_\n";
@@ -295,11 +304,14 @@ void X86CodeGeneration::CGactors()
         //写入composite传入的参数 此处为声明，在init中赋值
         running_top = flatNodes_[i]->compositecall_runnningtop;
         SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
-        top = opt_top;
-        generatorOperatorNode(flatNodes_[i]->contents);
+        //top = opt_top;
+        //ifCodeGeneration = false;
+        //generatorOperatorNode(flatNodes_[i]->contents);
+        opt_top = FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
         //for(auto it : running_top->)
         string param = running_top->toParamString(opt_top);
         buf << param;
+
         //写入init部分前的statement定义，调用tostring()函数，解析成规范的类变量定义格式
         CGactorsStmts(buf, &stmts);
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
@@ -312,6 +324,19 @@ void X86CodeGeneration::CGactors()
         CGactorsWork(buf, work);
         /* 类体结束*/
         buf << "};\n";
+        /*定义初始化operator中声明的数组*/
+        for(auto node : stateArrayVariable){
+            string str = node->toString();
+            int index = 0;
+            for (auto c : str)
+            {
+                if (c == ' ')
+                    break;
+                index++;
+            }
+            str = str.substr(0,index+1) + className + "::" + str.substr(index+1,str.size()) + "\n";
+            buf<<str;
+        }
         buf << "#endif";
         className += ".h";
         ofstream out(className);
@@ -378,16 +403,16 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
     {
         for (auto it : *stmts)
         {
-            string str;
+            string str = "";
             bool isArray = false;
             //确定数组各维大小 例:int a[size][size] => int a[8][8]
             if(it->type == Decl){  
                 declareNode* decl_node = ((declareNode *)it);
                 list<idNode *> id_list = ((declareNode *)it)->id_list;
-               list<idNode *> copy_id_list;// = list<idNode *>();
-               if(id_list.size()){
-                   for(auto id_node :id_list){
-                       if(id_node->isArray){
+                list<idNode *> copy_id_list;// = list<idNode *>();
+                if(id_list.size()){
+                    for(auto id_node :id_list){
+                        if(id_node->isArray){
                             isArray = true;
                             list<Node *>copy_args = list<Node *>();
                             list<Node *>args = id_node->arg_list;
@@ -412,13 +437,27 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
                    }
                }
                if(isArray){
-                   declareNode* copy_decl_node = new declareNode(decl_node->prim,copy_id_list);
-                   str = copy_decl_node->toString() + ";";
+                    for(auto it :copy_id_list){//如果是 int x[5][6],y[7][8] 进行拆分
+                        list<idNode *>each_id_list;
+                        each_id_list.push_back(it);
+                        declareNode* each_decl_node = new declareNode(decl_node->prim,each_id_list);
+                        if(it->init){
+                            stateArrayVariable.push_back(each_decl_node);
+                        }else{
+                            str += each_decl_node->toString();
+                        }
+                        
+                    }
+                    for(auto id : stateArrayVariable){
+                        //declareNode* copy_decl_node = new declareNode(decl_node->prim,copy_id_list);
+                        str += "static " + id->toString();
+                    }
+                    
                } 
             }
             
             if(!isArray){
-                str = it->toString()+";";
+                str += it->toString();
             }
             
             /*解析等号类似int i=0,j=1形式变成int i,j的形式,变量定义不能初始化*/
@@ -473,27 +512,49 @@ void X86CodeGeneration::CGactorsinitVarAndState(stringstream &buf, list<Node *> 
     buf << "\tvoid initVarAndState() {\n";
     //进行param的初始化
           
-    SymbolTable *opt_top = new SymbolTable(NULL,NULL);// FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
-    top = opt_top;
-    for(auto it = stmts->begin();it != stmts->end();it++){
-        genrateStmt(*it);
-    }
+    SymbolTable *opt_top = top;
     string param = running_top->toParamValueString(opt_top);
     buf<<param;
     if (stmts != NULL)
     {
         for (auto it : *stmts)
         {
+            bool isArray = false;
+            if(it->type == Decl){
+                declareNode* decl_node = ((declareNode *)it);
+                list<idNode *> id_list = ((declareNode *)it)->id_list;
+                list<idNode *> copy_id_list;// = list<idNode *>();
+                if(id_list.size()){
+                   for(auto id_node :id_list){
+                       if(id_node->isArray){ //如果是 int x[5][6],y[7][8];如何处理
+                            isArray = true;
+                            break;
+                        }
+                     }
+                }
+            }
+            if(isArray) continue;
             string str = it->toString()+";";
             vector<string> svec;
+            vector<int> array;
             /*解析逗号和等号,类似int i=0,j;形式变成i=0;的形式,初始化stmts*/
             string temp = "";
             for (auto c : str)
             {
+                if(c == '{'){
+                    array.push_back(1);
+                }
+                if(c == '}'){
+                    array.pop_back();
+                }
                 if (c != ',' && c != ';')
                     temp += c;
-                else
+                else 
                 {
+                    if(c == ',' && array.size()){
+                        temp+=c;
+                        continue;
+                    }
                     //过滤不含等号的字符串
                     temp += ';';
                     if (temp.find('=') != string::npos)
@@ -529,6 +590,19 @@ void X86CodeGeneration::CGactorsWork(stringstream &buf, Node *work)
 {
     buf << "\tvoid work(){ \n";
     /* work中的还含有流形式参数需要被替换 等符号表实现*/
+    string param_str = "";
+    for(auto variable : paramArrayVariable){
+        param_str += variable->type + ' ' + variable->name;
+        for(auto size : ((ArrayConstant *)(variable->value))->arg_size){
+            string size_str;
+            size_str = '['+ to_string(size) + ']';
+            param_str += size_str;
+        }
+        string value_str ;
+        value_str = " =" + ((ArrayConstant *)(variable->value))->printStr() + ";" +"\n";
+        param_str += value_str;
+    }
+    buf << param_str;
     if (work != NULL)
         buf << work->toString();
     buf << "\n\t\tpushToken();\n";
@@ -663,9 +737,12 @@ void X86CodeGeneration::CGMain()
     buf << "#include \"setCpu.h\"\n";
     buf << "#include \"lock_free_barrier.h\"	//包含barrier函数\n";
     buf << "#include \"Global.h\"\n";
-    if (globalSequential->ifNeedMathExtension) {
-        buf << "#include <time.h>\n";
+    if(globalSequential){
+        if (globalSequential->ifNeedMathExtension) {
+            buf << "#include <time.h>\n";
+        }
     }
+    
     buf << "using namespace std;\n";
     buf << "int MAX_ITER=1;//默认的执行次数是1\n";
     for (int i = 0; i < nCpucore_; i++)
@@ -683,9 +760,12 @@ void X86CodeGeneration::CGMain()
             << "}\n";
     }
     buf << "int main(int argc,char **argv)\n{\n";
-    if (globalSequential->ifNeedMathExtension) {
-        buf << "srand(time(NULL));\n";
+    if(globalSequential){
+        if (globalSequential->ifNeedMathExtension) {
+            buf << "srand(time(NULL));\n";
+        }
     }
+    
     buf << "\tvoid setRunIterCount(int,char**);\n";
     buf << "\tsetRunIterCount(argc,argv);\n";
     buf << "\tset_cpu(0);\n";

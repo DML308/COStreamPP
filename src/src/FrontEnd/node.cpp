@@ -369,7 +369,9 @@ string declareNode::toString()
         if ((*iter)->init != NULL)
             str += "=" + (*iter)->init->toString();
     }
-    if (str[str.size() - 1] != ';')
+    if (str[str.size() - 1] != ';'){
+        str+=";";
+    }
     return str;
 }
 
@@ -532,6 +534,7 @@ string ifElseNode::toString()
     str += exp->toString();
     str += ")";
     str += "\t" + stmt1->toString();
+    if(str[str.size()-1] != '}')   str+=";";  
     str += "else";
     str += "\t" + stmt2->toString();
     return str;
@@ -647,7 +650,7 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
     this -> outputFeatureMapSize = new vector<long long>();
     // 本层反向传播过程中 传入误差的尺寸`
     this -> inputErrorSize = new vector<long long>();
-   // 按照arg_list爲傳入整個sequential結構的參數列表((depth, rows, cols), ...)
+   // 按照arg_list爲傳入整個sequential結構的參數列表((rows, cols, depth), ...)
     this->inputSize = this -> getInputSize(sequential);
     for(int i = 0; i < this->dimension; i++) {
         this->outputFeatureMapSize->push_back((this->inputSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
