@@ -402,7 +402,8 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
 {
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
-    compositeCallFlow(node->body_stmts);
+    compositeCall_list = node->compositeCall_list;
+    //compositeCallFlow(node->body_stmts);
     if (node->split->dup_round->type == RoundRobin)
     {
         tmp = UnfoldRoundrobin(comName, node);
@@ -867,7 +868,8 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
 {
     top = runningTop;
-    compositeCallFlow(node->body_stmts);
+    compositeCall_list = node->compositeCall_list;
+    //compositeCallFlow(node->body_stmts);
     vector<compositeCallNode *> comCallList;
     compositeNode *pipeline = NULL;
     string streamName = "Pstream";

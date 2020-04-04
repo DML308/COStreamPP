@@ -10,6 +10,8 @@ extern list<SymbolTable *> runningStack;
 extern SymbolTable *runningTop;
 extern SymbolTable S;
 
+extern bool ifConstantFlow;
+
 void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
     bool isResize = false;
     list<Node *> *stmts = splitjoinComposite->body->stmt_List;
@@ -185,7 +187,9 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 }
                 
                 //传入参数,并生成 composite 调用的执行上下文环境
+                ifConstantFlow = true;;
                 runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs);
+                ifConstantFlow = false;
                 runningStack.push_back(runningTop); // 调用栈
 
                 GraphToOperators(call->actual_composite, exp);
@@ -243,9 +247,10 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             if(call->scope){
                 scope = call->scope;
             }
-            runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs); //传入参数,并生成 composite调用的执行上下文环境
-            // 确定window大小
             
+            ifConstantFlow = true;
+            runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs); //传入参数,并生成 composite调用的执行上下文环境
+            ifConstantFlow = false;
             runningStack.push_back(runningTop); // 调用栈
 
             GraphToOperators(call->actual_composite, it);

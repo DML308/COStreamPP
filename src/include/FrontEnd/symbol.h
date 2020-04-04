@@ -101,6 +101,9 @@ class ArrayConstant : public Constant{
     string printStr();
 };
 
+constantNode *copyConstantNode(Constant *value);
+Constant *copyConstant(Constant *value);
+
 class Variable {
   public:
     string type; // int,long,long long,float,double,string
