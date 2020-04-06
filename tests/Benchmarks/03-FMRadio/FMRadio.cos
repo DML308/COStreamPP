@@ -6,7 +6,7 @@ composite LowPassFilter(output stream<float x>Out, input stream<float x>In)
 	Out = LowPassFilterX(In)
 	{
 
-		static float pi = 3.1415926535897931; 
+		float pi = 3.1415926535897931; 
 		float coeff[taps];
 		float m = taps - 1;
 		float w = 2 * pi * cutoff / rate;
@@ -25,11 +25,13 @@ composite LowPassFilter(output stream<float x>Out, input stream<float x>In)
 		}
 		work
 		{
+			 
 			int i;
 			float sum = 0;
 			for (i = 0; i < taps; i++)
 				sum += (In[i].x * coeff[i]);
 			Out[0].x = sum;
+			 
 		}
 		window{
 			In sliding(taps,1+decimation);
@@ -54,6 +56,7 @@ composite FMDemodulator(output stream<float x>Out, input stream<float x>In)
 		}
 		work
 		{
+			 
 			float temp = 0;
 
 			temp = (float)(In[0].x * In[1].x);
@@ -61,6 +64,7 @@ composite FMDemodulator(output stream<float x>Out, input stream<float x>In)
 			temp = (float)(mGain * atan(temp));
 			
 			Out[0].x = temp;
+			 
 		}
 		window{
 			In sliding(2,1); //peek(2),pop(1)
@@ -99,7 +103,9 @@ composite BandPassFilter(output stream<float x>Out, input stream<float x>In)
 	{
 		work
 		{
+			 
 			Out[0].x = Band[1].x - Band[0].x;
+			 
 		}
 		window {
 			Band sliding(2,2); //peek(2),pop(2)
@@ -116,7 +122,14 @@ composite Amplify(output stream<float x>Out, input stream<float x>In)
 	{
 		work
 		{
+			 
 			Out[0].x = k * In[0].x;
+			 
+		
+		}
+		window{
+			In sliding(1,1);
+			Out tumbling(1);
 		}
 	};
 }
@@ -151,11 +164,13 @@ composite Annoy(output stream<float x>Out, input stream<float x>In)
 	{
 		work
 		{
+			 
 			float sum = 0;
 			int i;
 			for (i = 0; i < bands-1; i++)
 				sum += In[i].x;
 			Out[0].x = sum;
+			 
 		}
 		window{
 			In sliding(bands-1,bands-1);
@@ -209,7 +224,10 @@ composite FMRadioCore(output stream<float x>Out, input stream<float x>In)
 	{
 		// the gain grows linearly towards the center bands
 		float val = (((float)(i-1))-(((float)(eqBands-2))/2.0)) / 5.0;
-		eqGain[i] = val > 0 ? (2.0-val) : (2.0+val);
+		if(val>0)
+			eqGain[i] = 2.0-val;
+		else 
+			eqGain[i] = 2.0+val;
 	}
 		
 	Out = pipeline(In){
@@ -227,8 +245,13 @@ composite Main()
 		float x = 0;
 		work
 		{
+			 
 			FloatOneSource[0].x = x;
 			x += 1.0;
+			
+		}
+		window{
+			FloatOneSource tumbling(1);
 		}
 	};
 	
@@ -238,8 +261,13 @@ composite Main()
 	{
 		work
 		{
-			println(FMR[0].x);
+
+			cout<<FMR[0].x;
+			//println(FMR[0].x);
 		}
-	};
+		window{
+			FMR sliding(1,1);	
+		}
+	};	
 }
 
