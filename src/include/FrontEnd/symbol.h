@@ -34,6 +34,15 @@ class Constant{
     Constant(string type, double d) :type(type), dval(d),isArray(false){}
     Constant(string type, string str) :type(type), sval(str),isArray(false){}
     Constant(string type, bool b) :type(type), bval(b),isArray(false){}
+
+    Constant(int i) :type("int"), ival(i),isArray(false){}
+    Constant(long l) :type("long"), lval(l),isArray(false){}
+    Constant(long long l) :type("long long"), llval(l),isArray(false){}
+    Constant(float f) :type("float"), fval(f),isArray(false){}
+    Constant(double d) :type("double"), dval(d),isArray(false){}
+    //Constant(string str) :type("string"), sval(str),isArray(false){}
+    Constant(bool b) :type("bool"), bval(b),isArray(false){}
+
     Constant(string type) :type(type){}
     ~Constant() {}
 

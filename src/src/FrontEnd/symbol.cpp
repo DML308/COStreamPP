@@ -533,6 +533,7 @@ void SymbolTable::printSymbolTables()
             if (it->second->isArray)
             {
                 ((ArrayConstant *)(it->second->value))->print();
+                cout<<endl;
             }
             else
             {
@@ -543,6 +544,7 @@ void SymbolTable::printSymbolTables()
                 else
                 {
                     it->second->value->print();
+                    cout<<endl;
                 }
             }
         }
@@ -698,6 +700,7 @@ void ArrayConstant::print()
     cout << endl;
 }
 
+//对传入的参数进行拷贝，数组作为值传递处理
 Constant *copyConstant(Constant *value)
 {
     string type = value->type;
@@ -706,35 +709,45 @@ Constant *copyConstant(Constant *value)
     {
         if (type.compare("long long") == 0)
         {
-            constant_value = new Constant(type, value->llval);
+            constant_value = new Constant(type, (long long)value->llval);
         }
         if (type.compare("int") == 0)
         {
-            constant_value = new Constant(type, value->ival);
+            constant_value = new Constant(type,(int)value->ival);
         }
         if (type.compare("long") == 0)
         {
-            constant_value = new Constant(type, value->lval);
+            constant_value = new Constant(type, (long)value->lval);
         }
         if (type.compare("float") == 0)
         {
-            constant_value = new Constant(type, value->fval);
+            constant_value = new Constant(type, (float)value->fval);
         }
         if (type.compare("double") == 0)
         {
-            constant_value = new Constant(type, value->dval);
+            constant_value = new Constant(type, (double)value->dval);
         }
     }else{
+        //对传入的参数 array 进行拷贝
         //constant_value = new constantNode("array",0);
         ArrayConstant *copy_array_value = new ArrayConstant(type);
         ArrayConstant *array_value = (ArrayConstant *)value;
         vector<int> copy_arg_size;
-        copy(array_value->arg_size.begin(),array_value->arg_size.end(),copy_arg_size.begin());
+        for(auto it : array_value->arg_size){
+            copy_arg_size.push_back(it);
+        }
         vector<Constant *> array_values = array_value->values;
         vector<Constant *> copy_array_values;
         auto copy_v = copy_array_values.begin();
         for(auto it : array_values){
-            copy_array_values.push_back(copyConstant(it));
+            Constant *value;
+            if(it){
+                value = copyConstant(it);
+                copy_array_values.push_back(value);
+            }
+            else{
+                copy_array_values.push_back(NULL);
+            }
         }
         copy_array_value->arg_size = copy_arg_size;
         copy_array_value->values = copy_array_values;
@@ -752,23 +765,23 @@ constantNode *copyConstantNode(Constant *value)
     {
         if (type.compare("long long") == 0)
         {
-            constant_value = new constantNode(type, value->llval);
+            constant_value = new constantNode(type, (long long)value->llval);
         }
         if (type.compare("int") == 0)
         {
-            constant_value = new constantNode(type, value->ival);
+            constant_value = new constantNode(type, (int)value->ival);
         }
         if (type.compare("long") == 0)
         {
-            constant_value = new constantNode(type, value->lval);
+            constant_value = new constantNode(type, (long)value->lval);
         }
         if (type.compare("float") == 0)
         {
-            constant_value = new constantNode(type, value->fval);
+            constant_value = new constantNode(type, (float)value->fval);
         }
         if (type.compare("double") == 0)
         {
-            constant_value = new constantNode(type, value->dval);
+            constant_value = new constantNode(type, (double)value->dval);
         }
     }else{
         constant_value = new constantNode("array",0);
