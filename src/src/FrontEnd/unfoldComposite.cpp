@@ -403,6 +403,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
     compositeNode *tmp = NULL;
     string comName = MakeCompositeName("splitjoin");
     compositeCall_list = node->compositeCall_list;
+    
     //compositeCallFlow(node->body_stmts);
     if (node->split->dup_round->type == RoundRobin)
     {
@@ -412,7 +413,7 @@ compositeNode *UnfoldComposite::UnfoldSplitJoin(splitjoinNode *node)
     {
         tmp = UnfoldDuplicate(comName, node);
     }
-
+    node->compositeCall_list.clear();
     return tmp;
 }
 
@@ -499,7 +500,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
         else if (it->type == SplitJoin)
         {
            
-                string split_join_name = MakeCompositeName("splitjoin");
+                string split_join_name = MakeCompositeName("splitjoin") + (to_string(cnt));
                 string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
                 idNode *id = new idNode(tempName);
                 
@@ -565,7 +566,7 @@ compositeNode *UnfoldComposite::UnfoldRoundrobin(string comName, splitjoinNode *
 
         else if (it->type == Pipeline)
         {
-            string pipeline_name = MakeCompositeName("pipeline");
+            string pipeline_name = MakeCompositeName("pipeline") + (to_string(cnt));
             string tempName = streamName + to_string(number1) + "_" + (to_string(cnt));
             idNode *id = new idNode(tempName);
             
@@ -727,7 +728,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         else if (it->type == SplitJoin)
         {
            
-                string split_join_name = MakeCompositeName("splitjoin");
+                string split_join_name = MakeCompositeName("splitjoin") + (to_string(cnt));
                 string tempName = streamName + to_string(number2) + "_" + (to_string(cnt));
                 idNode *id = new idNode(tempName);
                 
@@ -791,7 +792,7 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
 
         else if (it->type == Pipeline)
         {
-            string pipeline_name = MakeCompositeName("pipeline");
+            string pipeline_name = MakeCompositeName("pipeline") + (to_string(cnt));
             string tempName = streamName + to_string(number2) + "_" + (to_string(cnt));
             idNode *id = new idNode(tempName);
             
@@ -905,7 +906,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
         switch (((Node *)*it)->type)
         {
             case SplitJoin : {
-                string split_join_name = MakeCompositeName("splitjoin");
+                string split_join_name = MakeCompositeName("splitjoin") + (to_string(cnt));
                 string tempName = streamName + to_string(num) + "_" + (to_string(cnt++)) + split_join_name;
                 idNode *id = new idNode(tempName);
                 
@@ -1013,7 +1014,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
         
             case Pipeline :{
                 
-                string pipeline_name = MakeCompositeName("pipeline");
+                string pipeline_name = MakeCompositeName("pipeline") + (to_string(cnt));
                 string tempName = streamName + to_string(num) + "_" + (to_string(cnt));
                 idNode *id = new idNode(tempName);
             
@@ -1138,6 +1139,7 @@ compositeNode *UnfoldComposite::UnfoldPipeline(pipelineNode *node)
     pipeline = new compositeNode(head, body);
     ++num;
     compositeCall_list.clear();
+    node->compositeCall_list.clear();
     return pipeline;
 }
 /* 专用于splitjoin或者pipeline中展开流的替换，这些compositeCall可以指向相同的init，work*/
