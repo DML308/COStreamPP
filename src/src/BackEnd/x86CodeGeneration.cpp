@@ -76,7 +76,7 @@ void X86CodeGeneration::CGGlobalvar()
     for (auto iter : *Program)
     {
         if (iter->type == Decl)
-            buf << iter->toString()+ ";" << "\n";
+            buf << iter->toString() << "\n";
     }
     ofstream out("GlobalVar.cpp");
     out << buf.str();
@@ -309,6 +309,7 @@ void X86CodeGeneration::CGactors()
         //generatorOperatorNode(flatNodes_[i]->contents);
         opt_top = FindRightSymbolTable(flatNodes_[i]->contents->loc->first_line);
         //for(auto it : running_top->)
+        top = opt_top;
         string param = running_top->toParamString(opt_top);
         buf << param;
 
@@ -428,7 +429,7 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
                             idNode* array_id = new idNode(id_node->name);
                             array_id->arg_list = copy_args;
                             array_id->isArray = true;
-                            array_id->init = NULL;
+                            array_id->init = id_node->init;
                             copy_id_list.push_back(array_id);
                        }else{
                            copy_id_list.push_back(id_node);
@@ -442,17 +443,16 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
                         each_id_list.push_back(it);
                         declareNode* each_decl_node = new declareNode(decl_node->prim,each_id_list);
                         if(it->init){
+                            Node *init = it->init;
+                            it->init = NULL;
+                            str +="static " + each_decl_node->toString();
+                            it->init = init;
                             stateArrayVariable.push_back(each_decl_node);
                         }else{
                             str += each_decl_node->toString();
                         }
                         
                     }
-                    for(auto id : stateArrayVariable){
-                        //declareNode* copy_decl_node = new declareNode(decl_node->prim,copy_id_list);
-                        str += "static " + id->toString();
-                    }
-                    
                } 
             }
             
