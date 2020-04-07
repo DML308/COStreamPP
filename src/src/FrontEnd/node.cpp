@@ -556,7 +556,7 @@ string blockNode::toString()
     for (auto stmt : stmt_list)
     {
         str += "\t\t" + stmt->toString() ;
-        if(str[str.size()-1] != '}')   str+=";";  
+        if(str[str.size()-1] != '}' && str[str.size()-1] != ';')   str+=";";  
         str += "\n";
     }
     str += "\t}";

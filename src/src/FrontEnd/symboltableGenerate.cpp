@@ -551,113 +551,6 @@ Constant *getResult(string op, Constant *left, Constant *right)
                 return new Constant(left->dval / right->dval);
             }
 
-            if (left->type.compare("int") == 0 && right->type.compare("int") == 0)
-            {
-                return new Constant(left->ival + right->ival);
-            }
-            if (left->type.compare("int") == 0 && right->type.compare("long") == 0)
-            {
-                return new Constant(left->ival + right->lval);
-            }
-            if (left->type.compare("int") == 0 && right->type.compare("long long") == 0)
-            {
-                return new Constant(left->ival + right->llval);
-            }
-            if (left->type.compare("int") == 0 && right->type.compare("float") == 0)
-            {
-                return new Constant(left->ival + right->fval);
-            }
-            if (left->type.compare("int") == 0 && right->type.compare("double") == 0)
-            {
-                return new Constant(left->ival + right->dval);
-            }
-
-            if (left->type.compare("long") == 0 && right->type.compare("int") == 0)
-            {
-                return new Constant(left->lval + right->ival);
-            }
-            if (left->type.compare("long") == 0 && right->type.compare("long") == 0)
-            {
-                return new Constant(left->lval + right->lval);
-            }
-            if (left->type.compare("long") == 0 && right->type.compare("long long") == 0)
-            {
-                return new Constant(left->lval + right->llval);
-            }
-            if (left->type.compare("long") == 0 && right->type.compare("float") == 0)
-            {
-                return new Constant(left->lval + right->fval);
-            }
-            if (left->type.compare("long") == 0 && right->type.compare("double") == 0)
-            {
-                return new Constant(left->lval + right->dval);
-            }
-            
-            
-            if (left->type.compare("long long") == 0 && right->type.compare("int") == 0)
-            {
-                return new Constant(left->llval + right->ival);
-            }
-            if (left->type.compare("long long") == 0 && right->type.compare("long") == 0)
-            {
-                return new Constant(left->llval + right->lval);
-            }
-            if (left->type.compare("long long") == 0 && right->type.compare("long long") == 0)
-            {
-                return new Constant(left->llval + right->llval);
-            }
-            if (left->type.compare("long long") == 0 && right->type.compare("float") == 0)
-            {
-                return new Constant(left->llval + right->fval);
-            }
-            if (left->type.compare("long long") == 0 && right->type.compare("double") == 0)
-            {
-                return new Constant(left->llval + right->dval);
-            }
-
-            if (left->type.compare("float") == 0 && right->type.compare("int") == 0)
-            {
-                return new Constant(left->fval + right->ival);
-            }
-            if (left->type.compare("float") == 0 && right->type.compare("long") == 0)
-            {
-                return new Constant(left->fval + right->lval);
-            }
-            if (left->type.compare("float") == 0 && right->type.compare("long long") == 0)
-            {
-                return new Constant(left->fval + right->llval);
-            }
-            if (left->type.compare("float") == 0 && right->type.compare("float") == 0)
-            {
-                return new Constant(left->fval + right->fval);
-            }
-            if (left->type.compare("float") == 0 && right->type.compare("double") == 0)
-            {
-                return new Constant(left->fval + right->dval);
-            }
-
-            
-            if (left->type.compare("double") == 0 && right->type.compare("int") == 0)
-            {
-                return new Constant(left->dval + right->ival);
-            }
-            if (left->type.compare("double") == 0 && right->type.compare("long") == 0)
-            {
-                return new Constant(left->dval + right->lval);
-            }
-            if (left->type.compare("double") == 0 && right->type.compare("long long") == 0)
-            {
-                return new Constant(left->dval + right->llval);
-            }
-            if (left->type.compare("double") == 0 && right->type.compare("float") == 0)
-            {
-                return new Constant(left->dval + right->fval);
-            }
-            if (left->type.compare("double") == 0 && right->type.compare("double") == 0)
-            {
-                return new Constant(left->dval + right->dval);
-            }
-
             if (left->type.compare("string") == 0 && right->type.compare("string") == 0)
             {
                 cout << "字符串无法相除";
@@ -3249,7 +3142,7 @@ Constant *getOperationResult(Node *exp)
 
                 int array_size = arg_size.size() - 1;
                 int level = 0;
-                for (auto i : ((idNode *)left)->arg_list)
+                for (auto i : id->arg_list)
                 {
                     int size;
                     Constant *value = getOperationResult(i);
@@ -3262,11 +3155,15 @@ Constant *getOperationResult(Node *exp)
                         canGetIndex = false;
                         break;
                     }
-                    index += each_size[level] * size;
+                    index += each_size[array_size-level] * size;
                     level++;
                 }
                 if (canGetIndex)
                 {
+                    if(index > (((ArrayConstant *)(variable->value))->values).size()-1){
+                                cout<<"数组越界";
+                                exit(-1);
+                            }
                     return ((ArrayConstant *)variable->value)->values[index];
                 }
                 else
@@ -3724,82 +3621,13 @@ void compositeVariableReplace(Node *node)
         compositeCallNode *call_composite = (compositeCallNode *)node;
         list<Node *> *params = call_composite->stream_List;
         list<Node *> *actual_params = new list<Node *>();
+        
         if (params)
         {
             for (auto param : *params)
             {
-                if (param->type == Id)
-                {
-                    Variable *value = top->LookupIdentifySymbol(((idNode *)param)->name);
-                    bool isArray = false;
-                    int index = 0;
-                    bool canGetIndex = true;
-                    if (((idNode *)param)->arg_list.size())
-                    {
-                        isArray = true;
-                        //处理数组下标
-                        vector<int> arg_size = ((ArrayConstant *)value->value)->arg_size;
-                        vector<int> each_size;
-
-                        for (int i = arg_size.size(); i >= 1; i--)
-                        {
-                            if (each_size.size())
-                            {
-                                each_size.push_back(arg_size[i] * each_size.back());
-                            }
-                            else
-                            {
-                                each_size.push_back(1);
-                            }
-                        }
-
-                        int array_size = arg_size.size() - 1;
-                        int level = 0;
-                        for (auto i : ((idNode *)param)->arg_list)
-                        {
-                            int size;
-                            Constant *value = getOperationResult(i);
-                            if (value)
-                            {
-                                size = value->llval;
-                            }
-                            else
-                            {
-                                canGetIndex = false;
-                                break;
-                            }
-                            index += each_size[array_size - level] * size;
-                            level++;
-                        }
-                    }
-                    
-                    constantNode *constant_value;
-                    if (isArray)
-                    {
-                        if (((idNode *)param)->arg_list.size() && canGetIndex)
-                        {
-                            constant_value = copyConstantNode(((ArrayConstant *)(value->value))->values[index]);
-                            //(((ArrayConstant *)value)->value)->values[index];
-                        }
-                        if(!((idNode *)param)->arg_list.size()){
-                            constant_value = copyConstantNode(value->value);
-                        }
-                    }else{
-                        constant_value = copyConstantNode(value->value);
-                    }
-                    actual_params->push_back(constant_value);
-                }
-                else if (param->type == constant)
-                {
-                    actual_params->push_back(param);
-                }
-                else if (param->type == Binop || param->type == Unary)
-                {
-                    Constant *value = getOperationResult(param);
-                    constantNode *constant_value = copyConstantNode(value);
-                    actual_params->push_back(constant_value);
-                }
-            }
+                actual_params->push_back(copyConstantNode(getOperationResult(param)));
+            }    
             call_composite->stream_List = actual_params;
         }
     }
@@ -3825,6 +3653,9 @@ void generateIfConstant(Node *nd)
         list<Node *> *ifelse_list = new list<Node *>();
         ifElseNode *if_node = (ifElseNode *)nd;
         Constant *bool_result = getOperationResult(if_node->exp);
+        if(!bool_result){
+            return;
+        }
         if (bool_result->bval)
         {
             ifelse_list->push_back(if_node->stmt1);
@@ -3848,6 +3679,9 @@ void generateIfConstant(Node *nd)
         list<Node *> *ifelse_list = new list<Node *>();
         ifNode *if_node = (ifNode *)nd;
         Constant *bool_result = getOperationResult(if_node->exp);
+        if(!bool_result){
+            return;
+        }
         if (bool_result->bval)
         {
             ifelse_list->push_back(if_node->stmt);
@@ -3867,8 +3701,8 @@ void generateForConstant(forNode *for_nd)
     //top = new SymbolTable(top,NULL);
     //top = runningTop; // test
     /*获得for循环中的init，cond和next值 目前只处理for循环中数据是 整型 的情况 */
-    long long initial = MAX_INF;
-    long long condition = MAX_INF;
+    Constant *initial = NULL;// = MAX_INF;
+    Constant *condition = NULL; //= MAX_INF;
     //forNode *for_nd = (forNode *)nd;
     Node *init = for_nd->init;
     expNode *cond = for_nd->cond;
@@ -3891,8 +3725,8 @@ void generateForConstant(forNode *for_nd)
         }
         initNode *init_nd = (initNode *)(id_nd->init);
         Node *con_init = init_nd->value.front();
-        assert(con_init->type == constant && ((constantNode *)con_init)->style == "long long");
-        initial = getOperationResult(con_init)->llval; // ((constantNode *)con_init)->llval; //todo 支持浮点数
+        //assert(con_init->type == constant && ((constantNode *)con_init)->style == "long long");
+        initial = getOperationResult(con_init); // ((constantNode *)con_init)->llval; //todo 支持浮点数
         con_id = id_nd->name;
         init_v = new Variable("long long", con_id, initial);
     }
@@ -3910,23 +3744,13 @@ void generateForConstant(forNode *for_nd)
         //assert(init_b->right->type == constant);
         //constantNode *con_init = (constantNode *)(init_b->right);
         //assert(con_init->style == "integer");
-        if (con_init->type.compare("int") == 0)
-        {
-            initial = con_init->ival;
-        }
-        if (con_init->type.compare("long") == 0)
-        {
-            initial = con_init->lval;
-        }
-        if (con_init->type.compare("long long") == 0)
-        {
-            initial = con_init->llval;
-        }
+        initial = con_init;
         init_v->value = con_init;
     }
     else if (init->type == Id)
     {
         init_v = top->LookupIdentifySymbol(((idNode *)init)->name);
+        initial = init_v->value;
     }
 
     /* 获取cond值 */
@@ -3936,97 +3760,31 @@ void generateForConstant(forNode *for_nd)
         //assert(cond_b->right->type == constant); todo
         //assert(con_cond->style == "integer");
         Constant *con_cond = getOperationResult(cond_b->right);
-        if (con_cond->type.compare("int") == 0)
-        {
-            condition = con_cond->ival;
-        }
-        if (con_cond->type.compare("long") == 0)
-        {
-            condition = con_cond->lval;
-        }
-        if (con_cond->type.compare("long long") == 0)
-        {
-            condition = con_cond->llval;
-        }
-        /*if(condition_variable->type.compare("double") == 0){ // TODO 支持浮点数
-                    condition = condition_variable->value->dval;
-                }
-                if(condition_variable->type.compare("float") == 0){
-                    condition =  condition_variable->value->dval;
-                }
-                if(condition_variable->type.compare("string") == 0){
-                    cout<<"string is not suitable in for";
-                    exit(-1);
-                }
-                /*if(cond_b->right->type == constant){
-                    constantNode *con_cond = (constantNode *)(cond_b->right);
-                    condition = con_cond->llval;
-                }else if(cond_b->right->type == Id){
-                    //获得变量对应的值
-                    idNode *con_cond = (idNode *)(cond_b->right);
-                    Variable *condition_variable = runningTop->LookupIdentifySymbol(con_cond->name);
-                    if(condition_variable->type.compare("int") == 0){
-                        condition = condition_variable->value->llval;
-                    }
-                    if(condition_variable->type.compare("long") == 0){
-                        condition = condition_variable->value->llval;
-                    }
-                    if(condition_variable->type.compare("long long") == 0){
-                        condition = condition_variable->value->llval;
-                    }
-                    if(condition_variable->type.compare("integer") == 0){ // attention!
-                        condition = condition_variable->value->llval;
-                    }
-                    /*if(condition_variable->type.compare("double") == 0){
-                        condition = condition_variable->value->dval;
-                    }
-                    if(condition_variable->type.compare("float") == 0){
-                        condition =  condition_variable->value->dval;
-                    }
-                    if(condition_variable->type.compare("string") == 0){
-                        cout<<"string is not suitable in for";
-                        exit(-1);
-                    }
-                }else if(cond_b->right->type = Binop){
-
-                }
-                */
+        condition = con_cond;
+        
         con_op = cond_b->op;
-        if (cond_b->op == "<" || cond_b->op == ">")
-            condition += 0;
-        else
-            condition += 1;
+        if (cond_b->op == "<=" || cond_b->op == ">=")
+            condition = getResult("+",condition,new Constant(1));
     }
     //cout << "init= " << initial << " cond= " << condition << endl;
-    if (initial == MAX_INF || condition == MAX_INF)
+    if (!initial || !condition)
     {
-        cout << "init or condition is not a constant !";
+        cout << "init or condition is not defined !";
         exit(-1);
     }
     /* 获取next值 */
-    vector<long long> step_value; //存储每次循环变量的值,(maybe不支持循环体内部改变该值)
+    vector<Constant *> step_value; //存储每次循环变量的值,(maybe不支持循环体内部改变该值)
     if (next->type == Binop)
     {
         binopNode *next_b = ((binopNode *)next);
         Node *right = next_b->right;
         string op;
-        long long step;
+        Constant *step;
 
         if (right->type == constant)
         {
-            Constant *step_v = getOperationResult(right);
-            if (step_v->type.compare("int") == 0)
-            { //todo 支持浮点数
-                step = step_v->ival;
-            }
-            if (step_v->type.compare("long") == 0)
-            {
-                step = step_v->lval;
-            }
-            if (step_v->type.compare("long long") == 0)
-            {
-                step = step_v->llval;
-            }
+            step = getOperationResult(right);
+            
             op = next_b->op;
         }
         else if (right->type == Binop)
@@ -4036,13 +3794,12 @@ void generateForConstant(forNode *for_nd)
             Constant *step_v;
             if (((idNode *)next_left)->name.compare(con_id) != 0)
             {
-                step_v = getOperationResult(next_left);
+                step = getOperationResult(next_left);
             }
             else
             {
-                step_v = getOperationResult(next_right);
+                step = getOperationResult(next_right);
             }
-            step = step_v->llval; // 只支持整型
             op = ((binopNode *)right)->op;
         }
         if (con_op.compare("<") == 0 || con_op.compare("<=") == 0)
@@ -4050,30 +3807,22 @@ void generateForConstant(forNode *for_nd)
             if (op == "*=" || op == "*")
             {
                 int cnt = 0;
-                if (initial < condition)
+                if (getResult("<",initial,condition)->bval)
                 {
-                    for (int i = initial; i < condition; i *= step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
-                }
-                else
-                {
-                    initial = 0;
-                    condition = 0;
+                    while(getResult("<",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("*",initial,step);
+                    }
                 }
             }
             else if (op == "/=" || op == "/")
             {
-                int cnt = 0;
-                if (initial < condition && step < 1)
+                if (getResult("<",initial,condition)->bval && getResult("<",step,new Constant(1))->bval)
                 {
-                    for (int i = initial; i < condition; i /= step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult("<",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("/",initial,step);
+                    }
                 }
                 else
                 {
@@ -4082,14 +3831,12 @@ void generateForConstant(forNode *for_nd)
             }
             else if (op == "+=" || op == "+")
             {
-                int cnt = 0;
-                if (initial < condition && step > 0)
+                if (getResult("<",initial,condition)->bval && getResult(">",step,new Constant(0))->bval)
                 {
-                    for (int i = initial; i < condition; i += step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult("<",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("+",initial,step);
+                    }
                 }
                 else
                 {
@@ -4098,14 +3845,12 @@ void generateForConstant(forNode *for_nd)
             }
             else if (op == "-=" || op == "-")
             {
-                int cnt = 0;
-                if (initial < condition && step < 0) //todo 未考虑step为负
+                if (getResult("<",initial,condition)->bval && getResult("<",step,new Constant(0))->bval)
                 {
-                    for (int i = initial; i < condition; i -= step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult("<",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("-",initial,step);
+                    }
                 }
                 else
                 {
@@ -4117,31 +3862,26 @@ void generateForConstant(forNode *for_nd)
         {
             if (op == "*=" || op == "*")
             {
-                int cnt = 0;
-                if (initial > condition && step < 1)
+                if (getResult(">",initial,condition)->bval && getResult("<",step,new Constant(1))->bval)
                 {
-                    for (int i = initial; i > condition; i *= step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult(">",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("*",initial,step);
+                    }
                 }
                 else
                 {
-                    initial = 0;
-                    condition = 0;
+                    cout << " infinite loop " << endl;
                 }
             }
             else if (op == "/=" || op == "/")
             {
-                int cnt = 0;
-                if (initial > condition)
+                if (getResult(">",initial,condition)->bval)
                 {
-                    for (int i = initial; i > condition; i /= step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult(">",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("/",initial,step);
+                    }
                 }
                 else
                 {
@@ -4150,14 +3890,12 @@ void generateForConstant(forNode *for_nd)
             }
             else if (op == "+=" || op == "+")
             {
-                int cnt = 0;
-                if (initial > condition && step < 0)
+                if (getResult(">",initial,condition)->bval && getResult("<",step,new Constant(0))->bval)
                 {
-                    for (int i = initial; i > condition; i += step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult(">",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("+",initial,step);
+                    }
                 }
                 else
                 {
@@ -4166,14 +3904,12 @@ void generateForConstant(forNode *for_nd)
             }
             else if (op == "-=" || op == "-")
             {
-                int cnt = 0;
-                if (initial > condition && step > 0) //todo 未考虑step为负
+                if (getResult(">",initial,condition)->bval && getResult(">",step,new Constant(1))->bval)
                 {
-                    for (int i = initial; i > condition; i -= step)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult(">",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("-",initial,step);
+                    }
                 }
                 else
                 {
@@ -4187,22 +3923,21 @@ void generateForConstant(forNode *for_nd)
         unaryNode *next_u = (unaryNode *)(next);
         int cnt = 0;
         int i;
+        Constant *step = new Constant(1);
         if (next_u->op.compare("POSTINC") == 0)
         { //++
             if (con_op.compare("<") == 0 || con_op.compare("<=") == 0)
             {
-                if (initial < condition)
+                if (getResult("<",initial,condition)->bval)
                 {
-                    for (i = initial; i < condition; i++)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult("<",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("+",initial,step);
+                    }
                 }
                 else
                 {
                     cout << " infinite loop " << endl;
-                    exit(-1);
                 }
             }
             else
@@ -4215,18 +3950,16 @@ void generateForConstant(forNode *for_nd)
         { //--
             if (con_op.compare(">") == 0 || con_op.compare(">=") == 0)
             {
-                if (initial > condition)
+                if (getResult(">",initial,condition)->bval)
                 {
-                    for (i = initial; i > condition; i--)
-                        step_value.push_back(i);
-                    //cnt++;
-                    initial = 0;
-                    //condition = cnt;
+                    while(getResult(">",initial,condition)->bval){
+                        step_value.push_back(copyConstant(initial));
+                        initial = getResult("-",initial,step);
+                    }
                 }
                 else
                 {
                     cout << " infinite loop " << endl;
-                    exit(-1);
                 }
             }
             else
@@ -4239,7 +3972,10 @@ void generateForConstant(forNode *for_nd)
     for (int i = 0; i < step_value.size(); i++)
     {
         list<Node *> stmt;
-        init_v->value->llval = step_value[i];
+        init_v->value = step_value[i];
+        if(i == 84){
+            int j = 1;
+        }
         EnterScopeFn(for_nd->stmt); // 每一次for循环是一个新的作用域
         genrateStmt(for_nd->stmt);
         ExitScopeFn();
@@ -4296,7 +4032,7 @@ void genrateStmt(Node *stmt)
 
                     variable = top->LookupIdentifySymbol(static_cast<idNode *>(left)->name);
                     if (variable == NULL)
-                    { //roundrobin join 中的赋值是在符号表中找不到的
+                    {
                         break;
                     }
                     bool isArray = false;
@@ -4363,6 +4099,10 @@ void genrateStmt(Node *stmt)
                     {
                         if (canGetIndex)
                         {
+                            if(index > (((ArrayConstant *)(variable->value))->values).size()-1){
+                                cout<<"数组越界";
+                                exit(-1);
+                            }
                             ((ArrayConstant *)variable->value)->values[index] = value_constant;
                         }
                     }

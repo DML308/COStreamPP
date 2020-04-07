@@ -13,7 +13,7 @@ SymbolTable::SymbolTable(SymbolTable *p, YYLTYPE *loc)
     this->loc = loc;
     prev = p;
     symbol_tables.push_back(this);
-    symboltables[Level][current_version[Level]] = this;
+    //symboltables[Level][current_version[Level]] = this;
     //current_version[Level]++; //创建了新的符号表,当前层的 version + 1
 }
 
@@ -21,6 +21,7 @@ SymbolTable::SymbolTable(SymbolTable *p, YYLTYPE *loc)
 void EnterScope()
 {
     Level++;
+    cout<<"level++:"<<Level<<endl;
     if (Level == MAX_SCOPE_DEPTH)
     {
         cout << "Internal Error: out of nesting levels!\n";
@@ -37,6 +38,7 @@ void ExitScope()
     }
     current_version[Level]++; //创建了新的符号表,当前层的 version + 1
     Level--;
+    cout<<"level--:"<<Level<<endl;
 }
 
 void SymbolTable::InsertSymbol(idNode *node)
