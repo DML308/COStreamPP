@@ -35,7 +35,7 @@ extern void yyerror (const char *msg);
 %token COMPOSITE  INPUT OUTPUT  STREAM    FILEREADER  FILEWRITER  ADD
 %token PARAM      INIT  WORK    WINDOW    TUMBLING    SLIDING
 %token SPLITJOIN  PIPELINE      SPLIT     JOIN        DUPLICATE ROUNDROBIN
-%token SEQUENTIAL DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D ACTIVATION
+%token SEQUENTIAL DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D ACTIVATION DROPOUT
 /* B.下面是语法分析器自己拥有的文法结构和类型声明 */
 
 /* 语法分析器自己的结构 1. 文法一级入口*/
@@ -84,7 +84,7 @@ extern void yyerror (const char *msg);
 %type<doubleNum> doubleConstant
 %type<str> stringConstant IDENTIFIER
 /* 语法分析器自己的结构 6. 深度学习扩展文法*/
-%type<str> DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D ACTIVATION
+%type<str> DENSE CONV2D MAXPOOLING2D AVERAGEPOOLING2D ACTIVATION DROPOUT
 %type<node> operator.layer operator.sequential.add
 %type<list> sequential.statement.list
 %type<node> tuple
@@ -504,7 +504,14 @@ operator.layer:
                                                                 $$ = layer;
                                                                 debug("Create activation layer!\n");
                                                             }
-        /* other layer, for example conv2d */
+         |  DROPOUT '(' argument.expression.list ')' ';' {
+                                                                line("Line%-4d", @1.first_line);
+                                                                debug("operator.layer ::=DROPOUT ( argument.expression.list );\n");
+                                                                layerNode* layer = new dropoutLayerNode("dropout", $3, @1);
+                                                                $$ = layer;
+                                                                debug("Create dropout layer!\n");
+                                                            }
+        /* other layer... */
         ;
 splitjoinPipeline.statement.list:
           statement                                       {

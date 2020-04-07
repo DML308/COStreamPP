@@ -42,6 +42,10 @@ class UnfoldComposite
     Node* makeActivationOperWork(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDActivationOperator(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDActivationOperWork(activationLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeDropoutOperator(dropoutLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDropoutOperWork(dropoutLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    operatorNode* makeDDropoutOperator(dropoutLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
+    Node* makeDDropoutOperWork(dropoutLayerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeLossOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     operatorNode* makeDDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);

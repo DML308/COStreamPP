@@ -1024,19 +1024,46 @@ class sequentialNode : public Node
     list<Node *> *body_stmts;
     list<Node *> *arg_list;
     compositeNode *replace_composite;
+    bool ifNeedMathExtension;
+    Node *inputSize;
+    Node *lr; // 学习率
+    Node *initializer;
+    Node *lossFunc;
     sequentialNode(list<Node *> *outputs, list<Node *> *inputs, list<Node *> *param, list<Node *> *body_stmts, YYLTYPE loc = YYLTYPE())
     {
       this->setLoc(loc);
       this->type = Sequential;
       this->outputs = outputs;
       this->inputs = inputs;
-      this->arg_list = param;
+      // this->arg_list = param;
       this->body_stmts = body_stmts;
       this->replace_composite = NULL;
+      this->ifNeedMathExtension = false;
+      // inputSize, lr, lossFunc = variance(默认值)/cross_entropy, initializer
+      auto argIter = param->begin();
+      assert(*argIter != NULL);
+      this->inputSize = *argIter;
+      argIter++;
+      assert(*argIter != NULL && (*argIter)->type == constant);
+      lr = *argIter;
+      argIter++;
+      if (argIter == param->end()) {
+        this->lossFunc = new constantNode("string", "variance");
+        this->initializer = new constantNode("double", 0);
+      } else {
+        this->lossFunc = *argIter;
+        argIter++;
+        if (argIter == param->end()) {
+          this->initializer = new constantNode("double", 0);
+        } else {
+          this->initializer = *argIter;
+        }
+      }
     }
     ~sequentialNode() {};
     void print() {};
     string toString() {};
+    Node *getInitializer();
 };
 class layerNode : public Node
 {
@@ -1204,6 +1231,25 @@ class activationLayerNode : public layerNode
       this->setLoc(loc);
       this->type = Layer;
       this->layerType = Activation;
+      this->layerName = layerName;
+      this->arg_list = arg_list;
+      this->prevLayer = NULL;
+      this->nextLayer = NULL;
+      this->inputSize = NULL;
+      this->count = 1;
+      this->level = 0;
+    }
+    void init(sequentialNode* sequential); // 初始化inputSize
+};
+class dropoutLayerNode : public layerNode
+{
+  public:
+    long long count; // 輸入输出
+    Node *rate; // 在 0 和 1 之间浮动。需要丢弃的输入比例
+    dropoutLayerNode(string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
+      this->setLoc(loc);
+      this->type = Layer;
+      this->layerType = Dropout;
       this->layerName = layerName;
       this->arg_list = arg_list;
       this->prevLayer = NULL;
