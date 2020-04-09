@@ -30,6 +30,7 @@ StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 //SymbolTable S;
 bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常量传播 在静态数据流图生成过程中借助执行上下文进行常量传播
+bool ifGetTime = true; //是否检查每个阶段的时间
 
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
 list<SymbolTable *> symbol_tables,first_symbol_tables,last_symbol_tables;
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
     // (3)对节点进行调度划分
     cout << "--------- 对静态数据流图执行划分算法 ---------------\n";
     PhaseName = "Partition";
-    #if 0
+    #if 1
     mp = new GreedyPartition(SSSG);
     #else
     mp = new HeuristicGreedyPartition(SSSG);
