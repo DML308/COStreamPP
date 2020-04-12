@@ -16,7 +16,7 @@ composite Main() {
             Y tumbling(10);
         }
     };
-    Out = sequential (In, Y) ((28, 28, 1), 0.0001, "crossEntropy", 'gaussRandom') {
+    Out = sequential (In, Y) ((28, 28, 1), 0.0001, 100, "crossEntropy", 'gaussRandom') {
         // filters, kernel_size, strides, padding, use_bias  
         add Conv2D(32, (3, 3), (1, 1), (0, 0), false);
         add Activation("relu");

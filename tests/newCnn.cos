@@ -30,7 +30,7 @@ composite Main() {
             Y tumbling(10);
         }
     };
-    Out = sequential(In, Y)((28, 28, 1), 0.001, "crossEntropy", 'gaussRandom') {
+    Out = sequential(In, Y)((28, 28, 1), 0.001, 100, "crossEntropy", 'gaussRandom') {
         add Conv2D(3, (3, 3), (1, 1), (0, 0));
         add MaxPooling2D(2);
         add Conv2D(5, (3, 3), (1, 1), (0, 0));

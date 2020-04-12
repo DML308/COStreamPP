@@ -15,7 +15,7 @@ composite Main() {
             Y tumbling(5);
         }
     };
-    Out = sequential (In, Y) ((5, 5, 1), 0.0001, "crossEntropy", 'gaussRandom') {
+    Out = sequential (In, Y) ((5, 5, 1), 0.0001, 100, "crossEntropy", 'gaussRandom') {
         // filters, kernel_size, strides, padding, use_bias  
         add Conv2D(3, (2, 2), (1, 1), (0, 0), false);
         add AveragePooling2D(2);

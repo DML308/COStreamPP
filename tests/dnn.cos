@@ -17,8 +17,8 @@ composite Main() {
             Y tumbling(10);
         }
     };
-    // inputs_size, lr, lossFunc, initializer
-    Out = sequential (In, Y) (784, 0.001, "crossEntropy", 'gaussRandom') {
+    // inputs_size, lr, batch, lossFunc, initializer
+    Out = sequential (In, Y) (784, 0.001, 100, "crossEntropy", 'gaussRandom') {
         add Dense(200);
         add Activation("relu");
         add Dense(100);
