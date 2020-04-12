@@ -87,8 +87,10 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     // 以全局变量声明参数
     for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
         string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
-        Node *weight =  new idNode(weightName);
-        ((idNode *)weight)->isArray = 1;
+        Node *weight0 =  new idNode(weightName + "_" + to_string(0));
+        Node *weight1 =  new idNode(weightName + "_" + to_string(1));
+        ((idNode *)weight0)->isArray = 1;
+        ((idNode *)weight1)->isArray = 1;
         switch (((layerNode*)*iter)->layerType)
         {
             case Dense: {
@@ -97,8 +99,10 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 Node *cols = new constantNode("long long", ((denseLayerNode *)(*iter))->cols);
                 Node* arrDecl = new arrayNode((expNode *)rows);
                 (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)cols);
-                (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
-                Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
+                (static_cast<idNode *>(weight0))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+                (static_cast<idNode *>(weight1))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+                Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight0)));
+                ((declareNode *)weightDecl) -> id_list.push_back((idNode *)weight1);
                 Program->push_front(weightDecl);
                 SymbolTable *pre = top;
                 top = &S;
@@ -114,8 +118,10 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(depth));
                 (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("long long", ((conv2DLayerNode *)*iter) -> kernel_size -> at(0))));
                 (static_cast<arrayNode *>(arrDecl))->arg_list.push_back((expNode *)(new constantNode("long long", ((conv2DLayerNode *)*iter) -> kernel_size -> at(1))));
-                (static_cast<idNode *>(weight))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
-                Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight)));
+                (static_cast<idNode *>(weight0))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+                (static_cast<idNode *>(weight1))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
+                Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight0)));
+                ((declareNode *)weightDecl) -> id_list.push_back((idNode *)weight1);
                 Program->push_front(weightDecl);
                 SymbolTable *pre = top;
                 top = &S;
@@ -521,9 +527,22 @@ operatorNode* UnfoldComposite::makeDenseOperator(layerNode *layer, list<Node *> 
         win_stmt->push_back(win);
     }
     window = new windowNode(win_stmt);
+
+    idNode *idIterations = new idNode("iterations"); // 当前批次内的迭代次数
+    idNode *idFlag = new idNode("flag"); // 标记访问哪一组权值矩阵
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    Node *iterationsInit = new initNode(constZero);
+    Node *flagInit = new initNode(constZero);
+    idIterations -> init = iterationsInit;
+    idFlag -> init = flagInit;
+    primNode *primInt = new primNode("int");
+    Node *decl = new declareNode(primInt, idIterations);
+    ((declareNode *)decl)->id_list.push_back(idFlag);
+    list<Node *> *stmtList = new list<Node *>({decl});
+
     init = makeDenseInit(layer);
     work = makeDenseWork(layer, inputs, outputs);
-    body = new operBodyNode(NULL, init, work, window);
+    body = new operBodyNode(stmtList, init, work, window);
 
     return new operatorNode(outputs, operName, inputs, body);
 }
@@ -536,111 +555,164 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer) {
          *cols = new constantNode("long long", ((denseLayerNode *)layer) -> cols);
     // 获得当前层的权值id
     string weightName = "_weight_" + to_string(layer-> level);
-    Node*  weightId = new idNode(weightName);
-    ((idNode *)weightId)->isArray = 1;
+    Node*  weight0Id = new idNode(weightName + "_" + to_string(0));
+    Node*  weight1Id = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weight0Id)->isArray = 1;
+    ((idNode *)weight1Id)->isArray = 1;
     // 利用for循环初始化
-    constantNode *const_zero = new constantNode("long long", (long long)0);
-    initNode *init_i = new initNode(const_zero);
-    initNode *init_j = new initNode(const_zero);
-    idNode *id_i = new idNode("i"), *id_j = new idNode("j");
-    id_i->init = init_i;
-    id_j->init = init_j;
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    idNode *idI = new idNode("i"), *idJ = new idNode("j");
+    
     primNode *prim = new primNode("int");
-    declareNode *declI = new declareNode(prim, id_i), *declJ = new declareNode(prim, id_j);
+    declareNode *declI = new declareNode(prim, idI), *declJ = new declareNode(prim, idJ);
     stmts->push_back(declI);
     stmts->push_back(declJ);
-    Node *init1 = NULL, *cond1 = NULL, *next_i = NULL, *stmt1 = NULL, *forNode1;
-    Node *init2 = NULL, *cond2 = NULL, *next_j = NULL, *stmt2 = NULL, *forNode2;
-    init1 = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    cond1 = new binopNode((expNode *)id_i, "<", (expNode *)(rows));
-    next_i = new unaryNode("POSTINC", (expNode *)id_i);
-    init2 = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
-    cond2 = new binopNode((expNode *)id_j, "<", (expNode *)cols);
-    next_j = new unaryNode("POSTINC", (expNode *)id_j);
-    Node *weightArrDec = new arrayNode((expNode *)id_i);
-    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_j);
-    (static_cast<idNode*>(weightId))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
-    stmt2 = new binopNode((expNode *)weightId, "=", (expNode *)globalSequential->getInitializer());
-    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)next_j, stmt2);
-    stmt1 = forNode2;
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)next_i, stmt1);
-    stmts->push_back(forNode1);
-    init  = new blockNode(stmts);
+    Node *initI = NULL, *condI = NULL, *nextI = NULL;
+    Node *initJ = NULL, *condJ = NULL, *nextJ = NULL;
+    
+    initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    condI = new binopNode((expNode *)idI, "<", (expNode *)(rows));
+    nextI = new unaryNode("POSTINC", (expNode *)idI);
+    initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    condJ = new binopNode((expNode *)idJ, "<", (expNode *)cols);
+    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
 
+    Node *weightArrDec = new arrayNode((expNode *)idI);
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)idJ);
+
+    // 获取weight_level_flag[i][j]
+    (static_cast<idNode*>(weight0Id))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+    (static_cast<idNode*>(weight1Id))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+    
+    //初始化weight0
+    Node *stmt2 = new binopNode((expNode *)weight0Id, "=", (expNode *)globalSequential->getInitializer());
+    Node *forNode2 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt2);
+    Node *forNode1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode2);
+    stmts->push_back(forNode1);
+    //初始化weight1
+    Node *stmt4 = new binopNode((expNode *)weight1Id, "=", (expNode *)globalSequential->getInitializer());
+    Node *forNode4 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt4);
+    Node *forNode3 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode4);
+    stmts->push_back(forNode3);
+
+    init  = new blockNode(stmts);
     return init;
 }
 // 计算Dense
 Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
-    list<Node *> *stmts = new list<Node *>();
+    /* 
+        if (flag) {
+            for (j = 0; j < cols; j++) {
+                temp = 0;
+                for (i = 0; i< rows; i++) {
+                    temp += In0[i].x * weight_level_1[i][j];
+                }
+                Out0[j].x = temp;
+            }
+        } else {
+            for (j = 0; j < cols; j++) {
+                temp = 0;
+                for (i = 0; i< rows; i++) {
+                    temp += In0[i].x * weight_level_0[i][j];
+                }
+                Out0[j].x = temp;
+            }
+        }
+        iterations++;
+        if( iterations == globalSequntial->batch) {
+            flag != flag;
+            iterations = 0;
+        }
+    */
+    list<Node *> *stmtList = new list<Node *>();
     Node *work =  NULL;
 
     Node *rows = new constantNode("long long", ((denseLayerNode *)layer) -> rows),
          *cols = new constantNode("long long", ((denseLayerNode *)layer) -> cols);
 
     string weightName = "_weight_" + to_string(layer-> level);
-    Node*  weightId = new idNode(weightName);
-    ((idNode *)weightId)->isArray = 1;
+    Node*  weight0Id = new idNode(weightName + "_" + to_string(0));
+    Node*  weight1Id = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weight0Id)->isArray = 1;
+    ((idNode *)weight1Id)->isArray = 1;
 
-    constantNode *const_zero = new constantNode("long long", (long long)0);
-    initNode *init_i = new initNode(const_zero);
-    initNode *init_j = new initNode(const_zero);
-    idNode *id_i = new idNode("i"), *id_j = new idNode("j");
-    id_i->init = init_i;
-    id_j->init = init_j;
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    idNode *idI = new idNode("i"), *idJ = new idNode("j");
     primNode *primInt = new primNode("int");
-    declareNode *declI = new declareNode(primInt, id_i);
-    declI->id_list.push_back(id_j);
-    stmts->push_back(declI);
+    declareNode *declI = new declareNode(primInt, idI);
+    declI->id_list.push_back(idJ);
+    stmtList->push_back(declI);
 
-    idNode *id_temp = new idNode("temp");
-    id_temp->init = new initNode(const_zero);
+    idNode *idTemp = new idNode("temp");
+    idTemp->init = new initNode(constZero);
     primNode *primDouble = new primNode("double");
-    declareNode *declTemp = new declareNode(primDouble, id_temp);
-    stmts->push_back(declTemp);
+    declareNode *declTemp = new declareNode(primDouble, idTemp);
+    stmtList->push_back(declTemp);
 
-    Node *forNode1 = NULL, *init1 = NULL, *cond1 = NULL, *next_j = NULL, *stmt1 = NULL;
-    init1 = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
-    cond1 = new binopNode((expNode *)id_j, "<", (expNode *)cols);
-    next_j = new unaryNode("POSTINC", (expNode *)id_j);
-    list<Node *> *stmts1 = new list<Node *>();
-    stmts1->push_back(new binopNode((expNode *)id_temp, "=", (expNode *)const_zero));
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)rows);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
+    Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)cols);
+    Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
 
-    Node *forNode2 = NULL, *init2 = NULL, *cond2 = NULL, *next_i = NULL, *stmt2 = NULL, *block2 = NULL;
-    init2 = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    cond2 = new binopNode((expNode *)id_i, "<", (expNode *)rows);
-    next_i = new unaryNode("POSTINC", (expNode *)id_i);
-    list<Node *> *stmts2 = new list<Node *>();
-    // 取得_weight_level[i][j]
+    Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *)constZero);
+
+    // 取得_weight_level_flag[i][j]
     Node *weightArrDec = NULL;
-    weightArrDec =  new arrayNode((expNode *)(id_i));
-    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)(id_j));
-    (static_cast<idNode*>(weightId))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+    weightArrDec =  new arrayNode((expNode *)(idI));
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)(idJ));
+    (static_cast<idNode*>(weight0Id))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+    (static_cast<idNode*>(weight1Id))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+
     // 取得In1[i].x
     idNode* x = new idNode("x");
     idNode* input1 = new idNode(static_cast<idNode *>(inputs->front())->name);
     input1->isArray = 1;
-    input1->arg_list.push_back(id_i);
+    input1->arg_list.push_back(idI);
     Node* In1 = new binopNode((expNode *)input1, ".", (expNode *)x);
-    // temp+=In1[i].x*_weight_level[i][j];
-    Node* midRes = new binopNode((expNode *)id_temp, "+=", (expNode *)(new binopNode((expNode *)In1, "*", (expNode *)weightId)));
-    stmts2->push_back(midRes);
-    block2 = new blockNode(stmts2);
-    // for(i = 0; i < arg:row; i++) {temp+=In0[i].x*weight1[i][j];}
-    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)next_i, block2);
-    stmts1->push_back(forNode2);
 
-    // 取得Out1[j].x, Out2[j].x
+    // 取得Out[j].x
     idNode* output = new idNode(static_cast<idNode *>(outputs->front())->name);
     output->isArray = 1;
-    output->arg_list.push_back(id_j);
+    output->arg_list.push_back(idJ);
     Node* outX = new binopNode((expNode *)output, ".", (expNode *)x);
-    Node* res = new binopNode((expNode *)outX, "=", (expNode *)id_temp);
-    stmts1->push_back(res);
-    Node* block1 = new blockNode(stmts1);
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)next_j, block1);
-    stmts->push_back(forNode1);
+    Node* res = new binopNode((expNode *)outX, "=", (expNode *)idTemp);
+
+    // 取得temp+=In1[i].x*_weight_level_flag[i][j];
+    Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)In1, "*", (expNode *)weight0Id)));
+    Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)In1, "*", (expNode *)weight1Id)));
+
+    Node *block2 = new blockNode(new list<Node *>({midRes1}));
+    Node *forNode2 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block2);
     
-    work = new blockNode(stmts);
+    Node* block1 = new blockNode(new list<Node *>({tempInit, forNode2, res}));
+    Node *forNode1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block1);
+
+    Node *block4 = new blockNode(new list<Node *>({midRes0}));
+    Node *forNode4 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block4);
+
+    Node* block3 = new blockNode(new list<Node *>({tempInit, forNode4, res}));
+    Node *forNode3 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block3);
+    
+    Node *idFlag = new idNode("flag");
+    Node *ifBlock = new blockNode(new list<Node *>({forNode1}));
+    Node *elseBlcok = new blockNode(new list<Node *>({forNode3}));
+    Node *ifElse = new ifElseNode((expNode *)idFlag, ifBlock, elseBlcok);
+    stmtList->push_back(ifElse);
+
+    Node *idIterations = new idNode("iterations");
+    Node *iterationsInc = new unaryNode("POSTINC", (expNode *)idIterations);
+    stmtList->push_back(iterationsInc);
+    
+    Node *compare = new binopNode((expNode *)idIterations, "==", ((expNode *)globalSequential->batch));
+    Node *charge = new binopNode((expNode *)idFlag, "!=", (expNode *)idFlag);
+    Node *reset = new binopNode((expNode *)idIterations, "=", (expNode *)constZero);
+    Node *iterationsIfBlock = new blockNode(new list<Node *>({charge, reset}));
+    Node *iterationsIf = new ifNode((expNode *)compare, iterationsIfBlock);
+    stmtList->push_back(iterationsIf);
+    
+    work = new blockNode(stmtList);
     return work;
 }
 
@@ -732,17 +804,17 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
 
     // workNode
     list<Node *> *stmts = new list<Node *>();
-    constantNode *const_zero = new  constantNode("long long", (long long)0);
-    initNode *init_i = new initNode(const_zero);
+    constantNode *constZero = new  constantNode("long long", (long long)0);
+    initNode *init_i = new initNode(constZero);
     idNode *id_i = new idNode("i");
     id_i->init = init_i;
     primNode *prim = new primNode("int");
     declareNode *declI = new declareNode(prim, id_i);
     stmts->push_back(declI);
-    Node *forNode1 = NULL, *forInitI = NULL, *forCondI = NULL, *forNextI = NULL;
-    forInitI = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    forCondI = new binopNode((expNode *)id_i, "<", (expNode *)(num));
-    forNextI = new unaryNode("POSTINC", (expNode *)id_i);
+    Node *forNode1 = NULL, *initI = NULL, *condI = NULL, *nextI = NULL;
+    initI = new binopNode((expNode *)id_i, "=", (expNode *)constZero);
+    condI = new binopNode((expNode *)id_i, "<", (expNode *)(num));
+    nextI = new unaryNode("POSTINC", (expNode *)id_i);
     list<Node *> *forStmts = new list<Node *>();
     // 取得In1[i].x, In2[i].x
     idNode* x = new idNode("x");
@@ -772,7 +844,7 @@ operatorNode* UnfoldComposite::makeLossOperator(layerNode *layer, list<Node *> *
     }
     forStmts->push_back(res);
     Node* forBlock = new blockNode(forStmts);
-    forNode1 = new forNode(forInitI, (expNode *)forCondI, (expNode *)forNextI, forBlock);
+    forNode1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forBlock);
     stmts->push_back(forNode1);
     work = new blockNode(stmts);
     
@@ -805,39 +877,106 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     winStmtNode *dOut = new winStmtNode(((idNode *)iter)->name, tumb);
     win_stmt->push_back(dOut);
     window = new windowNode(win_stmt);
+
+    idNode *idIterations = new idNode("iterations"); // 当前批次内的迭代次数
+    idNode *idFlag = new idNode("flag"); // 标记访问哪一组权值矩阵
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    Node *iterationsInit = new initNode(constZero);
+    Node *flagInit = new initNode(constZero);
+    idIterations -> init = iterationsInit;
+    idFlag -> init = flagInit;
+    primNode *primInt = new primNode("int");
+    Node *declInt = new declareNode(primInt, idIterations);
+    ((declareNode *)declInt)->id_list.push_back(idFlag);
+
+    idNode *idError = new idNode("error");
+    idError -> isArray = 1;
+    idError -> arg_list = *(new list<Node *>({(expNode *)rows, (expNode *)cols}));
+    primNode *primDouble = new primNode("double");
+    Node *declDouble = new declareNode(primDouble, idError);
+    list<Node *> *stmtList = new list<Node *>({declInt, declDouble});
+
     init = NULL;
     work = makeDDenseWork(layer, inputs, outputs);
-    body = new operBodyNode(NULL, init, work, window);
+    body = new operBodyNode(stmtList, init, work, window);
     return new operatorNode(outputs, operName, inputs, body);
 }
 // MakeDDenseInit 初始化误差矩阵
 Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, list<Node*> *outputs) {
-    list<Node *> *stmts = new list<Node *>();
+    /*
+        if (flag) {
+            for (i = 0; i < rows; i++) {
+                temp = 0;
+                for (j = 0; j < cols; j++) {
+                    temp += dIn[j].x * weight_level_1[i][j];
+                }
+                out[i].x = temp;
+            }
+            for (i = 0; i < rows; i++) {
+                for (j = 0; j < cols; j++) {
+                    error_level_1[i][j] += in[i].x * dIn[j].x;
+                }
+            }
+        } else {
+            for (i = 0; i < rows; i++) {
+                temp = 0;
+                for (j = 0; j < cols; j++) {
+                    temp += error[j].x * weight_level_0[i][j];
+                }
+                out[i].x = temp;
+            }
+            for (i = 0; i < rows; i++) {
+                for (j = 0; j < cols; j++) {
+                    error[i][j] += in[i].x * dIn[j].x;
+                }
+            }
+        }
+        iterations++;
+        if (iterations == batch) {
+            if (flag) {
+                for (i = 0; i < rows; i++) {
+                    for(j = 0; j < cols; j++) {
+                        weight_level_1[i][j] -= error[i][j] / batch;
+                        error[i][j] = 0;
+                    }
+                }
+            } else {
+                for (i = 0; i < rows; i++) {
+                    for(j = 0; j < cols; j++) {
+                        weight_level_0[i][j] -= (error[i][j] / batch) * lr;
+                        error[i][j] = 0;
+                    }
+                }
+            }
+            flag != flag;
+            iterarions = 0;
+        }
+    */
+    list<Node *> *stmtList = new list<Node *>();
     Node *work =  NULL;
-    string weightName = "_weight_" + to_string(layer-> level);
-    Node*  weightId = new idNode(weightName);
-    ((idNode *)weightId)->isArray = 1;
+
     Node *rows = new constantNode("long long", ((denseLayerNode *)layer) -> rows),
          *cols = new constantNode("long long", ((denseLayerNode *)layer) -> cols);
     
-    // 循环修改w, 循环传递误差
-    constantNode *const_zero = new  constantNode("long long", (long long)0);
-    constantNode *const_i = new constantNode("long long", (long long)0);
-    constantNode *const_j = new constantNode("long long", (long long)0);
-    initNode *init_i = new initNode(const_i);
-    initNode *init_j = new initNode(const_j);
-    idNode *id_i = new idNode("i"), *id_j = new idNode("j");
-    id_i->init = init_i;
-    id_j->init = init_j;
+    string weightName = "_weight_" + to_string(layer-> level);
+    Node*  weight0Id = new idNode(weightName + "_" + to_string(0));
+    Node*  weight1Id = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weight0Id)->isArray = 1;
+    ((idNode *)weight1Id)->isArray = 1;
+
+    constantNode *constZero = new  constantNode("long long", (long long)0);
+    idNode *idI = new idNode("i"), *idJ = new idNode("j");
     primNode *primInt = new primNode("int");
-    declareNode *declI = new declareNode(primInt, id_i), *declJ = new declareNode(primInt, id_j);
-    stmts->push_back(declI);
-    stmts->push_back(declJ);
+    declareNode *declI = new declareNode(primInt, idI), *declJ = new declareNode(primInt, idJ);
+    stmtList->push_back(declI);
+    stmtList->push_back(declJ);
+
     primNode *primDouble = new primNode("double");
-    idNode *id_temp = new idNode("temp");
-    id_temp->init = new initNode(const_zero);
-    declareNode *declTemp = new declareNode(primDouble, id_temp);
-    stmts->push_back(declTemp);
+    idNode *idTemp = new idNode("temp");
+    idTemp->init = new initNode(constZero);
+    declareNode *declTemp = new declareNode(primDouble, idTemp);
+    stmtList->push_back(declTemp);
+
     // 学习率
     Node *constLr = globalSequential->lr;
     initNode *initLr = new initNode(constLr);
@@ -846,71 +985,117 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     idLr->valType = "double";
     primNode *prim = new primNode("double");
     declareNode *declLr = new declareNode(primDouble, idLr);
-    stmts->push_back(declLr);
+    stmtList->push_back(declLr);
 
     // 计算传播误差
-    Node *forInitI = NULL, *forCondI = NULL, *forNextI = NULL, *forInitJ = NULL, *forCondJ = NULL, *forNextJ = NULL;
-    forInitI = new binopNode((expNode *)id_i, "=", (expNode *)const_zero);
-    forCondI = new binopNode((expNode *)id_i, "<", (expNode *)(rows));
-    forNextI = new unaryNode("POSTINC", (expNode *)id_i);
-    forInitJ = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
-    forCondJ = new binopNode((expNode *)id_j, "<", (expNode *)(cols));
-    forNextJ = new unaryNode("POSTINC", (expNode *)id_j);
-    // 取得 weight_level[i][j]
+    Node *initI = NULL, *condI = NULL, *nextI = NULL, *initJ = NULL, *condJ = NULL, *nextJ = NULL;
+    initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    condI = new binopNode((expNode *)idI, "<", (expNode *)(rows));
+    nextI = new unaryNode("POSTINC", (expNode *)idI);
+    initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    condJ = new binopNode((expNode *)idJ, "<", (expNode *)(cols));
+    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+
+    // 取得 weight_level_flag[i][j]
     Node *weightArrDec = NULL;
-    weightArrDec =  new arrayNode((expNode *)(id_i));
-    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)(id_j));
-    (static_cast<idNode*>(weightId))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
-    
-    idNode* x = new idNode("x");
+    weightArrDec =  new arrayNode((expNode *)(idI));
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)(idJ));
+    (static_cast<idNode*>(weight0Id))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+    (static_cast<idNode*>(weight1Id))->arg_list = (static_cast<arrayNode*>(weightArrDec))->arg_list;
+
     // 取得dIn[j].x
+    idNode* x = new idNode("x");
     idNode* dIn = new idNode(static_cast<idNode *>(inputs->front())->name);
     dIn->isArray = 1;
-    dIn->arg_list.push_back(id_j);
+    dIn->arg_list.push_back(idJ);
     Node* dInX = new binopNode((expNode *)dIn, ".", (expNode *)x);
+
     // 取得in[i].x
     idNode* in = new idNode(static_cast<idNode *>(inputs->back())->name);
     in->isArray = 1;
-    in->arg_list.push_back(id_i);
+    in->arg_list.push_back(idI);
     Node* inX = new binopNode((expNode *)in, ".", (expNode *)x);
 
-    Node *forNode1 = NULL, *stmt1 = NULL, *block1 = NULL;
-    list<Node *> *stmts1 = new list<Node *>();
-    stmts1->push_back(new binopNode((expNode *)id_temp, "=", (expNode *)const_zero));
-
-    Node *forNode2 = NULL, *stmt2 = NULL, *block2 = NULL;
-    list<Node *> *stmts2 = new list<Node *>();
-    
-    Node* midRes = new binopNode((expNode *)id_temp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weightId)));
-    stmts2->push_back(midRes);
-    block2 = new blockNode(stmts2);
-    forNode2 = new forNode(forInitJ, (expNode *)forCondJ, (expNode *)forNextJ, block2);
-    stmts1->push_back(forNode2);
-    // 取得Out1[i].x
+    // 取得Out[i].x
     idNode* dOut = new idNode(static_cast<idNode *>(outputs->front())->name);
     dOut->isArray = 1;
-    dOut->arg_list.push_back(id_i);
-    Node* Out1 = new binopNode((expNode *)dOut, ".", (expNode *)x);
-    Node* res = new binopNode((expNode *)Out1, "=", (expNode *)id_temp);
-    stmts1->push_back(res);
-    block1 = new blockNode(stmts1);
-    forNode1 = new forNode(forInitI, (expNode *) forCondI, (expNode *) forNextI, block1);
-    stmts->push_back(forNode1);
+    dOut->arg_list.push_back(idI);
+    Node* dOutX = new binopNode((expNode *)dOut, ".", (expNode *)x);
+    // 为Out[i].x赋值
+    Node* res = new binopNode((expNode *)dOutX, "=", (expNode *)idTemp);
+    // 取得error[i][j]
+    idNode *idErrorIJ = new idNode("error");
+    idErrorIJ -> isArray = 1;
+    idErrorIJ -> arg_list = *(new list<Node *>({idI, idJ}));
+    // 为error[i][j]赋值
+    Node *updateError = new binopNode((expNode *)idErrorIJ, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)inX)));
 
-    Node *forNode3 = NULL, *stmt3 = NULL, *block3 = NULL;
-    list<Node *> *stmts3 = new list<Node *>();
-    Node *forNode4 = NULL, *stmt4 = NULL, *block4 = NULL;
-    list<Node *> *stmts4 = new list<Node *>();
-    Node *dError = new binopNode((expNode *)idLr, "*", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)inX)));
-    Node *change = new binopNode((expNode *)weightId, "-=", (expNode *)dError);
-    stmts4->push_back(change);
-    block4 = new blockNode(stmts4);
-    forNode4 = new forNode(forInitJ, (expNode *)forCondJ, (expNode *)forNextJ, block4);
-    stmts3->push_back(forNode4);
-    block3 = new blockNode(stmts3);
-    forNode3 = new forNode(forInitI, (expNode *) forCondI, (expNode *) forNextI, block3); 
-    stmts->push_back(forNode3);
-    work = new blockNode(stmts);
+    Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weight0Id)));
+    Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weight1Id)));
+    Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *)constZero);
+
+    // 当flag == 1时
+    Node *block2 = new blockNode(new list<Node *>({midRes1}));
+    Node *forNode2 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block2);
+    
+    Node *block1 = new blockNode(new list<Node *>({tempInit, forNode2, res}));
+    Node *forNode1 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block1);
+    
+    Node *block4 = new blockNode(new list<Node *>({updateError}));
+    Node *forNode4 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block4);
+
+    Node *block3 = new blockNode(new list<Node *>({forNode4}));
+    Node *forNode3 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block3);
+    
+    // 当flag == 0时
+    Node *block6 = new blockNode(new list<Node *>({midRes0}));
+    Node *forNode6 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block6);
+    
+    Node *block5 = new blockNode(new list<Node *>({tempInit, forNode6, res}));
+    Node *forNode5 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block5);
+
+    Node *block8 = new blockNode(new list<Node *>({updateError}));
+    Node *forNode8 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block8);
+
+    Node *block7 = new blockNode(new list<Node *>({forNode8}));
+    Node *forNode7 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block7);
+
+    Node *idFlag = new idNode("flag");
+    Node *ifBlock1 = new blockNode(new list<Node *>({forNode1, forNode3}));
+    Node *elseBlcok1 = new blockNode(new list<Node *>({forNode5, forNode7}));
+    Node *ifElse1 = new ifElseNode((expNode *)idFlag, ifBlock1, elseBlcok1);
+    stmtList -> push_back(ifElse1);
+
+    // iterations++
+    Node *idIterations = new idNode("iterations");
+    Node *iterationsInc = new unaryNode("POSTINC", (expNode *)idIterations);
+    stmtList->push_back(iterationsInc);
+
+    // update weight & reset error, flag, iterations
+    Node *compare = new binopNode((expNode *)idIterations, "==", ((expNode *)globalSequential->batch));
+    Node *dError = new binopNode((expNode *)(new binopNode((expNode *)idErrorIJ, "/", (expNode *)(globalSequential -> batch))), "*", (expNode *)idLr);
+    Node *updateWeight0 = new binopNode((expNode *)weight0Id, "-=", (expNode *)dError);
+    Node *updateWeight1 = new binopNode((expNode *)weight1Id, "-=", (expNode *)dError);
+    Node *resetError = new binopNode((expNode *)idErrorIJ, "=", (expNode *)constZero);
+
+    Node *stmt10_0 = new blockNode(new list<Node *>({updateWeight0, resetError}));
+    Node *forNode10_0 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt10_0);
+    Node *forNode9_0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode10_0);
+
+    Node *stmt10_1 = new blockNode(new list<Node *>({updateWeight1, resetError}));
+    Node *forNode10_1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt10_1);
+    Node *forNode9_1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode10_1);
+
+    Node *ifBlock2 = new blockNode(new list<Node *>({forNode9_1}));
+    Node *elseBlock2 = new blockNode(new list<Node *>({forNode9_0}));
+    Node *ifElse2 = new ifElseNode((expNode *)idFlag, ifBlock2, elseBlock2);
+    Node *charge = new binopNode((expNode *)idFlag, "!=", (expNode *)idFlag);
+    Node *reset = new binopNode((expNode *)idIterations, "=", (expNode *)constZero);
+    Node *iterationsIfBlock = new blockNode(new list<Node *>({ifElse2, charge, reset}));
+    Node *iterationsIf = new ifNode((expNode *)compare, iterationsIfBlock);
+    stmtList->push_back(iterationsIf);
+
+    work = new blockNode(stmtList);
     return work;
 }
 
@@ -919,7 +1104,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
-    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    list<Node *> *winStmt = new list<Node *>();
     // 输入窗口
     auto inputIter = inputs_id->begin();
     long long popVal = 1;
@@ -939,63 +1124,84 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     winStmtNode *win2 = new winStmtNode(((idNode *)(*outputIter))->name, tumb);
     winStmt->push_back(win2);
     window = new windowNode(winStmt);
+
+    idNode *idIterations = new idNode("iterations"); // 当前批次内的迭代次数
+    idNode *idFlag = new idNode("flag"); // 标记访问哪一组权值矩阵
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    Node *iterationsInit = new initNode(constZero);
+    Node *flagInit = new initNode(constZero);
+    idIterations -> init = iterationsInit;
+    idFlag -> init = flagInit;
+    primNode *primInt = new primNode("int");
+    Node *decl = new declareNode(primInt, idIterations);
+    ((declareNode *)decl)->id_list.push_back(idFlag);
+    list<Node *> *stmtList = new list<Node *>({decl});
+
     init = makeConv2DKernelOperInit(layer);
     work = makeConv2DKernelOperWork(layer, inputs_id, outputs_id);
-    body = new operBodyNode(bodyStmtList, init, work, window);
+    body = new operBodyNode(stmtList, init, work, window);
     return new operatorNode(outputs_id, operName, inputs_id, body);
 }
 Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
     list<Node *> *stmts = new list<Node *>();
     Node *init = NULL;
     string weightName = "_weight_" + to_string(layer-> level);
-    Node*  weightId = new idNode(weightName);
-    ((idNode *)weightId)->isArray = 1;
+    Node*  weightId0 = new idNode(weightName + "_" + to_string(0));
+    ((idNode *)weightId0)->isArray = 1;
+    Node*  weightId1 = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weightId1)->isArray = 1;
     // Node *kernelIndex = new idNode("kernelIndex");
-    constantNode *const_zero = new constantNode("long long", (long long)0);
-    idNode *id_j = new idNode("j"), *id_n = new idNode("n"), *id_m = new idNode("m");
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    idNode *idD = new idNode("depthIndex"), *idN = new idNode("n"), *idM = new idNode("m");
     // param id
     Node *kernelIndex = new idNode("kernelIndex");
-    primNode *prim = new primNode("int");
-    declareNode 
-                *decl_j = new declareNode(prim, id_j),
-                *decl_n = new declareNode(prim, id_n),
-                *decl_m = new declareNode(prim, id_m);
-    stmts->push_back(decl_j);
-    stmts->push_back(decl_n);
-    stmts->push_back(decl_m);
-    Node *init1 = NULL, *cond1 = NULL, *next_j = NULL, *stmt1 = NULL, *forNode1;
-    Node *init2 = NULL, *cond2 = NULL, *next_n = NULL, *stmt2 = NULL, *forNode2;
-    Node *init3 = NULL, *cond3 = NULL, *next_m = NULL, *stmt3 = NULL, *forNode3;
+    primNode *primInt = new primNode("int");
+    declareNode *declInt = new declareNode(primInt, idD);
+    declInt->id_list.push_back((idNode *)idN);
+    declInt->id_list.push_back((idNode *)idM);
+    stmts->push_back(declInt);
+
     Node *weightArrDec = NULL;
     // 预处理filter_index个kernel的权值矩阵
     weightArrDec = new arrayNode((expNode *)kernelIndex);
     // 第1层循环遍历核的每一层,对应上一层输出的深度
-    init1 = new binopNode((expNode *)id_j, "=", (expNode *)const_zero);
+    Node *initD = new binopNode((expNode *)idD, "=", (expNode *)constZero);
     Node *depth = new constantNode("long long", ((layer -> inputSize)->back()));
-    cond1 = new binopNode((expNode *)id_j, "<", (expNode *)(depth));
-    next_j = new unaryNode("POSTINC", (expNode *)id_j);
-    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_j);
+    Node *condD = new binopNode((expNode *)idD, "<", (expNode *)(depth));
+    Node *nextD = new unaryNode("POSTINC", (expNode *)idD);
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)idD);
     // 第2层循环遍历核中层的行
-    init2 = new binopNode((expNode *)id_n, "=", (expNode *)const_zero);
+    Node *initN = new binopNode((expNode *)idN, "=", (expNode *)constZero);
     Node *dim0 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
-    cond2 = new binopNode((expNode *)id_n, "<", (expNode *)(dim0));
-    next_n = new unaryNode("POSTINC", (expNode *)id_n);
-    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_n);
+    Node *condN = new binopNode((expNode *)idN, "<", (expNode *)(dim0));
+    Node *nextN = new unaryNode("POSTINC", (expNode *)idN);
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)idN);
     // 第3层循环遍历核中层的行的每一列
-    init3 = new binopNode((expNode *)id_m, "=", (expNode *)const_zero);
+    Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
     Node *dim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
-    cond3 = new binopNode((expNode *)id_m, "<", (expNode *)(dim1));
-    next_m = new unaryNode("POSTINC", (expNode *)id_m);
-    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)id_m);
-    ((idNode *)weightId) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
+    Node *condM = new binopNode((expNode *)idM, "<", (expNode *)(dim1));
+    Node *nextM = new unaryNode("POSTINC", (expNode *)idM);
+    (static_cast<arrayNode *> (weightArrDec))->arg_list.push_back((expNode *)idM);
+    ((idNode *)weightId0) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
+    ((idNode *)weightId1) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
     // 为 weight[kernelIndex][j][n][m]赋值
-    stmt3 = new binopNode((expNode *)weightId, "=", (expNode *)globalSequential->getInitializer());
-    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)next_m, stmt3);
-    stmt2 = forNode3;
-    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)next_n, stmt2);
-    stmt1 = forNode2;
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)next_j, stmt1);
+    Node *assign0 = new binopNode((expNode *)weightId0, "=", (expNode *)globalSequential->getInitializer());
+    Node *assign1 = new binopNode((expNode *)weightId1, "=", (expNode *)globalSequential->getInitializer());
+
+    Node *stmt3 = new blockNode(new list<Node *>({assign0}));
+    Node *forNode3 = new forNode(initM, (expNode *)condM, (expNode *)nextM, stmt3);
+    Node *stmt2 = new blockNode(new list<Node *>({forNode3}));
+    Node *forNode2 = new forNode(initN, (expNode *)condN, (expNode *)nextN, stmt2);
+    Node *stmt1 = new blockNode(new list<Node *>({forNode2}));
+    Node *forNode1 = new forNode(initD, (expNode *)condD, (expNode *)nextD, stmt1);
     stmts->push_back(forNode1);
+    Node *stmt6 = new blockNode(new list<Node *>({assign1}));
+    Node *forNode6 = new forNode(initM, (expNode *)condM, (expNode *)nextM, stmt6);
+    Node *stmt5 = new blockNode(new list<Node *>({forNode6}));
+    Node *forNode5 = new forNode(initN, (expNode *)condN, (expNode *)nextN, stmt5);
+    Node *stmt4 = new blockNode(new list<Node *>({forNode5}));
+    Node *forNode4 = new forNode(initD, (expNode *)condD, (expNode *)nextD, stmt4);
+    stmts->push_back(forNode4);
     init = new blockNode(stmts);
     return init;
 }
@@ -1027,13 +1233,6 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *constZero = new constantNode("long long", (long long)0);
     Node *pushIndexInit = new binopNode((expNode *)idPushIndex, "=", (expNode *)constZero);
     stmtList -> push_back(pushIndexInit);
-    // 5层循环实现卷积操作
-    
-    Node *init1 = NULL, *cond1 = NULL, *nextM = NULL, *stmt1 = NULL, *forNode1 = NULL;
-    Node *init2 = NULL, *cond2 = NULL, *nextN = NULL, *stmt2 = NULL, *forNode2 = NULL;
-    Node *init3 = NULL, *cond3 = NULL, *nextD = NULL, *stmt3 = NULL, *forNode3 = NULL;
-    Node *init4 = NULL, *cond4 = NULL, *nextI = NULL, *stmt4 = NULL, *forNode4 = NULL;
-    Node *init5 = NULL, *cond5 = NULL, *nextJ = NULL, *stmt5 = NULL, *forNode5 = NULL;
    
     Node *kernelDim0 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
     Node *kernelDim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
@@ -1046,33 +1245,34 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *inputDim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> inputSize -> at(1));
 
     // output height
-    init1 = new binopNode((expNode *)idM, "=", (expNode *)constZero);
-    cond1 = new binopNode((expNode *)idM, "<", (expNode *)outputDim0);
+    Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
+    Node *condM = new binopNode((expNode *)idM, "<", (expNode *)outputDim0);
     Node *nextMExp = new binopNode((expNode *)idM, "+", (expNode *)strideDim0);
-    nextM = new binopNode((expNode *)idM, "=", (expNode *)nextMExp);
+    Node *nextM = new binopNode((expNode *)idM, "=", (expNode *)nextMExp);
     // output width
-    init2 = new binopNode((expNode *)idN, "=", (expNode *)constZero);
-    cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1);
+    Node *initN = new binopNode((expNode *)idN, "=", (expNode *)constZero);
+    Node *condN = new binopNode((expNode *)idN, "<", (expNode *)outputDim1);
     Node *nextNExp = new binopNode((expNode *)idN, "+", (expNode *)strideDim1);
-    nextN = new binopNode((expNode *)idN, "=", (expNode *)nextNExp);
+    Node *nextN = new binopNode((expNode *)idN, "=", (expNode *)nextNExp);
     // kernel depth
-    init3 = new binopNode((expNode *)idD, "=", (expNode *)constZero);
-    cond3 = new binopNode((expNode *)idD, "<", (expNode *)kernelDepth);
-    nextD = new unaryNode("POSTINC", (expNode *)idD);
+    Node *initD = new binopNode((expNode *)idD, "=", (expNode *)constZero);
+    Node *condD = new binopNode((expNode *)idD, "<", (expNode *)kernelDepth);
+    Node *nextD = new unaryNode("POSTINC", (expNode *)idD);
     // kernel height
-    init4 = new binopNode((expNode *)idI, "=", (expNode *)constZero);
-    cond4 = new binopNode((expNode *)idI, "<", (expNode *)kernelDim0);
-    nextI = new unaryNode("POSTINC", (expNode *)idI);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)kernelDim0);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     // kernel width
-    init5 = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
-    cond5 = new binopNode((expNode *)idJ, "<", (expNode *)kernelDim1);
-    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+    Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)kernelDim1);
+    Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
     
     Node *output = new idNode(static_cast<idNode *>(outputs -> front()) -> name),
          *input = new idNode(static_cast<idNode *>(inputs -> front()) -> name);
     ((idNode *)output) -> isArray = 1;
     ((idNode *)input) -> isArray = 1;
-    // 计算索引in[m*strides0+i][n*strides1+j][d]
+
+    // 获取in & 计算索引in[m*strides0+i][n*strides1+j][d]
     Node *stepY = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idM, "*", (expNode *)strideDim0)), "+", (expNode *)idI)));
     Node *offsetY =  new binopNode((expNode *)stepY, "*", (expNode *)(new binopNode((expNode *)inputDim1, "*", (expNode *)kernelDepth)));
     Node *stepX = new parenNode((expNode *)(new binopNode((expNode *)(new binopNode((expNode *)idN, "*", (expNode *)strideDim1)), "+", (expNode *)idJ)));
@@ -1080,39 +1280,79 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *inputIndex = new binopNode((expNode *)(new binopNode((expNode *)idD, "+", (expNode *)offsetX)), "+", (expNode *)offsetY);
     ((idNode *)input) -> arg_list.push_back(inputIndex);
     Node *inputX = new binopNode((expNode *)input, ".", (expNode *)idX);
-    // weight[kernelIndex][d][i][j]
-    // Node *kernelIndex = new idNode("kernelIndex");
+
+    // 获取weight_level_flag[kernelIndex][d][i][j]
     Node *weightArrDec = new arrayNode((expNode *)kernelIndex);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)idD);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)idI);
     ((arrayNode *)weightArrDec) -> arg_list.push_back((expNode *)idJ);
     string weightName = "_weight_" + to_string(layer-> level);
-    Node*  weightId = new idNode(weightName);
-    ((idNode *)weightId)->isArray = 1;
-    ((idNode *)weightId) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
-    Node* midRes = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputX, "*", (expNode *)weightId)));
-    Node *block5 = new blockNode(new list<Node *>({midRes}));
-    forNode5 = new forNode(init5, (expNode *)cond5, (expNode *)nextJ, block5);
-    Node *block4 = new blockNode(new list<Node *>({forNode5}));
-    forNode4 = new forNode(init4, (expNode *)cond4, (expNode *)nextI, block4);
-    Node *block3 = new blockNode(new list<Node *>({forNode4}));
-    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextD, block3);
+    Node*  weight0Id = new idNode(weightName + "_" + to_string(0));
+    Node*  weight1Id = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weight0Id)->isArray = 1;
+    ((idNode *)weight1Id)->isArray = 1;
+    ((idNode *)weight0Id) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
+    ((idNode *)weight1Id) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
+
+    Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputX, "*", (expNode *)weight0Id)));
+    Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputX, "*", (expNode *)weight1Id)));
     Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *) constZero);
-    list<Node *> *stmtList2 = new list<Node *>();
-    stmtList2 -> push_back(tempInit);
-    stmtList2 -> push_back(forNode3);
+    Node *nextPushIndex = new unaryNode("POSTINC", (expNode *)idPushIndex);
+
+    // 获取output[pushIndex].x 并赋值
     ((idNode *)output) -> arg_list.push_back(idPushIndex);
     Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
     Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)idTemp);
-    stmtList2 -> push_back(assign);
-    Node *nextNum = new unaryNode("POSTINC", (expNode *)idPushIndex);
-    stmtList2 -> push_back(nextNum);
-    Node *block2  = new blockNode(stmtList2);
-    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextN, block2);
+
+    // flag == 1 时的5层for循环
+    Node *block5 = new blockNode(new list<Node *>({midRes1}));
+    Node *forNode5 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block5);
+
+    Node *block4 = new blockNode(new list<Node *>({forNode5}));
+    Node *forNode4 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block4);
+
+    Node *block3 = new blockNode(new list<Node *>({forNode4}));
+    Node *forNode3 = new forNode(initD, (expNode *)condD, (expNode *)nextD, block3);
+    
+    Node *block2  = new blockNode(new list<Node *>({tempInit, forNode3, assign, nextPushIndex}));
+    Node *forNode2 = new forNode(initN, (expNode *)condN, (expNode *)nextN, block2);
+
     Node *block1 = new blockNode(new list<Node *>({forNode2}));
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextM, block1);
-    Node *numInit = new binopNode((expNode *)idPushIndex, "=", (expNode *)constZero);
-    stmtList -> push_back(forNode1);
+    Node *forNode1 = new forNode(initM, (expNode *)condM, (expNode *)nextM, block1);
+
+    // flag == 0时的5层for循环
+    Node *block10 = new blockNode(new list<Node *>({midRes0}));
+    Node *forNode10 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block10);
+
+    Node *block9 = new blockNode(new list<Node *>({forNode10}));
+    Node *forNode9 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block9);
+
+    Node *block8 = new blockNode(new list<Node *>({forNode9}));
+    Node *forNode8 = new forNode(initD, (expNode *)condD, (expNode *)nextD, block8);
+    
+    Node *block7  = new blockNode(new list<Node *>({tempInit, forNode8, assign, nextPushIndex}));
+    Node *forNode7 = new forNode(initN, (expNode *)condN, (expNode *)nextN, block7);
+
+    Node *block6 = new blockNode(new list<Node *>({forNode7}));
+    Node *forNode6 = new forNode(initM, (expNode *)condM, (expNode *)nextM, block6);
+
+    Node *idFlag = new idNode("flag");
+    Node *ifBlock = new blockNode(new list<Node *>({forNode1}));
+    Node *elseBlcok = new blockNode(new list<Node *>({forNode6}));
+    Node *ifElse = new ifElseNode((expNode *)idFlag, ifBlock, elseBlcok);
+    stmtList->push_back(ifElse);
+
+    Node *idIterations = new idNode("iterations");
+    Node *iterationsInc = new unaryNode("POSTINC", (expNode *)idIterations);
+    stmtList->push_back(iterationsInc);
+
+    Node *compare = new binopNode((expNode *)idIterations, "==", ((expNode *)globalSequential->batch));
+    Node *charge = new binopNode((expNode *)idFlag, "!=", (expNode *)idFlag);
+    Node *reset = new binopNode((expNode *)idIterations, "=", (expNode *)constZero);
+    Node *iterationsIfBlock = new blockNode(new list<Node *>({charge, reset}));
+    Node *iterationsIf = new ifNode((expNode *)compare, iterationsIfBlock);
+    stmtList->push_back(iterationsIf);
+
     work = new blockNode(stmtList);
     return work;
 }
@@ -1538,13 +1778,6 @@ Node* UnfoldComposite::makeDConv2DKernelBody(layerNode *layer, list<Node *> *inp
     paramNode *param = new paramNode(paramList);
     body = new compBodyNode(param, stmtList);
     return body;
-    // Node* body = NULL;
-    // list<Node *> *paramList = new list<Node *>(), *stmtList = new list<Node *>();
-    // operatorNode *oper  = makeDConv2DKernelOper(layer, inputs_id, outputs_id);
-    // stmtList -> push_back(oper);
-    // paramNode *param = new paramNode(paramList);
-    // body = new compBodyNode(param, stmtList);
-    // return body;
 }
 
 operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node *> *inputs_id, list<Node *> *outputs_id) {
@@ -1552,7 +1785,7 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
-    list<Node *> *winStmt = new list<Node *>(), *bodyStmtList = new list<Node *>();
+    list<Node *> *winStmt = new list<Node *>();
     // *****输入窗口*****
     //[dim0][dim1]
     long long errInputDim0 = ((conv2DLayerNode *)layer) -> inputErrorSize -> at(0);
@@ -1583,10 +1816,31 @@ operatorNode* UnfoldComposite::makeDConv2DKernelOper(layerNode* layer, list<Node
     winStmt->push_back(win3);
     window = new windowNode(winStmt);
 
+    idNode *idIterations = new idNode("iterations"); // 当前批次内的迭代次数
+    idNode *idFlag = new idNode("flag"); // 标记访问哪一组权值矩阵
+    constantNode *constZero = new constantNode("long long", (long long)0);
+    Node *iterationsInit = new initNode(constZero);
+    Node *flagInit = new initNode(constZero);
+    idIterations -> init = iterationsInit;
+    idFlag -> init = flagInit;
+    primNode *primInt = new primNode("int");
+    Node *declInt = new declareNode(primInt, idIterations);
+    ((declareNode *)declInt)->id_list.push_back(idFlag);
+
+    // 声明error[filters][depth][kernel_size0][kernel_size1]
+    idNode *idError = new idNode("error");
+    idError -> isArray = 1;
+    Node *filters = new constantNode("long long", ((conv2DLayerNode *)layer) -> filters);
+    Node *dim0 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
+    Node *dim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
+    idError -> arg_list = *(new list<Node *>({filters, dim0, dim1}));
+    primNode *primDouble = new primNode("double");
+    Node *declDouble = new declareNode(primDouble, idError);
+    list<Node *> *stmtList = new list<Node *>({declInt, declDouble});
     
     init = NULL;
     work = makeDConv2DKernelOperWork(layer, inputs_id, outputs_id);
-    body = new operBodyNode(bodyStmtList, init, work, window);
+    body = new operBodyNode(stmtList, init, work, window);
     return new operatorNode(outputs_id, operName, inputs_id, body);
 }
 
@@ -1625,12 +1879,6 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
 
     Node *constZero = new constantNode("long long", (long long)0);
     Node *constOne = new constantNode("long long", (long long)1);
-
-    Node *initM = NULL, *cond1 = NULL, *nextM = NULL, *stmt1 = NULL, *forNode1 = NULL;
-    Node *initN = NULL, *cond2 = NULL, *nextN = NULL, *stmt2 = NULL, *forNode2 = NULL;
-    Node *initF = NULL, *cond3 = NULL, *nextF = NULL, *stmt3 = NULL, *forNode3 = NULL;
-    Node *initI = NULL, *cond4 = NULL, *nextI = NULL, *stmt4 = NULL, *forNode4 = NULL;
-    Node *initJ = NULL, *cond5 = NULL, *nextJ = NULL, *stmt5 = NULL, *forNode5 = NULL;
          
     Node *kernelDim0 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(0));
     Node *kernelDim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> kernel_size -> at(1));
@@ -1641,45 +1889,61 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *inputErrorCount1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> outputFeatureMapSize -> at(1));
     Node *outputDim0Val = new constantNode("long long", ((conv2DLayerNode *)layer) -> inputSize -> at(0));
     Node *outputDim1Val = new constantNode("long long", ((conv2DLayerNode *)layer) -> inputSize -> at(1));
+    Node *strideDim0 = new constantNode("long long", ((conv2DLayerNode *)layer) -> strides -> at(0));
+    Node *strideDim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> strides -> at(1));
+    Node *depth = new constantNode("long long", ((conv2DLayerNode *)layer) -> inputSize -> back());
+    
     // output dim0
-    initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
-    cond1 = new binopNode((expNode *)idM, "<", (expNode *)outputDim0Val);
+    Node *initM = new binopNode((expNode *)idM, "=", (expNode *)constZero);
+    Node *condM_outputDim0 = new binopNode((expNode *)idM, "<", (expNode *)outputDim0Val);
     Node *nextMExp = new binopNode((expNode *)idM, "+", (expNode *)constOne);
-    nextM = new binopNode((expNode *)idM, "=", (expNode *)nextMExp);
+    Node *nextM_step = new binopNode((expNode *)idM, "=", (expNode *)nextMExp);
     // output dim1
-    initN = new binopNode((expNode *)idN, "=", (expNode *)constZero);
-    cond2 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1Val);
+    Node *initN = new binopNode((expNode *)idN, "=", (expNode *)constZero);
+    Node *condN_outputDim1 = new binopNode((expNode *)idN, "<", (expNode *)outputDim1Val);
     Node *nextNExp = new binopNode((expNode *)idN, "+", (expNode *)constOne);
-    nextN = new binopNode((expNode *)idN, "=", (expNode *)nextNExp);
+    Node *nextN_step = new binopNode((expNode *)idN, "=", (expNode *)nextNExp);
     // kernel filter
-    initF = new binopNode((expNode *)idF, "=", (expNode *)constZero);
-    cond3 = new binopNode((expNode *)idF, "<", (expNode *)filters);
-    nextF = new unaryNode("POSTINC", (expNode *)idF);
+    Node *initF = new binopNode((expNode *)idF, "=", (expNode *)constZero);
+    Node *condF = new binopNode((expNode *)idF, "<", (expNode *)filters);
+    Node *nextF = new unaryNode("POSTINC", (expNode *)idF);
     // kernel dim0
-    initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
-    cond4 = new binopNode((expNode *)idI, "<", (expNode *)kernelDim0);
-    nextI = new unaryNode("POSTINC", (expNode *)idI);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)kernelDim0);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     // kernel dim1
-    initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
-    cond5 = new binopNode((expNode *)idJ, "<", (expNode *)kernelDim1);
-    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+    Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)kernelDim1);
+    Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
 
     Node *output = new idNode(static_cast<idNode *>(outputs_id -> front()) -> name),
          *inputError = new idNode(static_cast<idNode *>(inputs_id -> front()) -> name);
     
     ((idNode *)output) -> isArray = 1;
     ((idNode *)inputError) -> isArray = 1;
+
     // weight[filterIndex][depthIndex][kernelDim0 -1 - i][kernelDim1 - 1 - j]
     string weightName = "_weight_" + to_string(layer -> level);
-    Node *weightId0 = new idNode(weightName);
-    ((idNode *)weightId0) -> isArray = 1;
+    Node *weightReversedId0 = new idNode(weightName + "_" + to_string(0));
+    Node *weightReversedId1 = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weightReversedId0) -> isArray = 1;
+    ((idNode *)weightReversedId1) -> isArray = 1;
     Node *weightReverse0 = new binopNode((expNode *)(new binopNode((expNode *)kernelDim0, "-", (expNode *)constOne)), "-", (expNode *)idI);
     Node *weightReverse1 = new binopNode((expNode *)(new binopNode((expNode *)kernelDim1, "-", (expNode *)constOne)), "-", (expNode *)idJ);
-    ((idNode *)weightId0) -> arg_list = *(new list<Node *>({idF, depthIndex, weightReverse0, weightReverse1}));
+    ((idNode *)weightReversedId0) -> arg_list = *(new list<Node *>({idF, depthIndex, weightReverse0, weightReverse1}));
+    ((idNode *)weightReversedId1) -> arg_list = *(new list<Node *>({idF, depthIndex, weightReverse0, weightReverse1}));
 
-    Node *weightId1 = new idNode(weightName);
+    Node *weightId0 = new idNode(weightName + "_" + to_string(0));
+    Node *weightId1 = new idNode(weightName + "_" + to_string(1));
+    ((idNode *)weightId0) -> isArray = 1;
     ((idNode *)weightId1) -> isArray = 1;
+    ((idNode *)weightId0) -> arg_list = *(new list<Node *>({idF, depthIndex, idI, idJ}));
     ((idNode *)weightId1) -> arg_list = *(new list<Node *>({idF, depthIndex, idI, idJ}));
+
+    Node *idError = new idNode("error");
+    ((idNode *)idError) -> isArray = 1;
+    ((idNode *)idError) -> arg_list = *(new list<Node *>({idF, idI, idJ}));
+
     // inputError 卷积运算 weight = output[(padding0 + m * stride0, padding1 + n * stride1, d)]
     // 求inputErrorIndex 和 outputsIndex
     
@@ -1691,6 +1955,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *inputErrorIndex = new binopNode((expNode *)offsetDim0, "+", (expNode *)(new binopNode((expNode *)offsetDim1, "+", (expNode *)idF)));
     ((idNode *)inputError) -> arg_list.push_back(inputErrorIndex);
     Node *inputErrorX = new binopNode((expNode *)inputError, ".", (expNode *)idX);
+
     // outputIndex[m][n]
     Node *outputOffsetDim0 = new binopNode((expNode *)idM, "*", (expNode *)outputDim1Val);    
     Node *outputIndex = new binopNode((expNode *)outputOffsetDim0, "+", (expNode *)idN);
@@ -1713,25 +1978,45 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
             }
         }
      */
-    Node* midRes = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputErrorX, "*", (expNode *)weightId0)));
-    Node *block5 = new blockNode(new list<Node *>({midRes}));
-    forNode5 = new forNode(initJ, (expNode *)cond5, (expNode *)nextJ, block5);
-    Node *block4 = new blockNode(new list<Node *>({forNode5}));
-    forNode4 = new forNode(initI, (expNode *)cond4, (expNode *)nextI, block4);
-    Node *block3 = new blockNode(new list<Node *>({forNode4}));
-    forNode3 = new forNode(initF, (expNode *)cond3, (expNode *)nextF, block3);
+
+    Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputErrorX, "*", (expNode *)weightReversedId0)));
+    Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputErrorX, "*", (expNode *)weightReversedId1)));
     Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *) constZero);
-    list<Node *> *stmtList2 = new list<Node *>();
-    stmtList2 -> push_back(tempInit);
-    stmtList2 -> push_back(forNode3);
     Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
     Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)idTemp);
-    stmtList2 -> push_back(assign);
-    Node *block2  = new blockNode(stmtList2);
-    forNode2 = new forNode(initN, (expNode *)cond2, (expNode *)nextN, block2);
-    Node *block1 = new blockNode(new list<Node *>({forNode2}));
-    forNode1 = new forNode(initM, (expNode *)cond1, (expNode *)nextM, block1);
-    stmtList -> push_back(forNode1);
+
+    // flag == 0时
+    Node *block5_0 = new blockNode(new list<Node *>({midRes0}));
+    Node *forNode5_0 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block5_0);
+
+    Node *block4_0 = new blockNode(new list<Node *>({forNode5_0}));
+    Node *forNode4_0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block4_0);
+
+    Node *block3_0 = new blockNode(new list<Node *>({forNode4_0}));
+    Node *forNode3_0 = new forNode(initF, (expNode *)condF, (expNode *)nextF, block3_0);
+    
+    Node *block2_0  = new blockNode(new list<Node *>({tempInit, forNode3_0, assign}));
+    Node *forNode2_0 = new forNode(initN, (expNode *)condN_outputDim1, (expNode *)nextN_step, block2_0);
+
+    Node *block1_0 = new blockNode(new list<Node *>({forNode2_0}));
+    Node *forNode1_0 = new forNode(initM, (expNode *)condM_outputDim0, (expNode *)nextM_step, block1_0);
+
+    // flag == 1 时
+    Node *block5_1 = new blockNode(new list<Node *>({midRes1}));
+    Node *forNode5_1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block5_1);
+
+    Node *block4_1 = new blockNode(new list<Node *>({forNode5_1}));
+    Node *forNode4_1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block4_1);
+
+    Node *block3_1 = new blockNode(new list<Node *>({forNode4_1}));
+    Node *forNode3_1 = new forNode(initF, (expNode *)condF, (expNode *)nextF, block3_1);
+    
+    Node *block2_1  = new blockNode(new list<Node *>({tempInit, forNode3_1, assign}));
+    Node *forNode2_1 = new forNode(initN, (expNode *)condN_outputDim1, (expNode *)nextN_step, block2_1);
+
+    Node *block1_1 = new blockNode(new list<Node *>({forNode2_1}));
+    Node *forNode1_1 = new forNode(initM, (expNode *)condM_outputDim0, (expNode *)nextM_step, block1_1);
+
     
     // 计算损失函数关于权值的偏导数
     // 膨胀后的误差 卷积 正向传播中传入本层的输入
@@ -1746,29 +2031,15 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
                             temp += error[kernel - 1 + m * stride][kernel - 1 + n * stride][f] * input[i + m * stride][j + n *stride][depthIndex];
                         }
                     }
-                    dWeight[f][depthIndex][i][j] = temp;
+                    error[depthIndex][i][j] += temp;
                 }
             }
         }
     */
-    Node *strideDim0 = new constantNode("long long", ((conv2DLayerNode *)layer) -> strides -> at(0));
-    Node *strideDim1 = new constantNode("long long", ((conv2DLayerNode *)layer) -> strides -> at(1));
-    Node *depth = new constantNode("long long", ((conv2DLayerNode *)layer) -> inputSize -> back());
-
-    Node *cond6 = NULL, *stmt6 = NULL, *forNode6 = NULL; // f
-    Node *cond7 = NULL, *stmt7 = NULL, *forNode7 = NULL; // m
-    Node *cond8 = NULL, *stmt8 = NULL, *forNode8 = NULL; // n
-    Node *cond9 = NULL, *stmt9 = NULL, *forNode9 = NULL; // i
-    Node *cond10 = NULL, *stmt10 = NULL, *forNode10 = NULL; // j
-
-    cond6 = new binopNode((expNode *)idF, "<", (expNode *)filters);
-    cond7 = new binopNode((expNode *)idI, "<", (expNode *)kernelDim0);
-    cond8 = new binopNode((expNode *)idJ, "<", (expNode *)kernelDim1);
-    cond9 = new binopNode((expNode *)idM, "<", (expNode *)inputErrorCount0);
-    cond10 = new binopNode((expNode *)idN, "<", (expNode *)inputErrorCount1);
-
-    Node *nextM2 = new unaryNode("POSTINC", (expNode *)idM);
-    Node *nextN2 = new unaryNode("POSTINC", (expNode *)idN);
+    Node *condM_inputError0 = new binopNode((expNode *)idM, "<", (expNode *)inputErrorCount0);
+    Node *nextM = new unaryNode("POSTINC", (expNode *)idM);
+    Node *condN_inputError1 = new binopNode((expNode *)idN, "<", (expNode *)inputErrorCount1);
+    Node *nextN = new unaryNode("POSTINC", (expNode *)idN);
 
     // 访问正向传播计算的传入
     Node *inputFp = new idNode(static_cast<idNode *>(inputs_id -> back()) -> name),
@@ -1804,21 +2075,55 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *inputError2X = new binopNode((expNode *)inputError2, ".", (expNode *)idX);
 
     Node *calculateDWeight = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputError2X, "*", (expNode *)inputFpX)));
-    stmt10 = new blockNode(new list<Node *>({calculateDWeight}));
-    forNode10 = new forNode(initN, (expNode *)cond10, (expNode *)nextN2, stmt10);
+    Node *updateError = new binopNode((expNode *)idError, "+=", (expNode *)idTemp);
 
-    stmt9 = new blockNode(new list<Node *>({forNode10}));
-    forNode9 = new forNode(initM, (expNode *)cond9, (expNode *)nextM2, stmt9);
+    Node *stmt10 = new blockNode(new list<Node *>({calculateDWeight}));
+    Node *forNode10 = new forNode(initN, (expNode *)condN_inputError1, (expNode *)nextN, stmt10);
 
-    Node *learnWeight = new binopNode((expNode *)weightId1, "-=", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)idTemp, "*", (expNode *)idLr)))));
-    list<Node *> *stmtList8 = new list<Node *>({tempInit, forNode9, learnWeight});
-    stmt8 = new blockNode(stmtList8);
-    forNode8 = new forNode(initJ, (expNode*)cond8, (expNode *)nextJ, stmt8);
+    Node *stmt9 = new blockNode(new list<Node *>({forNode10}));
+    Node *forNode9 = new forNode(initM, (expNode *)condM_inputError0, (expNode *)nextM, stmt9);
 
-    forNode7 = new forNode(initI, (expNode *)cond7, (expNode *)nextI, forNode8);
-    forNode6 = new forNode(initF, (expNode *)cond6, (expNode *)nextF, forNode7);
+    Node *stmt8 = new blockNode(new list<Node *>({tempInit, forNode9, updateError}));
+    Node *forNode8 = new forNode(initJ, (expNode*)condJ, (expNode *)nextJ, stmt8);
 
-    stmtList -> push_back(forNode6);
+    Node *forNode7 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode8);
+    Node *forNode6 = new forNode(initF, (expNode *)condF, (expNode *)nextF, forNode7);
+
+    Node *idFlag = new idNode("flag");
+    Node *ifBlock1 = new blockNode(new list<Node *>({forNode1_1, forNode6}));
+    Node *elseBlcok1 = new blockNode(new list<Node *>({forNode1_0, forNode6}));
+    Node *ifElse1 = new ifElseNode((expNode *)idFlag, ifBlock1, elseBlcok1);
+    stmtList -> push_back(ifElse1);
+
+    // iterations++
+    Node *idIterations = new idNode("iterations");
+    Node *iterationsInc = new unaryNode("POSTINC", (expNode *)idIterations);
+    stmtList->push_back(iterationsInc);
+    
+    Node *compare = new binopNode((expNode *)idIterations, "==", ((expNode *)globalSequential->batch));
+    Node *dError = new binopNode((expNode *)(new binopNode((expNode *)idError, "/", (expNode *)(globalSequential -> batch))), "*", (expNode *)idLr);
+    Node *updateWeight0 = new binopNode((expNode *)weightId0, "-=", (expNode *)dError);
+    Node *updateWeight1 = new binopNode((expNode *)weightId1, "-=", (expNode *)dError);
+    Node *resetError = new binopNode((expNode *)idError, "=", (expNode *)constZero);
+
+    Node *stmt13_0 = new blockNode(new list<Node *>({updateWeight0, resetError}));
+    Node *forNode13_0 = new forNode(initJ, (expNode*)condJ, (expNode *)nextJ, stmt13_0);
+    Node *forNode12_0 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode13_0);
+    Node *forNode11_0 = new forNode(initF, (expNode *)condF, (expNode *)nextF, forNode12_0);
+
+    Node *stmt13_1 = new blockNode(new list<Node *>({updateWeight1, resetError}));
+    Node *forNode13_1 = new forNode(initJ, (expNode*)condJ, (expNode *)nextJ, stmt13_1);
+    Node *forNode12_1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode13_1);
+    Node *forNode11_1 = new forNode(initF, (expNode *)condF, (expNode *)nextF, forNode12_1);
+
+    Node *ifBlock2 = new blockNode(new list<Node *>({forNode11_1}));
+    Node *elseBlock2 = new blockNode(new list<Node *>({forNode11_0}));
+    Node *ifElse2 = new ifElseNode((expNode *)idFlag, ifBlock2, elseBlock2);
+    Node *charge = new binopNode((expNode *)idFlag, "!=", (expNode *)idFlag);
+    Node *reset = new binopNode((expNode *)idIterations, "=", (expNode *)constZero);
+    Node *iterationsIfBlock = new blockNode(new list<Node *>({ifElse2, charge, reset}));
+    Node *iterationsIf = new ifNode((expNode *)compare, iterationsIfBlock);
+    stmtList->push_back(iterationsIf);
 
     work = new blockNode(stmtList);
     return work;
@@ -2962,7 +3267,7 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
     Node *work =  NULL;
     list<Node *> *stmtList = new list<Node *>();
     Node *size = new constantNode("long long", layer->count);
-    constantNode *const_zero = new constantNode("long long", (long long)0);
+    constantNode *constZero = new constantNode("long long", (long long)0);
     constantNode *const_one = new constantNode("long long", (long long)1);
 
     primNode *primInt = new primNode("int"),
@@ -2971,7 +3276,7 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
          *idX = new idNode("x");
     Node *declInt = new declareNode(primInt, (idNode *)idI);
     
-    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)const_zero);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
     Node *condI = new binopNode((expNode *)idI, "<", (expNode *)size);
     Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     string type = ((constantNode *)(layer->arg_list->front())) -> sval;
@@ -3006,11 +3311,11 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
                 }
             }
         */
-        Node *ifExp = new binopNode((expNode *)inputX, ">", (expNode *)const_zero);
+        Node *ifExp = new binopNode((expNode *)inputX, ">", (expNode *)constZero);
         Node *assign0 = new binopNode((expNode *)output0X, "=", (expNode *)inputX);
         Node *assign1 = new binopNode((expNode *)output1X, "=", (expNode *)const_one);
-        Node *assign2 = new binopNode((expNode *)output0X, "=", (expNode *)const_zero);
-        Node *assign3 = new binopNode((expNode *)output1X, "=", (expNode *)const_zero);
+        Node *assign2 = new binopNode((expNode *)output0X, "=", (expNode *)constZero);
+        Node *assign3 = new binopNode((expNode *)output1X, "=", (expNode *)constZero);
 
         list<Node *> *ifStmts = new list<Node *>({assign0, assign1}),
                      *elseStmts = new list<Node *>({assign2, assign3});
@@ -3038,7 +3343,7 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
         Node *expCall = new callNode("exp", new list<Node *>{minusInputX});
         Node *middleRes = new parenNode((expNode *)(new binopNode((expNode *)const_one, "+", (expNode *)expCall)));
         Node *resExp = new binopNode((expNode *)const_one, "/", (expNode *)(middleRes));
-        // Node *resExp = const_zero;
+        // Node *resExp = constZero;
         Node *assignRes = new binopNode((expNode *)idRes, "=", (expNode *)resExp);
         Node *assignOut0 = new binopNode((expNode *)output0X, "=", (expNode *)idRes);
         Node *errorExp = new binopNode((expNode *)idRes, "*", (expNode *)(new parenNode((expNode *)(new binopNode((expNode *)const_one, "-", (expNode *)idRes)))));
@@ -3061,7 +3366,7 @@ Node* UnfoldComposite::makeActivationOperWork(activationLayerNode *layer, list<N
             }
         */
         Node *idTotal = new idNode("total"), *idRes = new idNode("res");
-        initNode *initTotal = new initNode(const_zero);
+        initNode *initTotal = new initNode(constZero);
         ((idNode *)idTotal) -> init = initTotal;
         Node *declDouble = new declareNode(primDouble, (idNode *)idTotal);
         ((declareNode *)declDouble) -> id_list.push_back((idNode *)idRes);
@@ -3116,7 +3421,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
     Node *work =  NULL;
     list<Node *> *stmtList = new list<Node *>();
     Node *size = new constantNode("long long", layer->count);
-    constantNode *const_zero = new constantNode("long long", (long long)0);
+    constantNode *constZero = new constantNode("long long", (long long)0);
     constantNode *const_one = new constantNode("long long", (long long)1);
 
     primNode *primInt = new primNode("int"),
@@ -3125,7 +3430,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
          *idX = new idNode("x");
     Node *declInt = new declareNode(primInt, (idNode *)idI);
     
-    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)const_zero);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
     Node *condI = new binopNode((expNode *)idI, "<", (expNode *)size);
     Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     string type = ((constantNode *)(layer->arg_list->front())) -> sval;
@@ -3182,7 +3487,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
         input1J -> arg_list.push_back(idJ);
         Node *input1J_x = new binopNode((expNode *)input1J, ".", (expNode *)idX);
 
-        Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)const_zero);
+        Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
         Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)size);
         Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
 
@@ -3200,7 +3505,7 @@ Node* UnfoldComposite::makeDActivationOperWork(activationLayerNode *layer, list<
 
         Node *forNode0 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, new blockNode(new list<Node *>({ifElse})));
 
-        Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *)const_zero);
+        Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *)constZero);
         Node *res = new binopNode((expNode *)outputX, "=", (expNode *)idTemp);
         list<Node *> *forStmts1 = new list<Node *>({tempInit, forNode0, res});
         Node *forNode1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, new blockNode(forStmts1));
@@ -3241,7 +3546,7 @@ Node* UnfoldComposite::makeDropoutOperWork(dropoutLayerNode *layer, list<Node *>
     Node *work =  NULL;
     list<Node *> *stmtList = new list<Node *>();
     Node *size = new constantNode("long long", layer->count);
-    constantNode *const_zero = new constantNode("long long", (long long)0);
+    constantNode *constZero = new constantNode("long long", (long long)0);
     constantNode *const_one = new constantNode("long long", (long long)1);
 
     primNode *primInt = new primNode("int"),
@@ -3250,7 +3555,7 @@ Node* UnfoldComposite::makeDropoutOperWork(dropoutLayerNode *layer, list<Node *>
          *idX = new idNode("x");
     Node *declInt = new declareNode(primInt, (idNode *)idI);
     
-    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)const_zero);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
     Node *condI = new binopNode((expNode *)idI, "<", (expNode *)size);
     Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     Node *rate = layer -> rate;
@@ -3286,8 +3591,8 @@ Node* UnfoldComposite::makeDropoutOperWork(dropoutLayerNode *layer, list<Node *>
     Node *initFlag = new initNode(dropoutCall);
     ((idNode *)idFlag) -> init = initFlag;
     Node *declBool = new declareNode(primBool, (idNode *)idFlag);
-    Node *ternary0 = new ternaryNode((expNode *)idFlag, (expNode *)const_zero, (expNode *)inputX);
-    Node *ternary1 = new ternaryNode((expNode *)idFlag, (expNode *)const_zero, (expNode *)const_one);
+    Node *ternary0 = new ternaryNode((expNode *)idFlag, (expNode *)constZero, (expNode *)inputX);
+    Node *ternary1 = new ternaryNode((expNode *)idFlag, (expNode *)constZero, (expNode *)const_one);
     Node *assign0 = new binopNode((expNode *)output0X, "=", (expNode *)ternary0);
     Node *assign1 = new binopNode((expNode *)output0X, "=", (expNode *)ternary1);
     list<Node *> *forStmts = new list<Node *>({declBool, assign0, assign1});
@@ -3328,7 +3633,7 @@ Node* UnfoldComposite::makeDDropoutOperWork(dropoutLayerNode *layer, list<Node *
     Node *work =  NULL;
     list<Node *> *stmtList = new list<Node *>();
     Node *size = new constantNode("long long", layer->count);
-    constantNode *const_zero = new constantNode("long long", (long long)0);
+    constantNode *constZero = new constantNode("long long", (long long)0);
     constantNode *const_one = new constantNode("long long", (long long)1);
 
     primNode *primInt = new primNode("int"),
@@ -3337,7 +3642,7 @@ Node* UnfoldComposite::makeDDropoutOperWork(dropoutLayerNode *layer, list<Node *
          *idX = new idNode("x");
     Node *declInt = new declareNode(primInt, (idNode *)idI);
     
-    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)const_zero);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
     Node *condI = new binopNode((expNode *)idI, "<", (expNode *)size);
     Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
     string type = ((constantNode *)(layer->arg_list->front())) -> sval;
