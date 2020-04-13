@@ -18,16 +18,16 @@ composite Main() {
     };
     Out = sequential (In, Y) ((28, 28, 1), 0.0001, 100, "crossEntropy", 'gaussRandom') {
         // filters, kernel_size, strides, padding, use_bias  
-        add Conv2D(32, (3, 3), (1, 1), (0, 0), false);
+        add Conv2D(32, (3, 3), (1, 1), (0, 0), 0);
         add Activation("relu");
-        add Conv2D(32, (3, 3), (1, 1), (0, 0), false);
+        add Conv2D(32, (3, 3), (1, 1), (0, 0), 0);
         add Activation("relu");
         add MaxPooling2D(2);
         add Dropout(0.25);
 
-        add Conv2D(64, (3, 3), (1, 1), (0, 0), false);
+        add Conv2D(64, (3, 3), (1, 1), (0, 0), 0);
         add Activation("relu");
-        add Conv2D(64, (3, 3), (1, 1), (0, 0), false);
+        add Conv2D(64, (3, 3), (1, 1), (0, 0), 0);
         add Activation("relu");
         add MaxPooling2D(2);
         add Dropout(0.25);

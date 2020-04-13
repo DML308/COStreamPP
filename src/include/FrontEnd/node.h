@@ -46,6 +46,7 @@ class primNode : public Node
     string toString();
 };
 
+class Constant;
 class constantNode : public Node
 {
   public:
@@ -56,33 +57,46 @@ class constantNode : public Node
     long long llval;
     long lval;
     int ival;
+    float fval;
+    Constant *value;
     constantNode(string type, string str, YYLTYPE loc = YYLTYPE()) : style(type), sval(str)
     {
         setLoc(loc);
         this->type = constant;
+        this->value = NULL;
     }
     constantNode(string type, int l, YYLTYPE loc = YYLTYPE()) : style(type)
     {
         setLoc(loc);
         ival = l;
         this->type = constant;
+        this->value = NULL;
     }
     constantNode(string type, long long l, YYLTYPE loc = YYLTYPE()) : style(type)
     {
         setLoc(loc);
         llval = l;
         this->type = constant;
+        this->value = NULL;
     }
     constantNode(string type, long l, YYLTYPE loc = YYLTYPE()) : style(type)
     {
         setLoc(loc);
         lval = l;
         this->type = constant;
+        this->value = NULL;
     }
     constantNode(string type, double d, YYLTYPE loc = YYLTYPE()) : style(type), dval(d)
     {
         setLoc(loc);
         this->type = constant;
+        this->value = NULL;
+    }
+    constantNode(string type, float f, YYLTYPE loc = YYLTYPE()) : style(type), fval(f)
+    {
+        setLoc(loc);
+        this->type = constant;
+        this->value = NULL;
     }
     ~constantNode() {}
     void print() { cout << "constant :" << type << endl; }
@@ -486,6 +500,8 @@ class pipelineNode : public Node
     list<Node *> *inputs;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
+    vector<Node *> compositeCall_list;
+    bool ifNeedFurtherGenerate; // 嵌套的splitjoin结构内层不需要再次做compositeflow
     pipelineNode(list<Node *> *outputs,list<Node *> *body_stmts, list<Node *> *inputs,YYLTYPE loc = YYLTYPE())
     {
         this->setLoc(loc);
@@ -494,6 +510,7 @@ class pipelineNode : public Node
         this->inputs=inputs;
         this->body_stmts = body_stmts;
         this->replace_composite = NULL;
+        this->ifNeedFurtherGenerate = true;
     }
     ~pipelineNode() {}
     void print() {}
@@ -570,6 +587,8 @@ class splitjoinNode : public Node
     list<Node *> *stmt_list;
     list<Node *> *body_stmts;
     compositeNode *replace_composite;
+    vector<Node *> compositeCall_list;//保存当前层compositecall的调用
+    bool ifNeedFurtherGenerate; // 嵌套的splitjoin结构内层不需要再次做compositeflow
     splitjoinNode(list<Node *> *inputs,
                   list<Node *> *outputs,
                   splitNode *split,
@@ -587,6 +606,7 @@ class splitjoinNode : public Node
         this->stmt_list = stmt_list;
         this->body_stmts = body_stmts;
         this->replace_composite = NULL;
+        this->ifNeedFurtherGenerate = true;
     }
     ~splitjoinNode() {}
     void print() {}
@@ -1140,7 +1160,7 @@ class conv2DLayerNode : public layerNode
   public:
     long long filters; // 输出空间的维度 （即卷积中滤波器的输出数量）
     long long dimension; // 对于conv2D, 为2
-    // long long depth; // 输入空间的维度
+    long long use_bias; // 是否使用偏置参数
     vector<long long> *kernel_size; // 2D 卷积窗口的宽度和高度
     vector<long long> *strides; // 卷积沿宽度和高度方向的步长
     vector<long long> *paddings; // 扩展
@@ -1196,6 +1216,8 @@ class conv2DLayerNode : public layerNode
           this->paddings->push_back(((constantNode *)(*iter))->llval);
         }
       }
+      iter++;
+      this -> use_bias = iter != this->arg_list->end() ? ((constantNode *)*iter)->llval : 0;
       this -> inputSize = NULL;
       this -> outputFeatureMapSize = NULL;
       this -> inputErrorSize = NULL;
@@ -1211,6 +1233,7 @@ class denseLayerNode : public layerNode
   public:
     long long rows; // 輸入
     long long cols; // 輸出
+    long long use_bias; // 是否使用偏置参数, 1为是, 0为否
     denseLayerNode(string layerName, list<Node *> *arg_list, YYLTYPE loc = YYLTYPE()) {
       this->setLoc(loc);
       this->type = Layer;
@@ -1221,7 +1244,11 @@ class denseLayerNode : public layerNode
       this->nextLayer = NULL;
       this->inputSize = NULL;
       this->level = 0;
-      this -> cols = ((constantNode *)(arg_list -> front())) -> llval;
+      auto iter = arg_list -> begin();
+      assert(iter != arg_list -> end());
+      this -> cols = ((constantNode *)(*iter)) -> llval;
+      iter++;
+      this -> use_bias = iter != arg_list -> end() ? ((constantNode *)(*iter)) -> llval : 0;
     }
     void init(sequentialNode* sequential); // 初始化rows
 };

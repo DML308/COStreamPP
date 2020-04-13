@@ -103,6 +103,15 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 (static_cast<idNode *>(weight1))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
                 Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight0)));
                 ((declareNode *)weightDecl) -> id_list.push_back((idNode *)weight1);
+                
+                if (((denseLayerNode *)*iter) -> use_bias) {
+                    string biasName = "_bias_" + to_string(((layerNode *)*iter) -> level);
+                    Node *bias0 = new idNode(biasName + "_" + to_string(0));
+                    Node *bias1 = new idNode(biasName + "_" + to_string(1));
+                    ((declareNode *)weightDecl) -> id_list.push_back((idNode *)bias0);
+                    ((declareNode *)weightDecl) -> id_list.push_back((idNode *)bias1);  
+                }
+
                 Program->push_front(weightDecl);
                 SymbolTable *pre = top;
                 top = &S;
@@ -122,6 +131,20 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 (static_cast<idNode *>(weight1))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
                 Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight0)));
                 ((declareNode *)weightDecl) -> id_list.push_back((idNode *)weight1);
+                
+                if (((conv2DLayerNode *)*iter) -> use_bias) {
+                    string biasName = "_bias_" + to_string(((layerNode *)*iter) -> level);
+                    idNode *bias0 = new idNode(biasName + "_" + to_string(0));
+                    idNode *bias1 = new idNode(biasName + "_" + to_string(1));
+                    bias0 -> isArray = 1;
+                    bias1 -> isArray = 1;
+                    list<Node *> *argList = new list<Node *>({filters});
+                    bias0 -> arg_list = *(argList);
+                    bias1 -> arg_list = *(argList);
+                    ((declareNode *)weightDecl) -> id_list.push_back(bias0);
+                    ((declareNode *)weightDecl) -> id_list.push_back(bias1);
+                }
+
                 Program->push_front(weightDecl);
                 SymbolTable *pre = top;
                 top = &S;
