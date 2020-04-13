@@ -618,6 +618,17 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer) {
     Node *forNode3 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode4);
     stmts->push_back(forNode3);
 
+    // 初始化bias
+    if (((denseLayerNode *)layer) -> use_bias) {
+        string biasName = "_bias_" + to_string(layer-> level);
+        Node*  bias0Id = new idNode(biasName + "_" + to_string(0));
+        Node*  bias1Id = new idNode(biasName + "_" + to_string(1));
+        Node *biasInit0 = new binopNode((expNode *)bias0Id, "=", (expNode *)globalSequential->getInitializer());
+        Node *biasInit1 = new binopNode((expNode *)bias1Id, "=", (expNode *)globalSequential->getInitializer());
+        stmts->push_back(biasInit0);
+        stmts->push_back(biasInit1);
+    }
+
     init  = new blockNode(stmts);
     return init;
 }
@@ -630,7 +641,7 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
                 for (i = 0; i< rows; i++) {
                     temp += In0[i].x * weight_level_1[i][j];
                 }
-                Out0[j].x = temp;
+                Out0[j].x = temp [+ bias_level_1 ];
             }
         } else {
             for (j = 0; j < cols; j++) {
@@ -638,7 +649,7 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
                 for (i = 0; i< rows; i++) {
                     temp += In0[i].x * weight_level_0[i][j];
                 }
-                Out0[j].x = temp;
+                Out0[j].x = temp [ + bias_level_1 ];
             }
         }
         iterations++;
@@ -699,8 +710,20 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     idNode* output = new idNode(static_cast<idNode *>(outputs->front())->name);
     output->isArray = 1;
     output->arg_list.push_back(idJ);
-    Node* outX = new binopNode((expNode *)output, ".", (expNode *)x);
-    Node* res = new binopNode((expNode *)outX, "=", (expNode *)idTemp);
+    Node *outX = new binopNode((expNode *)output, ".", (expNode *)x);
+    Node *res0, *res1;
+
+    if (((conv2DLayerNode *)layer) -> use_bias) {
+        string biasName = "_bias_" + to_string(layer -> level);
+        Node *bias0 = new idNode(biasName + "_" + to_string(0));
+        Node *bias1 = new idNode(biasName + "_" + to_string(1));
+        res0 = new binopNode((expNode *)outX, "=", (expNode *)(new binopNode((expNode *)idTemp, "+", (expNode *)bias0)));
+        res1 = new binopNode((expNode *)outX, "=", (expNode *)(new binopNode((expNode *)idTemp, "+", (expNode *)bias1)));
+    } else {
+        Node *res = new binopNode((expNode *)outX, "=", (expNode *)idTemp);
+        res0 = res;
+        res1 = res;
+    }
 
     // 取得temp+=In1[i].x*_weight_level_flag[i][j];
     Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)In1, "*", (expNode *)weight0Id)));
@@ -709,13 +732,13 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     Node *block2 = new blockNode(new list<Node *>({midRes1}));
     Node *forNode2 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block2);
     
-    Node* block1 = new blockNode(new list<Node *>({tempInit, forNode2, res}));
+    Node* block1 = new blockNode(new list<Node *>({tempInit, forNode2, res1}));
     Node *forNode1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block1);
 
     Node *block4 = new blockNode(new list<Node *>({midRes0}));
     Node *forNode4 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block4);
 
-    Node* block3 = new blockNode(new list<Node *>({tempInit, forNode4, res}));
+    Node* block3 = new blockNode(new list<Node *>({tempInit, forNode4, res0}));
     Node *forNode3 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block3);
     
     Node *idFlag = new idNode("flag");
@@ -912,11 +935,15 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     Node *declInt = new declareNode(primInt, idIterations);
     ((declareNode *)declInt)->id_list.push_back(idFlag);
 
-    idNode *idError = new idNode("error");
-    idError -> isArray = 1;
-    idError -> arg_list = *(new list<Node *>({(expNode *)rows, (expNode *)cols}));
+    idNode *idWeightError = new idNode("weightError");
+    idWeightError -> isArray = 1;
+    idWeightError -> arg_list = *(new list<Node *>({(expNode *)rows, (expNode *)cols}));
     primNode *primDouble = new primNode("double");
-    Node *declDouble = new declareNode(primDouble, idError);
+    Node *declDouble = new declareNode(primDouble, idWeightError);
+    if (((denseLayerNode *)layer) -> use_bias) {
+        idNode *idBiasError = new idNode("biasError");
+        ((declareNode *)declDouble) -> id_list.push_back(idBiasError);
+    }
     list<Node *> *stmtList = new list<Node *>({declInt, declDouble});
 
     init = NULL;
@@ -935,25 +962,26 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
                 }
                 out[i].x = temp;
             }
-            for (i = 0; i < rows; i++) {
-                for (j = 0; j < cols; j++) {
-                    error_level_1[i][j] += in[i].x * dIn[j].x;
-                }
-            }
+            
         } else {
             for (i = 0; i < rows; i++) {
                 temp = 0;
                 for (j = 0; j < cols; j++) {
-                    temp += error[j].x * weight_level_0[i][j];
+                    temp += dIn[j].x * weight_level_0[i][j];
                 }
                 out[i].x = temp;
             }
-            for (i = 0; i < rows; i++) {
-                for (j = 0; j < cols; j++) {
-                    error[i][j] += in[i].x * dIn[j].x;
-                }
+        }
+        for (i = 0; i < rows; i++) {
+            for (j = 0; j < cols; j++) {
+                weightError_level[i][j] += in[i].x * dIn[j].x;
             }
         }
+        // 在编译器中决定是否添加以下代码
+        for (j = 0; j < cols; j++) {
+            biasError += dIn0[j].x;
+        }
+
         iterations++;
         if (iterations == batch) {
             if (flag) {
@@ -963,13 +991,17 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
                         error[i][j] = 0;
                     }
                 }
+                bias_level_1 = -= (biasError_level / batch) * lr;
+                biasError_level = 0;
             } else {
                 for (i = 0; i < rows; i++) {
                     for(j = 0; j < cols; j++) {
-                        weight_level_0[i][j] -= (error[i][j] / batch) * lr;
+                        weight_level_0[i][j] -= (weightError[i][j] / batch) * lr;
                         error[i][j] = 0;
                     }
                 }
+                bias_level_0 -= (biasError_level / batch) * lr;
+                biasError_level = 0;
             }
             flag != flag;
             iterarions = 0;
@@ -986,6 +1018,10 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     Node*  weight1Id = new idNode(weightName + "_" + to_string(1));
     ((idNode *)weight0Id)->isArray = 1;
     ((idNode *)weight1Id)->isArray = 1;
+
+    string biasName = "_bias_" + to_string(layer -> level);
+    Node *bias0Id = new idNode(biasName + "_" + to_string(0));
+    Node *bias1Id = new idNode(biasName + "_" + to_string(1));
 
     constantNode *constZero = new  constantNode("long long", (long long)0);
     idNode *idI = new idNode("i"), *idJ = new idNode("j");
@@ -1046,12 +1082,17 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     Node* dOutX = new binopNode((expNode *)dOut, ".", (expNode *)x);
     // 为Out[i].x赋值
     Node* res = new binopNode((expNode *)dOutX, "=", (expNode *)idTemp);
-    // 取得error[i][j]
-    idNode *idErrorIJ = new idNode("error");
-    idErrorIJ -> isArray = 1;
-    idErrorIJ -> arg_list = *(new list<Node *>({idI, idJ}));
-    // 为error[i][j]赋值
-    Node *updateError = new binopNode((expNode *)idErrorIJ, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)inX)));
+    // 取得weightError[i][j]
+    idNode *idWeightError = new idNode("weightError");
+    idWeightError -> isArray = 1;
+    idWeightError -> arg_list = *(new list<Node *>({idI, idJ}));
+    // 为weightError[i][j]赋值
+    Node *updateWeightError = new binopNode((expNode *)idWeightError, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)inX)));
+
+    // 取得biasError
+    idNode *idBiasError = new idNode("biasError");
+    // 为biasError赋值
+    Node *updateBiasError = new binopNode((expNode *)idBiasError, "+=", (expNode *)dInX);
 
     Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weight0Id)));
     Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weight1Id)));
@@ -1064,30 +1105,31 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     Node *block1 = new blockNode(new list<Node *>({tempInit, forNode2, res}));
     Node *forNode1 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block1);
     
-    Node *block4 = new blockNode(new list<Node *>({updateError}));
-    Node *forNode4 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block4);
-
-    Node *block3 = new blockNode(new list<Node *>({forNode4}));
-    Node *forNode3 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block3);
-    
     // 当flag == 0时
-    Node *block6 = new blockNode(new list<Node *>({midRes0}));
-    Node *forNode6 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block6);
+    Node *block4 = new blockNode(new list<Node *>({midRes0}));
+    Node *forNode4 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block4);
     
-    Node *block5 = new blockNode(new list<Node *>({tempInit, forNode6, res}));
-    Node *forNode5 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block5);
-
-    Node *block8 = new blockNode(new list<Node *>({updateError}));
-    Node *forNode8 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block8);
-
-    Node *block7 = new blockNode(new list<Node *>({forNode8}));
-    Node *forNode7 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block7);
+    Node *block3 = new blockNode(new list<Node *>({tempInit, forNode4, res}));
+    Node *forNode3 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block3);
 
     Node *idFlag = new idNode("flag");
-    Node *ifBlock1 = new blockNode(new list<Node *>({forNode1, forNode3}));
-    Node *elseBlcok1 = new blockNode(new list<Node *>({forNode5, forNode7}));
+    Node *ifBlock1 = new blockNode(new list<Node *>({forNode1}));
+    Node *elseBlcok1 = new blockNode(new list<Node *>({forNode3}));
     Node *ifElse1 = new ifElseNode((expNode *)idFlag, ifBlock1, elseBlcok1);
     stmtList -> push_back(ifElse1);
+
+    Node *block6 = new blockNode(new list<Node *>({updateWeightError}));
+    Node *forNode6 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block6);
+
+    Node *block5 = new blockNode(new list<Node *>({forNode6}));
+    Node *forNode5 = new forNode(initI, (expNode *) condI, (expNode *) nextI, block5);
+    stmtList -> push_back(forNode5);
+
+    if (((denseLayerNode *)layer)->use_bias) {
+        Node *block = new blockNode(new list<Node *>({updateBiasError}));
+        Node *forNodeUpdateBiasError = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, block);
+        stmtList -> push_back(forNodeUpdateBiasError);
+    }
 
     // iterations++
     Node *idIterations = new idNode("iterations");
@@ -1096,10 +1138,10 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
 
     // update weight & reset error, flag, iterations
     Node *compare = new binopNode((expNode *)idIterations, "==", ((expNode *)globalSequential->batch));
-    Node *dError = new binopNode((expNode *)(new binopNode((expNode *)idErrorIJ, "/", (expNode *)(globalSequential -> batch))), "*", (expNode *)idLr);
-    Node *updateWeight0 = new binopNode((expNode *)weight0Id, "-=", (expNode *)dError);
-    Node *updateWeight1 = new binopNode((expNode *)weight1Id, "-=", (expNode *)dError);
-    Node *resetError = new binopNode((expNode *)idErrorIJ, "=", (expNode *)constZero);
+    Node *dWeightError = new binopNode((expNode *)(new binopNode((expNode *)idWeightError, "/", (expNode *)(globalSequential -> batch))), "*", (expNode *)idLr);
+    Node *updateWeight0 = new binopNode((expNode *)weight0Id, "-=", (expNode *)dWeightError);
+    Node *updateWeight1 = new binopNode((expNode *)weight1Id, "-=", (expNode *)dWeightError);
+    Node *resetError = new binopNode((expNode *)idWeightError, "=", (expNode *)constZero);
 
     Node *stmt10_0 = new blockNode(new list<Node *>({updateWeight0, resetError}));
     Node *forNode10_0 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt10_0);
@@ -1109,8 +1151,20 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     Node *forNode10_1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, stmt10_1);
     Node *forNode9_1 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode10_1);
 
-    Node *ifBlock2 = new blockNode(new list<Node *>({forNode9_1}));
-    Node *elseBlock2 = new blockNode(new list<Node *>({forNode9_0}));
+    Node *dBiasError = new binopNode((expNode *)(new binopNode((expNode *)idBiasError, "/", (expNode *)(globalSequential -> batch))), "*", (expNode *)idLr);
+    Node *updateBias0 = new binopNode((expNode *)bias0Id, "-=", (expNode *)dBiasError);
+    Node *updateBias1 = new binopNode((expNode *)bias1Id, "-=", (expNode *)dBiasError);
+    Node *resetBias = new binopNode((expNode *)idBiasError, "=", (expNode *)constZero);
+
+    Node *ifBlock2, *elseBlock2;
+    if (((denseLayerNode *)layer)->use_bias) {
+        ifBlock2 = new blockNode(new list<Node *>({forNode9_1, updateBias1, resetBias}));
+        elseBlock2 = new blockNode(new list<Node *>({forNode9_0, updateBias0, resetBias}));
+    } else {
+        ifBlock2 = new blockNode(new list<Node *>({forNode9_1}));
+        elseBlock2 = new blockNode(new list<Node *>({forNode9_0}));
+    }
+    
     Node *ifElse2 = new ifElseNode((expNode *)idFlag, ifBlock2, elseBlock2);
     Node *charge = new binopNode((expNode *)idFlag, "!=", (expNode *)idFlag);
     Node *reset = new binopNode((expNode *)idIterations, "=", (expNode *)constZero);
@@ -1225,6 +1279,23 @@ Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
     Node *stmt4 = new blockNode(new list<Node *>({forNode5}));
     Node *forNode4 = new forNode(initD, (expNode *)condD, (expNode *)nextD, stmt4);
     stmts->push_back(forNode4);
+
+    // 初始化bias[kernelIndex]
+    if (((denseLayerNode *)layer) -> use_bias) {
+        string biasName = "_bias_" + to_string(layer-> level);
+        idNode*  bias0Id = new idNode(biasName + "_" + to_string(0));
+        idNode*  bias1Id = new idNode(biasName + "_" + to_string(1));
+        bias0Id -> isArray = 1;
+        bias1Id -> isArray = 1;
+        list<Node *> *argList = new list<Node *>({kernelIndex});
+        bias0Id -> arg_list = *argList;
+        bias1Id -> arg_list = *argList;
+        Node *biasInit0 = new binopNode((expNode *)bias0Id, "=", (expNode *)globalSequential->getInitializer());
+        Node *biasInit1 = new binopNode((expNode *)bias1Id, "=", (expNode *)globalSequential->getInitializer());
+        stmts->push_back(biasInit0);
+        stmts->push_back(biasInit1);
+    }
+
     init = new blockNode(stmts);
     return init;
 }
