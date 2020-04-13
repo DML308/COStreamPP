@@ -1042,7 +1042,6 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     idNode *idLr = new idNode("lr");
     idLr->init = initLr;
     idLr->valType = "double";
-    primNode *prim = new primNode("double");
     declareNode *declLr = new declareNode(primDouble, idLr);
     stmtList->push_back(declLr);
 
@@ -1388,6 +1387,16 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     ((idNode *)weight0Id) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
     ((idNode *)weight1Id) -> arg_list = ((arrayNode *)weightArrDec) -> arg_list;
 
+    // 获取bias[kernelIndex]
+    string biasName = "_bias_" + to_string(layer-> level);
+    Node*  bias0Id = new idNode(biasName + "_" + to_string(0));
+    Node*  bias1Id = new idNode(biasName + "_" + to_string(1));
+    ((idNode *)bias0Id)->isArray = 1;
+    ((idNode *)bias1Id)->isArray = 1;
+    list<Node *> *biasArgList = new list<Node *>({kernelIndex});
+    ((idNode *)bias0Id) -> arg_list = *biasArgList;
+    ((idNode *)bias1Id) -> arg_list = *biasArgList;
+
     Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputX, "*", (expNode *)weight0Id)));
     Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)inputX, "*", (expNode *)weight1Id)));
     Node *tempInit = new binopNode((expNode *)idTemp, "=", (expNode *) constZero);
@@ -1396,7 +1405,15 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     // 获取output[pushIndex].x 并赋值
     ((idNode *)output) -> arg_list.push_back(idPushIndex);
     Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
-    Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)idTemp);
+    Node *assign0, *assign1;
+    if (((conv2DLayerNode *)layer) -> use_bias) {
+        assign0 = new binopNode((expNode *)outputX, "=", (expNode *)(new binopNode((expNode *)idTemp, "+", (expNode *)bias0Id)));
+        assign1 = new binopNode((expNode *)outputX, "=", (expNode *)(new binopNode((expNode *)idTemp, "+", (expNode *)bias1Id)));
+    } else {
+        Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)idTemp);
+        assign0 = assign;
+        assign1 = assign;
+    }
 
     // flag == 1 时的5层for循环
     Node *block5 = new blockNode(new list<Node *>({midRes1}));
@@ -1408,7 +1425,7 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *block3 = new blockNode(new list<Node *>({forNode4}));
     Node *forNode3 = new forNode(initD, (expNode *)condD, (expNode *)nextD, block3);
     
-    Node *block2  = new blockNode(new list<Node *>({tempInit, forNode3, assign, nextPushIndex}));
+    Node *block2  = new blockNode(new list<Node *>({tempInit, forNode3, assign1, nextPushIndex}));
     Node *forNode2 = new forNode(initN, (expNode *)condN, (expNode *)nextN, block2);
 
     Node *block1 = new blockNode(new list<Node *>({forNode2}));
@@ -1424,7 +1441,7 @@ Node* UnfoldComposite::makeConv2DKernelOperWork(layerNode *layer, list<Node *> *
     Node *block8 = new blockNode(new list<Node *>({forNode9}));
     Node *forNode8 = new forNode(initD, (expNode *)condD, (expNode *)nextD, block8);
     
-    Node *block7  = new blockNode(new list<Node *>({tempInit, forNode8, assign, nextPushIndex}));
+    Node *block7  = new blockNode(new list<Node *>({tempInit, forNode8, assign0, nextPushIndex}));
     Node *forNode7 = new forNode(initN, (expNode *)condN, (expNode *)nextN, block7);
 
     Node *block6 = new blockNode(new list<Node *>({forNode7}));
@@ -1757,6 +1774,27 @@ operatorNode *UnfoldComposite::makeConv2DDilateAndExtendOperator(layerNode *laye
     winStmt->push_back(win2);
     window = new windowNode(winStmt);
 
+    if (((conv2DLayerNode *)layer) -> use_bias) {
+        primNode *primInt = new primNode("int");
+        idNode *idIterations = new idNode("iterations");
+        idNode *idFlag = new idNode("flag");
+        constantNode *constZero = new constantNode("long long", (long long)0);
+        Node *iterationsInit = new initNode(constZero);
+        Node *flagInit = new initNode(constZero);
+        idIterations -> init = iterationsInit;
+        idFlag -> init = flagInit;
+        Node *declInt = new declareNode(primInt, idIterations);
+        ((declareNode *)declInt)->id_list.push_back(idFlag);
+        bodyStmtList -> push_back(declInt);
+
+        primNode *primDouble = new primNode("double");
+        idNode *biasError = new idNode("biasError");
+        biasError -> isArray = 1;
+        biasError -> arg_list = *(new list<Node *>({new constantNode("long long", ((conv2DLayerNode *)layer) -> filters)}));
+        Node *declDouble = new declareNode(primDouble, biasError);
+        bodyStmtList -> push_back(declDouble);
+    }
+
     work = makeConv2DDilateAndExtendOperWork((conv2DLayerNode *)layer, inputs_id, outputs_id);
     body = new operBodyNode(bodyStmtList, NULL, work, window);
     return new operatorNode(outputs_id, operName, inputs_id, body);
@@ -1775,11 +1813,7 @@ Node* UnfoldComposite::makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,
     ((declareNode *)declInt )-> id_list.push_back(idJ);
     ((declareNode *)declInt )-> id_list.push_back(idF);
     stmtList -> push_back(declInt);
-    Node *constZero = new constantNode("long long", (long long)0);
-
-    Node *init1 = NULL, *cond1 = NULL, *nextI = NULL, *stmt1 = NULL, *forNode1 = NULL;
-    Node *init2 = NULL, *cond2 = NULL, *nextJ = NULL, *stmt2 = NULL, *forNode2 = NULL;
-    Node *init3 = NULL, *cond3 = NULL, *nextF = NULL, *stmt3 = NULL, *forNode3 = NULL;
+    Node *constZero = new constantNode("long long", (long long)0);  
 
     Node *filters = new constantNode("long long", layer -> filters);
     Node *stride0 = new constantNode("long long", layer -> strides -> at(0));
@@ -1791,18 +1825,18 @@ Node* UnfoldComposite::makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,
     Node *outputSizeDim0 = new constantNode("long long", layer -> inputErrorSize -> at(0));
     Node *outputSizeDim1 = new constantNode("long long", layer -> inputErrorSize -> at(1));
 
-    init1 = new binopNode((expNode *)idF, "=", (expNode *)constZero);
-    cond1 = new binopNode((expNode *)idF, "<", (expNode *)filters);
-    nextF = new unaryNode("POSTINC", (expNode *)idF);
+    Node *initF = new binopNode((expNode *)idF, "=", (expNode *)constZero);
+    Node *condF = new binopNode((expNode *)idF, "<", (expNode *)filters);
+    Node *nextF = new unaryNode("POSTINC", (expNode *)idF);
 
 
-    init2 = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
-    cond2 = new binopNode((expNode *)idJ, "<", (expNode *)inputSizeDim1);
-    nextJ = new unaryNode("POSTINC", (expNode *)idJ);
+    Node *initJ = new binopNode((expNode *)idJ, "=", (expNode *)constZero);
+    Node *condJ = new binopNode((expNode *)idJ, "<", (expNode *)inputSizeDim1);
+    Node *nextJ = new unaryNode("POSTINC", (expNode *)idJ);
 
-    init3 = new binopNode((expNode *)idI, "=", (expNode *)constZero);
-    cond3 = new binopNode((expNode *)idI, "<", (expNode *)inputSizeDim0);
-    nextI = new unaryNode("POSTINC", (expNode *)idI);
+    Node *initI = new binopNode((expNode *)idI, "=", (expNode *)constZero);
+    Node *condI = new binopNode((expNode *)idI, "<", (expNode *)inputSizeDim0);
+    Node *nextI = new unaryNode("POSTINC", (expNode *)idI);
 
     Node *output = new idNode(static_cast<idNode *>(outputs_id -> front()) -> name),
          *input = new idNode(static_cast<idNode *>(inputs_id -> front()) -> name);
@@ -1826,11 +1860,71 @@ Node* UnfoldComposite::makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,
     Node *outputX = new binopNode((expNode *)output, ".", (expNode *)idX);
 
     Node *assign = new binopNode((expNode *)outputX, "=", (expNode *)inputX);
-    forNode1 = new forNode(init1, (expNode *)cond1, (expNode *)nextF, assign);
-    forNode2 = new forNode(init2, (expNode *)cond2, (expNode *)nextJ, forNode1);
-    forNode3 = new forNode(init3, (expNode *)cond3, (expNode *)nextI, forNode2);
+    Node *forNode1 = new forNode(initF, (expNode *)condF, (expNode *)nextF, assign);
+    Node *forNode2 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, forNode1);
+    Node *forNode3 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode2);
 
     stmtList -> push_back(forNode3);
+
+    if (((conv2DLayerNode *)layer) -> use_bias) {
+        // 学习率
+        primNode *primDouble = new primNode("double");
+        Node *constLr = globalSequential->lr;
+        initNode *initLr = new initNode(constLr);
+        idNode *idLr = new idNode("lr");
+        idLr->init = initLr;
+        idLr->valType = "double";
+        declareNode *declLr = new declareNode(primDouble, idLr);
+        stmtList->push_back(declLr);
+
+        string biasName = "_bias_" + to_string(layer -> level);
+        idNode *bias0Id = new idNode(biasName + "_" + to_string(0));
+        idNode *bias1Id = new idNode(biasName + "_" + to_string(1));
+        idNode *idBiasError = new idNode("biasError");
+        bias0Id -> isArray = 1;
+        bias1Id -> isArray = 1;
+        idBiasError -> isArray = 1;
+        list<Node *> *argList = new list<Node *>({idF});
+        idBiasError -> arg_list = *(argList);
+        bias0Id -> arg_list = *(argList);
+        bias1Id -> arg_list = *(argList);
+
+        Node *updateBiasError = new binopNode((expNode *)idBiasError, "+=", (expNode *)inputX);
+        Node *forNode1 = new forNode(initF, (expNode *)condF, (expNode *)nextF, updateBiasError);
+        Node *forNode2 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, forNode1);
+        Node *forNode3 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode2);
+        stmtList -> push_back(forNode3);
+
+        Node *idIterations = new idNode("iterations");
+        Node *iterationsInc = new unaryNode("POSTINC", (expNode *)idIterations);
+        stmtList->push_back(iterationsInc);
+
+        Node *idFlag = new idNode("flag");
+
+        Node *compare = new binopNode((expNode *)idIterations, "==", ((expNode *)globalSequential->batch));
+        
+        Node *dBiasError = new binopNode((expNode *)(new binopNode((expNode *)idBiasError, "/", (expNode *)(globalSequential -> batch))), "*", (expNode *)idLr);
+        Node *updateBias0 = new binopNode((expNode *)bias0Id, "-=", (expNode *)dBiasError);
+        Node *updateBias1 = new binopNode((expNode *)bias1Id, "-=", (expNode *)dBiasError);
+        Node *resetBias = new binopNode((expNode *)idBiasError, "=", (expNode *)constZero);
+        
+        Node *biasBlock0 = new blockNode(new list<Node *>({updateBias0, resetBias}));
+        Node *biasFor0 = new forNode(initF, (expNode *)condF, (expNode *)nextF, biasBlock0);
+        Node *biasBlock1 = new blockNode(new list<Node *>({updateBias1, resetBias}));
+        Node *biasFor1 = new forNode(initF, (expNode *)condF, (expNode *)nextF, biasBlock1);
+
+        Node *flagIfBlock = new blockNode(new list<Node *>({biasFor1}));
+        Node *flagElseBlock = new blockNode(new list<Node *>({biasFor0}));
+        Node *flagIfElse = new ifElseNode((expNode *)idFlag, flagIfBlock, flagElseBlock);
+        
+        Node *charge = new binopNode((expNode *)idFlag, "!=", (expNode *)idFlag);
+        Node *reset = new binopNode((expNode *)idIterations, "=", (expNode *)constZero);
+        
+        Node *iterationsIfBlock = new blockNode(new list<Node *>({flagIfElse, charge, reset}));
+        Node *iterationsIf = new ifNode((expNode *)compare, iterationsIfBlock);
+        stmtList->push_back(iterationsIf);
+    }
+
     work = new blockNode(stmtList);
     return work;
 }
@@ -2111,7 +2205,12 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *block1_1 = new blockNode(new list<Node *>({forNode2_1}));
     Node *forNode1_1 = new forNode(initM, (expNode *)condM_outputDim0, (expNode *)nextM_step, block1_1);
 
-    
+    Node *idFlag = new idNode("flag");
+    Node *ifBlock1 = new blockNode(new list<Node *>({forNode1_1}));
+    Node *elseBlcok1 = new blockNode(new list<Node *>({forNode1_0}));
+    Node *ifElse1 = new ifElseNode((expNode *)idFlag, ifBlock1, elseBlcok1);
+    stmtList -> push_back(ifElse1);
+
     // 计算损失函数关于权值的偏导数
     // 膨胀后的误差 卷积 正向传播中传入本层的输入
     /* 
@@ -2183,11 +2282,7 @@ Node* UnfoldComposite::makeDConv2DKernelOperWork(layerNode *layer, list<Node *> 
     Node *forNode7 = new forNode(initI, (expNode *)condI, (expNode *)nextI, forNode8);
     Node *forNode6 = new forNode(initF, (expNode *)condF, (expNode *)nextF, forNode7);
 
-    Node *idFlag = new idNode("flag");
-    Node *ifBlock1 = new blockNode(new list<Node *>({forNode1_1, forNode6}));
-    Node *elseBlcok1 = new blockNode(new list<Node *>({forNode1_0, forNode6}));
-    Node *ifElse1 = new ifElseNode((expNode *)idFlag, ifBlock1, elseBlcok1);
-    stmtList -> push_back(ifElse1);
+    stmtList -> push_back(forNode6);
 
     // iterations++
     Node *idIterations = new idNode("iterations");
