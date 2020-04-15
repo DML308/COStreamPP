@@ -5087,7 +5087,7 @@ SymbolTable *generateCompositeRunningContext(compositeCallNode *call, compositeN
             stream->id->name = composite->compName + stream->id->name + to_string(top->count);
         }
     }
-    top->printSymbolTables();
+    //top->printSymbolTables();
     return top;
 }
 

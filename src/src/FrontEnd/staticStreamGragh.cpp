@@ -4,7 +4,7 @@ extern SymbolTable *runningTop;
 extern SymbolTable *top;
 void StaticStreamGraph::GenerateFlatNodes(operatorNode *u, Node *oldComposite, compositeNode *newComposite)
 {
-    cout<<"-----------------"<<u->operName<<"--------------------"<<endl;
+    //cout<<"-----------------"<<u->operName<<"--------------------"<<endl;
     FlatNode *src = NULL, *dest = NULL;
     src = new FlatNode(u, oldComposite, newComposite);
 

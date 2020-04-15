@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     PhaseName = "SemCheck";
     // 生成符号表 语义检查
     generateSymbolTable(Program,symboltables);
-    printSymbolTable(symboltables);
+    //printSymbolTable(symboltables);
     
     /* 找到Main composite */
     SemCheck::findMainComposite(Program);
