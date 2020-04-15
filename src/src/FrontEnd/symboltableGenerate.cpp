@@ -3081,7 +3081,10 @@ Constant *getCallValue(string name, list<Constant *> params)
             break;
     }
 
-    assert(i != num);
+    if(i == num){
+        return NULL;
+    }
+    //assert(i != num);
 
     Constant *param = params.front();
     if (param->type.compare("int") == 0)
@@ -3211,6 +3214,25 @@ Constant *getOperationResult(Node *exp)
             return NULL;
         }
 
+        break;
+    }
+    case Unary:{
+        unaryNode *unary_node = (unaryNode *)exp;
+        Constant *right = getOperationResult(unary_node->exp);
+        string op = unary_node->op;
+        if(op.compare("POSTINC") == 0){
+            op = "++";
+            return getResult(op,right,NULL); //i++
+        }else if(op.compare("PREDEC") == 0){
+            op = "--";
+            return getResult(op,right,NULL); //i--
+        }
+        if(right){
+            return getResult(op,NULL,right);
+        }else{
+            return NULL;
+        }
+        
         break;
     }
     case Paren:

@@ -418,8 +418,13 @@ void X86CodeGeneration::CGactorsStmts(stringstream &buf, list<Node *> *stmts)
                             list<Node *>copy_args = list<Node *>();
                             list<Node *>args = id_node->arg_list;
                             for(auto arg :args){
-                                if(arg->type == Id){
+                                if(arg->type == Id){ 
+                                    //todo 同一个composite被多次调用会生成多个作用域，并且都为同一个行号。
+                                    //如何根据行号找到对应的composite调用的作用域
                                     Variable* value = running_top->LookupIdentifySymbol(((idNode *)arg)->name);
+                                    if(!value){
+                                        value = top->LookupIdentifySymbol(((idNode *)arg)->name);
+                                    }
                                     constantNode* constant_value = running_top->fromVariableToConstant(value);
                                     copy_args.push_back(constant_value);
                                 }else{

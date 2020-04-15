@@ -852,7 +852,8 @@ compositeNode *UnfoldComposite::UnfoldDuplicate(string comName, splitjoinNode *n
         iter++;
         cnt++;
     }
-    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, arg_list);
+    list<Node *> *join_args = node->join->rdb->arg_list;
+    joinOperator = MakeJoinOperator(outputs->front(), inputs_join, join_args);
     comp_stmt_List->push_back(splitOperator);
     for (auto it : *comCallList)
     {
