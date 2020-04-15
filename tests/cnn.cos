@@ -17,9 +17,9 @@ composite Main() {
     };
     Out = sequential (In, Y) ((3, 4, 1), 0.0001, 100, "crossEntropy", ('gaussRandom', 0, 1)) {
         // filters, kernel_size, strides, padding, use_bias  
-        add Conv2D(3, (2, 2), (1, 1), (0, 0), false);
+        add Conv2D(3, (2, 2), (1, 1), (0, 0), 1);
         add Activation("relu");
-        add Conv2D(5, (2, 2), (1, 1), (0, 0), false);
+        add Conv2D(5, (2, 2), (1, 1), (0, 0), 1);
         add Dense(10);
         add Activation("softmax");
     };
