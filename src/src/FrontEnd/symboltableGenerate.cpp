@@ -3081,7 +3081,10 @@ Constant *getCallValue(string name, list<Constant *> params)
             break;
     }
 
-    assert(i != num);
+    if(i == num){
+        return NULL;
+    }
+    //assert(i != num);
 
     Constant *param = params.front();
     if (param->type.compare("int") == 0)
@@ -3211,6 +3214,25 @@ Constant *getOperationResult(Node *exp)
             return NULL;
         }
 
+        break;
+    }
+    case Unary:{
+        unaryNode *unary_node = (unaryNode *)exp;
+        Constant *right = getOperationResult(unary_node->exp);
+        string op = unary_node->op;
+        if(op.compare("POSTINC") == 0){
+            op = "++";
+            return getResult(op,right,NULL); //i++
+        }else if(op.compare("PREDEC") == 0){
+            op = "--";
+            return getResult(op,right,NULL); //i--
+        }
+        if(right){
+            return getResult(op,NULL,right);
+        }else{
+            return NULL;
+        }
+        
         break;
     }
     case Paren:
@@ -4160,7 +4182,10 @@ void genrateStmt(Node *stmt)
         right_opt = static_cast<operatorNode *>(stmt);
         top->InsertOperatorSymbol(static_cast<operatorNode *>(stmt)->operName, static_cast<operatorNode *>(stmt));
         EnterScopeFn(stmt);
+        bool storage_ifconstantflow = ifConstantFlow;
+        ifConstantFlow = false;
         generatorOperatorNode(static_cast<operatorNode *>(stmt)); //解析 operator 节点
+        ifConstantFlow = storage_ifconstantflow;
         ExitScopeFn();
         break;
     }
@@ -4277,7 +4302,7 @@ void genrateStmt(Node *stmt)
         {
             vector<Node *> compositeCall_list;
             compositecall_list_stack.push_back(compositeCall_list);
-            right_compositecall_list = &compositeCall_list;
+            right_compositecall_list = &(compositecall_list_stack.back());//&compositeCall_list;
             Node *copy = workNodeCopy(stmt);
 
             generatorSplitjoinNode(static_cast<splitjoinNode *>(copy));
@@ -4312,7 +4337,7 @@ void genrateStmt(Node *stmt)
         {
             vector<Node *> compositeCall_list;
             compositecall_list_stack.push_back(compositeCall_list);
-            right_compositecall_list = &compositeCall_list;
+            right_compositecall_list = &(compositecall_list_stack.back());//&compositeCall_list;
             Node *copy = workNodeCopy(stmt);
 
             generatorPipelineNode(static_cast<pipelineNode *>(copy));
@@ -4328,7 +4353,7 @@ void genrateStmt(Node *stmt)
             compositecall_list_stack.pop_back();
             if (compositecall_list_stack.size())
             {
-                right_compositecall_list = &compositecall_list_stack.back();
+                right_compositecall_list = &(compositecall_list_stack.back());
                 right_compositecall_list->push_back(copy);
             }
         }
@@ -5065,7 +5090,7 @@ SymbolTable *generateCompositeRunningContext(compositeCallNode *call, compositeN
             stream->id->name = composite->compName + stream->id->name + to_string(top->count);
         }
     }
-    top->printSymbolTables();
+    //top->printSymbolTables();
     return top;
 }
 

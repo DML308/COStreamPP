@@ -82,7 +82,7 @@ composite BeamFirFilter(output stream<double x>Out, input stream<double x>In)
 
 		init
 		{
-			int j, idx;
+			int i,j, idx;
 			numTapsMinusOne = numTaps-1;
 			pos = 0;
 			for (j=0; j<numTaps; j++)
@@ -90,6 +90,11 @@ composite BeamFirFilter(output stream<double x>Out, input stream<double x>In)
 				idx = j + 1;
 				real_weight[j] = sin(idx) / ((double)idx);
 				imag_weight[j] = cos(idx) / ((double)idx);
+			}
+			for (i=0; i<numTaps; i++)
+			{
+				realBuffer[i] = 0;
+				imagBuffer[i] = 0;
 			}
 		}
 		work

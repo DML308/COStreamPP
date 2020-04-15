@@ -11,7 +11,7 @@ extern SymbolTable *runningTop;
 extern SymbolTable S;
 
 extern bool ifConstantFlow;
-
+extern double running_time;
 void resizeSplitjoinWindow(compositeNode *splitjoinComposite){
     bool isResize = false;
     list<Node *> *stmts = splitjoinComposite->body->stmt_List;
@@ -187,8 +187,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
                 }
                 
                 //传入参数,并生成 composite 调用的执行上下文环境
-                ifConstantFlow = true;;
+                ifConstantFlow = true;
+                clock_t start,end;
+                start = clock();
                 runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs);
+                end = clock();
+                running_time+=(double)((end-start));
                 ifConstantFlow = false;
                 runningStack.push_back(runningTop); // 调用栈
 
@@ -249,7 +253,12 @@ void GraphToOperators(compositeNode *composite, Node *oldComposite)
             }
             
             ifConstantFlow = true;
+            clock_t start,end;
+            start = clock();
             runningTop = generateCompositeRunningContext(call,call->actual_composite,paramList,inputs,outputs); //传入参数,并生成 composite调用的执行上下文环境
+            end = clock();
+            running_time+=(double)((end-start));
+            
             ifConstantFlow = false;
             runningStack.push_back(runningTop); // 调用栈
 
@@ -309,7 +318,11 @@ StaticStreamGraph *AST2FlatStaticStreamGraph(compositeNode *mainComposite)
     list<Node *> *inputs =new list<Node*>();
     list<Node *> *outputs =new list<Node*>();
 
+    clock_t start,end;
+    start = clock();
     runningTop = generateCompositeRunningContext(NULL,mainComposite,paramList,inputs,outputs); //传入参数,并生成 composite 调用的执行上下文环境
+    end = clock();            
+    running_time+=(double)((end-start));
     runningStack.push_back(runningTop); // 调用栈
 
 

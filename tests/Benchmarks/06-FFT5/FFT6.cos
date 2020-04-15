@@ -1,4 +1,4 @@
-#define PI 3.141592654
+double  PI = 3.141592654;
 
 //double Wn[N/2] = {0};
 
@@ -68,13 +68,13 @@ composite SecondSource(output stream<double x>Out, input stream<double x>In)
 			println("\nOut:");
 			for (i = 0; i<N*2; i++) 
 			{
-			    Out[i].x = In[0].x + i;
+			    Out[i].x = In[0].x + i; //In[0].x+i;
 			  	print(Out[i].x);
 			}
 			println('\n');
 		}
 		window {
-	    In  sliding(1,1);
+	    In  sliding(1,1);//(1,1);
 		Out	tumbling(N*2);
 	    }
 	};
@@ -162,6 +162,9 @@ composite Main()
 		{
 			println(CDFT[0].x);
 		}
+		window
+		{
+			CDFT sliding(1,1);
+		}
 	};
 }
-

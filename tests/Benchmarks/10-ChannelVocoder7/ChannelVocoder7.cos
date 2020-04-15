@@ -59,7 +59,12 @@ composite HighPassFilter(output stream<double x>Out, input stream<double x>In)
 			for(i=0; i<N; i++)
 			{
 				int idx = i + 1;
-				int sign = ((i%2) == 0) ? 1 : -1;
+				int sign;
+				if((i%2) == 0){
+					sign = 1;
+				}else{
+					sign = -1;
+				}
 				if (idx == OFFSET) 
 					h[i] = sign * g * cutoffFreq / pi; 
 				else 
@@ -109,6 +114,10 @@ composite PitchDetector(output stream<double x>Out, input stream<double x>In)
 			{
 			  CC[0].x = t;
 			}
+		}
+		window{
+			In sliding (1,1);
+			CC tumbling (1);
 		}
 	};
 	
@@ -267,6 +276,9 @@ composite Main()
 			Source[0].x = x[index];
 			index = (index+1)%SIZE;
 		}
+		window{
+			Source tumbling(1);
+		}	
 	};
 	
 	LPF = LowPassFilter(Source)(1, (2*pi*5000)/8000, 64); 
@@ -278,6 +290,9 @@ composite Main()
 		work
 		{
 			println(MSJ[0].x);
+		}
+		window{
+			MSJ sliding(1,1);	
 		}
 	};
 }

@@ -181,7 +181,7 @@ composite slowKeySchedule(output stream<int x>Out,input stream<int x>In)
 			int key[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // initialize to 0
 			int i,j;
 			int words = USERKEY_LENGTH / BITS_PER_WORD;
-			int wx[32];
+			int wx[32] = {0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0};
 			for (i = words - 1; i >= 0; i--)
 				key[words - 1 - i] = USERKEYS[vector][i];
 		
@@ -197,7 +197,7 @@ composite slowKeySchedule(output stream<int x>Out,input stream<int x>In)
 		
 			// calculate intermediate keys w_0 ... w_131
 			for (i = 8; i < 140; i++) {
-				int v[32];
+				int v[32] = {0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0};
 				int x,m,r;
 				w[i] = w[i - 8] ^ w[i - 5] ^ w[i - 3] ^ w[i - 1] ^ PHI ^ (i - 8);
 				//w[i] = LRotate(w[i], 11);
@@ -256,116 +256,6 @@ composite KeySchedule(output stream<int x>Out,input stream<int x>In)
 		int vector, int round;
 	Out = KeySchedule(In)
 	{
-		// state
-			// int keys[9][NBITS];
-		// init
-		// {
-			// int userkey[8]= {0, 0, 0, 0, 0, 0, 0, 0}; // initialize to 0
-			// int w[140];
-			// int i,b,k;
-			// int key[NBITS];
-			// int words = USERKEY_LENGTH / BITS_PER_WORD;
-			// for (i = words - 1; i >= 0; i--)
-				// userkey[words - 1 - i] = USERKEYS[vector][i];
-			
-			// // add 1 to MSB of user key
-			// if (USERKEY_LENGTH < 256) {
-				// int msb = userkey[USERKEY_LENGTH / BITS_PER_WORD];
-				// userkey[USERKEY_LENGTH / BITS_PER_WORD] = msb | 1 << (USERKEY_LENGTH % BITS_PER_WORD);
-			// }
-		
-			// // make prekeys w_-8 ... w_-1
-			// for (i = 0; i < 8; i++)
-				// w[i] = userkey[i];
-		
-			// // calculate intermediate keys w_0 ... w_131
-			// for (i = 8; i < 140; i++) {
-				// int j, m=1, y, n, rx, wx[32], v[32];
-					
-				// w[i] = w[i - 8] ^ w[i - 5] ^ w[i - 3] ^ w[i - 1] ^ PHI ^ (i - 8);
-					// //w[i] = LRotate(w[i], 11);
-					
-				// y = w[i]; n = 11;
-				// for ( j = 0; j < 32; j++) 
-				// {
-					// if (((y & m) >> j) != 0)
-						// v[j] = 1;
-					// m = m << 1;
-				// }
-
-					
-				// for ( j = 0; j < 32; j++) 
-				// {
-					// wx[j] = v[(j + 32 - 11) % 32];
-				// }
-
-				// rx = 0;
-				// for ( j = 0; j < 32; j++)
-				// {
-					// rx = rx | (wx[j] << j);
-				// }
-					
-				// w[i] = rx;
-			// }
-			// for (i = 0; i <= MAXROUNDS; i++)
-			// {
-				// int sbox[BITS_PER_WORD] ;
-				// int b;
-				// for (b = 0; b < BITS_PER_WORD; b++)
-				// {
-				// // int to bits in slices
-					// int r  = (4 * i) + 8;
-					// int b0 = (w[r + 0] & (1 << b)) >> b;
-					// int b1 = (w[r + 1] & (1 << b)) >> b;
-					// int b2 = (w[r + 2] & (1 << b)) >> b;
-					// int b3 = (w[r + 3] & (1 << b)) >> b;
-
-					// int va = 0;
-					// if (b0 != 0) va = 1;
-					// if (b1 != 0) va = va | (1 << 1);
-					// if (b2 != 0) va = va | (1 << 2);
-					// if (b3 != 0) va = va | (1 << 3);
-				
-					// // round  0: use sbox 3
-					// // round  1: use sbox 2
-					// // round  2: use sbox 1
-					// // round  3: use sbox 0
-					// // round  4: use sbox 7
-					// // ...
-					// // round 31: use sbox 4
-					// // round 32: use sbox 3
-					// sbox[b] = SBOXES[(32 + 3 - i) % 8][va];
-				// }
-			
-				// for (k = 0; k < NBITS / BITS_PER_WORD; k++)
-				// {
-					// for (b = 0; b < BITS_PER_WORD; b++)
-					// {
-						// int x ;
-						// x= (sbox[b] & (1 << k)) >> k;
-						// if (x != 0) 
-							// key[(k * BITS_PER_WORD) + b] = 1;
-						// else
-							// key[(k * BITS_PER_WORD) + b] = 0;
-					// }
-				// }
-				// for (b = 0; b < NBITS; b++)
-				// {
-					// keys[i][b] = key[IP[b]];
-				// }			
-			// }
-		
-		// }
-		// work
-		// {
-			// int i;
-			// for (i = 0; i < NBITS; i++)
-			// {
-				// Out[i].x = keys[round][i];			
-			// }		
-		// }
-		// window Out: 	tumbling, count(NBITS);	
-			   // In:  sliding, count(0), count(0);
 			int keys0[NBITS] ;
 			int keys1[NBITS] ;
 			int keys2[NBITS] ;
