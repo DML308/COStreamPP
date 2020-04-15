@@ -4182,7 +4182,10 @@ void genrateStmt(Node *stmt)
         right_opt = static_cast<operatorNode *>(stmt);
         top->InsertOperatorSymbol(static_cast<operatorNode *>(stmt)->operName, static_cast<operatorNode *>(stmt));
         EnterScopeFn(stmt);
+        bool storage_ifconstantflow = ifConstantFlow;
+        ifConstantFlow = false;
         generatorOperatorNode(static_cast<operatorNode *>(stmt)); //解析 operator 节点
+        ifConstantFlow = storage_ifconstantflow;
         ExitScopeFn();
         break;
     }

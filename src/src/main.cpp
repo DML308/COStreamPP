@@ -31,7 +31,7 @@ StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 //SymbolTable S;
 bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常量传播 在静态数据流图生成过程中借助执行上下文进行常量传播
-
+double running_time = 0;
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
 list<SymbolTable *> symbol_tables;
 vector<SymbolTable *> first_symbol_tables,last_symbol_tables;
@@ -43,7 +43,6 @@ list<Variable *> paramArrayVariable;//代码生成使用
 int main(int argc, char *argv[])
 {
     clock_t start,end;
-    start = clock();
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
     int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
@@ -88,7 +87,9 @@ int main(int argc, char *argv[])
     // (5)语法树到平面图 SSG 是 StaticStreamGraph 对象 常量传播
     ifConstantFlow = true;
     PhaseName = "AST2FlatSSG";
+    start = clock();
     SSG = AST2FlatStaticStreamGraph(gMainComposite);
+    end = clock();
     // (6) 对静态数据流图各节点进行工作量估计
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);
@@ -159,7 +160,8 @@ int main(int argc, char *argv[])
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
     removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
-    end = clock();
-    cout<<(double)(end-start)/CLOCKS_PER_SEC<<"\n";
+    cout<<"整体运行时间"<<(double)(end-start)/CLOCKS_PER_SEC<<"\n";
+    cout<<"常量传播"<<(double)(running_time)/CLOCKS_PER_SEC<<"\n";
+    cout<<"生成静态数据流图"<<(double)(end-start-running_time)/CLOCKS_PER_SEC<<"\n";
     return 0;
 }
