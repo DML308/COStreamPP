@@ -8,7 +8,7 @@ composite MotionVectorDecode(output stream<int x>Out, input stream<int x>In)
 	Out = MotionVectorDecode(In)
 	{
 		
-		int PMV[8] ;
+		int PMV[8];// = {0,0,0,0,0,0,0,0};
 		int mv_format; // HACKED TODO - MESSAGING
 		int picture_structure; // HACKED TODO - MESSAGING
 		init 
@@ -21,9 +21,9 @@ composite MotionVectorDecode(output stream<int x>Out, input stream<int x>In)
 			int r,s,t;
 			int pop = 0;
 			int push = 0;
-			int motion_code[8];
-			int motion_residual[8];
-			int vectorp[8] ;
+			int motion_code[8] = {0,0,0,0,0,0,0,0};
+			int motion_residual[8] = {0,0,0,0,0,0,0,0};
+			int vectorp[8] = {0,0,0,0,0,0,0,0} ;
 			for (r = 0; r < 2; r++)
 				for (s = 0; s < 2; s++) 
 					for (t = 0; t < 2; t++) {
@@ -413,6 +413,10 @@ composite Saturation(output stream<int x>Out, input stream<int x>In)
 				Out[0].x = valx;
 			}
 		
+		}
+		window{
+			In sliding(1,1);
+			Out tumbling(1);
 		}	
 	};
 }
@@ -493,7 +497,11 @@ composite iDCT_2D_reference_coarse(output stream<int x>Out, input stream<int x>I
 			double scale;
 			for (freq = 0; freq < size; freq++) 
 			{
-				scale = (freq == 0) ? sqrt(0.125) : 0.5;
+				if(freq == 0){
+					scale = sqrt(0.125);
+				}else{
+					scale = 0.5;
+				};
 				for (time = 0; time < size; time++)
 					coeff[freq][time] = scale * cos((pi/(double)size) * freq * (time + 0.5));
 			}			
@@ -531,7 +539,7 @@ composite iDCT_2D_reference_coarse(output stream<int x>Out, input stream<int x>I
 	};
 }
 
-composite iDCT_1D_reference_fine(output stream<double x>Out, input stream<double x>In)
+composite iDCT_1D_reference_fine(output stream< int x>Out, input stream< int x>In)
 {
 	param 
 		int size;
@@ -573,7 +581,7 @@ composite iDCT_1D_reference_fine(output stream<double x>Out, input stream<double
 
 }
 
-composite iDCT_1D_Y_reference_fine(output stream<double x>Out, input stream<double x>In)
+composite iDCT_1D_Y_reference_fine(output stream< int x>Out, input stream< int x>In)
 {
 	param 
 		int size;
@@ -589,22 +597,26 @@ composite iDCT_1D_Y_reference_fine(output stream<double x>Out, input stream<doub
 	};
 }
 
-composite pipeline_iDCT_1D_reference_fine_AnonyFilter(output stream<int x>Out, input stream<double x>In)
+composite pipeline_iDCT_1D_reference_fine_AnonyFilter(output stream<int x>Out, input stream< int x>In)
 {
 	param
 		int size;
-	stream<double x>Out_fine;
+	stream< int x>Out_fine;
 	Out_fine = iDCT_1D_reference_fine(In)(size);
 	Out = Anony_floor(Out_fine)
 	{
 		work
 		{
 			Out[0].x = Out_fine[0].x;
-		}		
+		}	
+		window{
+			In sliding(1,1);
+			Out tumbling(1);
+		}	
 	};
 }
 
-composite iDCT_1D_X_reference_fine(output stream<int x>Out, input stream<double x>In)
+composite iDCT_1D_X_reference_fine(output stream<int x>Out, input stream< int x>In)
 {
 	param
 		int size;
@@ -624,12 +636,16 @@ composite iDCT_2D_reference_fine(output stream<int x>Out, input stream<int x>In)
 {
 	param
 		int size;
-	stream<double x> OutT,iDCT_1D_Y_Out;
+	stream< int x> OutT,iDCT_1D_Y_Out;
 	OutT = Anonoy_fine(In)
 	{
 		work
 		{
-			Out[0].x = (double)(In[0].x);			
+			OutT[0].x = (double)(In[0].x);			
+		}
+		window{
+			In sliding(1,1);
+			OutT tumbling(1);
 		}		
 	};
 	iDCT_1D_Y_Out = iDCT_1D_Y_reference_fine(OutT)(size);
@@ -988,13 +1004,16 @@ composite Main()
 	int i;
 	stream<int x> SourceOut,SBP;
 	SourceOut = Source()
-	{//ÓÐ´ý²¹³ä
+	{//ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½
 		int num = 0;
 		work
 		{
 			SourceOut[0].x = source[num];
 			num++;
 			num = num%403; // lxx
+		}
+		window{
+			SourceOut tumbling(1);
 		}
 	
 	};
@@ -1015,6 +1034,9 @@ composite Main()
 		work
 		{
 			println(SBP[0].x);
+		}
+		window{
+			SBP sliding(1,1);
 		}
 	};
 } 

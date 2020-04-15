@@ -483,7 +483,7 @@ composite SumRealsRealHandler(output stream<double x>Out, input stream<double x>
 	};
 }
 
-composite FloatVoid(output stream<float x>Out, input stream<float x>In)
+composite FloatVoid(output stream<double x>Out, input stream<double x>In)
 {
 	Out = FloatVoid(In)
 	{
@@ -499,7 +499,7 @@ composite FloatVoid(output stream<float x>Out, input stream<float x>In)
 	};
 }
 
-composite SumReals(output stream<float x>Out, input stream<float x>In)
+composite SumReals(output stream<double x>Out, input stream<double x>In)
 {
 	param
 		int DFTLen;
@@ -512,7 +512,7 @@ composite SumReals(output stream<float x>Out, input stream<float x>In)
 	};
 }
 
-composite InvDelay(output stream<float x>Out, input stream<float x>In)
+composite InvDelay(output stream<double x>Out, input stream<double x>In)
 {
 	param
 		int N;

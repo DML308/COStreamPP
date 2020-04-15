@@ -1,4 +1,4 @@
-#define PI 3.141592654
+float PI = 3.141592654;
 
 //double Wn[N/2] = {0};
 
@@ -136,7 +136,7 @@ composite CombineDFT(output stream<double x>Out, input stream<double x>In)
 composite Main()
 {
     //int P[2*N];
-	int N = 256;
+	int N = 8;
 	stream<double x> Source,CDFT;
 	
 	Source = FloatSource()
@@ -164,6 +164,9 @@ composite Main()
 		work
 		{
 			println(CDFT[0].x);
+		}
+		window {
+			CDFT sliding(1);
 		}
 	};
 }
