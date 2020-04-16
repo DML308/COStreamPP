@@ -44,7 +44,8 @@ list<Variable *> paramArrayVariable;//代码生成使用
 //===----------------------------------------------------------------------===//
 int main(int argc, char *argv[])
 {
-    clock_t start,end;
+    clock_t start,end,program_start,program_end;
+    program_start = clock();
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
     int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
@@ -162,7 +163,8 @@ int main(int argc, char *argv[])
     // (last) 全局垃圾回收
     PhaseName = "Recycling";
     removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
-    cout<<"整体运行时间"<<(double)(end-start)/CLOCKS_PER_SEC<<"\n";
+    program_end = clock();
+    cout<<"整体运行时间"<<(double)(program_end-program_start)/CLOCKS_PER_SEC<<"\n";
     cout<<"常量传播"<<(double)(running_time)/CLOCKS_PER_SEC<<"\n";
     cout<<"生成静态数据流图"<<(double)(end-start-running_time)/CLOCKS_PER_SEC<<"\n";
     return 0;

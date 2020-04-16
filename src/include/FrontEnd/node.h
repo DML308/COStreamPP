@@ -110,7 +110,7 @@ class idNode : public Node
   public:
     string name;
     string valType;
-    list<Node *> arg_list;
+    list<Node *> arg_list; //数组下标
     Node *init;
     int level;
     int version;
@@ -124,6 +124,7 @@ class idNode : public Node
         this->level = Level;
         this->version = current_version[Level];
         this->valType = "int";
+        this->init = NULL;
     }
     
     idNode(string *name, YYLTYPE loc = YYLTYPE())
