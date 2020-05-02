@@ -35,6 +35,15 @@ class UnfoldComposite
     compositeNode* makeForwardComposite(layerNode *layer);
     compositeNode* makeBackComposite(layerNode *layer);
     compositeNode* makeLossComposite(layerNode *layer);
+
+    compositeNode* makeDenseLayer(layerNode *layer);
+    Node* makeDenseLayerBody(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    compositeNode* makeDenseChildComp(denseLayerNode *layer);
+    Node* makeDenseChildCompBody(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    Node* makeDenseChildOperInit(denseLayerNode *layer);
+    Node* makeDenseChildOperWork(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    operatorNode* makeDenseChildOper(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+
     operatorNode* makeDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDenseInit(layerNode *layer);
     Node* makeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);

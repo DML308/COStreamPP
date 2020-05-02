@@ -42,7 +42,6 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     int levelNum = compositeCall_list.size();
     int currentLevel = 0;
     assert(levelNum != 0);
-    // assert(((constantNode *)(node->arg_list->front()))->style == "long long");
     // 将层连接起来
     for (auto iter = compositeCall_list.begin(); (iter + 1) != compositeCall_list.end(); iter++) {
         ((layerNode *)*iter)->level = ++currentLevel;
@@ -86,14 +85,15 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     Node *weightType = new primNode("double");
     // 以全局变量声明参数
     for (auto iter = compositeCall_list.begin(); iter != compositeCall_list.end(); iter++) {
-        string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
-        Node *weight0 =  new idNode(weightName + "_" + to_string(0));
-        Node *weight1 =  new idNode(weightName + "_" + to_string(1));
-        ((idNode *)weight0)->isArray = 1;
-        ((idNode *)weight1)->isArray = 1;
+        
         switch (((layerNode*)*iter)->layerType)
         {
             case Dense: {
+                string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
+                Node *weight0 =  new idNode(weightName + "_" + to_string(0));
+                Node *weight1 =  new idNode(weightName + "_" + to_string(1));
+                ((idNode *)weight0)->isArray = 1;
+                ((idNode *)weight1)->isArray = 1;
                 // 声明_weight_[prevDim][dim]
                 Node *rows = new constantNode("long long", ((denseLayerNode *)(*iter))->rows);
                 Node *cols = new constantNode("long long", ((denseLayerNode *)(*iter))->cols);
@@ -103,23 +103,39 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                 (static_cast<idNode *>(weight1))->arg_list = (static_cast<arrayNode *>(arrDecl))->arg_list;
                 Node* weightDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(weight0)));
                 ((declareNode *)weightDecl) -> id_list.push_back((idNode *)weight1);
-                
-                if (((denseLayerNode *)*iter) -> use_bias) {
-                    string biasName = "_bias_" + to_string(((layerNode *)*iter) -> level);
-                    Node *bias0 = new idNode(biasName + "_" + to_string(0));
-                    Node *bias1 = new idNode(biasName + "_" + to_string(1));
-                    ((declareNode *)weightDecl) -> id_list.push_back((idNode *)bias0);
-                    ((declareNode *)weightDecl) -> id_list.push_back((idNode *)bias1);  
-                }
-
+                (static_cast<idNode *>(weight0))->init = NULL;
+                (static_cast<idNode *>(weight1))->init = NULL;
                 Program->push_front(weightDecl);
                 SymbolTable *pre = top;
                 top = &S;
                 generateDeclareNode((declareNode *)weightDecl);
                 top = pre;
+                
+                if (((denseLayerNode *)*iter) -> use_bias) {
+                    string biasName = "_bias_" + to_string(((layerNode *)*iter) -> level);
+                    idNode *bias0 = new idNode(biasName + "_" + to_string(0));
+                    idNode *bias1 = new idNode(biasName + "_" + to_string(1));
+                    bias0 -> isArray = 1;
+                    bias1 -> isArray = 1;
+                    list<Node *> *biasArr = new list<Node *>({cols});
+                    bias0 -> arg_list = *biasArr;
+                    bias0 -> arg_list = *biasArr;
+                    Node* biasDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(bias0)));
+                    ((declareNode *)biasDecl) -> id_list.push_back(bias1);
+                    Program->push_front(biasDecl);
+                    SymbolTable *pre = top;
+                    top = &S;
+                    generateDeclareNode((declareNode *)biasDecl);
+                    top = pre;
+                }
                 break;
             }
             case Conv2D: {
+                string weightName = "_weight_" + to_string(((layerNode *)*iter)-> level);
+                Node *weight0 =  new idNode(weightName + "_" + to_string(0));
+                Node *weight1 =  new idNode(weightName + "_" + to_string(1));
+                ((idNode *)weight0)->isArray = 1;
+                ((idNode *)weight1)->isArray = 1;
                 // 声明_weight_[filters][depth][kernelSizeDim0][kernelSizeDim1]
                 Node *filters = new constantNode("long long", ((conv2DLayerNode *)*iter) -> filters);
                 Node *depth = new constantNode("long long", ((conv2DLayerNode *)*iter) -> inputSize -> back());
@@ -144,7 +160,8 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                     ((declareNode *)weightDecl) -> id_list.push_back(bias0);
                     ((declareNode *)weightDecl) -> id_list.push_back(bias1);
                 }
-
+                (static_cast<idNode *>(weight0))->init = NULL;
+                (static_cast<idNode *>(weight1))->init = NULL;
                 Program->push_front(weightDecl);
                 SymbolTable *pre = top;
                 top = &S;
@@ -347,8 +364,12 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
         switch (layer -> layerType)
         {
             case Dense: {
-                Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
-                comp_stmt_list->push_back(layerOper);
+                // Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
+                // comp_stmt_list->push_back(layerOper);
+                compositeNode *layerComp = makeDenseLayer(layer);
+                Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
                 break;
             }
             case Conv2D: {
@@ -416,8 +437,12 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
         switch (layer -> layerType)
         {
             case Dense: {
-                Node *layerOper = makeDenseOperator(layer, inputs_id, outputs_id);
-                comp_stmt_list->push_back(layerOper);
+                // Node *layerOper = makeDenseOperator(layer, inputs_id, outputs_id);
+                // comp_stmt_list->push_back(layerOper);
+                compositeNode *layerComp = makeDenseLayer(layer);
+                Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
                 break;
             }
             case Conv2D: {
@@ -761,6 +786,7 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     work = new blockNode(stmtList);
     return work;
 }
+
 
 compositeNode* UnfoldComposite::makeLossComposite(layerNode *layer) {
     string comName = MakeCompositeName("Loss");
@@ -1218,6 +1244,7 @@ operatorNode* UnfoldComposite::makeConv2DKernelOper(layerNode *layer, list<Node 
     body = new operBodyNode(stmtList, init, work, window);
     return new operatorNode(outputs_id, operName, inputs_id, body);
 }
+
 Node* UnfoldComposite::makeConv2DKernelOperInit(layerNode *layer) {
     list<Node *> *stmts = new list<Node *>();
     Node *init = NULL;
