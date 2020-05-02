@@ -121,7 +121,7 @@ Node* UnfoldComposite::makeDenseChildCompBody(denseLayerNode *layer, list<Node *
 }
 
 operatorNode* UnfoldComposite::makeDenseChildOper(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id) {
-    string operName = "dense_" + to_string(layer -> level);
+    string operName = "denseOper_" + to_string(layer -> level) + "_";
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
@@ -420,7 +420,7 @@ Node* UnfoldComposite::makeDDenseLayerBody(denseLayerNode *layer, list<Node *> *
 
 compositeNode* UnfoldComposite::makeDDenseChildComp(denseLayerNode *layer) {
     compositeNode *comp = NULL;
-    string compName = "dDenseChild_" + layer->level;
+    string compName = "dDenseChild_" + to_string(layer->level);
     Node *compHead = NULL, *compBody = NULL, *compInOut = NULL;
     Node *inputDecl0 = makeStream("in0", "double");
     Node *inputDecl1 = makeStream("in1", "double");
@@ -458,7 +458,7 @@ Node* UnfoldComposite::makeDDenseChildCompBody(denseLayerNode *layer, list<Node 
 }
 
 operatorNode* UnfoldComposite::makeDDenseChildOper(denseLayerNode* layer, list<Node *> *inputs_id, list<Node *> *outputs_id) {
-    string operName = "dDense";
+    string operName = "dDenseOper_" + to_string(layer -> level) + "_";
     operBodyNode *body = NULL;
     Node *init = NULL, *work = NULL;
     windowNode *window = NULL;
