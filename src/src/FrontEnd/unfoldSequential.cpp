@@ -511,8 +511,12 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer) {
     switch (layer->layerType)
     {
         case Dense: {
-            Node *layerOper = makeDDenseOperator(layer, inputs_id, outputs_id);
-            comp_stmt_list->push_back(layerOper);
+            // Node *layerOper = makeDDenseOperator(layer, inputs_id, outputs_id);
+            // comp_stmt_list->push_back(layerOper);
+            compositeNode *layerComp = makeDDenseLayer(layer);
+            Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+            ((compositeCallNode *)call)->isOriginal = false;
+            comp_stmt_list->push_back(call);
             break;
         }
         case Conv2D: {

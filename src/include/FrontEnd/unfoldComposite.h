@@ -44,6 +44,13 @@ class UnfoldComposite
     Node* makeDenseChildOperWork(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
     operatorNode* makeDenseChildOper(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
 
+    compositeNode* makeDDenseLayer(layerNode *layer);
+    Node* makeDDenseLayerBody(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    compositeNode* makeDDenseChildComp(denseLayerNode *layer);
+    Node* makeDDenseChildCompBody(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    Node* makeDDenseChildOperWork(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    operatorNode* makeDDenseChildOper(denseLayerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+
     operatorNode* makeDenseOperator(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
     Node* makeDenseInit(layerNode *layer);
     Node* makeDenseWork(layerNode *layer, list<Node *> *inputs, list<Node *> *outputs);
@@ -61,18 +68,18 @@ class UnfoldComposite
     Node* makeStream(string name, string type);
     compositeNode* makeConv2DLayer(layerNode *layer);
     Node* makeConv2DLayerBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
-    compositeNode* makeConv2DKernel(layerNode *layer/*, Node *kernelIndex */);
-    Node* makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id/*, Node *kernelIndex */);
-    Node* makeConv2DKernelOperInit(layerNode *layer/*, Node *kernelIndex */);
-    Node* makeConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id/*, Node *kernelIndex */);
-    operatorNode* makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id/*, Node *kernelIndex */);
+    compositeNode* makeConv2DKernel(layerNode *layer);
+    Node* makeConv2DKernelBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    Node* makeConv2DKernelOperInit(layerNode *layer);
+    Node* makeConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    operatorNode* makeConv2DKernelOper(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
     compositeNode* makeCopyComp();
     compositeNode* makeDConv2DLayer(layerNode *layer);
     Node* makeDConv2DLayerBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
-    compositeNode* makeDConv2DKernel(layerNode *layer/*,  Node *kernelIndex*/);
-    Node* makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id/*,  Node *kernelIndex*/);
-    Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id/*,  Node *kernelIndex*/);
-    operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id/*,  Node *kernelIndex*/);
+    compositeNode* makeDConv2DKernel(layerNode *layer);
+    Node* makeDConv2DKernelBody(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    Node* makeDConv2DKernelOperWork(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
+    operatorNode* makeDConv2DKernelOper(layerNode *layer, list<Node *> *inputs_id, list<Node *> *outputs_id);
     operatorNode* makeConv2DDilateAndExtendOperator(layerNode *layer,list<Node *> *inputs_id, list<Node *> *outputs_id);
     Node* makeConv2DDilateAndExtendOperWork(conv2DLayerNode *layer,list<Node *> *inputs_id, list<Node *> *outputs_id);
     // style 默认为0, 表示duplicate, style = 1 时,表示roundrobin
