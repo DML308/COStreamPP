@@ -123,6 +123,8 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                     Node* biasDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(bias0)));
                     ((declareNode *)biasDecl) -> id_list.push_back(bias1);
                     Program->push_front(biasDecl);
+                    bias0->init = NULL;
+                    bias1->init = NULL;
                     SymbolTable *pre = top;
                     top = &S;
                     generateDeclareNode((declareNode *)biasDecl);
@@ -157,6 +159,8 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                     list<Node *> *argList = new list<Node *>({filters});
                     bias0 -> arg_list = *(argList);
                     bias1 -> arg_list = *(argList);
+                    (static_cast<idNode *>(bias0))->init = NULL;
+                    (static_cast<idNode *>(bias1))->init = NULL;
                     ((declareNode *)weightDecl) -> id_list.push_back(bias0);
                     ((declareNode *)weightDecl) -> id_list.push_back(bias1);
                 }
@@ -364,12 +368,12 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
         switch (layer -> layerType)
         {
             case Dense: {
-                // Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
-                // comp_stmt_list->push_back(layerOper);
-                compositeNode *layerComp = makeDenseLayer(layer);
-                Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
-                ((compositeCallNode *)call)->isOriginal = false;
-                comp_stmt_list->push_back(call);
+                Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
+                comp_stmt_list->push_back(layerOper);
+                // compositeNode *layerComp = makeDenseLayer(layer);
+                // Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
+                // ((compositeCallNode *)call)->isOriginal = false;
+                // comp_stmt_list->push_back(call);
                 break;
             }
             case Conv2D: {
@@ -511,12 +515,12 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer) {
     switch (layer->layerType)
     {
         case Dense: {
-            // Node *layerOper = makeDDenseOperator(layer, inputs_id, outputs_id);
-            // comp_stmt_list->push_back(layerOper);
-            compositeNode *layerComp = makeDDenseLayer(layer);
-            Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
-            ((compositeCallNode *)call)->isOriginal = false;
-            comp_stmt_list->push_back(call);
+            Node *layerOper = makeDDenseOperator(layer, inputs_id, outputs_id);
+            comp_stmt_list->push_back(layerOper);
+            // compositeNode *layerComp = makeDDenseLayer(layer);
+            // Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+            // ((compositeCallNode *)call)->isOriginal = false;
+            // comp_stmt_list->push_back(call);
             break;
         }
         case Conv2D: {
