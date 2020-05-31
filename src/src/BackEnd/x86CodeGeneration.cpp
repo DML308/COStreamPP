@@ -797,6 +797,9 @@ void X86CodeGeneration::CGMain()
     if(globalSequential){
         if (globalSequential->ifNeedMathExtension) {
             buf << "#include <time.h>\n";
+            buf << "#include \"GlobalVar.h\"\n";
+            buf << "#include <sstream>\n";
+            buf << "#include <fstream>\n";
         }
     }
     
@@ -819,7 +822,7 @@ void X86CodeGeneration::CGMain()
     buf << "int main(int argc,char **argv)\n{\n";
     if(globalSequential){
         if (globalSequential->ifNeedMathExtension) {
-            buf << "srand(time(NULL));\n";
+            buf << "\tsrand(time(NULL));\n";
         }
     }
     
@@ -835,8 +838,12 @@ void X86CodeGeneration::CGMain()
     buf << "\tthread_0_fun();\n";
     if (ifGetTime) {
         for (int j = 0; j < mp_->getParts(); j++) {
-            buf << "cout << \"thread" + to_string(j) + "_workTime =\" << thread" + to_string(j) + "_workTime.tv_sec << \"s\" << thread" + to_string(j) + "_workTime.tv_nsec / 1000000 << \"ms\" << endl;\n\t";
+            buf << "\tcout << \"thread" + to_string(j) + "_workTime =\" << thread" + to_string(j) + "_workTime.tv_sec << \"s\" << thread" + to_string(j) + "_workTime.tv_nsec / 1000000 << \"ms\" << endl;\n\t";
         }
+    }
+    if (globalSequential) {
+        buf << "\tvoid printSequentialWeights();\n";
+        buf << "\tprintSequentialWeights();\n";
     }
     buf << "\treturn 0;\n";
     buf << "}\n";
@@ -854,6 +861,39 @@ void X86CodeGeneration::CGMain()
     buf << "\t\t}\n";
     buf << "\t}\n";
     buf << "}\n";
+
+    if (globalSequential) {
+        buf << "void printSequentialWeights()\n{\n";
+        for (auto nd : *(globalSequential->body_stmts)) {
+            layerNode *layer = (layerNode *)(((addNode *)nd)->content);
+            string bufName = "buf" + to_string(layer -> level);
+            string weight0 = "_weight_" + to_string(layer -> level) + "_" + to_string(0);
+            string weight1 = "_weight_" + to_string(layer -> level) + "_" + to_string(1);
+            if (layer -> layerType == Dense) {
+                
+                buf << "\tstringstream "<< bufName << ";\n";
+                buf << "\tfor(int i = 0; i < " << to_string(((denseLayerNode *)layer)->rows) << "; i++) {\n";
+                buf << "\t\tfor(int j = 0; j <" << to_string(((denseLayerNode *)layer)->cols) << "; j++) {\n";
+                buf << "\t\t\t" << bufName << " \<\< (" << weight0 << "[i][j] + " << weight1 << "[i][j]) / 2" << "\<\< \" \"" <<";\n";;
+                buf << "\t\t}\n\t}\n";
+                buf << "\tofstream out"<< to_string(layer -> level) << "(\"weight_"<< to_string(layer -> level) << ".txt\");\n";
+                buf << "\tout"<< to_string(layer -> level) <<" \<\< " << bufName <<".str();\n";
+            }
+            if (layer -> layerType == Conv2D) {
+                buf << "\tstringstream "<< bufName << ";\n";
+                buf << "\tfor(int filter = 0; filter < " << to_string(((conv2DLayerNode *)layer)->filters) << "; filter++) {\n";
+                buf << "\t\tfor(int depth = 0; depth <" << to_string(((conv2DLayerNode *)layer)->inputSize->back()) << "; depth++) {\n";
+                buf << "\t\t\tfor(int row = 0; row <" << to_string(((conv2DLayerNode *)layer)->kernel_size->at(0)) << "; row++) {\n";
+                buf << "\t\t\t\tfor(int col = 0; col <" << to_string(((conv2DLayerNode *)layer)->kernel_size->at(1)) << "; col++) {\n";
+                buf << "\t\t\t\t\t" << bufName << " \<\< (" << weight0 << "[filter][depth][row][col] + " << weight1 << "[filter][depth][row][col]) / 2" << "\<\< \" \"" <<";\n";
+                buf << "\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n";
+                buf << "\tofstream out"<< to_string(layer -> level) << "(\"weight_"<< to_string(layer -> level) << ".txt\");\n";
+                buf << "\tout"<< to_string(layer -> level) <<" \<\< " << bufName <<".str();\n";
+            }
+        }
+        buf << "}\n";
+    }
+    
     ofstream out("main.cpp");
     out << buf.str();
 }

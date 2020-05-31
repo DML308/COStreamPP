@@ -1,0 +1,43 @@
+composite Main() {
+    stream<double x> In, Out, Y;
+    (In, Y) = Start() {
+        int i = 0;
+        work {
+            // 28 * 28
+            for(i = 0; i < 2352; i++) {
+                In[i].x = i % 255;
+            }
+            for(i = 0; i < 10; i++) {
+                Y[i].x = i * 0.1;
+            }
+        }
+        window {
+            In tumbling(2352);
+            Y tumbling(10);
+        }
+    };
+    Out = sequential (In, Y) ((28, 28, 3), 0.0001, 100, "crossEntropy", 'gaussRandom') {
+        // filters, kernel_size, strides, padding, use_bias
+        add Conv2D(32, (3, 3), (1, 1), 0);
+        add Activation("relu");
+        add MaxPooling2D(2);
+        add Conv2D(64, (3, 3), (1, 1), 0);
+        add Activation("relu");
+        add MaxPooling2D(2);
+        add Conv2D(64, (3, 3), (1, 1), 0);
+        add Activation("relu");
+  
+        add Dense(64);
+        add Activation("relu");
+        add Dense(10);
+        add Activation("softmax");
+    };
+    sink(Out) {
+        work {
+  
+        }
+        window{
+            Out sliding(2352, 2352);
+        }
+    };
+  }
