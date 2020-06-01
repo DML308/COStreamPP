@@ -1,5 +1,5 @@
 composite Main() {
-    stream<double x> In, Out, Y;
+    stream<double x> Out;
     Out = FileReader()("test.txt", 3);
     sink(Out) {
         work {

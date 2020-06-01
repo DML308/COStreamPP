@@ -3,6 +3,7 @@
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 extern SymbolTable *runningTop;
 extern bool ifConstantFlow;
+extern list<Node *> *Program;
 SymbolTable S;             //全局
 SymbolTable *top;          //当前作用域
 list<SymbolTable *> saved; //作用域栈
@@ -4283,6 +4284,7 @@ void genrateStmt(Node *stmt)
             compositeNode *comp = makeFileReader((compositeCallNode *)stmt);
             S.InsertCompositeSymbol(static_cast<callNode *>(stmt)->name,comp);
             ((compositeCallNode *)stmt) -> actual_composite = comp;
+            Program -> push_back(comp);
         }
         compositeNode *actual_comp = S.LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName)->composite;
         static_cast<compositeCallNode *>(stmt)->actual_composite = actual_comp;
