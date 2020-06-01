@@ -829,12 +829,10 @@ void X86CodeGeneration::CGMain()
     buf << "#include \"lock_free_barrier.h\"	//包含barrier函数\n";
     buf << "#include \"Global.h\"\n";
     if(globalSequential){
-        if (globalSequential->ifNeedMathExtension) {
-            buf << "#include <time.h>\n";
-            buf << "#include \"GlobalVar.h\"\n";
-            buf << "#include <sstream>\n";
-            buf << "#include <fstream>\n";
-        }
+        buf << "#include <time.h>\n";
+        buf << "#include \"GlobalVar.h\"\n";
+        buf << "#include <sstream>\n";
+        buf << "#include <fstream>\n";
     }
     
     buf << "using namespace std;\n";

@@ -653,7 +653,8 @@ void conv2DLayerNode::init (sequentialNode* sequential) {
    // 按照arg_list爲傳入整個sequential結構的參數列表((rows, cols, depth), ...)
     this->inputSize = this -> getInputSize(sequential);
     for(int i = 0; i < this->dimension; i++) {
-        this->outputFeatureMapSize->push_back((this->inputSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
+        // this->outputFeatureMapSize->push_back((this->inputSize->at(i) + 2 * this->paddings->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
+        this->outputFeatureMapSize->push_back((this->inputSize->at(i) - this->kernel_size->at(i)) / this->strides->at(i) + 1);
     }
     this->outputFeatureMapSize->push_back(this->filters);
     for(int i = 0; i < this->dimension; i++) {
