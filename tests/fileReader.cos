@@ -1,0 +1,14 @@
+composite Main() {
+    stream<double x> In, Out, Y;
+    Out = FileReader()("test.txt", 3);
+    sink(Out) {
+        work {
+            print(Out[0].x);
+            print(Out[1].x);
+            print(Out[2].x);
+        }
+        window{
+            Out sliding(3, 3);
+        }
+    };
+}

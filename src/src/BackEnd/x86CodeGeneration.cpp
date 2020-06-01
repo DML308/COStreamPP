@@ -297,6 +297,9 @@ void X86CodeGeneration::CGactors()
         buf << "#define _" << className << "_\n";
         buf << "#include <string>\n";
         buf << "#include <iostream>\n";
+        if (className == "fileReader_0") {
+            buf << "#include <fstream>\n";
+        }
         buf << "#include \"Buffer.h\"\n";
         buf << "#include \"Consumer.h\"\n";
         buf << "#include \"Producer.h\"\n";
@@ -341,6 +344,9 @@ void X86CodeGeneration::CGactors()
             buf << "\tConsumer<streamData> " << in << ";\n";
         buf << "\tint steadyScheduleCount;\t//稳态时一次迭代的执行次数\n";
         buf << "\tint initScheduleCount;\n";
+        if (className == "fileReader_0") {
+            buf << "\tifstream ifile;\n";
+        }
 
         //写入composite传入的参数 此处为声明，在init中赋值
         running_top = flatNodes_[i]->compositecall_runnningtop;
@@ -359,12 +365,40 @@ void X86CodeGeneration::CGactors()
         CGactorsPopToken(buf, flatNodes_[i], inEdgeName);
         CGactorsPushToken(buf, flatNodes_[i], outEdgeName);
         //init部分前的statement赋值
-        CGactorsinitVarAndState(buf, &stmts);
+        if (className == "fileReader_0") {
+            buf << "\tvoid initVarAndState() {\n";
+            //进行param的初始化
+            SymbolTable *opt_top = top;
+            string param = running_top->toParamValueString(opt_top);
+            buf<<param;
+            buf << "\t\tifile.open((\".\/\" + filename).c_str());\n";
+            buf << "\t\tif(!ifile) {\n";
+            buf << "\t\t\tcout\<\<\"打开文件\"\<\<filename\<\< \"失败\"\<\<endl;\n";
+            buf << "\t\t\texit(0);\n";
+            buf << "\t\t}\n";
+            buf << "\t}\n";
+        } else {
+            CGactorsinitVarAndState(buf, &stmts);
+        }
         /* composite 中init函数 */
         CGactorsInit(buf, init);
         int partitionNum = mp_->findPartitionNumForFlatNode(flatNodes_[i]);
         /* composite中work函数 */
-        CGactorsWork(buf, work, partitionNum);
+        if (className == "fileReader_0") {
+            buf << "\tvoid work(){ \n";
+            buf << "\t\tdouble a;\n";
+            buf << "\t\tchar c;\n";
+            buf << "\t\tfor(int i=0;i<num;i++){\n";
+            buf << "\t\t\tifile>>a;\n";
+            buf << "\t\t\tout[i].x = a;\n";
+            buf << "\t\t\tif(i != num - 1) ifile>>c;\n";
+            buf << "\t\t}\n";
+            buf << "\t\tpushToken();\n";
+            buf << "\t\tpopToken();\n";
+            buf << "\t}\n";
+        } else {
+            CGactorsWork(buf, work, partitionNum);
+        }
         /* 类体结束*/
         buf << "};\n";
         /*定义初始化operator中声明的数组*/

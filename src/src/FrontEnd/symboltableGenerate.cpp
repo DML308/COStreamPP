@@ -1,4 +1,5 @@
 #include "symboltableGenerate.h"
+#include "makeFileReader.h"
 extern SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH];
 extern SymbolTable *runningTop;
 extern bool ifConstantFlow;
@@ -4278,6 +4279,11 @@ void genrateStmt(Node *stmt)
     }
     case CompositeCall:
     {
+        if (static_cast<callNode *>(stmt)->name == "FileReader") {
+            compositeNode *comp = makeFileReader((compositeCallNode *)stmt);
+            S.InsertCompositeSymbol(static_cast<callNode *>(stmt)->name,comp);
+            ((compositeCallNode *)stmt) -> actual_composite = comp;
+        }
         compositeNode *actual_comp = S.LookupCompositeSymbol(static_cast<compositeCallNode *>(stmt)->compName)->composite;
         static_cast<compositeCallNode *>(stmt)->actual_composite = actual_comp;
         if (ifConstantFlow)

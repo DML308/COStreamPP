@@ -88,7 +88,7 @@ class Constant{
           str = to_string(fval);
       }
       if(type.compare("string") == 0){
-          str = sval;
+          str = "\"" + sval + "\"";
       }
       if(type.compare("bool") == 0){
           str = to_string(bval);

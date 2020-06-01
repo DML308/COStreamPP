@@ -746,10 +746,12 @@ exp:      idNode          { line("Line:%-4d",@$.first_line);
                               }
         | IDENTIFIER '('  ')'                         { $$ = new callNode(*($1),NULL,@$) ; }
         | IDENTIFIER '(' argument.expression.list ')' { $$ = new callNode(*($1),$3,@$) ; }
-        | FILEREADER '(' ')' '(' stringConstant ')'   { 
+        | FILEREADER '('  ')' '(' argument.expression.list ')' { 
                   line("Line:%-4d",@$.first_line);
-                  debug ("exp ::= FILEREADER()( stringConstant )\n"); 
-                  $$ = NULL ; 
+                  debug ("exp ::= FILEREADER()( stringConstant )\n");
+                  // list<Node *>* arg_list = new list<Node *>(($5, $7));
+                  string compName = "FileReader";
+                  $$ = new compositeCallNode(NULL, compName, $5,NULL,NULL,@$);
             }
         | IDENTIFIER '('  ')' operator.selfdefine.body   { 
                   line("Line:%-4d",@$.first_line);
