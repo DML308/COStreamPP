@@ -900,29 +900,47 @@ void X86CodeGeneration::CGMain()
         buf << "void printSequentialWeights()\n{\n";
         for (auto nd : *(globalSequential->body_stmts)) {
             layerNode *layer = (layerNode *)(((addNode *)nd)->content);
-            string bufName = "buf" + to_string(layer -> level);
+            string weightsBufName = "weightsBuf" + to_string(layer -> level);
             string weight0 = "_weight_" + to_string(layer -> level) + "_" + to_string(0);
             string weight1 = "_weight_" + to_string(layer -> level) + "_" + to_string(1);
+            string biasBufName = "biasBuf" + to_string(layer -> level);
+            string bias0 = "_bias_" + to_string(layer -> level) + "_" + to_string(0);
+            string bias1 = "_bias_" + to_string(layer -> level) + "_" + to_string(1);
             if (layer -> layerType == Dense) {
-                
-                buf << "\tstringstream "<< bufName << ";\n";
+                buf << "\tstringstream "<< weightsBufName << ";\n";
                 buf << "\tfor(int i = 0; i < " << to_string(((denseLayerNode *)layer)->rows) << "; i++) {\n";
                 buf << "\t\tfor(int j = 0; j <" << to_string(((denseLayerNode *)layer)->cols) << "; j++) {\n";
-                buf << "\t\t\t" << bufName << " \<\< (" << weight0 << "[i][j] + " << weight1 << "[i][j]) / 2" << "\<\< \" \"" <<";\n";;
+                buf << "\t\t\t" << weightsBufName << " \<\< (" << weight0 << "[i][j] + " << weight1 << "[i][j]) / 2" << "\<\< \" \"" <<";\n";
                 buf << "\t\t}\n\t}\n";
                 buf << "\tofstream out"<< to_string(layer -> level) << "(\"weight_"<< to_string(layer -> level) << ".txt\");\n";
-                buf << "\tout"<< to_string(layer -> level) <<" \<\< " << bufName <<".str();\n";
+                buf << "\tout"<< to_string(layer -> level) <<" \<\< " << weightsBufName <<".str();\n";
+                if (((denseLayerNode *)layer) -> use_bias) {
+                    buf << "\tstringstream "<< biasBufName << ";\n";
+                    buf << "\tfor(int i = 0; i < " << to_string(((denseLayerNode *)layer)->cols) << "; i++) {\n";
+                    buf << "\t\t" << biasBufName << " \<\< (" << bias0 << "[i] + " << bias1 << "[i]) / 2" << "\<\< \" \"" <<";\n";
+                    buf << "\t}\n";
+                    buf << "\tofstream out_bias"<< to_string(layer -> level) << "(\"bias_"<< to_string(layer -> level) << ".txt\");\n";
+                    buf << "\tout_bias"<< to_string(layer -> level) <<" \<\< " << biasBufName <<".str();\n";
+                }
             }
             if (layer -> layerType == Conv2D) {
-                buf << "\tstringstream "<< bufName << ";\n";
+                buf << "\tstringstream "<< weightsBufName << ";\n";
                 buf << "\tfor(int filter = 0; filter < " << to_string(((conv2DLayerNode *)layer)->filters) << "; filter++) {\n";
                 buf << "\t\tfor(int depth = 0; depth <" << to_string(((conv2DLayerNode *)layer)->inputSize->back()) << "; depth++) {\n";
                 buf << "\t\t\tfor(int row = 0; row <" << to_string(((conv2DLayerNode *)layer)->kernel_size->at(0)) << "; row++) {\n";
                 buf << "\t\t\t\tfor(int col = 0; col <" << to_string(((conv2DLayerNode *)layer)->kernel_size->at(1)) << "; col++) {\n";
-                buf << "\t\t\t\t\t" << bufName << " \<\< (" << weight0 << "[filter][depth][row][col] + " << weight1 << "[filter][depth][row][col]) / 2" << "\<\< \" \"" <<";\n";
+                buf << "\t\t\t\t\t" << weightsBufName << " \<\< (" << weight0 << "[filter][depth][row][col] + " << weight1 << "[filter][depth][row][col]) / 2" << "\<\< \" \"" <<";\n";
                 buf << "\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n";
                 buf << "\tofstream out"<< to_string(layer -> level) << "(\"weight_"<< to_string(layer -> level) << ".txt\");\n";
-                buf << "\tout"<< to_string(layer -> level) <<" \<\< " << bufName <<".str();\n";
+                buf << "\tout"<< to_string(layer -> level) <<" \<\< " << weightsBufName <<".str();\n";
+                if (((conv2DLayerNode *)layer) -> use_bias) {
+                    buf << "\tstringstream "<< biasBufName << ";\n";
+                    buf << "\tfor(int i = 0; i < " << to_string(((conv2DLayerNode *)layer)->filters) << "; i++) {\n";
+                    buf << "\t\t" << biasBufName << " \<\< (" << bias0 << "[i] + " << bias1 << "[i]) / 2" << "\<\< \" \"" <<";\n";
+                    buf << "\t}\n";
+                    buf << "\tofstream out_bias"<< to_string(layer -> level) << "(\"bias_"<< to_string(layer -> level) << ".txt\");\n";
+                    buf << "\tout_bias"<< to_string(layer -> level) <<" \<\< " << biasBufName <<".str();\n";
+                }
             }
         }
         buf << "}\n";

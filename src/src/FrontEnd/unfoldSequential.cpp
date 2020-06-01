@@ -6,6 +6,7 @@ extern SymbolTable *runningTop,S,*top;
 extern list<Node*> *Program;
 extern sequentialNode *globalSequential;
 extern vector<Node *> compositeCall_list;
+extern bool ifFineDense;
 
 compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
     globalSequential = node;
@@ -119,7 +120,7 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
                     bias1 -> isArray = 1;
                     list<Node *> *biasArr = new list<Node *>({cols});
                     bias0 -> arg_list = *biasArr;
-                    bias0 -> arg_list = *biasArr;
+                    bias1 -> arg_list = *biasArr;
                     Node* biasDecl = new declareNode((primNode*)weightType,(static_cast<idNode*>(bias0)));
                     ((declareNode *)biasDecl) -> id_list.push_back(bias1);
                     Program->push_front(biasDecl);
@@ -314,7 +315,6 @@ compositeNode *UnfoldComposite::UnfoldSequential(sequentialNode *node) {
         comCallList.push_back(call);
     }
     cout<<"Unfold back propogation"<<endl;
-    // ...
     // 生成sequential composite
     // 将声明的数据流加入
     comp_stmts->push_back(streamDecl);
@@ -368,12 +368,15 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
         switch (layer -> layerType)
         {
             case Dense: {
-                Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
-                comp_stmt_list->push_back(layerOper);
-                // compositeNode *layerComp = makeDenseLayer(layer);
-                // Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
-                // ((compositeCallNode *)call)->isOriginal = false;
-                // comp_stmt_list->push_back(call);
+                if (ifFineDense) {
+                    compositeNode *layerComp = makeDenseLayer(layer);
+                    Node *call = new compositeCallNode(toBeCopyed, layerComp->compName, NULL, inputs_id, layerComp);
+                    ((compositeCallNode *)call)->isOriginal = false;
+                    comp_stmt_list->push_back(call);
+                } else {
+                    Node *layerOper = makeDenseOperator(layer, inputs_id, toBeCopyed);
+                    comp_stmt_list->push_back(layerOper);
+                }
                 break;
             }
             case Conv2D: {
@@ -441,12 +444,15 @@ compositeNode* UnfoldComposite::makeForwardComposite(layerNode *layer) {
         switch (layer -> layerType)
         {
             case Dense: {
-                Node *layerOper = makeDenseOperator(layer, inputs_id, outputs_id);
-                comp_stmt_list->push_back(layerOper);
-                // compositeNode *layerComp = makeDenseLayer(layer);
-                // Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
-                // ((compositeCallNode *)call)->isOriginal = false;
-                // comp_stmt_list->push_back(call);
+                if (ifFineDense) {
+                compositeNode *layerComp = makeDenseLayer(layer);
+                Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+                } else {
+                    Node *layerOper = makeDenseOperator(layer, inputs_id, outputs_id);
+                    comp_stmt_list->push_back(layerOper);
+                }
                 break;
             }
             case Conv2D: {
@@ -515,12 +521,15 @@ compositeNode* UnfoldComposite::makeBackComposite(layerNode *layer) {
     switch (layer->layerType)
     {
         case Dense: {
-            Node *layerOper = makeDDenseOperator(layer, inputs_id, outputs_id);
-            comp_stmt_list->push_back(layerOper);
-            // compositeNode *layerComp = makeDDenseLayer(layer);
-            // Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
-            // ((compositeCallNode *)call)->isOriginal = false;
-            // comp_stmt_list->push_back(call);
+            if (ifFineDense) {
+                compositeNode *layerComp = makeDDenseLayer(layer);
+                Node *call = new compositeCallNode(outputs_id, layerComp->compName, NULL, inputs_id, layerComp);
+                ((compositeCallNode *)call)->isOriginal = false;
+                comp_stmt_list->push_back(call);
+            } else {
+               Node *layerOper = makeDDenseOperator(layer, inputs_id, outputs_id);
+                comp_stmt_list->push_back(layerOper); 
+            }
             break;
         }
         case Conv2D: {
@@ -656,10 +665,15 @@ Node* UnfoldComposite::makeDenseInit(layerNode *layer) {
         string biasName = "_bias_" + to_string(layer-> level);
         Node*  bias0Id = new idNode(biasName + "_" + to_string(0));
         Node*  bias1Id = new idNode(biasName + "_" + to_string(1));
+        ((idNode *)bias0Id) -> isArray = 1;
+        ((idNode *)bias1Id) -> isArray = 1;
+        ((idNode *)bias0Id) -> arg_list = *(new list<Node *>({idI}));
+        ((idNode *)bias1Id) -> arg_list = *(new list<Node *>({idI}));
         Node *biasInit0 = new binopNode((expNode *)bias0Id, "=", (expNode *)globalSequential->getInitializer());
         Node *biasInit1 = new binopNode((expNode *)bias1Id, "=", (expNode *)globalSequential->getInitializer());
-        stmts->push_back(biasInit0);
-        stmts->push_back(biasInit1);
+        Node *block5 = new blockNode(new list<Node *>({biasInit0, biasInit1}));
+        Node *forNode5 = new forNode(initI, (expNode *)condI, (expNode *)nextI, block5);
+        stmts->push_back(forNode5);
     }
 
     init  = new blockNode(stmts);
@@ -674,7 +688,7 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
                 for (i = 0; i< rows; i++) {
                     temp += In0[i].x * weight_level_1[i][j];
                 }
-                Out0[j].x = temp [+ bias_level_1 ];
+                Out0[j].x = temp [+ bias_level_1[j] ];
             }
         } else {
             for (j = 0; j < cols; j++) {
@@ -682,7 +696,7 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
                 for (i = 0; i< rows; i++) {
                     temp += In0[i].x * weight_level_0[i][j];
                 }
-                Out0[j].x = temp [ + bias_level_1 ];
+                Out0[j].x = temp [ + bias_level_1[j] ];
             }
         }
         iterations++;
@@ -746,10 +760,15 @@ Node* UnfoldComposite::makeDenseWork(layerNode *layer, list<Node *> *inputs, lis
     Node *outX = new binopNode((expNode *)output, ".", (expNode *)x);
     Node *res0, *res1;
 
-    if (((conv2DLayerNode *)layer) -> use_bias) {
+    if (((denseLayerNode *)layer) -> use_bias) {
         string biasName = "_bias_" + to_string(layer -> level);
         Node *bias0 = new idNode(biasName + "_" + to_string(0));
         Node *bias1 = new idNode(biasName + "_" + to_string(1));
+        ((idNode *)bias0) -> isArray = 1;
+        ((idNode *)bias1) -> isArray = 1;
+        list<Node *> *biasArgList = new list<Node *>({idJ});
+        ((idNode *)bias0) -> arg_list = *biasArgList;
+        ((idNode *)bias1) -> arg_list = *biasArgList;
         res0 = new binopNode((expNode *)outX, "=", (expNode *)(new binopNode((expNode *)idTemp, "+", (expNode *)bias0)));
         res1 = new binopNode((expNode *)outX, "=", (expNode *)(new binopNode((expNode *)idTemp, "+", (expNode *)bias1)));
     } else {
@@ -976,6 +995,8 @@ operatorNode* UnfoldComposite::makeDDenseOperator(layerNode *layer, list<Node *>
     Node *declDouble = new declareNode(primDouble, idWeightError);
     if (((denseLayerNode *)layer) -> use_bias) {
         idNode *idBiasError = new idNode("biasError");
+        idBiasError -> isArray = 1;
+        idBiasError -> arg_list = *(new list<Node *>({cols}));
         ((declareNode *)declDouble) -> id_list.push_back(idBiasError);
     }
     list<Node *> *stmtList = new list<Node *>({declInt, declDouble});
@@ -1013,7 +1034,7 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
         }
         // 在编译器中决定是否添加以下代码
         for (j = 0; j < cols; j++) {
-            biasError += dIn0[j].x;
+            biasError[j] = dIn0[j].x;
         }
 
         iterations++;
@@ -1025,8 +1046,11 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
                         error[i][j] = 0;
                     }
                 }
-                bias_level_1 = -= (biasError_level / batch) * lr;
-                biasError_level = 0;
+                for (j = 0; j < cols; j++) {
+                    bias_level_1[j] = -= (biasError_level[j] / batch) * lr;
+                    biasError_level[j] = 0;
+                }
+                
             } else {
                 for (i = 0; i < rows; i++) {
                     for(j = 0; j < cols; j++) {
@@ -1034,8 +1058,10 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
                         error[i][j] = 0;
                     }
                 }
-                bias_level_0 -= (biasError_level / batch) * lr;
-                biasError_level = 0;
+                for (j = 0; j < cols; j++) {
+                    bias_level_0[j] = -= (biasError_level_0[j] / batch) * lr;
+                    biasError_level[j] = 0;
+                }
             }
             flag != flag;
             iterarions = 0;
@@ -1053,10 +1079,6 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     ((idNode *)weight0Id)->isArray = 1;
     ((idNode *)weight1Id)->isArray = 1;
 
-    string biasName = "_bias_" + to_string(layer -> level);
-    Node *bias0Id = new idNode(biasName + "_" + to_string(0));
-    Node *bias1Id = new idNode(biasName + "_" + to_string(1));
-
     constantNode *constZero = new  constantNode("long long", (long long)0);
     idNode *idI = new idNode("i"), *idJ = new idNode("j");
     primNode *primInt = new primNode("int");
@@ -1064,6 +1086,15 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     stmtList->push_back(declI);
     stmtList->push_back(declJ);
 
+    string biasName = "_bias_" + to_string(layer -> level);
+    Node *bias0Id = new idNode(biasName + "_" + to_string(0));
+    Node *bias1Id = new idNode(biasName + "_" + to_string(1));
+    ((idNode *)bias0Id) -> isArray = 1;
+    ((idNode *)bias1Id) -> isArray = 1;
+    list<Node *> *biasArgList = new list<Node *>({idJ});
+    ((idNode *)bias0Id) -> arg_list = *biasArgList;
+    ((idNode *)bias1Id) -> arg_list = *biasArgList;
+    
     primNode *primDouble = new primNode("double");
     idNode *idTemp = new idNode("temp");
     idTemp->init = new initNode(constZero);
@@ -1124,8 +1155,10 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
 
     // 取得biasError
     idNode *idBiasError = new idNode("biasError");
+    idBiasError -> isArray = 1;
+    idBiasError -> arg_list = *biasArgList;
     // 为biasError赋值
-    Node *updateBiasError = new binopNode((expNode *)idBiasError, "+=", (expNode *)dInX);
+    Node *updateBiasError = new binopNode((expNode *)idBiasError, "=", (expNode *)dInX);
 
     Node* midRes0 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weight0Id)));
     Node* midRes1 = new binopNode((expNode *)idTemp, "+=", (expNode *)(new binopNode((expNode *)dInX, "*", (expNode *)weight1Id)));
@@ -1189,10 +1222,12 @@ Node* UnfoldComposite::makeDDenseWork(layerNode *layer, list<Node *> *inputs, li
     Node *updateBias1 = new binopNode((expNode *)bias1Id, "-=", (expNode *)dBiasError);
     Node *resetBias = new binopNode((expNode *)idBiasError, "=", (expNode *)constZero);
 
+    Node *forNode11_0 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, new blockNode(new list<Node *>({updateBias0, resetBias})));
+    Node *forNode11_1 = new forNode(initJ, (expNode *)condJ, (expNode *)nextJ, new blockNode(new list<Node *>({updateBias1, resetBias})));
     Node *ifBlock2, *elseBlock2;
     if (((denseLayerNode *)layer)->use_bias) {
-        ifBlock2 = new blockNode(new list<Node *>({forNode9_1, updateBias1, resetBias}));
-        elseBlock2 = new blockNode(new list<Node *>({forNode9_0, updateBias0, resetBias}));
+        ifBlock2 = new blockNode(new list<Node *>({forNode9_1, forNode11_1}));
+        elseBlock2 = new blockNode(new list<Node *>({forNode9_0, forNode11_0}));
     } else {
         ifBlock2 = new blockNode(new list<Node *>({forNode9_1}));
         elseBlock2 = new blockNode(new list<Node *>({forNode9_0}));
