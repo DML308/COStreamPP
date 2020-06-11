@@ -186,10 +186,10 @@ composite slowKeySchedule(output stream<int x>Out,input stream<int x>In)
 				key[words - 1 - i] = USERKEYS[vector][i];
 		
 			// add 1 to MSB of user key
-			if (USERKEY_LENGTH < 256) {
+			/*if (USERKEY_LENGTH < 256) {
 				int msb = key[USERKEY_LENGTH / BITS_PER_WORD];
 				key[USERKEY_LENGTH / BITS_PER_WORD] = msb | 1 << (USERKEY_LENGTH % BITS_PER_WORD);
-			}
+			}*/
 		
 			// make prekeys w_-8 ... w_-1
 			for (i = 0; i < 8; i++)
@@ -272,11 +272,11 @@ composite KeySchedule(output stream<int x>Out,input stream<int x>In)
 					userkey[words - 1 - i] = USERKEYS[vector][i];
 		
 				// add 1 to MSB of user key
-				if (USERKEY_LENGTH < 256)
+				/*if (USERKEY_LENGTH < 256)
 				{
 					msb = userkey[USERKEY_LENGTH / BITS_PER_WORD];
 					userkey[USERKEY_LENGTH / BITS_PER_WORD] = msb | 1 << (USERKEY_LENGTH % BITS_PER_WORD);
-				}
+				}*/
 		
 				// make prekeys w_-8 ... w_-1
 				for ( i = 0; i < 8; i++)

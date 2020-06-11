@@ -273,5 +273,4 @@ composite Main()
 			MSJ sliding(1,1);	
 		}
 	};
-
-
+}
