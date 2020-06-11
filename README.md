@@ -1,5 +1,6 @@
 # COStreamPP
 >重构 COStream 的前端, C => C++
+此分支包含嵌套数据流结构由内向外修改spiltjoin中split和join节点传递数据个数的方法，只在用户未指定splitjoin的split和join的值的时候使用，所以未合并到主分支上。
 ## 运行方法
 ```bash
 git clone git@github.com:DML308/COStreamPP
