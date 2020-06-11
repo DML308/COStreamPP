@@ -70,12 +70,14 @@ int main(int argc, char *argv[])
         //设置输出文件路径
         setOutputPath();
     }
-    
+    clock_t part_1_start,part_1_end;
+    part_1_start = clock();
     // (2) 文法建立和语法树生成
     PhaseName = "Parsing";
     yyin = infp;
     yyparse();
-
+    part_1_end = clock();
+    
     // (3) 语义检查
     PhaseName = "SemCheck";
     // 生成符号表 语义检查
@@ -93,6 +95,9 @@ int main(int argc, char *argv[])
     start = clock();
     SSG = AST2FlatStaticStreamGraph(gMainComposite);
     end = clock();
+    clock_t part_3_start,part_3_end;
+    
+    part_3_start = clock();
     // (6) 对静态数据流图各节点进行工作量估计
     PhaseName = "WorkEstimate";
     WorkEstimate(SSG);
@@ -152,11 +157,15 @@ int main(int argc, char *argv[])
     pSA->actorTopologicalorder(SSSG->GetFlatNodes());
     //第二步根据以上步骤的节点划分结果，得到阶段赋值结果
     pSA->actorStageMap(mp->FlatNode2PartitionNum);
-
+    part_3_end = clock();
+    
     // (7) 输入为SDF图，输出为目标代码
     cout << "--------- x86代码生成   -------------------------\n";
+    clock_t part_4_start,part_4_end;
+    part_4_start = clock();
     CodeGeneration(CpuCoreNum, SSSG, "", pSA, mp);
-
+    part_4_end = clock();
+    
     //===----------------------------------------------------------------------===//
     // 编译后端 end
     //===----------------------------------------------------------------------===//
@@ -165,7 +174,10 @@ int main(int argc, char *argv[])
     removeTempFile(); //语法树使用完毕后删除临时文件.该 temp 文件用于输出报错行的具体内容.
     program_end = clock();
     cout<<"整体运行时间"<<(double)(program_end-program_start)/CLOCKS_PER_SEC<<"\n";
+    cout<<"词法分析和语法分析："<<(double)(part_1_end-part_1_start)/CLOCKS_PER_SEC<<"\n";
     cout<<"常量传播"<<(double)(running_time)/CLOCKS_PER_SEC<<"\n";
     cout<<"生成静态数据流图"<<(double)(end-start-running_time)/CLOCKS_PER_SEC<<"\n";
+    cout<<"并行性分析："<<(double)(part_3_end-part_3_start)/CLOCKS_PER_SEC<<"\n";
+    cout<<"目标代码生成："<<(double)(part_4_end-part_4_start)/CLOCKS_PER_SEC<<"\n";
     return 0;
 }
