@@ -480,7 +480,7 @@ constantNode *SymbolTable::fromVariableToConstant(Variable *value)
 string SymbolTable::toParamString(SymbolTable *table)
 {
     string params_str = "";
-    unordered_map<string, Variable *>::iterator it;
+    map<string, Variable *>::iterator it;
     for (it = variableTable.begin(); it != variableTable.end(); it++)
     {
         if (table->variableTable.find(it->first) == table->variableTable.end())
@@ -501,7 +501,7 @@ string SymbolTable::toParamString(SymbolTable *table)
 string SymbolTable::toParamValueString(SymbolTable *table)
 {
     string params_str = "";
-    unordered_map<string, Variable *>::iterator it;
+    map<string, Variable *>::iterator it;
     for (it = variableTable.begin(); it != variableTable.end(); it++)
     {
         if (table->variableTable.find(it->first) == table->variableTable.end())

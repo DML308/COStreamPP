@@ -6,7 +6,6 @@
 #include "defines.h"
 #include "node.h"
 #include <map>
-#include <unordered_map>
 #include <list>
 #include <algorithm>
 #include <vector>
@@ -232,7 +231,7 @@ class SymbolTable
 
     void printSymbolTables();
     
-    unordered_map<string, inOutdeclNode *,str_hash> getStreamTable(){
+    map<string, inOutdeclNode *> getStreamTable(){
       return this->streamTable;
     }
 
@@ -247,13 +246,13 @@ class SymbolTable
 
     map<string, funcDclNode *> funcTable; 
 
-    unordered_map<string, inOutdeclNode *,str_hash> streamTable; //stream √
+    map<string, inOutdeclNode *> streamTable; //stream √
 
     //map<string, Node *> identifyTable; 
     //map<string, Variable *> variableTable; 
-    unordered_map<string,Variable *,str_hash>variableTable;//变量 √
+    map<string,Variable *>variableTable;//变量 √
     map<string,Variable *> paramTable;//参数变量 用于代码生成时在operator中添加该参数变量 √
-    unordered_map<string, CompositeSymbol *,str_hash> compTable; // composite √
+    map<string, CompositeSymbol *> compTable; // composite √
     map<string, operatorNode *> optTable; //operator
 
     
