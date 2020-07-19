@@ -1,33 +1,42 @@
+// COStream中简单的sequential结构应用
 composite Main() {
-    stream<double x> In, Out, Y;
-    (In, Y) = Start() {
-        int i = 0;
+    stream<double x> In, Out, Data, Y;// 声明数据流
+    In = FileReader()("../test.csv", 76);// 内置计算节点FileReader,读入数据
+    //数据预处理
+    (Data, Y) = preprocess(In) {
         work {
-            for(i = 0; i < 12; i++) {
-                In[i].x = 0;
+            int i, j;
+            for(i = 0; i < 75; i++) {
+                Data[i].x = In[i].x/255;
             }
-            for(i = 0; i < 10; i++) {
-                Y[i].x = 0;
-            } 
+            for(j = 0; j < 5; j++) {
+                Y[j].x = In[i].x == j ? 1 : 0;
+            }
         }
         window {
-            In tumbling(12);
-            Y tumbling(10);
+            In sliding(76, 76);
+            Data tumbling(75);
+            Y tumbling(5);
         }
     };
-    Out = sequential (In, Y) ((3, 4, 1), 0.0001, 100, "crossEntropy", ('gaussRandom', 0, 1)) {
-        // filters, kernel_size, strides, padding, use_bias  
-        add Conv2D(3, (2, 2), (1, 1), (0, 0), 1);
-        add Activation("relu");
-        add Conv2D(5, (2, 2), (1, 1), (0, 0), 1);
-        add Dense(10);
-        add Activation("softmax");
-    };
+    // In训练数据集 Y训练标签集 1.输入数据的大小,2.学习率,3.批量数,4.损失函数,5.参数初始化方法
+    Out = sequential (Data, Y) ((5, 5, 3), 0.0001, 100, "crossEntropy", ('gaussRandom', 0, 1)) {
+        // 1.卷积层:卷积核数量, 卷积核大小, 步长, 是否使用偏置项  
+        add Conv2D(5, (2, 2), (1, 1), 1); // 输出数据大小: 4 * 4 * 5
+        // 2.池化层:池化窗口大小
+        add MaxPooling2D(2); // 输出数据大小:2 * 2 * 5
+        // 3.激活层:激活函数
+        add Activation("sigmoid"); // 输出数据大小:2 * 2 * 5
+        // 4.全连接层:神经元数量
+        add Dense(5); // 输出数据大小:5
+        // 5.激活层:激活函数
+        add Activation("softmax"); // 输出数据大小:5
+    };  
     sink(Out) {
         work {
         }
         window{
-            Out sliding(12, 12);
+            Out sliding(75, 75);
         }
     };
 }

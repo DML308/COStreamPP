@@ -17,7 +17,7 @@ composite Main() {
         }
     };
     Out = sequential (In, Y) ((28, 28, 3), 0.0001, 100, "crossEntropy", 'gaussRandom') {
-        // filters, kernel_size, strides, padding, use_bias
+        // filters, kernel_size, strides, use_bias
         add Conv2D(32, (3, 3), (1, 1), 0);
         add Activation("relu");
         add MaxPooling2D(2);
@@ -34,7 +34,6 @@ composite Main() {
     };
     sink(Out) {
         work {
-  
         }
         window{
             Out sliding(2352, 2352);

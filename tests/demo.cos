@@ -1,24 +1,25 @@
 composite Main() {
-    stream<double x> In, Out, Y;
-    (In, Y) = Start() {
-        int i = 0;
+    stream<double x> In, Out, Data, Y;
+    In = FileReader()("mnist-train.csv", 785);
+    (Data, Y) = preprocess(In) {
         work {
-            // 28 * 28
+            int i, j;
             for(i = 0; i < 784; i++) {
-                In[i].x = i % 255;
+                In[i].x = In[i].x/255;
             }
-            for(i = 0; i < 10; i++) {
-                Y[i].x = i * 0.1;
-            } 
+            for(j = 0; j < 10; j++) {
+                Y[j].x = In[i].x == j ? 1 : 0;
+            }
         }
         window {
-            In tumbling(784);
+            In sliding(784, 784);
+            Data tumbling(784);
             Y tumbling(10);
         }
     };
-    Out = sequential (In, Y) ((28, 28, 1), 0.0001, 100, "crossEntropy", 'gaussRandom') {
-        // filters, kernel_size, strides, padding, use_bias  
-        add Conv2D(32, (3, 3), (1, 1), (0, 0), 0);
+    Out = sequential (Data, Y) ((28, 28, 1), 0.0001, 100, "crossEntropy", 'gaussRandom') {
+        // filters, kernel_size, strides, use_bias  
+        add Conv2D(32, (3, 3), (1, 1), 0);
         add Activation("relu");
         add Conv2D(32, (3, 3), (1, 1), (0, 0), 0);
         add Activation("relu");
@@ -32,10 +33,10 @@ composite Main() {
         add MaxPooling2D(2);
         add Dropout(0.25);
 
-        add Dense(512);
+        add Dense(512, 1);
         add Activation("relu");
         add Dropout(0.5);
-        add Dense(10);
+        add Dense(10, 1);
         add Activation("softmax");
     };
     sink(Out) {

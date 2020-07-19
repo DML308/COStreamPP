@@ -31,7 +31,8 @@ StaticStreamGraph *SSG = NULL;
 SchedulerSSG *SSSG = NULL;
 //SymbolTable S;
 bool ifConstantFlow = false; //用于标记，在生成符号表时不进行常量传播 在静态数据流图生成过程中借助执行上下文进行常量传播
-bool ifGetTime = false; //是否检查每个阶段的时间
+bool ifGetTime = true; //是否检查每个阶段的时间
+bool ifFineDense = false; //是否以更细粒度划分Dense层
 
 double running_time = 0;
 SymbolTable *symboltables[MAX_SCOPE_DEPTH][MAX_SCOPE_DEPTH]; //符号表
