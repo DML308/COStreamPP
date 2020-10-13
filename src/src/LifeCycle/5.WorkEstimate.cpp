@@ -1,5 +1,9 @@
 #include "staticStreamGragh.h"
 #include "5.workEstimate.h"
+#include "symboltableGenerate.h"
+#include "symbol.h"
+
+extern SymbolTable *top;
 
 void WorkEstimate(StaticStreamGraph *ssg)
 {
@@ -111,7 +115,7 @@ void workCompute(Node *node)
                 {
                     tmp = FLOAT_ARITH_OP;
                 }
-                else if (((constantNode *)exp)->style == "long long")
+                else if (((constantNode *)exp)->style == "integer")
                 {
                     tmp = INT_ARITH_OP;
                 }
@@ -134,11 +138,11 @@ void workCompute(Node *node)
                 {
                     if (((constantNode *)right)->style == "double")
                     {
-                        tmp = FLOAT_ARITH_OP;
+                        tmp =  FLOAT_ARITH_OP;
                         if (binop->op == "/") //仅当浮点的除法需要x16
                             tmp *= 16;
                     }
-                    else if (((constantNode *)right)->style == "long long")
+                    else if (((constantNode *)right)->style == "integer")
                     {
                         tmp = INT_ARITH_OP;
                     }
@@ -221,23 +225,55 @@ void workCompute(Node *node)
             /* for的next部分 */
             if (next_exp->type == Binop)
             {
+
                 string op = ((binopNode *)next_exp)->op;
-                if (op == "*=")
+
+                /*解决当末尾循环体增减不为1时，循环次数计算错误的问题*/
+                if(op == "+="||op =="-=")
                 {
+                    expNode *left = ((binopNode *)(next_exp))->left;
+                    expNode *right = ((binopNode *)(next_exp))->right;
+                    if(right->type==constant||left->type==constant)
+                    {
+                        if(right->type==constant)
+                        {
+                            long long span=((constantNode *)right)->llval;
+                            if(span!=1)
+                            tmp=ceil(tmp*1.0/span);
+                        }
+                        else if(left->type==constant)
+                        {
+                            long long span=((constantNode *)left)->llval;
+                            if(span!=1)
+                            tmp=ceil(tmp*1.0/span);
+                        }
+                    }
+                }
+                /*解决当末尾循环体的运算是*=和/=时循环次数计算失败的问题*/
+                else if (op == "*="||op == "/=")
+                {
+                    expNode *left=((binopNode *)(next_exp))->left;
+                    expNode *right=((binopNode *)(next_exp))->right;
+                    //int ccc;
+                    long long span=0;
+                    if(right->type==constant||left->type==constant)
+                    {
+                        if(right->type==constant)
+                        {
+                            span=((constantNode *)right)->llval;
+                        }
+                        else if(left->type==constant)
+                        {
+                            span=((constantNode *)left)->llval;
+                        }
+                    }
                     if (condition >= init)
                         tmp = condition / init;
                     else
                         tmp = init / condition;
-                    tmp = log(tmp) / log(step);
+                    tmp =ceil(log(tmp) / log(span));
                 }
-                else if (op == "/=")
-                {
-                    if (condition >= init)
-                        tmp = condition / init;
-                    else
-                        tmp = init / condition;
-                    tmp = log(tmp) / log(step);
-                }
+                
                 else
                     tmp = (tmp + step - 1) / step;
             }
@@ -249,13 +285,37 @@ void workCompute(Node *node)
         work = oldWork + tmp * (newWork - oldWork);
         break;
     case If:
+        {
+            ifNode * ifnode = static_cast<ifNode *>(node);
+            expNode *if_exp = ifnode->exp;
+            top=FindRightSymbolTable(if_exp->loc->first_line);
+            Constant *bool_result = getOperationResult(if_exp);
+            if(bool_result->bval==false)
+            {
+                workCompute(static_cast<ifNode *>(node)->exp);
+            } 
+            else
+            {
+                WEST_astwalk(node);  
+            }
+            work+=IF;
+            break;
+        }
     case IfElse:
-        oldWork = work;
-        WEST_astwalk(node);
-        newWork = work;
-        work -= (newWork - oldWork) / 2;
-        work += IF;
+        {
+            ifElseNode * ifelsenode = static_cast<ifElseNode *>(node);
+            expNode *ifelse_exp = ifelsenode->exp;
+            top=FindRightSymbolTable(ifelse_exp->loc->first_line);
+            Constant *bool_result = getOperationResult(ifelse_exp);
+            workCompute(ifelse_exp);
+            if(bool_result->bval==true)
+            workCompute(ifelsenode->stmt1);
+            else{
+                workCompute(ifelsenode->stmt2);
+            }
+            work += IF;
         break;
+        }
     case Do:
     case While:
         oldWork = work;
@@ -302,7 +362,7 @@ void workCompute(Node *node)
                 work += 272 / 1;
             else if (funcName == "atanh")
                 work += 304 / 1;
-            else if (funcName == "ceil")
+            else if (funcName == "ceil")   
                 work += 47 / 1;
             else if (funcName == "cos")
                 work += 120 / 1;
@@ -390,7 +450,7 @@ void WEST_astwalk(Node *node)
         workCompute(static_cast<unaryNode *>(node)->exp);
         break;
     case Cast:
-        workCompute(static_cast<caseNode *>(node)->exp);
+        workCompute(static_cast<castNode *>(node)->exp);
         break;
     case Array:
         workCompute(node);

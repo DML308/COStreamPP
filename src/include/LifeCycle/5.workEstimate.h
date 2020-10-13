@@ -12,7 +12,7 @@
 #define FLOAT_ARITH_OP  2
 #define LOOP_COUNT  5
 #define SWITCH  1
-#define IF  1
+#define IF  1  
 #define CONTINUE  1
 #define BREAK  1
 #define MEMORY_OP  2
