@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     // (3)对节点进行调度划分
     cout << "--------- 对静态数据流图执行划分算法 ---------------\n";
     PhaseName = "Partition";
-    #if 1
+    #if 0
     mp = new GreedyPartition(SSSG);
     #else
     mp = new HeuristicGreedyPartition(SSSG);

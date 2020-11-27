@@ -3113,7 +3113,7 @@ Constant *getCallValue(string name, list<Constant *> params)
 Constant *getOperationResult(Node *exp)
 {
     switch (exp->type)
-    {
+    { 
     case Id:
     {
         idNode *id = static_cast<idNode *>(exp);
@@ -3205,7 +3205,7 @@ Constant *getOperationResult(Node *exp)
             rightV = getOperationResult(static_cast<binopNode *>(exp)->right);
         }
 
-        if (leftV && rightV)
+        if(leftV && rightV)
         {
             return getResult(op, leftV, rightV);
         }

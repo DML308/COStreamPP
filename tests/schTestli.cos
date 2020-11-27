@@ -1,11 +1,21 @@
 
 composite A(output stream<int x>Out, input stream<int x>In)
 {
+    param
+        int size;
     Out=A(In)
     {
         work
         {
-        
+            int i,j,k=0,x=1;
+            if(k==5)
+                k++;
+            for(i=x;i<size;i++)
+            {   
+                if(i==0)
+                    k+=1;
+            }
+
         }
         window
         {
@@ -54,7 +64,7 @@ composite Main()
     };
     CDFT=pipeline(Source)
     {
-        add A();
+        add A(4);
         add B();
         add C();
 

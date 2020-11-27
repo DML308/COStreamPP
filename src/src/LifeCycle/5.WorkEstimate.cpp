@@ -55,7 +55,7 @@ void workCompute(Node *node)
         WEST_astwalk(node);
         break;
     case Array:
-        work += MEMORY_OP;
+        work += MEMORY_OP; 
         break;
     case Block:
         WEST_astwalk(node);
@@ -196,8 +196,18 @@ void workCompute(Node *node)
                 expNode *init_r = ((binopNode *)(init_exp))->right;
                 if (init_r->type == constant)
                     init = ((constantNode *)init_r)->llval;
+                else
+                {
+                    expNode *right=((binopNode *)(init_exp))->right;
+                    top=FindRightSymbolTable(init_exp->loc->first_line);
+                    Constant *init_res=getOperationResult(right);
+                    init=init_res->llval;
+                }
+                 
             }
+            
             /* for的cond部分 */
+            
             if (cond_exp->type == Binop)
             {
                 expNode *left = ((binopNode *)(cond_exp))->left;
@@ -212,6 +222,14 @@ void workCompute(Node *node)
                     {
                         condition = ((constantNode *)(right))->llval;
                     }
+                }
+                //如果条件是标识符
+                if(right->type==Id)
+                {
+                    
+                    top=FindRightSymbolTable(cond_exp->loc->first_line);
+                    Variable *var=top->LookupIdentifySymbol(((idNode*)right)->name);
+                    condition=var->value->llval;  
                 }
                 if (init != MAX_INF && condition != MAX_INF)
                 {
@@ -346,66 +364,120 @@ void workCompute(Node *node)
         WEST_astwalk(node);
         {
             string funcName = static_cast<callNode *>(node)->name;
+            //if (funcName == "acos")
+               // work += 515 / 1;
             if (funcName == "acos")
-                work += 515 / 1;
+                work += 380 / 1;
+            //else if (funcName == "acosh")
+              //  work += 665 / 1;
             else if (funcName == "acosh")
-                work += 665 / 1;
-            else if (funcName == "acosh")
-                work += 665 / 1;
+                work += 39 / 1;
+            //else if (funcName == "asin")
+              //  work += 536 / 1;
             else if (funcName == "asin")
-                work += 536 / 1;
+                work += 380 / 1;
             else if (funcName == "asinh")
-                work += 578 / 1;
+                work += 95 / 1;
+            //else if (funcName == "asinh")
+              //  work += 578 / 1    
             else if (funcName == "atan")
-                work += 195 / 1;
+                work += 155 / 1;
+            //else if (funcName == "atan")
+            //    work += 195 / 1;
             else if (funcName == "atan2")
-                work += 272 / 1;
+                work += 192 / 1;
+            //else if (funcName == "atan2")
+                //work += 272 / 1;
             else if (funcName == "atanh")
-                work += 304 / 1;
+                work += 45 / 1;
+            //else if (funcName == "atanh")
+              //  work += 304 / 1;
             else if (funcName == "ceil")   
-                work += 47 / 1;
+                work += 38 / 1;
+            //else if (funcName == "ceil")   
+              //  work += 47 / 1;
             else if (funcName == "cos")
-                work += 120 / 1;
+                work += 144 / 1;
+            //else if (funcName == "cos")
+              //  work += 120 / 1;
             else if (funcName == "cosh")
-                work += 368 / 1;
+                work += 152 / 1;
+            //else if (funcName == "cosh")
+                //work += 368 / 1;
             else if (funcName == "exp")
-                work += 162 / 1;
+                work += 137 / 1;
+            //else if (funcName == "exp")
+              //  work += 162 / 1;
             else if (funcName == "expm1")
                 work += 220 / 1;
             else if (funcName == "floor")
-                work += 58 / 1;
+                work += 38 / 1;
+            //else if (funcName == "floor")
+             //   work += 58 / 1;
             else if (funcName == "fmod")
-                work += 147 / 1;
+                work += 80 / 1;
+            //else if (funcName == "fmod")
+              //  work += 147 / 1;
             else if (funcName == "frexp")
-                work += 60 / 1;
+                work += 52 / 1;
+            //else if (funcName == "frexp")
+              //  work += 60 / 1;
             else if (funcName == "log")
-                work += 146 / 1;
+                work += 102 / 1;
+            //else if (funcName == "log")
+              //  work += 146 / 1;
             else if (funcName == "log10")
-                work += 212 / 1;
+                work += 102 / 1;
+            //else if (funcName == "log10")
+              //  work += 212 / 1;
             else if (funcName == "log1p")
-                work += 233 / 1;
+                work += 53 / 1;
+            //else if (funcName == "log1p")
+              //  work += 233 / 1;
             else if (funcName == "modf")
-                work += 41 / 1;
+                work += 45 / 1;
+            //else if (funcName == "modf")
+              //  work += 41 / 1;
             else if (funcName == "pow")
-                work += 554 / 1;
+                work += 30 / 1;
+            //else if (funcName == "pow")
+                //work += 554 / 1;
             else if (funcName == "sin")
-                work += 97 / 1;
+                work += 160 / 1;
+            //else if (funcName == "sin")
+              //  work += 97 / 1;
             else if (funcName == "sinh")
-                work += 303 / 1;
+                work += 148 / 1;
+            //else if (funcName == "sinh")
+              //  work += 303 / 1;
             else if (funcName == "sqrt")
-                work += 297 / 1;
+                work += 54 / 1;
+            //else if (funcName == "sqrt")
+              //  work += 297 / 1;
             else if (funcName == "tan")
-                work += 224 / 1;
+                work += 167 / 1;
+            //else if (funcName == "tan")
+              //  work += 224 / 1;
             else if (funcName == "tanh")
-                work += 288 / 1;
+                work += 151 / 1;
+            //else if (funcName == "tanh")
+             //   work += 288 / 1;
             else if (funcName == "round")
-                work += (58 + FLOAT_ARITH_OP) / 1;
+                work += (23 + FLOAT_ARITH_OP) / 1;
+            //else if (funcName == "round")
+              //  work += (58 + FLOAT_ARITH_OP) / 1;
             else if (funcName == "abs")
-                work += 60 / 1;
+                work += 11 / 1;
+            //else if (funcName == "abs")
+              //  work += 60 / 1;
             else if (funcName == "max")
-                work += 60 / 1;
+                work += 10 / 1;
+            //else if (funcName == "max")
+              //  work += 60 / 1;
             else if (funcName == "min")
-                work += 60 / 1;
+                work += 10 / 1;
+            //else if (funcName == "min")
+              //  work += 60 / 1;
             else if (funcName == "frta")
                 work += FRTA_OP / 1;
             else if (funcName == "println")
