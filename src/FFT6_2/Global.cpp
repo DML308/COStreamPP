@@ -1,0 +1,25 @@
+#include "Buffer.h"
+#include "Global.h"
+#include <vector>
+using namespace std;
+Buffer<streamData> FloatSource_0_AssignmentX_1(2,0,0);
+Buffer<streamData> AssignmentX_1_FFTReorderSimpleX_2(32,0,0);
+Buffer<streamData> FFTReorderSimpleX_2_CombineDFTX_3(32,0,0);
+Buffer<streamData> CombineDFTX_3_CombineDFTX_4(32,0,0);
+Buffer<streamData> CombineDFTX_4_CombineDFTX_5(32,0,0);
+Buffer<streamData> CombineDFTX_5_FloatSink_6(32,0,0);
+timespec workTime0={0,0};
+timespec workTime1={0,0};
+timespec workTime2={0,0};
+timespec workTime3={0,0};
+timespec workTime4={0,0};
+timespec workTime5={0,0};
+timespec workTime6={0,0};
+timespec worktime0={0,0};
+timespec worktime1={0,0};
+timespec worktime2={0,0};
+timespec worktime3={0,0};
+timespec worktime4={0,0};
+timespec worktime5={0,0};
+timespec worktime6={0,0};
+int clks1=0;

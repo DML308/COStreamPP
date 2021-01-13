@@ -107,7 +107,7 @@ void workCompute(Node *node)
         break;
     case Unary:
         WEST_astwalk(node);
-        {
+        /*{
             expNode *exp = static_cast<unaryNode *>(node)->exp;
             if (exp->type == constant)
             {
@@ -123,17 +123,93 @@ void workCompute(Node *node)
             }
             else
                 work += INT_ARITH_OP;
-        }
+       
         break;
-
+        }*/
+       {
+           unaryNode * unary=static_cast<unaryNode *>(node);
+           if(unary->op=="~"||unary->op=="!")
+           {
+               tmp=1;
+           }
+           if(unary->op=="++"||unary->op=="--")
+           {
+               tmp=2;
+           }
+           work+=tmp;
+           break;
+       }
     case Binop:
     {
         binopNode * binop = static_cast<binopNode *>(node);
-        if (binop->op != "=" && binop->op != ".")
+        //关系运算
+        if(binop->op=="<"||binop->op==">"||binop->op==">="||binop->op=="<="||binop->op=="=="||binop->op=="!=")
+        {
+            tmp=1;
+        }
+        //逻辑运算
+        if(binop->op=="&&"||binop->op=="||")
+        {
+            tmp=2;
+        }
+        //位运算
+        if(binop->op=="&"||binop->op=="^"||binop->op=="|"||binop->op=="<<"||binop->op==">>")
+        {
+            tmp=1;
+        }
+        //算数运算
+        if(binop->op == "+"||binop->op == "-"||binop->op=="*")
+        {
+              if(((constantNode *)right)->type==constant)
+              {
+
+                if(((constantNode *)right)->style == "int")
+                {
+                    tmp=2;
+                }
+                else if(((constantNode *)right)->style == "float")
+                {
+                    tmp=4;
+                }
+                else if(((constantNode *)right)->style == "double")
+                {
+                    tmp=4;
+                }
+               
+              }
+               else
+                {
+                    tmp=2;
+                }
+            
+            
+        }
+        if(binop->op=="/")
+        {
+            if(((constantNode *)right)->type==constant)
+            {
+                if(((constantNode *)right)->style == "int")
+                {
+                    tmp=2;
+                }
+                if(((constantNode *)right)->style == "float")
+                {
+                    tmp=7;
+                }
+                if(((constantNode *)right)->style == "double")
+                {
+                    tmp=8;
+                }
+            }
+            else 
+            {
+                tmp=2;
+            }
+        }
+       /* if (binop->op != "=" && binop->op != ".")
         {
                 expNode *left = binop->left;
                 expNode *right = binop->right;
-                /*暂时缺乏对左操作树的工作量估计*/
                 if (right->type == constant)
                 {
                     if (((constantNode *)right)->style == "double")
@@ -150,6 +226,7 @@ void workCompute(Node *node)
                 else
                     tmp = FLOAT_ARITH_OP;
         }
+        */
         else if (binop->op == "=")
         {
             tmp = 0;
@@ -164,8 +241,18 @@ void workCompute(Node *node)
         break;
     }
     case Ternary:
-        WEST_astwalk(node);
+    {
+       expNode * aNode=static_cast<ternaryNode *>(node)->first;
+        top=FindRightSymbolTable(aNode->loc->first_line);
+        Constant *bool_result=getOperationResult(aNode);
+        workCompute(aNode);
+        if(bool_result->bval==true)
+        workCompute(static_cast<ternaryNode *>(node)->second);
+        else
+        workCompute(static_cast<ternaryNode *>(node)->third);
+        //WEST_astwalk(node);
         break;
+    }
     case For:
         workCompute(static_cast<forNode *>(node)->init);
         oldWork = work;
@@ -303,7 +390,7 @@ void workCompute(Node *node)
         work = oldWork + tmp * (newWork - oldWork);
         break;
     case If:
-        {
+        /*{
             ifNode * ifnode = static_cast<ifNode *>(node);
             expNode *if_exp = ifnode->exp;
             top=FindRightSymbolTable(if_exp->loc->first_line);
@@ -318,9 +405,9 @@ void workCompute(Node *node)
             }
             work+=IF;
             break;
-        }
+        }*/
     case IfElse:
-        {
+       /*{
             ifElseNode * ifelsenode = static_cast<ifElseNode *>(node);
             expNode *ifelse_exp = ifelsenode->exp;
             top=FindRightSymbolTable(ifelse_exp->loc->first_line);
@@ -331,9 +418,16 @@ void workCompute(Node *node)
             else{
                 workCompute(ifelsenode->stmt2);
             }
+
             work += IF;
         break;
-        }
+        }*/
+        oldWork = work;
+        WEST_astwalk(node);
+        newWork = work;
+        work -= (newWork - oldWork) / 2;
+        work += IF;
+        break;
     case Do:
     case While:
         oldWork = work;
@@ -343,6 +437,7 @@ void workCompute(Node *node)
         break;
     case Cast:
         WEST_astwalk(node);
+        work+=CAST;
         break;
     case Switch:
         WEST_astwalk(node);
@@ -373,9 +468,9 @@ void workCompute(Node *node)
             else if (funcName == "acosh")
                 work += 39 / 1;
             //else if (funcName == "asin")
-              //  work += 536 / 1;
-            else if (funcName == "asin")
-                work += 380 / 1;
+              //  work += 536;
+            else if (funcName =="asin")
+                work += 380;
             else if (funcName == "asinh")
                 work += 95 / 1;
             //else if (funcName == "asinh")
@@ -509,11 +604,11 @@ void WEST_astwalk(Node *node)
         break;
     case Id:
         break;
-    case Ternary:
+    /*case Ternary:
         workCompute(static_cast<ternaryNode *>(node)->first);
         workCompute(static_cast<ternaryNode *>(node)->second);
         workCompute(static_cast<ternaryNode *>(node)->third);
-        break;
+        break;*/
     case Binop:
         workCompute(static_cast<binopNode *>(node)->left);
         workCompute(static_cast<binopNode *>(node)->right);

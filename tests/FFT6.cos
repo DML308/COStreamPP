@@ -11,16 +11,19 @@ composite Combine(output stream<double x>Out, input stream<double x>In)
 
 	Out = CombineDFTX(In)
 	{
-		double wn_r = cos(2 * PI / TN);
-		double wn_i = sin(2 * PI / TN);
+		
 		work
 		{
+			double wn_r;
+			double wn_i = sin(2 * PI / TN);
 			int i;
 			double w_r = 1, w_i = 0;
 			double results[2 * TN];
 			double y0_r, y0_i, y1_r, y1_i;
 			double y1w_r, y1w_i, w_r_next, w_i_next;
+			wn_r = cos(2 * PI / TN);
 
+			
 			for (i = 0; i < TN; i += 2)
 			{
 				y0_r = In[i].x;
@@ -144,9 +147,13 @@ composite Main()
 		{
 			if (current > max)
 				current = 0.0;
-			Source[0].x = current;
-			current += 2 * N;
+				Source[0].x = current;
+				current += 2 * N;
+
+		
+
 		}
+
 		window {
 			Source tumbling(1);
 		}

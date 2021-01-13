@@ -7,7 +7,7 @@ SchedulerSSG *SchedulingSSG(StaticStreamGraph *ssg)
     if (sssg->SteadyScheduling())
     {
         sssg->InitScheduling();
-#if 0
+#if 1
         cout << "稳态调度序列:" << endl;
         for (auto pos : sssg->mapFlatNode2SteadyCount)
             cout << pos.first->name << "\t" << pos.second << endl;

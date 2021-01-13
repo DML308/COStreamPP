@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     program_start = clock();
     Partition *mp = NULL;
     StageAssignment *pSA = NULL;
-    int CpuCoreNum = 1; /*默认初始化为1一台机器中核的数目*/
+    int CpuCoreNum = 2; /*默认初始化为1一台机器中核的数目*/
     //===----------------------------------------------------------------------===//
     // 编译前端 begin
     //===----------------------------------------------------------------------===//

@@ -1,0 +1,311 @@
+/*该文件定义各thread的入口函数，在函数内部完成软件流水迭代*/
+#include "Buffer.h"
+#include "Producer.h"
+#include "Consumer.h"
+#include "Global.h"
+#include "AllActorHeader.h"	//包含所有actor的头文件
+#include "lock_free_barrier.h"	//包含barrier函数
+#include "rdtsc.h"
+#include <fstream>
+extern int MAX_ITER;
+void thread_2_fun()
+{
+	workerSync(2);
+	HighPassFilterX_103 HighPassFilterX_103_obj(HighPassFilterX_103_Compressor_104,LowPassFilterX_102_HighPassFilterX_103);
+	Compressor_104 Compressor_104_obj(Compressor_104_ProcessFilter_105,HighPassFilterX_103_Compressor_104);
+	ProcessFilter_105 ProcessFilter_105_obj(ProcessFilter_105_Expander_106,Compressor_104_ProcessFilter_105);
+	Expander_106 Expander_106_obj(Expander_106_Duplicate_107,ProcessFilter_105_Expander_106);
+	Duplicate_107 Duplicate_107_obj(Duplicate_107_LowPassFilterX_108,Duplicate_107_HighPassFilterX_109,Expander_106_Duplicate_107);
+	HighPassFilterX_109 HighPassFilterX_109_obj(HighPassFilterX_109_join_110,Duplicate_107_HighPassFilterX_109);
+	LowPassFilterX_112 LowPassFilterX_112_obj(LowPassFilterX_112_HighPassFilterX_113,Duplicate_1_LowPassFilterX_112);
+	HighPassFilterX_113 HighPassFilterX_113_obj(HighPassFilterX_113_Compressor_114,LowPassFilterX_112_HighPassFilterX_113);
+	Compressor_114 Compressor_114_obj(Compressor_114_ProcessFilter_115,HighPassFilterX_113_Compressor_114);
+	ProcessFilter_115 ProcessFilter_115_obj(ProcessFilter_115_Expander_116,Compressor_114_ProcessFilter_115);
+	Expander_116 Expander_116_obj(Expander_116_Duplicate_117,ProcessFilter_115_Expander_116);
+	Duplicate_117 Duplicate_117_obj(Duplicate_117_LowPassFilterX_118,Duplicate_117_HighPassFilterX_119,Expander_116_Duplicate_117);
+	LowPassFilterX_118 LowPassFilterX_118_obj(LowPassFilterX_118_join_120,Duplicate_117_LowPassFilterX_118);
+	HighPassFilterX_119 HighPassFilterX_119_obj(HighPassFilterX_119_join_120,Duplicate_117_HighPassFilterX_119);
+	join_120 join_120_obj(join_120_Adder_121,LowPassFilterX_118_join_120,HighPassFilterX_119_join_120);
+	Adder_121 Adder_121_obj(Adder_121_join_322,join_120_Adder_121);
+	HighPassFilterX_123 HighPassFilterX_123_obj(HighPassFilterX_123_Compressor_124,LowPassFilterX_122_HighPassFilterX_123);
+	Compressor_124 Compressor_124_obj(Compressor_124_ProcessFilter_125,HighPassFilterX_123_Compressor_124);
+	ProcessFilter_125 ProcessFilter_125_obj(ProcessFilter_125_Expander_126,Compressor_124_ProcessFilter_125);
+	Expander_126 Expander_126_obj(Expander_126_Duplicate_127,ProcessFilter_125_Expander_126);
+	Duplicate_127 Duplicate_127_obj(Duplicate_127_LowPassFilterX_128,Duplicate_127_HighPassFilterX_129,Expander_126_Duplicate_127);
+	LowPassFilterX_128 LowPassFilterX_128_obj(LowPassFilterX_128_join_130,Duplicate_127_LowPassFilterX_128);
+	HighPassFilterX_129 HighPassFilterX_129_obj(HighPassFilterX_129_join_130,Duplicate_127_HighPassFilterX_129);
+	join_130 join_130_obj(join_130_Adder_131,LowPassFilterX_128_join_130,HighPassFilterX_129_join_130);
+	Adder_131 Adder_131_obj(Adder_131_join_322,join_130_Adder_131);
+	HighPassFilterX_133 HighPassFilterX_133_obj(HighPassFilterX_133_Compressor_134,LowPassFilterX_132_HighPassFilterX_133);
+	Compressor_134 Compressor_134_obj(Compressor_134_ProcessFilter_135,HighPassFilterX_133_Compressor_134);
+	ProcessFilter_135 ProcessFilter_135_obj(ProcessFilter_135_Expander_136,Compressor_134_ProcessFilter_135);
+	Expander_136 Expander_136_obj(Expander_136_Duplicate_137,ProcessFilter_135_Expander_136);
+	Duplicate_137 Duplicate_137_obj(Duplicate_137_LowPassFilterX_138,Duplicate_137_HighPassFilterX_139,Expander_136_Duplicate_137);
+	LowPassFilterX_138 LowPassFilterX_138_obj(LowPassFilterX_138_join_140,Duplicate_137_LowPassFilterX_138);
+	HighPassFilterX_139 HighPassFilterX_139_obj(HighPassFilterX_139_join_140,Duplicate_137_HighPassFilterX_139);
+	join_140 join_140_obj(join_140_Adder_141,LowPassFilterX_138_join_140,HighPassFilterX_139_join_140);
+	Adder_141 Adder_141_obj(Adder_141_join_322,join_140_Adder_141);
+	HighPassFilterX_143 HighPassFilterX_143_obj(HighPassFilterX_143_Compressor_144,LowPassFilterX_142_HighPassFilterX_143);
+	Compressor_144 Compressor_144_obj(Compressor_144_ProcessFilter_145,HighPassFilterX_143_Compressor_144);
+	ProcessFilter_145 ProcessFilter_145_obj(ProcessFilter_145_Expander_146,Compressor_144_ProcessFilter_145);
+	Expander_146 Expander_146_obj(Expander_146_Duplicate_147,ProcessFilter_145_Expander_146);
+	Duplicate_147 Duplicate_147_obj(Duplicate_147_LowPassFilterX_148,Duplicate_147_HighPassFilterX_149,Expander_146_Duplicate_147);
+	LowPassFilterX_148 LowPassFilterX_148_obj(LowPassFilterX_148_join_150,Duplicate_147_LowPassFilterX_148);
+	HighPassFilterX_149 HighPassFilterX_149_obj(HighPassFilterX_149_join_150,Duplicate_147_HighPassFilterX_149);
+	join_150 join_150_obj(join_150_Adder_151,LowPassFilterX_148_join_150,HighPassFilterX_149_join_150);
+	Adder_151 Adder_151_obj(Adder_151_join_322,join_150_Adder_151);
+	LowPassFilterX_152 LowPassFilterX_152_obj(LowPassFilterX_152_HighPassFilterX_153,Duplicate_1_LowPassFilterX_152);
+	HighPassFilterX_153 HighPassFilterX_153_obj(HighPassFilterX_153_Compressor_154,LowPassFilterX_152_HighPassFilterX_153);
+	Compressor_154 Compressor_154_obj(Compressor_154_ProcessFilter_155,HighPassFilterX_153_Compressor_154);
+	ProcessFilter_155 ProcessFilter_155_obj(ProcessFilter_155_Expander_156,Compressor_154_ProcessFilter_155);
+	Expander_156 Expander_156_obj(Expander_156_Duplicate_157,ProcessFilter_155_Expander_156);
+	Duplicate_157 Duplicate_157_obj(Duplicate_157_LowPassFilterX_158,Duplicate_157_HighPassFilterX_159,Expander_156_Duplicate_157);
+	LowPassFilterX_158 LowPassFilterX_158_obj(LowPassFilterX_158_join_160,Duplicate_157_LowPassFilterX_158);
+	HighPassFilterX_159 HighPassFilterX_159_obj(HighPassFilterX_159_join_160,Duplicate_157_HighPassFilterX_159);
+	join_160 join_160_obj(join_160_Adder_161,LowPassFilterX_158_join_160,HighPassFilterX_159_join_160);
+	Adder_161 Adder_161_obj(Adder_161_join_322,join_160_Adder_161);
+	HighPassFilterX_163 HighPassFilterX_163_obj(HighPassFilterX_163_Compressor_164,LowPassFilterX_162_HighPassFilterX_163);
+	Compressor_164 Compressor_164_obj(Compressor_164_ProcessFilter_165,HighPassFilterX_163_Compressor_164);
+	ProcessFilter_165 ProcessFilter_165_obj(ProcessFilter_165_Expander_166,Compressor_164_ProcessFilter_165);
+	Expander_166 Expander_166_obj(Expander_166_Duplicate_167,ProcessFilter_165_Expander_166);
+	Duplicate_167 Duplicate_167_obj(Duplicate_167_LowPassFilterX_168,Duplicate_167_HighPassFilterX_169,Expander_166_Duplicate_167);
+	LowPassFilterX_168 LowPassFilterX_168_obj(LowPassFilterX_168_join_170,Duplicate_167_LowPassFilterX_168);
+	HighPassFilterX_169 HighPassFilterX_169_obj(HighPassFilterX_169_join_170,Duplicate_167_HighPassFilterX_169);
+	join_170 join_170_obj(join_170_Adder_171,LowPassFilterX_168_join_170,HighPassFilterX_169_join_170);
+	Adder_171 Adder_171_obj(Adder_171_join_322,join_170_Adder_171);
+	HighPassFilterX_173 HighPassFilterX_173_obj(HighPassFilterX_173_Compressor_174,LowPassFilterX_172_HighPassFilterX_173);
+	Compressor_174 Compressor_174_obj(Compressor_174_ProcessFilter_175,HighPassFilterX_173_Compressor_174);
+	ProcessFilter_175 ProcessFilter_175_obj(ProcessFilter_175_Expander_176,Compressor_174_ProcessFilter_175);
+	Expander_176 Expander_176_obj(Expander_176_Duplicate_177,ProcessFilter_175_Expander_176);
+	Duplicate_177 Duplicate_177_obj(Duplicate_177_LowPassFilterX_178,Duplicate_177_HighPassFilterX_179,Expander_176_Duplicate_177);
+	LowPassFilterX_178 LowPassFilterX_178_obj(LowPassFilterX_178_join_180,Duplicate_177_LowPassFilterX_178);
+	HighPassFilterX_179 HighPassFilterX_179_obj(HighPassFilterX_179_join_180,Duplicate_177_HighPassFilterX_179);
+	join_180 join_180_obj(join_180_Adder_181,LowPassFilterX_178_join_180,HighPassFilterX_179_join_180);
+	Adder_181 Adder_181_obj(Adder_181_join_322,join_180_Adder_181);
+	HighPassFilterX_183 HighPassFilterX_183_obj(HighPassFilterX_183_Compressor_184,LowPassFilterX_182_HighPassFilterX_183);
+	Compressor_184 Compressor_184_obj(Compressor_184_ProcessFilter_185,HighPassFilterX_183_Compressor_184);
+	ProcessFilter_185 ProcessFilter_185_obj(ProcessFilter_185_Expander_186,Compressor_184_ProcessFilter_185);
+	Expander_186 Expander_186_obj(Expander_186_Duplicate_187,ProcessFilter_185_Expander_186);
+	Duplicate_187 Duplicate_187_obj(Duplicate_187_LowPassFilterX_188,Duplicate_187_HighPassFilterX_189,Expander_186_Duplicate_187);
+	LowPassFilterX_188 LowPassFilterX_188_obj(LowPassFilterX_188_join_190,Duplicate_187_LowPassFilterX_188);
+	HighPassFilterX_189 HighPassFilterX_189_obj(HighPassFilterX_189_join_190,Duplicate_187_HighPassFilterX_189);
+	join_190 join_190_obj(join_190_Adder_191,LowPassFilterX_188_join_190,HighPassFilterX_189_join_190);
+	Adder_191 Adder_191_obj(Adder_191_join_322,join_190_Adder_191);
+	HighPassFilterX_193 HighPassFilterX_193_obj(HighPassFilterX_193_Compressor_194,LowPassFilterX_192_HighPassFilterX_193);
+	Compressor_194 Compressor_194_obj(Compressor_194_ProcessFilter_195,HighPassFilterX_193_Compressor_194);
+	ProcessFilter_195 ProcessFilter_195_obj(ProcessFilter_195_Expander_196,Compressor_194_ProcessFilter_195);
+	Expander_196 Expander_196_obj(Expander_196_Duplicate_197,ProcessFilter_195_Expander_196);
+	Duplicate_197 Duplicate_197_obj(Duplicate_197_LowPassFilterX_198,Duplicate_197_HighPassFilterX_199,Expander_196_Duplicate_197);
+	LowPassFilterX_198 LowPassFilterX_198_obj(LowPassFilterX_198_join_200,Duplicate_197_LowPassFilterX_198);
+	HighPassFilterX_199 HighPassFilterX_199_obj(HighPassFilterX_199_join_200,Duplicate_197_HighPassFilterX_199);
+	join_200 join_200_obj(join_200_Adder_201,LowPassFilterX_198_join_200,HighPassFilterX_199_join_200);
+	Adder_201 Adder_201_obj(Adder_201_join_322,join_200_Adder_201);
+	HighPassFilterX_203 HighPassFilterX_203_obj(HighPassFilterX_203_Compressor_204,LowPassFilterX_202_HighPassFilterX_203);
+	Compressor_204 Compressor_204_obj(Compressor_204_ProcessFilter_205,HighPassFilterX_203_Compressor_204);
+	char stage[5]={0};
+	stage[0]=1;
+	for(int _stageNum=0;_stageNum<5;_stageNum++)
+	{
+		if(1==_stageNum)
+		{
+			HighPassFilterX_103_obj.runInitScheduleWork();
+			Compressor_104_obj.runInitScheduleWork();
+			ProcessFilter_105_obj.runInitScheduleWork();
+			Expander_106_obj.runInitScheduleWork();
+			Duplicate_107_obj.runInitScheduleWork();
+			HighPassFilterX_109_obj.runInitScheduleWork();
+			LowPassFilterX_112_obj.runInitScheduleWork();
+			HighPassFilterX_113_obj.runInitScheduleWork();
+			Compressor_114_obj.runInitScheduleWork();
+			ProcessFilter_115_obj.runInitScheduleWork();
+			Expander_116_obj.runInitScheduleWork();
+			Duplicate_117_obj.runInitScheduleWork();
+			LowPassFilterX_118_obj.runInitScheduleWork();
+			HighPassFilterX_119_obj.runInitScheduleWork();
+			join_120_obj.runInitScheduleWork();
+			Adder_121_obj.runInitScheduleWork();
+			HighPassFilterX_123_obj.runInitScheduleWork();
+			Compressor_124_obj.runInitScheduleWork();
+			ProcessFilter_125_obj.runInitScheduleWork();
+			Expander_126_obj.runInitScheduleWork();
+			Duplicate_127_obj.runInitScheduleWork();
+			LowPassFilterX_128_obj.runInitScheduleWork();
+			HighPassFilterX_129_obj.runInitScheduleWork();
+			join_130_obj.runInitScheduleWork();
+			Adder_131_obj.runInitScheduleWork();
+			HighPassFilterX_133_obj.runInitScheduleWork();
+			Compressor_134_obj.runInitScheduleWork();
+			ProcessFilter_135_obj.runInitScheduleWork();
+			Expander_136_obj.runInitScheduleWork();
+			Duplicate_137_obj.runInitScheduleWork();
+			LowPassFilterX_138_obj.runInitScheduleWork();
+			HighPassFilterX_139_obj.runInitScheduleWork();
+			join_140_obj.runInitScheduleWork();
+			Adder_141_obj.runInitScheduleWork();
+			HighPassFilterX_143_obj.runInitScheduleWork();
+			Compressor_144_obj.runInitScheduleWork();
+			ProcessFilter_145_obj.runInitScheduleWork();
+			Expander_146_obj.runInitScheduleWork();
+			Duplicate_147_obj.runInitScheduleWork();
+			LowPassFilterX_148_obj.runInitScheduleWork();
+			HighPassFilterX_149_obj.runInitScheduleWork();
+			join_150_obj.runInitScheduleWork();
+			Adder_151_obj.runInitScheduleWork();
+			LowPassFilterX_152_obj.runInitScheduleWork();
+			HighPassFilterX_153_obj.runInitScheduleWork();
+			Compressor_154_obj.runInitScheduleWork();
+			ProcessFilter_155_obj.runInitScheduleWork();
+			Expander_156_obj.runInitScheduleWork();
+			Duplicate_157_obj.runInitScheduleWork();
+			LowPassFilterX_158_obj.runInitScheduleWork();
+			HighPassFilterX_159_obj.runInitScheduleWork();
+			join_160_obj.runInitScheduleWork();
+			Adder_161_obj.runInitScheduleWork();
+			HighPassFilterX_163_obj.runInitScheduleWork();
+			Compressor_164_obj.runInitScheduleWork();
+			ProcessFilter_165_obj.runInitScheduleWork();
+			Expander_166_obj.runInitScheduleWork();
+			Duplicate_167_obj.runInitScheduleWork();
+			LowPassFilterX_168_obj.runInitScheduleWork();
+			HighPassFilterX_169_obj.runInitScheduleWork();
+			join_170_obj.runInitScheduleWork();
+			Adder_171_obj.runInitScheduleWork();
+			HighPassFilterX_173_obj.runInitScheduleWork();
+			Compressor_174_obj.runInitScheduleWork();
+			ProcessFilter_175_obj.runInitScheduleWork();
+			Expander_176_obj.runInitScheduleWork();
+			Duplicate_177_obj.runInitScheduleWork();
+			LowPassFilterX_178_obj.runInitScheduleWork();
+			HighPassFilterX_179_obj.runInitScheduleWork();
+			join_180_obj.runInitScheduleWork();
+			Adder_181_obj.runInitScheduleWork();
+			HighPassFilterX_183_obj.runInitScheduleWork();
+			Compressor_184_obj.runInitScheduleWork();
+			ProcessFilter_185_obj.runInitScheduleWork();
+			Expander_186_obj.runInitScheduleWork();
+			Duplicate_187_obj.runInitScheduleWork();
+			LowPassFilterX_188_obj.runInitScheduleWork();
+			HighPassFilterX_189_obj.runInitScheduleWork();
+			join_190_obj.runInitScheduleWork();
+			Adder_191_obj.runInitScheduleWork();
+			HighPassFilterX_193_obj.runInitScheduleWork();
+			Compressor_194_obj.runInitScheduleWork();
+			ProcessFilter_195_obj.runInitScheduleWork();
+			Expander_196_obj.runInitScheduleWork();
+			Duplicate_197_obj.runInitScheduleWork();
+			LowPassFilterX_198_obj.runInitScheduleWork();
+			HighPassFilterX_199_obj.runInitScheduleWork();
+			join_200_obj.runInitScheduleWork();
+			Adder_201_obj.runInitScheduleWork();
+			HighPassFilterX_203_obj.runInitScheduleWork();
+			Compressor_204_obj.runInitScheduleWork();
+		}
+	
+		workerSync(2);
+	}
+	for(int _stageNum=5;_stageNum<2*5+MAX_ITER-1;_stageNum++)
+	{
+		if(stage[1])
+		{
+			HighPassFilterX_103_obj.runSteadyScheduleWork();
+			Compressor_104_obj.runSteadyScheduleWork();
+			ProcessFilter_105_obj.runSteadyScheduleWork();
+			Expander_106_obj.runSteadyScheduleWork();
+			Duplicate_107_obj.runSteadyScheduleWork();
+			HighPassFilterX_109_obj.runSteadyScheduleWork();
+			LowPassFilterX_112_obj.runSteadyScheduleWork();
+			HighPassFilterX_113_obj.runSteadyScheduleWork();
+			Compressor_114_obj.runSteadyScheduleWork();
+			ProcessFilter_115_obj.runSteadyScheduleWork();
+			Expander_116_obj.runSteadyScheduleWork();
+			Duplicate_117_obj.runSteadyScheduleWork();
+			LowPassFilterX_118_obj.runSteadyScheduleWork();
+			HighPassFilterX_119_obj.runSteadyScheduleWork();
+			join_120_obj.runSteadyScheduleWork();
+			Adder_121_obj.runSteadyScheduleWork();
+			HighPassFilterX_123_obj.runSteadyScheduleWork();
+			Compressor_124_obj.runSteadyScheduleWork();
+			ProcessFilter_125_obj.runSteadyScheduleWork();
+			Expander_126_obj.runSteadyScheduleWork();
+			Duplicate_127_obj.runSteadyScheduleWork();
+			LowPassFilterX_128_obj.runSteadyScheduleWork();
+			HighPassFilterX_129_obj.runSteadyScheduleWork();
+			join_130_obj.runSteadyScheduleWork();
+			Adder_131_obj.runSteadyScheduleWork();
+			HighPassFilterX_133_obj.runSteadyScheduleWork();
+			Compressor_134_obj.runSteadyScheduleWork();
+			ProcessFilter_135_obj.runSteadyScheduleWork();
+			Expander_136_obj.runSteadyScheduleWork();
+			Duplicate_137_obj.runSteadyScheduleWork();
+			LowPassFilterX_138_obj.runSteadyScheduleWork();
+			HighPassFilterX_139_obj.runSteadyScheduleWork();
+			join_140_obj.runSteadyScheduleWork();
+			Adder_141_obj.runSteadyScheduleWork();
+			HighPassFilterX_143_obj.runSteadyScheduleWork();
+			Compressor_144_obj.runSteadyScheduleWork();
+			ProcessFilter_145_obj.runSteadyScheduleWork();
+			Expander_146_obj.runSteadyScheduleWork();
+			Duplicate_147_obj.runSteadyScheduleWork();
+			LowPassFilterX_148_obj.runSteadyScheduleWork();
+			HighPassFilterX_149_obj.runSteadyScheduleWork();
+			join_150_obj.runSteadyScheduleWork();
+			Adder_151_obj.runSteadyScheduleWork();
+			LowPassFilterX_152_obj.runSteadyScheduleWork();
+			HighPassFilterX_153_obj.runSteadyScheduleWork();
+			Compressor_154_obj.runSteadyScheduleWork();
+			ProcessFilter_155_obj.runSteadyScheduleWork();
+			Expander_156_obj.runSteadyScheduleWork();
+			Duplicate_157_obj.runSteadyScheduleWork();
+			LowPassFilterX_158_obj.runSteadyScheduleWork();
+			HighPassFilterX_159_obj.runSteadyScheduleWork();
+			join_160_obj.runSteadyScheduleWork();
+			Adder_161_obj.runSteadyScheduleWork();
+			HighPassFilterX_163_obj.runSteadyScheduleWork();
+			Compressor_164_obj.runSteadyScheduleWork();
+			ProcessFilter_165_obj.runSteadyScheduleWork();
+			Expander_166_obj.runSteadyScheduleWork();
+			Duplicate_167_obj.runSteadyScheduleWork();
+			LowPassFilterX_168_obj.runSteadyScheduleWork();
+			HighPassFilterX_169_obj.runSteadyScheduleWork();
+			join_170_obj.runSteadyScheduleWork();
+			Adder_171_obj.runSteadyScheduleWork();
+			HighPassFilterX_173_obj.runSteadyScheduleWork();
+			Compressor_174_obj.runSteadyScheduleWork();
+			ProcessFilter_175_obj.runSteadyScheduleWork();
+			Expander_176_obj.runSteadyScheduleWork();
+			Duplicate_177_obj.runSteadyScheduleWork();
+			LowPassFilterX_178_obj.runSteadyScheduleWork();
+			HighPassFilterX_179_obj.runSteadyScheduleWork();
+			join_180_obj.runSteadyScheduleWork();
+			Adder_181_obj.runSteadyScheduleWork();
+			HighPassFilterX_183_obj.runSteadyScheduleWork();
+			Compressor_184_obj.runSteadyScheduleWork();
+			ProcessFilter_185_obj.runSteadyScheduleWork();
+			Expander_186_obj.runSteadyScheduleWork();
+			Duplicate_187_obj.runSteadyScheduleWork();
+			LowPassFilterX_188_obj.runSteadyScheduleWork();
+			HighPassFilterX_189_obj.runSteadyScheduleWork();
+			join_190_obj.runSteadyScheduleWork();
+			Adder_191_obj.runSteadyScheduleWork();
+			HighPassFilterX_193_obj.runSteadyScheduleWork();
+			Compressor_194_obj.runSteadyScheduleWork();
+			ProcessFilter_195_obj.runSteadyScheduleWork();
+			Expander_196_obj.runSteadyScheduleWork();
+			Duplicate_197_obj.runSteadyScheduleWork();
+			LowPassFilterX_198_obj.runSteadyScheduleWork();
+			HighPassFilterX_199_obj.runSteadyScheduleWork();
+			join_200_obj.runSteadyScheduleWork();
+			Adder_201_obj.runSteadyScheduleWork();
+			HighPassFilterX_203_obj.runSteadyScheduleWork();
+			Compressor_204_obj.runSteadyScheduleWork();
+		}
+		for(int index=4; index>= 1; --index)
+			stage[index] = stage[index-1];
+		if(_stageNum == (MAX_ITER - 1 + 5))
+		{
+			stage[0]=0;
+		}
+	
+		workerSync(2);
+	}
+}

@@ -19,8 +19,13 @@
 #define METHOD_CALL_OVERHEAD  10
 #define UNKNOWN_METHOD_CALL  60
 #define STREAM_OP 20
-#define PRINTLN_OP 60 
+#define PRINTLN_OP 4000 
 #define FRTA_OP 60 
+#define CAST 2
+
+
+  
+
 
 const int updateBuffer = 20;
 int work=0;

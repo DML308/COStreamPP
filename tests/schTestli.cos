@@ -1,3 +1,4 @@
+double  PI = 3.141592654;
 
 composite A(output stream<int x>Out, input stream<int x>In)
 {
@@ -7,14 +8,23 @@ composite A(output stream<int x>Out, input stream<int x>In)
     {
         work
         {
-            int i,j,k=0,x=1;
+            double xx;
+            xx=cos(PI/2);
+            int i=1,j=1,k=0,x=2;
+            K>>=1;
+            double res[2*size];
+            x|= (i&1);
             if(k==5)
                 k++;
-            for(i=x;i<size;i++)
+            
+            for(i=x;i<size;i+=1)
             {   
                 if(i==0)
                     k+=1;
+                //K<<1;
             }
+            x==1?i++:j++;
+
 
         }
         window
@@ -64,7 +74,7 @@ composite Main()
     };
     CDFT=pipeline(Source)
     {
-        add A(4);
+        add A(8);
         add B();
         add C();
 
