@@ -26,7 +26,7 @@ extern void yyerror (const char *msg);
 }
 /* A. 下面是从词法分析器传进来的 token ,其中大部分都是换名字符串*/
 %token integerConstant  stringConstant      doubleConstant  IDENTIFIER
-%token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE
+%token STRING     INT   DOUBLE  FLOAT       LONG    CONST   DEFINE VOID
 %token WHILE      FOR   BREAK   CONTINUE    SWITCH  CASE DEFAULT IF ELSE DO RETURN
 %token POUNDPOUND ICR   DECR    ANDAND      OROR    LS  RS LE GE EQ NE
 %token MULTassign DIVassign     PLUSassign  MINUSassign MODassign
@@ -302,13 +302,26 @@ function.definition:
                 debug ("function.definition ::=  %s\n",$$->toString().c_str());
                 
         }
+      /*
+            |   VOID IDENTIFIER '(' ')' function.body {
+                $$ = new funcDclNode(NULL,$2,NULL,(funcBodyNode*)$5) ;
+                line("Line:%-4d",@$.first_line);
+                debug ("function.definition ::=  %s\n",$$->toString().c_str());
+            }
+            |   VOID IDENTIFIER '(' parameter.list ')' function.body  {
+                $$ = new funcDclNode(NULL,$2,$4,(funcBodyNode*)$6) ;
+                line("Line:%-4d",@$.first_line);
+                debug ("function.definition ::=  %s\n",$$->toString().c_str());
+                
+            } 
+      */
         ;
 
 parameter.list:
           parameter.declaration                    { $$ = new list<Node*>({$1}); }
         | parameter.list ',' parameter.declaration { $$->push_back($3); }
         | parameter.list '=' initializer {
-                //函数参数里不支持初始化
+                //函数参数里不支持初始化F
                 yyerror( "parameter.list in function definations cannot have initializers\n");
                 exit(-1);
           }
@@ -896,6 +909,7 @@ basic.type.name:
         | FLOAT       { $$ = new primNode("float",@$ ); }
         | DOUBLE      { $$ = new primNode("double",@$ ); }
         | STRING      { $$ = new primNode("string",@$ ); }
+        | VOID        { $$ = new primNode("void",@$ ); }
         ;
 
 idNode:

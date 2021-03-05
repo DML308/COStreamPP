@@ -15,6 +15,7 @@ typedef enum {
   Decl,
   /* function */
   FuncDcl, Call,
+  //funcBody,
   /*----------12----SPL node----------*/
   StrDcl,		/*stream SPL*/
   Compdcl,		/*composite SPL*/

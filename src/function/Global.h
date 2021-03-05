@@ -3,6 +3,7 @@
 #include "Buffer.h"
 #include <math.h>
 #include <string>
+#include "function_.h"
 using namespace std;
 struct streamData{
 	int  x;

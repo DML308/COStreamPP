@@ -8,25 +8,34 @@
 #include "rdtsc.h"
 #include <fstream>
 extern int MAX_ITER;
-void thread_3_fun()
+void thread_0_fun()
 {
-	workerSync(3);
-	char stage[4]={0};
+	masterSync(2);
+	C_3 C_3_obj(C_3_D_4,B_2_C_3);
+	char stage[3]={0};
 	stage[0]=1;
-	for(int _stageNum=0;_stageNum<4;_stageNum++)
+	for(int _stageNum=0;_stageNum<3;_stageNum++)
 	{
+		if(1==_stageNum)
+		{
+			C_3_obj.runInitScheduleWork();
+		}
 	
-		workerSync(3);
+		masterSync(2);
 	}
-	for(int _stageNum=4;_stageNum<2*4+MAX_ITER-1;_stageNum++)
+	for(int _stageNum=3;_stageNum<2*3+MAX_ITER-1;_stageNum++)
 	{
-		for(int index=3; index>= 1; --index)
+		if(stage[1])
+		{
+			C_3_obj.runSteadyScheduleWork();
+		}
+		for(int index=2; index>= 1; --index)
 			stage[index] = stage[index-1];
-		if(_stageNum == (MAX_ITER - 1 + 4))
+		if(_stageNum == (MAX_ITER - 1 + 3))
 		{
 			stage[0]=0;
 		}
 	
-		workerSync(3);
+		masterSync(2);
 	}
 }

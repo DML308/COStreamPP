@@ -34,4 +34,6 @@ int workEstimate_init(operBodyNode *body, int w_init);
 int workEstimate_steady(operBodyNode *body, int w_steady);
 void workCompute(Node *node);
 void WEST_astwalk(Node *node);
+void WorkFunc_withoutarg(funcBodyNode *func_body);
+void WorkFunc_witharg(funcBodyNode *func_body);
 #endif

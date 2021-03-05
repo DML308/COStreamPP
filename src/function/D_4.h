@@ -1,5 +1,5 @@
-#ifndef _A_1_
-#define _A_1_
+#ifndef _D_4_
+#define _D_4_
 #include <string>
 #include <iostream>
 #include "Buffer.h"
@@ -8,10 +8,10 @@
 #include "Global.h"
 #include "GlobalVar.h"
 using namespace std;
-class A_1{
+class D_4{
 public:
-	A_1(Buffer<streamData>& Out,Buffer<streamData>& In):Out(Out),In(In){
-		steadyScheduleCount = 12;
+	D_4(Buffer<streamData>& CDFT):CDFT(CDFT){
+		steadyScheduleCount = 3;
 		initScheduleCount = 0;
 	}
 	void runInitScheduleWork() {
@@ -19,36 +19,29 @@ public:
 		init();
 		for(int i=0;i<initScheduleCount;i++)
 			work();
-		Out.resetTail();
-		In.resetHead();
+		CDFT.resetHead();
 	}
 	void runSteadyScheduleWork() {
 		for(int i=0;i<steadyScheduleCount;i++)
 			work();
-		Out.resetTail();
-		In.resetHead();
+		CDFT.resetHead();
 	}
 private:
-	Producer<streamData> Out;
-	Consumer<streamData> In;
+	Consumer<streamData> CDFT;
 	int steadyScheduleCount;	//稳态时一次迭代的执行次数
 	int initScheduleCount;
-	int size;
 	void popToken() {
-		In.updatehead(3);
+		CDFT.updatehead(2);
 	}
 	void pushToken() {
-		Out.updatetail(5);
 	}
 	void initVarAndState() {
-	size=4;
 	}
 	void init(){ 
 	}
 	void work(){ 
 	{
-		int i=1,j=1,k=0,x=1;
-		x==1?i++:j++;
+		int x;
 	}
 		pushToken();
 		popToken();

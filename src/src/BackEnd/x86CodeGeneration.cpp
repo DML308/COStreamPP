@@ -131,6 +131,17 @@ void X86CodeGeneration::CGGlobalHeader()
     if(ifGetTime) {
         buf << "#include <time.h>\n";
     }
+    if(Program!=NULL)
+    {
+        for(auto it:*Program)
+        {
+            if(it->type==FuncDcl)
+            {
+                buf<<"#include \"function_.h\"\n";
+                break;
+            }
+        }
+    }
     buf << "using namespace std;\n";
     //遍历所有compositeNode的streamType，找到流中所有包含的数据类型，作为结构体streamData中的数据
     map<string, string> typeSet;

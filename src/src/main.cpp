@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 
     // (2)用XML文本的形式描述SDF图
     PhaseName = "SSG2Graph";
-    DumpStreamGraph(SSSG, NULL, "flatgraph.dot");
+                                                                                                                                                    (SSSG, NULL, "flatgraph.dot");
 
     // (3)对节点进行调度划分
     cout << "--------- 对静态数据流图执行划分算法 ---------------\n";

@@ -2,6 +2,7 @@
 #include "5.workEstimate.h"
 #include "symboltableGenerate.h"
 #include "symbol.h"
+extern list<Node *> *Program;
 
 extern SymbolTable *top;
 
@@ -54,6 +55,10 @@ void workCompute(Node *node)
     case OperBody:
         WEST_astwalk(node);
         break;
+    /*case funcBody:
+        WEST_astwalk(node);
+        break;
+        */
     case Array:
         work += MEMORY_OP; 
         break;
@@ -580,9 +585,45 @@ void workCompute(Node *node)
             /* 对于外部函数工作量估计为60 */
             else
             {
-                work += UNKNOWN_METHOD_CALL / 1;
+                //work += UNKNOWN_METHOD_CALL / 1;
+                /****************外部函数的工作量估计*****************/
+                list<Node *> arg_list=static_cast<callNode *>(node)->arg_list;
+                funcDclNode* func_dcl=static_cast<callNode *>(node)->actual_callnode;
+                funcBodyNode* func_body;
+                if(Program!=NULL)
+                {
+                    for(auto it:*Program)
+                    {
+                        if(it->type==FuncDcl)
+                        {
+                            if(((funcDclNode *)it)->funcBody!=NULL)
+                            {
+                                func_body=((funcDclNode *)it)->funcBody;
+                                break;
+                            }
+                        }
+                        
+                    }
+                }
+                //不含参数，返回常量
+                 if(arg_list.empty())
+                 {
+                    
+                    WorkFunc_withoutarg(func_body);
+                
+                    
+                 }
+                 //含参数，返回带参数的工作量计算式
+                 else
+                 {
+                     list<Node *> parm=func_dcl->param_list;
+                     if(func_body!=NULL)
+                     {
+                         WorkFunc_witharg(func_body);
+                     }
+                 }
             }
-            work += METHOD_CALL_OVERHEAD / 1;
+            //work += METHOD_CALL_OVERHEAD / 1;
         }
         break;
     case constant:
@@ -595,6 +636,23 @@ void workCompute(Node *node)
     }
 }
 
+void WorkFunc_witharg(funcBodyNode *func_body)
+{
+    
+}
+void WorkFunc_withoutarg(funcBodyNode *func_body)
+{
+    //funcBodyNode *body=static_cast<funcBodyNode*>(func_body);
+    list<Node *> func_stmt=*func_body->stmt_list;
+    if(!func_stmt.empty())
+    {
+        for(auto it : func_stmt)
+        {
+            workCompute(it);
+        }
+    }
+    
+}
 void WEST_astwalk(Node *node)
 {
     assert(node != NULL);

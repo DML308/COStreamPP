@@ -1,14 +1,17 @@
 double  PI = 3.141592654;
 
+
 composite A(output stream<int x>Out, input stream<int x>In)
 {
     param
         int size;
     Out=A(In)
     {
+        
         work
         {
-            double xx;
+
+           /* double xx;
             xx=cos(PI/2);
             int i=1,j=1,k=0,x=2;
             K>>=1;
@@ -24,9 +27,12 @@ composite A(output stream<int x>Out, input stream<int x>In)
                 //K<<1;
             }
             x==1?i++:j++;
-
-
+                */
+            int a=1;
+            int b=2;
+            func(a,b);
         }
+            
         window
         {
             In sliding(3,3);
@@ -52,7 +58,17 @@ composite C(output stream<int x>Out, input stream<int x>In)
 {
     Out=C(In)
     {
-        work{}
+        work{
+            int x=0;
+            int i,j;
+            for(i=0;i<10;i++)
+            {
+                for(j=0;j<10;j++)
+                {
+                    x++;
+                }
+            }
+        }
         window
         {
             In sliding(10,10);
@@ -81,7 +97,16 @@ composite Main()
     };
     D(CDFT)
     {
-        work {}
+        work { int x;}
         window {CDFT sliding(2,2);}
     };
+}
+
+int  def(int n)
+{
+if(n>0)
+{
+if(n==1) return n;
+else return def(n-1)*n;
+}
 }

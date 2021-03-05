@@ -65,6 +65,7 @@ float       { return FLOAT; }
 long        { return LONG; }
 const       { return CONST; }
 define      { return DEFINE; }
+void        { return VOID; }
 
 while       { return WHILE; }                                  
 for         { return FOR; }
